@@ -1,0 +1,44 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "GTFS Realtime - Vehicle Positions - Metro and Regional Bus",
+        "description": "GTFS Realtime feeds have been provided by the Victorian Department of Transport and Planning to provide realtime updates about Public Transport services. It contains feeds about:\n\n<strong>Trip Updates</strong> - delays, cancellations, changed routes \n\n<strong>Service Alerts</strong> - stop moved, unforeseen events affecting a station, route or the entire network \n\n<strong>Vehicle Positions</strong> - information about the vehicles including location and congestion level \n\nPlease note these feeds are provided in the Protocol Buffer format and are not human readable \n\nFor more information refer to this GTFS Realtime page - <a href='https://gtfs.org/documentation/realtime/reference/'>https://gtfs.org/documentation/realtime/reference/</a>",
+        "version": "1.0"
+    },
+    "servers": [
+        {
+            "url": "https://api.opendata.transport.vic.gov.au/opendata/public-transport/gtfs/realtime/v1/bus"
+        }
+    ],
+    "paths": {
+        "/vehicle-positions": {
+            "get": {
+                "summary": "GTFS Realtime - Vehicle Positions - Metro and Regional Bus",
+                "tags": [
+                    "Request"
+                ],
+                "description": "GTFS Realtime Vehicle Position data feed provides live location and occupancy information for Metro and Regional Bus services in Victoria.\n\nNote: This API endpoint has a rate limit of 20-27 calls per minute (depending on the data size) and caching time of 30 seconds.",
+                "operationId": "bus-vehicle-position",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "apiKeyHeader": {
+                "type": "apiKey",
+                "name": "KeyId",
+                "in": "header"
+            }
+        }
+    },
+    "security": [
+        {
+            "apiKeyHeader": []
+        }
+    ]
+}

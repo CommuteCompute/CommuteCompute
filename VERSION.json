@@ -1,0 +1,164 @@
+{
+  "system": {
+    "version": "4.0.0",
+    "name": "Commute Compute System",
+    "releaseDate": "2026-02-07",
+    "codename": "Compliance"
+  },
+  "components": {
+    "commutecompute": {
+      "version": "2.3",
+      "name": "CommuteCompute Engine",
+      "description": "Real-time journey planning with Metro Tunnel compliance, transit availability detection, Departure Confidence scoring, Lifestyle Context, Sleep Optimizer, Alt Transit, Mindset analysis",
+      "locked": false,
+      "lastUpdated": "2026-02-06"
+    },
+    "renderer": {
+      "version": "1.80",
+      "name": "CCDash Renderer",
+      "spec": "CCDashDesignV15.0",
+      "description": "Sleep mode display, alt transit cost panel, mindset status bar, enhanced glanceability, confidence display, lifestyle suggestions",
+      "locked": false,
+      "lastUpdated": "2026-02-06"
+    },
+    "adminPanel": {
+      "version": "3.2.0",
+      "file": "admin.html",
+      "description": "Admin Panel with Live Dashboard",
+      "lastUpdated": "2026-02-06"
+    },
+    "setupWizard": {
+      "version": "2.0.0",
+      "file": "setup-wizard.html",
+      "description": "Initial Setup Wizard with BLE Provisioning",
+      "lastUpdated": "2026-02-06"
+    },
+    "journeyDisplay": {
+      "version": "1.2.0",
+      "file": "journey-display.html",
+      "description": "Journey Visualization Interface",
+      "lastUpdated": "2026-02-06"
+    },
+    "livedash": {
+      "version": "3.0",
+      "description": "CC LiveDash Multi-Device Endpoint",
+      "locked": true,
+      "lastUpdated": "2026-02-06"
+    }
+  },
+  "backend": {
+    "server": {
+      "version": "2.1.0",
+      "description": "Vercel Serverless API",
+      "lastUpdated": "2026-02-06"
+    }
+  },
+  "firmware": {
+    "version": "7.4.3",
+    "description": "ESP32-C3 CCFirm - BLE Provisioning + BMP Text Renderer",
+    "locked": true,
+    "lastUpdated": "2026-02-07",
+    "features": [
+      "BLE provisioning (WiFi + server config)",
+      "Pairing code display and verification",
+      "BMP text rendering engine",
+      "60-second refresh cycle",
+      "Zone-based partial refresh (5 zones)"
+    ]
+  },
+  "specs": {
+    "dashboard": {
+      "version": "CCDashDesignV15.0",
+      "status": "UNLOCKED",
+      "lockedDate": "2026-02-06"
+    }
+  },
+  "versioningScheme": {
+    "type": "Semantic Versioning 2.0.0",
+    "format": "MAJOR.MINOR.PATCH",
+    "rules": {
+      "MAJOR": "Incompatible API changes, major feature overhauls",
+      "MINOR": "New features, significant improvements (backwards-compatible)",
+      "PATCH": "Bug fixes, minor improvements (backwards-compatible)"
+    }
+  },
+  "changelog": [
+    {
+      "version": "4.0.0",
+      "date": "2026-02-07",
+      "changes": [
+        "AGPL-3.0 dual license applied across 126+ files with SPDX headers",
+        "SmartCommute renamed to CommuteCompute across 47 files",
+        "PTV-TRMNL references replaced with CCFirm/Commute Compute System",
+        "Comprehensive compliance audit: branding, licensing, security hardening",
+        "Removed orphaned test tools and audit artifacts",
+        "Firmware version aligned to CC-FW-7.4.3 with BLE provisioning",
+        "All frontend pages updated with cc-system-footer and Inter font",
+        "Emoji-free production UI with SVG icon replacements"
+      ]
+    },
+    {
+      "version": "3.4.0",
+      "date": "2026-02-06",
+      "changes": [
+        "V15.0: Sleep Optimizer Engine - evening bedtime/alarm calculation",
+        "V15.0: Alternative Transit Engine - rideshare/bike/scooter cost estimates",
+        "V15.0: Lifestyle Mindset - commute stress scoring, walk step estimation, apparent temperature",
+        "V15.0: Alt transit cost panel when all public transit cancelled",
+        "V15.0: Evening sleep mode replaces coffee box after 6pm",
+        "V15.0: Enhanced glanceability - larger fonts for 1-2 meter readability",
+        "V15.0: Mindset indicator in status bar alongside confidence",
+        "CommuteCompute Engine v2.3 with full journey intelligence",
+        "CCDash Renderer v1.80 with sleep mode and alt transit display"
+      ]
+    },
+    {
+      "version": "3.3.0",
+      "date": "2026-02-06",
+      "changes": [
+        "V14.0: Departure Confidence Engine - journey success probability scoring",
+        "V14.0: Lifestyle Context Engine - weather-aware lifestyle suggestions",
+        "V14.0: Enhanced status bar with confidence percentage",
+        "V14.0: Enhanced weather zone with lifestyle recommendations",
+        "V14.0: Commute pattern analytics via KV storage",
+        "CommuteCompute Engine v2.2 with confidence integration",
+        "CCDash Renderer v1.70 with lifestyle display"
+      ]
+    },
+    {
+      "version": "3.2.0",
+      "date": "2026-02-06",
+      "changes": [
+        "V13.6 LOCKED: All components frozen",
+        "CommuteCompute Engine v2.1 with Metro Tunnel compliance",
+        "CCDash Renderer v1.60 with battery display and GTFS stop names",
+        "Firmware CC-FW-7.5.0 with battery reporting and auto-pairing",
+        "Comprehensive audit compliance fixes",
+        "Removed mock data fallbacks (Section 23.6)",
+        "XSS sanitization hardening"
+      ]
+    },
+    {
+      "version": "3.0.0",
+      "date": "2026-01-30",
+      "changes": [
+        "REBRAND: Commute Compute to Commute Compute System",
+        "Added Section 0 (Naming Conventions) to DEVELOPMENT-RULES.md",
+        "Updated all internal references: CCDashDesignV10, CC LiveDash",
+        "SmartCommute renamed to CommuteCompute across all files",
+        "Updated localStorage keys: commute-compute-* to cc-*"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-01-27",
+      "changes": [
+        "Initial version tracking system",
+        "Complete data flow persistence (setup to dashboard)",
+        "Multi-modal routing with transit transfers",
+        "Auto-population of addresses using geolocation",
+        "Dark theme compliance with Development Rules"
+      ]
+    }
+  ]
+}

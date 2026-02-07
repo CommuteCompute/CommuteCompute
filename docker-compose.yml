@@ -1,0 +1,78 @@
+# Commute Compute System Docker Compose Configuration
+# License: AGPL-3.0
+# See LICENSE file for full terms
+
+version: '3.8'
+
+services:
+  commute-compute:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: commute-compute
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      # Required
+      - NODE_ENV=production
+      - PORT=3000
+
+      # Transport Victoria GTFS Realtime (Optional - Victorian users only)
+      # Get from: https://opendata.transport.vic.gov.au/
+      - ODATA_API_KEY=${ODATA_API_KEY:-}
+
+      # Enhanced Geocoding (Optional)
+      - GOOGLE_PLACES_API_KEY=${GOOGLE_PLACES_API_KEY:-}
+      - MAPBOX_ACCESS_TOKEN=${MAPBOX_ACCESS_TOKEN:-}
+
+      # Redis/KV Storage (Optional - for persistent config)
+      - REDIS_URL=${REDIS_URL:-}
+
+      # Email Configuration (Optional)
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+      - SMTP_TO=${SMTP_TO:-}
+
+    volumes:
+      # Persistent data storage
+      - cc-data:/app/data
+
+      # Optional: Mount logs directory
+      # - ./logs:/app/logs
+
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/status', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+    networks:
+      - cc-network
+
+volumes:
+  cc-data:
+    driver: local
+
+networks:
+  cc-network:
+    driver: bridge
+
+# Quick Start:
+# 1. Copy .env.example to .env
+# 2. Edit .env with your API keys (all optional)
+# 3. Run: docker-compose up -d
+# 4. Access: http://localhost:3000/admin
+#
+# Commands:
+# - Start: docker-compose up -d
+# - Stop: docker-compose down
+# - Logs: docker-compose logs -f
+# - Restart: docker-compose restart
+# - Update: docker-compose pull && docker-compose up -d

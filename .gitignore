@@ -1,0 +1,45 @@
+# Minimal Safety .gitignore
+# Per DEVELOPMENT-RULES.md Section 17.5 (amended)
+# Purpose: Prevent accidental commit of secrets only
+
+# Environment files (MUST NEVER exist, but protect against accidents)
+.env
+.env.*
+*.env
+
+# Secret files
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Node modules (managed by package-lock.json)
+node_modules/
+
+# PlatformIO build artifacts
+.pio/
+
+# IDE (optional - prevents noise)
+.vscode/
+.idea/
+
+# OS junk
+.DS_Store
+Thumbs.db
+.dev-archive/
+
+# Backup files
+*.backup
+
+# AI tool config (dev state)
+CLAUDE.md
+.claude/
+.claude.json
+.claude.json.*
+
+# User data (generated at runtime)
+user-preferences.json
+
+# Security patterns (private config)
+.cc-secret-patterns
+.cc-security-patterns

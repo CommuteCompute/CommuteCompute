@@ -1,0 +1,73 @@
+{
+  "version": "3.1",
+  "description": "Sample journey configuration - copy and customize for your setup",
+  "created": "2026-01-31",
+  "updated": "2026-01-31",
+  
+  "_comment": "This is a SAMPLE configuration. Replace addresses and locations with your own.",
+  
+  "locations": {
+    "home": {
+      "address": "YOUR HOME ADDRESS",
+      "label": "HOME",
+      "lat": null,
+      "lon": null,
+      "_note": "Coordinates will be auto-populated by Setup Wizard"
+    },
+    "work": {
+      "address": "YOUR WORK ADDRESS",
+      "label": "WORK",
+      "lat": null,
+      "lon": null
+    },
+    "cafe": {
+      "name": "Your Cafe Name",
+      "address": "YOUR CAFE ADDRESS",
+      "label": "COFFEE",
+      "lat": null,
+      "lon": null,
+      "avgWaitMinutes": 4,
+      "enabled": true
+    }
+  },
+  
+  "journey": {
+    "arrivalTime": "09:00",
+    "preferCoffee": true,
+    "autoDiscover": true,
+    "preferMultiModal": true,
+    "pattern": "coffee-before-transit",
+    "routePreferences": {
+      "optimizeFor": "minimal-walking",
+      "maxWalkingMinutes": 10,
+      "preferTrain": true,
+      "preferMultiModal": true,
+      "modePriority": ["train", "tram", "bus"]
+    }
+  },
+  
+  "preferredRoute": {
+    "_comment": "This section is auto-populated by CommuteCompute based on your locations",
+    "name": "Auto-calculated route",
+    "pattern": "auto",
+    "segments": [],
+    "totalMinutes": null
+  },
+  
+  "display": {
+    "use24HourTime": false,
+    "showWeather": true,
+    "showCoffeeDecision": true,
+    "showAlternatives": true
+  },
+  
+  "coffeeEngine": {
+    "targetArrival": "09:00",
+    "walkToStation": 5,
+    "homeToCafe": 3,
+    "makeCoffee": 4,
+    "cafeToTransit": 2,
+    "transitRide": 15,
+    "walkToWork": 5
+  }
+}

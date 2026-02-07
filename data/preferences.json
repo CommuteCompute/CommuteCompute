@@ -1,0 +1,13 @@
+{
+  "homeAddress": "",
+  "workAddress": "",
+  "cafeLocation": "",
+  "targetArrival": "09:00",
+  "preferCoffee": true,
+  "preferredRoute": {
+    "type": "auto",
+    "segments": []
+  },
+  "state": "VIC",
+  "apiMode": "cached"
+}

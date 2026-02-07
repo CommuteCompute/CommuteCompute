@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+    ========================================================================
+    DEVELOPMENT RULES COMPLIANCE: docs/development/DEVELOPMENT-RULES.md v1.0.12
+    ========================================================================
+    - Location agnostic (no hardcoded locations/timezones)
+    - Works with fallback data (no API keys required)
+    - Transit mode agnostic (supports all 8 Australian states)
+    - Clear data source indicators (fallback vs live)
+
+    Commute Compute - Your Journey Today Display
+    Copyright (c) 2026 Angus Bergman
+    SPDX-License-Identifier: AGPL-3.0-or-later
+    Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
+-->
+<head>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <meta name="theme-color" content="#1a2744">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Journey Today - Commute Compute</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #1a2744;
+      color: #f1f5f9;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #f1f5f9;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      font-size: 14px;
+      color: #cbd5e1;
+    }
+
+    /* Data Source Banner */
+    .data-source-banner {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+      border-radius: 16px;
+      padding: 20px 25px;
+      margin-bottom: 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .data-source-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .data-source-icon {
+      font-size: 28px;
+    }
+
+    .data-source-text h2 {
+      color: #f1f5f9;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .data-source-text p {
+      color: #cbd5e1;
+      font-size: 13px;
+    }
+
+    .btn-primary {
+      background: #4fb28e;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover {
+      background: #4f46e5;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(79, 178, 142, 0.4);
+    }
+
+    /* E-ink Display - 800x480 */
+    .eink-display {
+      width: 800px;
+      height: 480px;
+      background: white;
+      border: 4px solid #333;
+      position: relative;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+      margin: 0 auto 25px auto;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    /* Journey Title */
+    .journey-title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      border-bottom: 3px solid black;
+      padding-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .location-badge {
+      font-size: 11px;
+      background: rgba(79, 178, 142, 0.2);
+      color: #a5b4fc;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    /* Journey Timeline */
+    .journey-timeline {
+      position: relative;
+      margin-top: 15px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    .journey-leg {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .journey-leg:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 24px;
+      top: 50px;
+      width: 3px;
+      height: 30px;
+      background: #cbd5e0;
+      z-index: 0;
+    }
+
+    .transit-icon {
+      font-size: 28px;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      border: 3px solid black;
+      border-radius: 50%;
+      margin-right: 15px;
+      z-index: 1;
+      flex-shrink: 0;
+    }
+
+    .transit-icon.delayed {
+      border-color: #e53e3e;
+      animation: pulse-red 2s infinite;
+    }
+
+    @keyframes pulse-red {
+      0%, 100% { background: white; }
+      50% { background: #fed7d7; }
+    }
+
+    .leg-details {
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .leg-info {
+      flex: 1;
+    }
+
+    .leg-route {
+      font-size: 13px;
+      font-weight: bold;
+      color: #2d3748;
+      margin-bottom: 3px;
+    }
+
+    .leg-location {
+      font-size: 11px;
+      color: #4a5568;
+    }
+
+    .leg-time {
+      text-align: right;
+      padding-left: 15px;
+    }
+
+    .departure-time {
+      font-size: 20px;
+      font-weight: bold;
+      color: #2d3748;
+      white-space: nowrap;
+    }
+
+    .duration {
+      font-size: 10px;
+      color: #718096;
+      margin-top: 2px;
+    }
+
+    /* Arrival Box */
+    .arrival-box {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      padding: 15px;
+      background: black;
+      color: white;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .arrival-label {
+      font-size: 10px;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+      opacity: 0.8;
+    }
+
+    .arrival-time {
+      font-size: 28px;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    .arrival-location {
+      font-size: 12px;
+      margin-top: 4px;
+      opacity: 0.9;
+    }
+
+    /* Status Banner */
+    .status-banner {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+
+    .status-fallback {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-live {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    /* Live indicator */
+    .live-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #4fb28e;
+      border-radius: 50%;
+      margin-right: 6px;
+      animation: pulse-live 2s infinite;
+    }
+
+    @keyframes pulse-live {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Info panel */
+    .info-panel {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-bottom: 25px;
+    }
+
+    .info-panel h3 {
+      font-size: 18px;
+      color: #f1f5f9;
+      margin-bottom: 15px;
+    }
+
+    .info-section {
+      margin-bottom: 20px;
+    }
+
+    .info-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .info-section h4 {
+      font-size: 14px;
+      color: #f1f5f9;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .info-section p {
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .info-section ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .info-section li {
+      font-size: 13px;
+      color: #cbd5e1;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    }
+
+    .info-section li:last-child {
+      border-bottom: none;
+    }
+
+    .feature-icon {
+      display: inline-block;
+      width: 20px;
+      margin-right: 8px;
+    }
+
+    /* Responsive */
+    @media (max-width: 850px) {
+      .eink-display {
+        transform: scale(0.9);
+        transform-origin: top center;
+      }
+    }
+
+    @media (max-width: 750px) {
+      .eink-display {
+        transform: scale(0.7);
+      }
+    }
+
+    /* Loading state */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #e5e7eb;
+      border-top-color: #4fb28e;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Error state */
+    .error-state {
+      padding: 30px;
+      text-align: center;
+      color: #dc2626;
+      font-size: 14px;
+    }
+
+    .empty-state {
+      padding: 30px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .empty-state a {
+      color: #4fb28e;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .empty-state a:hover {
+      text-decoration: underline;
+    }
+
+    /* Global System Footer */
+    .cc-system-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(180deg, rgba(26, 39, 68, 0.95) 0%, rgba(18, 28, 51, 0.98) 100%);
+        border-top: 1px solid #3d5278;
+        padding: 10px 20px;
+        z-index: 1000;
+        backdrop-filter: blur(10px);
+    }
+    .cc-system-footer-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .cc-footer-versions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 11px;
+        color: #94a3b8;
+    }
+    .cc-footer-version-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .cc-footer-version-label {
+        opacity: 0.6;
+        font-weight: 500;
+    }
+    .cc-footer-version-value {
+        color: #4fb28e;
+        font-weight: 600;
+        font-family: 'Inter', monospace;
+    }
+    .cc-footer-attribution {
+        font-size: 10px;
+        color: #64748b;
+        text-align: right;
+        line-height: 1.5;
+    }
+    .cc-footer-attribution a {
+        color: #4fb28e;
+        text-decoration: none;
+    }
+    .cc-footer-live-dot {
+        width: 6px;
+        height: 6px;
+        background: #22c55e;
+        border-radius: 50%;
+        animation: ccPulse 1.5s infinite;
+    }
+    @keyframes ccPulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.2); }
+    }
+    @media (max-width: 768px) {
+        .cc-system-footer-inner {
+            flex-direction: column;
+            text-align: center;
+        }
+        .cc-footer-attribution {
+            text-align: center;
+        }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1> Your Journey Today</h1>
+      <p>Interactive journey visualization with real-time or fallback timetable data</p>
+    </div>
+
+    <!-- Data Source Banner -->
+    <div class="data-source-banner">
+      <div class="data-source-info">
+        <div class="data-source-icon" id="dataSourceIcon">●</div>
+        <div class="data-source-text">
+          <h2 id="dataSourceTitle">Loading...</h2>
+          <p id="dataSourceSubtitle">Checking data source status...</p>
+        </div>
+      </div>
+      <div>
+        <a href="/admin.html" class="btn-primary">← Back to Admin Panel</a>
+      </div>
+    </div>
+
+    <!-- E-ink Display -->
+    <div class="eink-display">
+      <!-- Status Banner -->
+      <div class="status-banner status-fallback" id="statusBanner">
+        FALLBACK DATA
+      </div>
+
+      <!-- Journey Title -->
+      <div class="journey-title">
+        <span id="journeyTitleText">Your Journey Today</span>
+        <span class="location-badge" id="locationBadge">Loading...</span>
+      </div>
+
+      <!-- Journey Timeline -->
+      <div class="journey-timeline" id="journeyTimeline">
+        <div class="loading">
+          <span class="spinner"></span>
+          Loading journey data...
+        </div>
+      </div>
+
+      <!-- Arrival Box -->
+      <div class="arrival-box" id="arrivalBox" style="display: none;">
+        <div class="arrival-label">ARRIVE AT WORK</div>
+        <div class="arrival-time" id="arrivalTime">--:--</div>
+        <div class="arrival-location" id="arrivalStatus">Calculating...</div>
+      </div>
+    </div>
+
+    <!-- Information Panel -->
+    <div class="info-panel">
+      <h3>How the Journey System Works</h3>
+
+      <div class="info-section">
+        <h4>↻ Data Source Modes</h4>
+        <p>The system operates in two modes to ensure your journey always works:</p>
+        <ul>
+          <li><span class="feature-icon">●</span> <strong>Live Data Mode:</strong> Real-time transit updates from your state's transit authority API</li>
+          <li><span class="feature-icon">●</span> <strong>Fallback Mode:</strong> Static timetable data from GTFS feeds (works without API keys)</li>
+        </ul>
+        <p>The system automatically uses fallback data when API keys aren't configured, ensuring your journey is always accessible.</p>
+      </div>
+
+      <div class="info-section">
+        <h4> Location Agnostic Design</h4>
+        <p>This system works across all Australian states and territories:</p>
+        <ul>
+          <li><span class="feature-icon">VIC </span> <strong>VIC:</strong> Trains + Trams (Metro Trains, Yarra Trams)</li>
+          <li><span class="feature-icon">NSW </span> <strong>NSW:</strong> Trains + Buses (Transport for NSW)</li>
+          <li><span class="feature-icon">QLD </span> <strong>QLD:</strong> Trains + Buses (TransLink)</li>
+          <li><span class="feature-icon">SA </span> <strong>SA:</strong> Trams + Buses (Adelaide Metro)</li>
+          <li><span class="feature-icon">WA </span> <strong>WA:</strong> Trains + Buses (Transperth)</li>
+          <li><span class="feature-icon">TAS </span> <strong>TAS:</strong> Buses + Ferries (Metro Tasmania)</li>
+          <li><span class="feature-icon">NT </span> <strong>NT:</strong> Buses (Department of Infrastructure)</li>
+          <li><span class="feature-icon">ACT </span> <strong>ACT:</strong> Trains + Buses (Transport Canberra)</li>
+        </ul>
+        <p>Transit modes are automatically detected based on your address - no manual configuration needed.</p>
+      </div>
+
+      <div class="info-section">
+        <h4>Journey Calculation Process</h4>
+        <p>The system builds your journey through these steps:</p>
+        <ul>
+          <li><span class="feature-icon">1.</span> Geocode home and work addresses (free Nominatim service)</li>
+          <li><span class="feature-icon">2.</span> Detect state and select appropriate transit authority</li>
+          <li><span class="feature-icon">3.</span> Find nearby transit stops using GTFS data</li>
+          <li><span class="feature-icon">4.</span> Calculate walking times between stops</li>
+          <li><span class="feature-icon">5.</span> Build multi-modal journey with connections</li>
+          <li><span class="feature-icon">6.</span> Apply real-time updates if API keys configured</li>
+        </ul>
+      </div>
+
+      <div class="info-section">
+        <h4>Transit Mode Icons</h4>
+        <p>Visual indicators for each journey segment:</p>
+        <ul>
+          <li> <strong>Train</strong> - Heavy rail services</li>
+          <li> <strong>Tram/Light Rail</strong> - Street-level rail</li>
+          <li> <strong>Bus</strong> - Bus services</li>
+          <li>[Ferry] <strong>Ferry</strong> - Water transport</li>
+          <li> <strong>Walking</strong> - Walking segments</li>
+        </ul>
+      </div>
+
+      <div class="info-section">
+        <h4>Enabling Live Data (Optional)</h4>
+        <p>To switch from fallback to live data:</p>
+        <ul>
+          <li><span class="feature-icon">1.</span> Go to Admin Panel → API Settings tab</li>
+          <li><span class="feature-icon">2.</span> Register for your state's transit API (links provided)</li>
+          <li><span class="feature-icon">3.</span> Enter your API credentials</li>
+          <li><span class="feature-icon">4.</span> System automatically switches to live data</li>
+        </ul>
+        <p><strong>Remember:</strong> API keys are optional! The system works great with fallback data.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // XSS Sanitization (DEVELOPMENT-RULES.md Section 17.1)
+    function sanitize(str) {
+        if (str === null || str === undefined) return '';
+        if (typeof str !== 'string') str = String(str);
+        const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'};
+        return str.replace(/[&<>"'`=/]/g, c => map[c]);
+    }
+
+    let currentConfig = null;
+    let currentApis = null;
+
+    // Load journey data and render
+    async function loadJourney() {
+      try {
+        // Fetch config and API status
+        const [configRes, apisRes] = await Promise.all([
+          fetch('/api/config'),
+          fetch('/api/apis')
+        ]);
+
+        currentConfig = await configRes.json();
+        currentApis = await apisRes.json();
+
+        updateDataSourceBanner();
+        renderJourney();
+      } catch (error) {
+        showError('Failed to load journey data. Please check your configuration.');
+      }
+    }
+
+    // Update data source banner
+    function updateDataSourceBanner() {
+      const hasLiveData = currentApis?.transitAuthority?.configured ||
+                          currentApis?.victorianGTFS?.configured ||
+                          false;
+
+      const icon = document.getElementById('dataSourceIcon');
+      const title = document.getElementById('dataSourceTitle');
+      const subtitle = document.getElementById('dataSourceSubtitle');
+      const statusBanner = document.getElementById('statusBanner');
+
+      if (hasLiveData) {
+        icon.innerHTML = '<span style="display:inline-block;width:20px;height:20px;background:#22c55e;border-radius:50%;"></span>';
+        title.textContent = 'Live Data Active';
+        subtitle.textContent = 'Real-time transit updates enabled';
+        statusBanner.className = 'status-banner status-live';
+        statusBanner.innerHTML = '<span class="live-indicator"></span>LIVE DATA';
+      } else {
+        icon.innerHTML = '<span style="display:inline-block;width:20px;height:20px;background:#dc2626;border-radius:50%;"></span>';
+        title.textContent = 'Using Fallback Timetable Data';
+        subtitle.textContent = 'Configure API keys in Admin Panel to enable live updates';
+        statusBanner.className = 'status-banner status-fallback';
+        statusBanner.textContent = 'FALLBACK DATA';
+      }
+    }
+
+    // Render journey timeline
+    function renderJourney() {
+      const timeline = document.getElementById('journeyTimeline');
+      const arrivalBox = document.getElementById('arrivalBox');
+      const locationBadge = document.getElementById('locationBadge');
+
+      // Update location badge
+      const state = currentConfig?.location?.state || 'N/A';
+      const stateName = currentConfig?.location?.stateName || state;
+      locationBadge.textContent = stateName;
+
+      // Check if journey is configured
+      if (!currentConfig?.stops?.home || !currentConfig?.stops?.work) {
+        timeline.innerHTML = `
+          <div class="empty-state">
+            <p>No journey configured yet.</p>
+            <p><a href="/admin.html#tab-setup">Configure your journey</a> in the Admin Panel to get started.</p>
+          </div>
+        `;
+        arrivalBox.style.display = 'none';
+        return;
+      }
+
+      // Build journey legs
+      const legs = buildJourneyLegs();
+
+      if (legs.length === 0) {
+        timeline.innerHTML = `
+          <div class="empty-state">
+            <p>No journey legs found.</p>
+            <p>Try adjusting your addresses or <a href="/admin.html#tab-setup">reconfigure your journey</a>.</p>
+          </div>
+        `;
+        arrivalBox.style.display = 'none';
+        return;
+      }
+
+      // Render journey legs
+      // Sanitize journey data (Section 17.1)
+      timeline.innerHTML = legs.map(leg => `
+        <div class="journey-leg">
+          <div class="transit-icon">${sanitize(leg.icon)}</div>
+          <div class="leg-details">
+            <div class="leg-info">
+              <div class="leg-route">${sanitize(leg.route)}</div>
+              <div class="leg-location">${sanitize(leg.location)}</div>
+            </div>
+            <div class="leg-time">
+              <div class="departure-time">${sanitize(leg.time)}</div>
+              <div class="duration">${sanitize(leg.duration)}</div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Show arrival box
+      arrivalBox.style.display = 'block';
+      updateArrivalTime(legs);
+    }
+
+    // Build journey legs from config
+    function buildJourneyLegs() {
+      const legs = [];
+      const transitMode = currentConfig?.preferences?.transitMode || 'train';
+      const homeStop = currentConfig?.stops?.home?.name || 'Home Station';
+      const workStop = currentConfig?.stops?.work?.name || 'Work Station';
+      const walkingTime = currentConfig?.preferences?.walkingTime || 5;
+
+      // Get transit icon based on mode
+      const transitIcons = {
+        'train': '',
+        'tram': '',
+        'bus': '',
+        'ferry': '[Ferry]',
+        'light-rail': ''
+      };
+      const icon = transitIcons[transitMode] || '';
+
+      // Leg 1: Walk to home stop
+      legs.push({
+        icon: '',
+        route: 'Walk to Transit Stop',
+        location: `To: ${homeStop}`,
+        time: '--:--',
+        duration: `${walkingTime} min walk`
+      });
+
+      // Leg 2: Transit
+      legs.push({
+        icon: icon,
+        route: `${transitMode.charAt(0).toUpperCase() + transitMode.slice(1)} → ${workStop.substring(0, 20)}`,
+        location: `From: ${homeStop.substring(0, 30)}`,
+        time: '--:--',
+        duration: 'Calculating...'
+      });
+
+      // Leg 3: Walk to work
+      legs.push({
+        icon: '',
+        route: 'Walk to Work',
+        location: `To: ${currentConfig?.addresses?.work?.substring(0, 30) || 'Work'}`,
+        time: '--:--',
+        duration: `${Math.ceil(walkingTime * 0.6)} min walk`
+      });
+
+      return legs;
+    }
+
+    // Update arrival time
+    function updateArrivalTime(legs) {
+      const arrivalTime = document.getElementById('arrivalTime');
+      const arrivalStatus = document.getElementById('arrivalStatus');
+
+      // For now, show placeholder
+      // In a full implementation, this would calculate based on actual departure times
+      arrivalTime.textContent = '--:--';
+      arrivalStatus.textContent = 'Configure API keys for live arrival predictions';
+    }
+
+    // Show error state
+    function showError(message) {
+      const timeline = document.getElementById('journeyTimeline');
+      timeline.innerHTML = `
+        <div class="error-state">
+          <p>WARNING: ${message}</p>
+          <p><a href="/admin.html" style="color: #4fb28e;">Return to Admin Panel</a></p>
+        </div>
+      `;
+    }
+
+    // Initialize
+    loadJourney();
+
+    // Refresh every 30 seconds
+    setInterval(loadJourney, 30000);
+  </script>
+  
+  <script>
+    function loadFooterVersions() {
+        fetch('/api/version')
+            .then(r => r.json())
+            .then(v => {
+                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v3.0';
+                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v2.1';
+                document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
+                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.0.0');
+            })
+            .catch(() => {});
+    }
+    function updateGlobalFooterAttributions() {
+        const config = JSON.parse(localStorage.getItem('cc-config') || '{}');
+        const transitKey = localStorage.getItem('cc-transit-api-key');
+        const attributions = ['© 2026 Angus Bergman'];
+        if (transitKey || config.addresses?.home) attributions.push('Transit data: Transport Victoria OpenData API (CC BY 4.0)');
+        if (config.addresses?.home) attributions.push('Weather: Bureau of Meteorology (CC BY 3.0 AU)');
+        const el = document.getElementById('cc-footer-attributions');
+        if (el) el.innerHTML = attributions.join(' • ') + ' • <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank">AGPL-3.0</a>';
+    }
+    loadFooterVersions();
+    updateGlobalFooterAttributions();
+  </script>
+  <div class="cc-system-footer">
+    <div class="cc-system-footer-inner">
+        <div class="cc-footer-versions">
+            <div class="cc-footer-version-item">
+                <div class="cc-footer-live-dot"></div>
+                <span class="cc-footer-version-label">CommuteCompute</span>
+                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.0</span>
+            </div>
+            <div class="cc-footer-version-item">
+                <span class="cc-footer-version-label">CCDash Renderer</span>
+                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.1</span>
+            </div>
+            <div class="cc-footer-version-item">
+                <span class="cc-footer-version-label">System</span>
+                <span class="cc-footer-version-value" id="cc-footer-system-version">v3.0.0</span>
+            </div>
+            <div class="cc-footer-version-item">
+                <span class="cc-footer-version-label">Build</span>
+                <span class="cc-footer-version-value" id="cc-footer-build-date">--</span>
+            </div>
+        </div>
+        <div class="cc-footer-attribution" id="cc-footer-attributions">
+            © 2026 Angus Bergman • <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank">AGPL-3.0</a>
+        </div>
+    </div>
+    <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
+      <a href="https://buymeacoffee.com/angusbergman" target="_blank" rel="noopener" 
+         style="padding: 6px 14px; background: #FFDD00; color: #000; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 12px;">
+         Buy me a coffee
+      </a>
+      <a href="https://buymeacoffee.com/angusbergman" target="_blank" rel="noopener"
+         style="padding: 6px 14px; background: #db61a2; color: #fff; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 12px;">
+         Sponsor
+      </a>
+      <a href="https://gitlab.com/angusbergman/commute-compute-system/issues/new" target="_blank" rel="noopener"
+         style="padding: 6px 14px; background: #4fb28e; color: #fff; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 12px;">
+         Feedback
+      </a>
+    </div>
+    <div style="font-size: 11px;">
+      © 2026 <a href="https://gitlab.com/angusbergman" target="_blank" rel="noopener" style="color: #94a3b8;">Angus Bergman</a> •
+      <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener" style="color: #94a3b8;">AGPL-3.0</a>
+    </div>
+  </footer>
+</body>
+</html>
