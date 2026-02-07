@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+    Commute Compute - Attribution & Credits
+    Copyright (c) 2026 Angus Bergman
+    SPDX-License-Identifier: AGPL-3.0-or-later
+    Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
+-->
+<head>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <meta name="theme-color" content="#1a2744">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Data sources, credits, and licensing for Commute Compute Smart Journey Dashboard">
+    <title>Attribution & Credits - Commute Compute</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #1a2744;
+            --bg-secondary: #243352;
+            --bg-card: #2a3d5f;
+            --accent: #4fb28e;
+            --accent-hover: #5fcca0;
+            --success: #22c55e;
+            --warning: #eab308;
+            --text-primary: #f1f5f9;
+            --text-secondary: #a3b8d0;
+            --border: #3d5278;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding-bottom: 60px !important;
+        }
+        
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+        
+        .brand:hover { opacity: 0.9; }
+        
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .nav-link {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .nav-link:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+        
+        /* Main Content */
+        .main {
+            flex: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            width: 100%;
+        }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .page-title {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+        
+        .section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-icon {
+            font-size: 24px;
+        }
+        
+        .source-list {
+            list-style: none;
+        }
+        
+        .source-item {
+            padding: 16px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+        
+        .source-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .source-icon {
+            font-size: 28px;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .source-info {
+            flex: 1;
+        }
+        
+        .source-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        
+        .source-name a {
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+        
+        .source-name a:hover {
+            color: var(--accent);
+        }
+        
+        .source-desc {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+        
+        .source-license {
+            display: inline-block;
+            background: var(--bg-card);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .license-box {
+            background: var(--bg-primary);
+            border: 2px solid var(--accent);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .license-badge {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .license-title {
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+        
+        .license-text {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        
+        .license-link {
+            display: inline-block;
+            background: var(--accent);
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .license-link:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+        
+        /* Support Section */
+        .support-section {
+            text-align: center;
+            padding: 32px;
+        }
+        
+        .support-title {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+        
+        .support-text {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+        
+        .support-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .support-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+        
+        .support-btn.coffee {
+            background: #FFDD00;
+            color: #000;
+        }
+        
+        .support-btn.sponsor {
+            background: #db61a2;
+            color: #fff;
+        }
+        
+        .support-btn.github {
+            background: #333;
+            color: #fff;
+        }
+        
+        .support-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        /* Footer */
+        .footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .footer a {
+            color: var(--text-secondary);
+        }
+        
+        .footer a:hover {
+            color: var(--text-primary);
+        }
+        
+        @media (max-width: 600px) {
+            .nav-links { display: none; }
+            .page-title { font-size: 26px; }
+            .source-item { flex-direction: column; gap: 12px; }
+            .support-buttons { flex-direction: column; align-items: center; }
+            .support-btn { width: 100%; max-width: 280px; justify-content: center; }
+        }
+
+        /* Global System Footer */
+        .cc-system-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, rgba(26, 39, 68, 0.95) 0%, rgba(18, 28, 51, 0.98) 100%);
+            border-top: 1px solid #3d5278;
+            padding: 10px 20px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        .cc-system-footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .cc-footer-versions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        .cc-footer-version-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .cc-footer-version-label {
+            opacity: 0.6;
+            font-weight: 500;
+        }
+        .cc-footer-version-value {
+            color: #4fb28e;
+            font-weight: 600;
+            font-family: 'Inter', monospace;
+        }
+        .cc-footer-attribution {
+            font-size: 10px;
+            color: #64748b;
+            text-align: right;
+            line-height: 1.5;
+        }
+        .cc-footer-attribution a {
+            color: #4fb28e;
+            text-decoration: none;
+        }
+        .cc-footer-live-dot {
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: ccPulse 1.5s infinite;
+        }
+        @keyframes ccPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        @media (max-width: 768px) {
+            .cc-system-footer-inner {
+                flex-direction: column;
+                text-align: center;
+            }
+            .cc-footer-attribution {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- SVG Icon Definitions (Section 22.3 - no emojis in production UI) -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <symbol id="icon-scroll" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 3H8a2 2 0 0 0-2 2v14"/>
+        </symbol>
+        <symbol id="icon-train" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="3" width="16" height="16" rx="2"/><path d="M4 11h16"/><path d="M12 3v8"/><circle cx="8" cy="15" r="1"/><circle cx="16" cy="15" r="1"/><path d="m9 19-2 3"/><path d="m15 19 2 3"/>
+        </symbol>
+        <symbol id="icon-cloud-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/>
+        </symbol>
+        <symbol id="icon-map-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+        </symbol>
+        <symbol id="icon-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </symbol>
+        <symbol id="icon-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+        </symbol>
+        <symbol id="icon-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+        </symbol>
+        <symbol id="icon-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+        </symbol>
+        <symbol id="icon-coffee" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/>
+        </symbol>
+        <symbol id="icon-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </symbol>
+        <symbol id="icon-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </symbol>
+        <symbol id="icon-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </symbol>
+        <symbol id="icon-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </symbol>
+        <symbol id="icon-smartphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
+        </symbol>
+        <symbol id="icon-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>
+        </symbol>
+        <symbol id="icon-palette" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+        </symbol>
+    </svg>
+
+    <header class="header">
+        <a href="/" class="brand">
+            <img src="/assets/brand/cc-logo-128.png" alt="CC" style="height: 56px; width: auto; margin-right: 10px;">
+            <span>Commute Compute™</span>
+        </a>
+        <nav class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/setup-wizard.html" class="nav-link">Setup</a>
+            <a href="/admin.html" class="nav-link">Dashboard</a>
+            <a href="/api/livedash?format=html" class="nav-link">Live View</a>
+        </nav>
+    </header>
+    
+    <main class="main">
+        <div class="page-header">
+            <h1 class="page-title"> Attribution & Credits</h1>
+            <p class="page-subtitle">Data sources, licensing, and acknowledgments</p>
+        </div>
+        
+        <!-- Transit Data Sources -->
+        <section class="section">
+            <h2 class="section-title">
+                <span class="section-icon"></span>
+                Transit Data Sources
+            </h2>
+            <ul class="source-list">
+                <li class="source-item">
+                    <span class="source-icon"></span>
+                    <div class="source-info">
+                        <div class="source-name">
+                            <a href="https://opendata.transport.vic.gov.au" target="_blank" rel="noopener">Transport Victoria OpenData</a>
+                        </div>
+                        <p class="source-desc">Real-time train, tram, and bus data via GTFS-RT feeds for Victoria, Australia</p>
+                        <span class="source-license">CC BY 4.0</span>
+                    </div>
+                </li>
+                <li class="source-item">
+                    <span class="source-icon"></span>
+                    <div class="source-info">
+                        <div class="source-name">
+                            <a href="https://opendata.transport.nsw.gov.au" target="_blank" rel="noopener">Transport for NSW Open Data</a>
+                        </div>
+                        <p class="source-desc">Public transport data for New South Wales (future support)</p>
+                        <span class="source-license">CC BY 4.0</span>
+                    </div>
+                </li>
+                <li class="source-item">
+                    <span class="source-icon"></span>
+                    <div class="source-info">
+                        <div class="source-name">
+                            <a href="https://www.data.qld.gov.au" target="_blank" rel="noopener">TransLink Queensland</a>
+                        </div>
+                        <p class="source-desc">Public transport data for Queensland (future support)</p>
+                        <span class="source-license">CC BY 4.0</span>
+                    </div>
+                </li>
+            </ul>
+        </section>
+        
+        <!-- Weather & Location -->
+        <section class="section">
+            <h2 class="section-title">
+                <span class="section-icon"></span>
+                Weather & Location
+            </h2>
+            <ul class="source-list">
+                <li class="source-item">
+                    <span class="source-icon">[Sun]</span>
+                    <div class="source-info">
+                        <div class="source-name">
+                            <a href="https://www.bom.gov.au" target="_blank" rel="noopener">Bureau of Meteorology</a>
+                        </div>
+                        <p class="source-desc">Australian weather observations, forecasts, and warnings</p>
+                        <span class="source-license">© Commonwealth of Australia</span>
+                    </div>
+                </li>
+                <li class="source-item">
+                    <span class="source-icon"></span>
+                    <div class="source-info">
+                        <div class="source-name">
+                            <a href="https://www.openstreetmap.org" target="_blank" rel="noopener">OpenStreetMap / Nominatim</a>
+                        </div>
+                        <p class="source-desc">Address geocoding and reverse geocoding</p>
+                        <span class="source-license">ODbL</span>
+                    </div>
+                </li>
+                <li class="source-item">
+                    <span class="source-icon">[Pin]</span>
+                    <div class="source-info">
+                        <div class="source-name">
+                            <a href="https://developers.google.com/maps/documentation/places" target="_blank" rel="noopener">Google Places API</a>
+                        </div>
+                        <p class="source-desc">Address autocomplete and place details (optional)</p>
+                        <span class="source-license">Google Terms of Service</span>
+                    </div>
+                </li>
+            </ul>
+        </section>
+        
+        <!-- Hardware & Platform -->
+        <section class="section">
+            <h2 class="section-title">
+                <span class="section-icon"></span>
+                Hardware & Platform
+            </h2>
+            <ul class="source-list">
+                <li class="source-item">
+                    <span class="source-icon"></span>
+                    <div class="source-info">
+                        <div class="source-name">
+                            <a href="https://www.waveshare.com" target="_blank" rel="noopener">Waveshare E-Paper</a>
+                        </div>
+                        <p class="source-desc">E-ink display modules for TRMNL devices</p>
+                        <span class="source-license">Commercial</span>
+                    </div>
+                </li>
+                <li class="source-item">
+                    <span class="source-icon">[Power]</span>
+                    <div class="source-info">
+                        <div class="source-name">
+                            <a href="https://www.espressif.com" target="_blank" rel="noopener">Espressif ESP32</a>
+                        </div>
+                        <p class="source-desc">ESP32-C3 microcontroller powering TRMNL firmware</p>
+                        <span class="source-license">Apache 2.0</span>
+                    </div>
+                </li>
+            </ul>
+        </section>
+        
+        <!-- Open Source -->
+        <section class="section">
+            <h2 class="section-title">
+                <span class="section-icon">[Code]</span>
+                Open Source Libraries
+            </h2>
+            <ul class="source-list">
+                <li class="source-item">
+                    <span class="source-icon">●</span>
+                    <div class="source-info">
+                        <div class="source-name">Node.js & Express</div>
+                        <p class="source-desc">Server-side JavaScript runtime and web framework</p>
+                        <span class="source-license">MIT</span>
+                    </div>
+                </li>
+                <li class="source-item">
+                    <span class="source-icon">[Art]</span>
+                    <div class="source-info">
+                        <div class="source-name">@napi-rs/canvas</div>
+                        <p class="source-desc">High-performance canvas rendering for image generation</p>
+                        <span class="source-license">MIT</span>
+                    </div>
+                </li>
+                <li class="source-item">
+                    <span class="source-icon">[Vercel]</span>
+                    <div class="source-info">
+                        <div class="source-name">Vercel</div>
+                        <p class="source-desc">Serverless deployment platform</p>
+                        <span class="source-license">Commercial</span>
+                    </div>
+                </li>
+            </ul>
+        </section>
+        
+        <!-- Project License -->
+        <section class="section">
+            <div class="license-box">
+                <div class="license-badge">[License]</div>
+                <h2 class="license-title">AGPL-3.0</h2>
+                <p class="license-text">
+                    Commute Compute is licensed under the GNU Affero General Public License v3.0.
+                    <br>Source code must be made available to users interacting with this software over a network.
+                </p>
+                <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener" class="license-link">
+                    View Full License
+                </a>
+            </div>
+        </section>
+        
+        <!-- Roadmap -->
+        <section class="section">
+            <h2 class="section-title"> Roadmap</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                Future development priorities — your support helps make these happen!
+            </p>
+            <div class="card">
+                <h3 class="card-title">Calendar Integration</h3>
+                <p class="source-desc">Coming next — Sync with Google/Outlook calendar for smart departure times based on your appointments</p>
+            </div>
+            <div class="card">
+                <h3 class="card-title"> Live Mobile Widgets</h3>
+                <p class="source-desc">Coming next — iOS and Android home screen widgets with real-time commute information</p>
+            </div>
+            <div class="card">
+                <h3 class="card-title">More States & Devices</h3>
+                <p class="source-desc">Planned — Additional Australian transit authorities and e-ink display support</p>
+            </div>
+        </section>
+        
+        <!-- Support -->
+        <section class="section support-section">
+            <h2 class="support-title"> Support This Project</h2>
+            <p class="support-text">
+                Commute Compute is a passion project built in spare time. If you find it useful, 
+                consider supporting continued development of calendar integration, mobile widgets, and more!
+            </p>
+            <div class="support-buttons">
+                <a href="https://buymeacoffee.com/angusbergman" target="_blank" rel="noopener" class="support-btn coffee">
+                     Buy me a coffee
+                </a>
+                <a href="https://buymeacoffee.com/angusbergman" target="_blank" rel="noopener" class="support-btn sponsor">
+                     Support on Buy Me a Coffee
+                </a>
+                <a href="https://gitlab.com/angusbergman/commute-compute-system" target="_blank" rel="noopener" class="support-btn github">
+                    Star on GitLab
+                </a>
+            </div>
+        </section>
+    </main>
+    
+    <footer class="footer">
+        <p>
+            © 2026 <a href="https://gitlab.com/angusbergman" target="_blank" rel="noopener">Angus Bergman</a> •
+            <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a> •
+            <a href="https://gitlab.com/angusbergman/commute-compute-system/issues/new?template=feedback.md" target="_blank" rel="noopener">Send Feedback</a>
+        </p>
+    </footer>
+    <script>
+        // Dynamic version from API (Section 22.9.5 - no hardcoded versions)
+        fetch('/api/version').then(r => r.json()).then(d => {
+            const el = document.getElementById('attr-version');
+            if (el && d.system?.version) el.textContent = 'v' + d.system.version;
+        }).catch(() => {});
+    </script>
+<!-- Global System Footer -->
+<script>
+    function sanitize(str) {
+        if (str === null || str === undefined) return '';
+        if (typeof str !== 'string') str = String(str);
+        const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'};
+        return str.replace(/[&<>"'`=/]/g, c => map[c]);
+    }
+
+    function loadFooterVersions() {
+        fetch('/api/version')
+            .then(r => r.json())
+            .then(v => {
+                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v3.0';
+                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v2.1';
+                document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
+                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.0.0');
+            })
+            .catch(() => {});
+    }
+    function updateGlobalFooterAttributions() {
+        const config = JSON.parse(localStorage.getItem('cc-config') || '{}');
+        const transitKey = localStorage.getItem('cc-transit-api-key');
+        const attributions = [sanitize('\u00a9 2026 Angus Bergman')];
+        if (transitKey || config.addresses?.home) attributions.push(sanitize('Transit data: Transport Victoria OpenData API (CC BY 4.0)'));
+        if (config.addresses?.home) attributions.push(sanitize('Weather: Bureau of Meteorology (CC BY 3.0 AU)'));
+        const el = document.getElementById('cc-footer-attributions');
+        if (el) el.innerHTML = attributions.join(' \u2022 ') + ' \u2022 <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank">AGPL-3.0</a>';
+    }
+    loadFooterVersions();
+    updateGlobalFooterAttributions();
+</script>
+<div class="cc-system-footer">
+    <div class="cc-system-footer-inner">
+        <div class="cc-footer-versions">
+            <div class="cc-footer-version-item">
+                <div class="cc-footer-live-dot"></div>
+                <span class="cc-footer-version-label">CommuteCompute</span>
+                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.0</span>
+            </div>
+            <div class="cc-footer-version-item">
+                <span class="cc-footer-version-label">CCDash Renderer</span>
+                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.1</span>
+            </div>
+            <div class="cc-footer-version-item">
+                <span class="cc-footer-version-label">System</span>
+                <span class="cc-footer-version-value" id="cc-footer-system-version">v3.0.0</span>
+            </div>
+            <div class="cc-footer-version-item">
+                <span class="cc-footer-version-label">Build</span>
+                <span class="cc-footer-version-value" id="cc-footer-build-date">--</span>
+            </div>
+        </div>
+        <div class="cc-footer-attribution" id="cc-footer-attributions">
+            © 2026 Angus Bergman • <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank">AGPL-3.0</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

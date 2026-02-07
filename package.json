@@ -1,0 +1,54 @@
+{
+  "name": "commute-compute",
+  "version": "3.1.0",
+  "description": "Commute Compute System - Smart Transit Dashboard for e-ink displays",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "node tests/test-opendata-auth.js",
+    "test:journey": "node src/journey-display/test.js",
+    "monitor": "node monitor/monitor.mjs",
+    "monitor:continuous": "node monitor/monitor.mjs --continuous",
+    "monitor:watch": "node monitor/monitor.mjs --watch",
+    "monitor:report": "node monitor/monitor.mjs --report",
+    "monitor:compliance": "node monitor/spec-compliance.mjs",
+    "monitor:semantic": "node monitor/semantic-audit.mjs",
+    "monitor:docs": "node monitor/documentation-audit.mjs",
+    "monitor:visual": "node monitor/visual-logic-audit.mjs",
+    "monitor:security": "node monitor/security-audit.mjs",
+    "monitor:firmware": "node monitor/firmware-audit.mjs",
+    "monitor:full": "node monitor/monitor.mjs && node monitor/spec-compliance.mjs && node monitor/semantic-audit.mjs && node monitor/documentation-audit.mjs && node monitor/visual-logic-audit.mjs && node monitor/security-audit.mjs"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.88",
+    "@upstash/redis": "^1.36.1",
+    "@vercel/kv": "^3.0.0",
+    "adm-zip": "^0.5.10",
+    "csv-parse": "^5.5.3",
+    "dayjs": "^1.11.10",
+    "express": "^4.22.1",
+    "gtfs-realtime-bindings": "^1.1.1",
+    "ioredis": "^5.9.2",
+    "node-fetch": "^3.3.2",
+    "nodemailer": "^7.0.12"
+  },
+  "keywords": [
+    "trmnl",
+    "melbourne",
+    "transport",
+    "ptv",
+    "e-ink"
+  ],
+  "author": "Angus",
+  "license": "AGPL-3.0-or-later",
+  "licenseNote": "Dual-licensed: AGPL-3.0 for open source, commercial license available — see LICENSE",
+  "devDependencies": {
+    "md-to-pdf": "^5.2.5",
+    "puppeteer": "^24.36.1"
+  }
+}
