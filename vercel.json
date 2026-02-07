@@ -1,0 +1,116 @@
+{
+  "version": 2,
+  "git": {
+    "deploymentEnabled": false
+  },
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "public/**,src/**,data/**,config/**,fonts/**"
+    },
+    "api/screen.js": {
+      "includeFiles": "src/**,config/**,fonts/**"
+    },
+    "api/livedash.js": {
+      "includeFiles": "src/**,config/**,fonts/**"
+    },
+    "api/zones.js": {
+      "includeFiles": "src/**,config/**,fonts/**"
+    },
+    "api/zonedata.js": {
+      "includeFiles": "src/**,config/**"
+    },
+    "api/zone/[id].js": {
+      "includeFiles": "src/**,config/**,fonts/**"
+    },
+    "api/fullscreen.js": {
+      "includeFiles": "src/**,config/**,fonts/**"
+    },
+    "api/zones-tiered.js": {
+      "includeFiles": "src/**,config/**,fonts/**"
+    },
+    "api/health.js": {
+      "includeFiles": "src/**,config/**"
+    },
+    "api/status.js": {
+      "includeFiles": "src/**,config/**"
+    },
+    "api/version.js": {
+      "includeFiles": "config/**"
+    },
+    "api/admin/setup-complete.js": {
+      "includeFiles": "src/**,config/**"
+    },
+    "api/admin/preferences.js": {
+      "includeFiles": "src/**,config/**"
+    },
+    "api/admin/generate-webhook.js": {
+      "includeFiles": "src/**,config/**"
+    }
+  },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/setup-wizard.html",
+      "permanent": false
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html",
+      "permanent": false
+    },
+    {
+      "source": "/setup",
+      "destination": "/setup-wizard.html",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/health",
+      "destination": "/api/health"
+    },
+    {
+      "source": "/api/screen",
+      "destination": "/api/screen"
+    },
+    {
+      "source": "/api/livedash",
+      "destination": "/api/livedash"
+    },
+    {
+      "source": "/api/zones",
+      "destination": "/api/zones"
+    },
+    {
+      "source": "/api/zonedata",
+      "destination": "/api/zonedata"
+    },
+    {
+      "source": "/api/zone/:id",
+      "destination": "/api/zone/[id]"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://api.opendata.transport.vic.gov.au https://maps.googleapis.com https://*.vercel.app; font-src 'self' data:; frame-ancestors 'none'"
+        }
+      ]
+    }
+  ]
+}

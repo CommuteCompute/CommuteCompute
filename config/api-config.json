@@ -1,0 +1,34 @@
+{
+  "apis": {
+    "ptv_opendata": {
+      "name": "Transport Victoria OpenData API",
+      "key": "",
+      "enabled": true,
+      "baseUrl": "https://api.opendata.transport.vic.gov.au/opendata/public-transport/gtfs/realtime/v1",
+      "lastChecked": null,
+      "status": "unconfigured"
+    },
+    "weather": {
+      "name": "Weather API (OpenWeatherMap)",
+      "key": "",
+      "enabled": false,
+      "baseUrl": "https://api.openweathermap.org/data/2.5",
+      "lastChecked": null,
+      "status": "unconfigured"
+    },
+    "news": {
+      "name": "News API",
+      "key": "",
+      "enabled": false,
+      "baseUrl": "https://newsapi.org/v2",
+      "lastChecked": null,
+      "status": "unconfigured"
+    }
+  },
+  "server": {
+    "timezone": "Australia/Melbourne",
+    "refreshInterval": 30,
+    "fallbackEnabled": true
+  },
+  "lastModified": null
+}

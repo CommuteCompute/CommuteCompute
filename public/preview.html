@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+    Commute Compute - Unified Device Preview
+    Copyright (c) 2026 Angus Bergman
+    SPDX-License-Identifier: AGPL-3.0-or-later
+    Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
+-->
+<head>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <meta name="theme-color" content="#1a2744">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Preview your Commute Compute smart transit dashboard on different e-ink devices">
+    <title>Device Preview - Commute Compute</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #1a2744;
+            --bg-secondary: #243352;
+            --bg-card: #2a3d5f;
+            --accent: #4fb28e;
+            --accent-hover: #5fcca0;
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #dc2626;
+            --text-primary: #f1f5f9;
+            --text-secondary: #a3b8d0;
+            --border: #3d5278;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--text-primary);
+            padding-bottom: 60px !important;
+        }
+        
+        /* Skip link for accessibility */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--accent);
+            color: white;
+            padding: 8px 16px;
+            z-index: 1000;
+            text-decoration: none;
+        }
+        .skip-link:focus { top: 0; }
+        
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+        
+        .brand:hover { opacity: 0.9; }
+        
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .nav-link {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        
+        .nav-link:hover {
+            color: var(--text-primary);
+            border-bottom-color: var(--text-muted);
+        }
+        
+        .nav-link.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+        
+        /* Main Content */
+        .main {
+            flex: 1;
+            padding: 30px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .page-title {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+        
+        /* Controls Bar */
+        .controls-bar {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .control-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        select, .btn {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        select:hover, .btn:hover {
+            border-color: var(--accent);
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        .btn.primary:hover {
+            background: var(--accent-hover);
+        }
+        
+        .btn.active {
+            background: var(--success);
+            border-color: var(--success);
+        }
+        
+        /* Preview Container */
+        .preview-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .device-info {
+            text-align: center;
+            padding: 12px 24px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        
+        .device-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .device-specs {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .device-frame {
+            background: #000;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        
+        .screen {
+            background: #f5f5f0;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .screen img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .refresh-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .refresh-badge.live {
+            background: var(--success);
+        }
+        
+        .refresh-badge.loading {
+            background: var(--warning);
+        }
+        
+        .refresh-badge.error {
+            background: var(--error);
+        }
+        
+        /* Status Bar */
+        .status-bar {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 16px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        /* Device Quick Select */
+        .device-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 24px;
+        }
+        
+        .device-card {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .device-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        
+        .device-card.selected {
+            border-color: var(--accent);
+            background: rgba(79, 178, 142, 0.1);
+        }
+        
+        .device-card-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        
+        .device-card-name {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .device-card-size {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        
+        /* Comparison Mode */
+        .comparison-container {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            width: 100%;
+        }
+        
+        .comparison-container.active {
+            display: grid;
+        }
+        
+        .comparison-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        /* Footer */
+        .footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .footer-attribution { margin-bottom: 12px; }
+        
+        .footer-attribution a, .footer-legal a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        
+        .footer-attribution a:hover, .footer-legal a:hover {
+            color: var(--text-primary);
+            text-decoration: underline;
+        }
+        
+        .footer-support {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        
+        .support-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .support-btn.coffee { background: #FFDD00; color: #000; }
+        .support-btn.sponsor { background: #db61a2; color: #fff; }
+        .support-btn.feedback { background: var(--accent); color: #fff; }
+        
+        .support-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .footer-legal { font-size: 12px; }
+
+        /* SVG Icons */
+        .svg-icon {
+            width: 24px;
+            height: 24px;
+            color: var(--accent);
+            flex-shrink: 0;
+        }
+        .svg-icon.sm { width: 18px; height: 18px; }
+        .svg-icon.lg { width: 32px; height: 32px; }
+        .svg-icon.card-size { width: 28px; height: 28px; }
+        .svg-icon.inline { width: 18px; height: 18px; vertical-align: middle; margin-right: 4px; }
+
+        /* Mobile Menu */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+        
+        .hamburger span {
+            width: 24px;
+            height: 2px;
+            background: var(--text-primary);
+            transition: all 0.3s;
+        }
+        
+        .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+        .hamburger.active span:nth-child(2) { opacity: 0; }
+        .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            top: 56px;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 16px;
+            z-index: 1000;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .mobile-nav.active { display: flex; }
+        
+        .mobile-nav a {
+            display: block;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            text-align: center;
+        }
+        
+        .mobile-nav a:hover, .mobile-nav a.active {
+            background: var(--accent);
+            color: white;
+        }
+        
+        /* Responsive */
+        @media (max-width: 900px) {
+            .nav-links { display: none; }
+            .hamburger { display: flex; }
+            .comparison-container { grid-template-columns: 1fr; }
+            .device-frame { padding: 10px; border-radius: 12px; }
+        }
+        
+        @media (max-width: 600px) {
+            .controls-bar { flex-direction: column; }
+            .footer-support { flex-direction: column; align-items: center; }
+            .support-btn { width: 200px; justify-content: center; }
+        }
+
+        /* Global System Footer */
+        .cc-system-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, rgba(26, 39, 68, 0.95) 0%, rgba(18, 28, 51, 0.98) 100%);
+            border-top: 1px solid #3d5278;
+            padding: 10px 20px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        .cc-system-footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .cc-footer-versions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        .cc-footer-version-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .cc-footer-version-label {
+            opacity: 0.6;
+            font-weight: 500;
+        }
+        .cc-footer-version-value {
+            color: #4fb28e;
+            font-weight: 600;
+            font-family: 'Inter', monospace;
+        }
+        .cc-footer-attribution {
+            font-size: 10px;
+            color: #64748b;
+            text-align: right;
+            line-height: 1.5;
+        }
+        .cc-footer-attribution a {
+            color: #4fb28e;
+            text-decoration: none;
+        }
+        .cc-footer-live-dot {
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: ccPulse 1.5s infinite;
+        }
+        @keyframes ccPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        @media (max-width: 768px) {
+            .cc-system-footer-inner {
+                flex-direction: column;
+                text-align: center;
+            }
+            .cc-footer-attribution {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- SVG Icon Definitions -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <symbol id="icon-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </symbol>
+        <symbol id="icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </symbol>
+        <symbol id="icon-wifi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
+        </symbol>
+        <symbol id="icon-smartphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
+        </symbol>
+        <symbol id="icon-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </symbol>
+        <symbol id="icon-book-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </symbol>
+        <symbol id="icon-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+        </symbol>
+        <symbol id="icon-coffee" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/>
+        </symbol>
+        <symbol id="icon-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+        </symbol>
+        <symbol id="icon-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </symbol>
+        <symbol id="icon-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </symbol>
+        <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </symbol>
+        <symbol id="icon-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+        </symbol>
+        <symbol id="icon-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+        </symbol>
+    </svg>
+
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <header class="header">
+        <a href="/" class="brand">
+            <img src="/assets/brand/cc-logo-128.png" alt="CC" style="height: 56px; width: auto; margin-right: 10px;">
+            <span>Commute Compute™</span>
+        </a>
+        <nav class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/setup-wizard.html" class="nav-link">Setup</a>
+            <a href="/admin.html" class="nav-link">Dashboard</a>
+            <a href="/preview.html" class="nav-link active">Preview</a>
+        </nav>
+        <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+            <span></span><span></span><span></span>
+        </button>
+    </header>
+    
+    <div class="mobile-nav" id="mobile-nav">
+        <a href="/">Home</a>
+        <a href="/setup-wizard.html">Setup</a>
+        <a href="/admin.html">Dashboard</a>
+        <a href="/preview.html" class="active">Preview</a>
+        <a href="/help.html">Help</a>
+    </div>
+    
+    <main class="main" id="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Device Preview</h1>
+            <p class="page-subtitle">See how your transit dashboard looks on different e-ink displays</p>
+        </div>
+        
+        <!-- Controls -->
+        <div class="controls-bar">
+            <div class="control-group">
+                <span class="control-label">Device</span>
+                <select id="device-select" onchange="changeDevice(this.value)">
+                    <optgroup label="TRMNL Devices">
+                        <option value="trmnl-og" selected>TRMNL Original (800×480)</option>
+                        <option value="trmnl-mini">TRMNL Mini (400×300)</option>
+                    </optgroup>
+                    <optgroup label="Kindle Devices">
+                        <option value="kindle-pw3">Kindle Paperwhite 3/4 (758×1024)</option>
+                        <option value="kindle-pw5">Kindle Paperwhite 5 (1236×1648)</option>
+                        <option value="kindle-basic">Kindle Basic (600×800)</option>
+                    </optgroup>
+                    <optgroup label="Inkplate (Experimental)">
+                        <option value="inkplate-6">Inkplate 6 (800×600)</option>
+                        <option value="inkplate-10">Inkplate 10 (1200×825)</option>
+                    </optgroup>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <span class="control-label">Data Source</span>
+                <select id="source-select" onchange="changeSource(this.value)">
+                    <option value="live">Live Data</option>
+                    <option value="demo">Demo Mode</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <span class="control-label">Actions</span>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn primary" onclick="refresh()">↻ Refresh</button>
+                    <button class="btn" id="auto-btn" onclick="toggleAuto()">|| Auto: ON</button>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <span class="control-label">View</span>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn" id="single-btn" onclick="setView('single')">Single</button>
+                    <button class="btn" id="compare-btn" onclick="setView('compare')">Compare</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Single Device Preview -->
+        <div class="preview-container" id="single-preview">
+            <div class="device-info">
+                <div class="device-name" id="device-name">TRMNL Original</div>
+                <div class="device-specs" id="device-specs">800×480 • Landscape • 1-bit • 20s refresh</div>
+            </div>
+            
+            <div class="device-frame" id="device-frame">
+                <div class="screen" id="screen" style="width: 800px; height: 480px;">
+                    <img id="dashboard-img" src="/api/livedash?device=trmnl-og" alt="Transit Dashboard Preview">
+                    <div class="refresh-badge live" id="refresh-badge">● Live</div>
+                </div>
+            </div>
+            
+            <div class="status-bar">
+                <div class="status-item">
+                    <span>Time:</span>
+                    <span id="last-update">Last updated: just now</span>
+                </div>
+                <div class="status-item">
+                    <span>Source:</span>
+                    <span id="data-source">Source: Live API</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Comparison View -->
+        <div class="comparison-container" id="compare-preview">
+            <div class="comparison-panel">
+                <select id="compare-device-1" onchange="updateComparison(1, this.value)">
+                    <option value="trmnl-og">TRMNL Original</option>
+                    <option value="trmnl-mini">TRMNL Mini</option>
+                    <option value="kindle-pw3">Kindle PW3</option>
+                    <option value="kindle-basic">Kindle Basic</option>
+                </select>
+                <div class="device-frame">
+                    <div class="screen" id="compare-screen-1" style="width: 400px; height: 240px;">
+                        <img id="compare-img-1" src="/api/livedash?device=trmnl-og" alt="Device 1">
+                    </div>
+                </div>
+            </div>
+            <div class="comparison-panel">
+                <select id="compare-device-2" onchange="updateComparison(2, this.value)">
+                    <option value="trmnl-og">TRMNL Original</option>
+                    <option value="trmnl-mini" selected>TRMNL Mini</option>
+                    <option value="kindle-pw3">Kindle PW3</option>
+                    <option value="kindle-basic">Kindle Basic</option>
+                </select>
+                <div class="device-frame">
+                    <div class="screen" id="compare-screen-2" style="width: 400px; height: 300px;">
+                        <img id="compare-img-2" src="/api/livedash?device=trmnl-mini" alt="Device 2">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Device Select -->
+        <div class="device-grid">
+            <div class="device-card selected" data-device="trmnl-og" onclick="selectDevice('trmnl-og')">
+                <div class="device-card-icon"></div>
+                <div class="device-card-name">TRMNL OG</div>
+                <div class="device-card-size">800×480</div>
+            </div>
+            <div class="device-card" data-device="trmnl-mini" onclick="selectDevice('trmnl-mini')">
+                <div class="device-card-icon"></div>
+                <div class="device-card-name">TRMNL Mini</div>
+                <div class="device-card-size">400×300</div>
+            </div>
+            <div class="device-card" data-device="kindle-pw3" onclick="selectDevice('kindle-pw3')">
+                <div class="device-card-icon"></div>
+                <div class="device-card-name">Kindle PW3</div>
+                <div class="device-card-size">758×1024</div>
+            </div>
+            <div class="device-card" data-device="kindle-pw5" onclick="selectDevice('kindle-pw5')">
+                <div class="device-card-icon"></div>
+                <div class="device-card-name">Kindle PW5</div>
+                <div class="device-card-size">1236×1648</div>
+            </div>
+            <div class="device-card" data-device="inkplate-6" onclick="selectDevice('inkplate-6')">
+                <div class="device-card-icon"></div>
+                <div class="device-card-name">Inkplate 6</div>
+                <div class="device-card-size">800×600</div>
+            </div>
+            <div class="device-card" data-device="inkplate-10" onclick="selectDevice('inkplate-10')">
+                <div class="device-card-icon"></div>
+                <div class="device-card-name">Inkplate 10</div>
+                <div class="device-card-size">1200×825</div>
+            </div>
+        </div>
+    </main>
+    
+    <footer class="footer">
+        <div class="footer-attribution">
+            <strong>Data:</strong>
+            <a href="https://opendata.transport.vic.gov.au" target="_blank" rel="noopener">Transport Victoria OpenData</a> (CC BY 4.0) •
+            <a href="https://www.bom.gov.au" target="_blank" rel="noopener">Bureau of Meteorology</a> •
+            <a href="/attribution.html">All Sources</a>
+        </div>
+        <div class="footer-support">
+            <a href="https://buymeacoffee.com/angusbergman" target="_blank" rel="noopener" class="support-btn coffee">
+                 Buy me a coffee
+            </a>
+            <a href="https://buymeacoffee.com/angusbergman" target="_blank" rel="noopener" class="support-btn sponsor">
+                 Sponsor
+            </a>
+            <a href="https://gitlab.com/angusbergman/commute-compute-system/issues/new?template=feedback.md" target="_blank" rel="noopener" class="support-btn feedback">
+                 Feedback
+            </a>
+        </div>
+        <div class="footer-legal">
+            © 2026 <a href="https://gitlab.com/angusbergman" target="_blank" rel="noopener">Angus Bergman</a> •
+            <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a> •
+            Commute Compute v2.8
+        </div>
+    </footer>
+    
+    <script>
+        // XSS Sanitization (DEVELOPMENT-RULES.md Section 17.1)
+        function sanitize(str) {
+            if (str === null || str === undefined) return '';
+            if (typeof str !== 'string') str = String(str);
+            const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'};
+            return str.replace(/[&<>"'`=/]/g, c => map[c]);
+        }
+
+        // Device configurations
+        const DEVICES = {
+            'trmnl-og': { name: 'TRMNL Original', width: 800, height: 480, orientation: 'Landscape', bits: '1-bit', refresh: '20s' },
+            'trmnl-mini': { name: 'TRMNL Mini', width: 400, height: 300, orientation: 'Landscape', bits: '1-bit', refresh: '20s' },
+            'kindle-pw3': { name: 'Kindle Paperwhite 3/4', width: 758, height: 1024, orientation: 'Portrait', bits: '16-gray', refresh: 'Manual' },
+            'kindle-pw5': { name: 'Kindle Paperwhite 5', width: 1236, height: 1648, orientation: 'Portrait', bits: '16-gray', refresh: 'Manual' },
+            'kindle-basic': { name: 'Kindle Basic', width: 600, height: 800, orientation: 'Portrait', bits: '16-gray', refresh: 'Manual' },
+            'inkplate-6': { name: 'Inkplate 6', width: 800, height: 600, orientation: 'Landscape', bits: '3-bit', refresh: '1s partial' },
+            'inkplate-10': { name: 'Inkplate 10', width: 1200, height: 825, orientation: 'Landscape', bits: '3-bit', refresh: '1s partial' }
+        };
+        
+        let currentDevice = 'trmnl-og';
+        let currentSource = 'live';
+        let autoRefresh = true;
+        let refreshInterval;
+        let lastUpdate = Date.now();
+        let currentView = 'single';
+        
+        function changeDevice(deviceId) {
+            currentDevice = deviceId;
+            const device = DEVICES[deviceId];
+            
+            // Update info
+            document.getElementById('device-name').textContent = device.name;
+            document.getElementById('device-specs').textContent = 
+                `${device.width}×${device.height} • ${device.orientation} • ${device.bits} • ${device.refresh} refresh`;
+            
+            // Update screen size (scaled for display)
+            const screen = document.getElementById('screen');
+            const maxWidth = Math.min(device.width, 900);
+            const scale = maxWidth / device.width;
+            screen.style.width = `${device.width * scale}px`;
+            screen.style.height = `${device.height * scale}px`;
+            
+            // Update device selector
+            document.getElementById('device-select').value = deviceId;
+            
+            // Update device cards
+            document.querySelectorAll('.device-card').forEach(card => {
+                card.classList.toggle('selected', card.dataset.device === deviceId);
+            });
+            
+            refresh();
+        }
+        
+        function selectDevice(deviceId) {
+            changeDevice(deviceId);
+        }
+        
+        function changeSource(source) {
+            currentSource = source;
+            document.getElementById('data-source').textContent = 
+                source === 'live' ? 'Source: Live API' : 'Source: Demo Data';
+            refresh();
+        }
+        
+        function refresh() {
+            const img = document.getElementById('dashboard-img');
+            const badge = document.getElementById('refresh-badge');
+            
+            badge.textContent = '↻ Loading...';
+            badge.className = 'refresh-badge loading';
+            
+            const url = `/api/livedash?device=${currentDevice}&refresh=true&t=${Date.now()}`;
+            
+            img.onload = () => {
+                badge.textContent = '● Live';
+                badge.className = 'refresh-badge live';
+                lastUpdate = Date.now();
+                updateLastUpdate();
+            };
+            
+            img.onerror = () => {
+                badge.textContent = '[Error]';
+                badge.className = 'refresh-badge error';
+            };
+            
+            img.src = url;
+        }
+        
+        function toggleAuto() {
+            autoRefresh = !autoRefresh;
+            const btn = document.getElementById('auto-btn');
+            
+            if (autoRefresh) {
+                btn.textContent = '|| Auto: ON';
+                btn.classList.add('active');
+                startAutoRefresh();
+            } else {
+                btn.textContent = '> Auto: OFF';
+                btn.classList.remove('active');
+                clearInterval(refreshInterval);
+            }
+        }
+        
+        function startAutoRefresh() {
+            clearInterval(refreshInterval);
+            refreshInterval = setInterval(refresh, 30000);
+        }
+        
+        function updateLastUpdate() {
+            const elapsed = Math.floor((Date.now() - lastUpdate) / 1000);
+            const el = document.getElementById('last-update');
+            
+            if (elapsed < 5) {
+                el.textContent = 'Last updated: just now';
+            } else if (elapsed < 60) {
+                el.textContent = `Last updated: ${elapsed}s ago`;
+            } else {
+                const mins = Math.floor(elapsed / 60);
+                el.textContent = `Last updated: ${mins}m ago`;
+            }
+        }
+        
+        function setView(view) {
+            currentView = view;
+            
+            document.getElementById('single-preview').style.display = view === 'single' ? 'flex' : 'none';
+            document.getElementById('compare-preview').classList.toggle('active', view === 'compare');
+            
+            document.getElementById('single-btn').classList.toggle('active', view === 'single');
+            document.getElementById('compare-btn').classList.toggle('active', view === 'compare');
+            
+            if (view === 'compare') {
+                updateComparison(1, document.getElementById('compare-device-1').value);
+                updateComparison(2, document.getElementById('compare-device-2').value);
+            }
+        }
+        
+        function updateComparison(panel, deviceId) {
+            const device = DEVICES[deviceId];
+            const img = document.getElementById(`compare-img-${panel}`);
+            const screen = document.getElementById(`compare-screen-${panel}`);
+            
+            // Scale to max 400px width
+            const scale = Math.min(400 / device.width, 300 / device.height);
+            screen.style.width = `${device.width * scale}px`;
+            screen.style.height = `${device.height * scale}px`;
+            
+            img.src = `/api/livedash?device=${deviceId}&t=${Date.now()}`;
+        }
+        
+        // Initialize
+        startAutoRefresh();
+        setInterval(updateLastUpdate, 1000);
+        setView('single');
+        
+        // Set initial button state
+        document.getElementById('single-btn').classList.add('active');
+        
+        // Mobile hamburger menu
+        const hamburger = document.getElementById('hamburger');
+        const mobileNav = document.getElementById('mobile-nav');
+        hamburger?.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            mobileNav.classList.toggle('active');
+        });
+    </script>
+<!-- Global System Footer -->
+<script>
+    function loadFooterVersions() {
+        fetch('/api/version')
+            .then(r => r.json())
+            .then(v => {
+                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v3.0';
+                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v2.1';
+                document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
+                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.0.0');
+            })
+            .catch(() => {});
+    }
+    function updateGlobalFooterAttributions() {
+        const config = JSON.parse(localStorage.getItem('cc-config') || '{}');
+        const transitKey = localStorage.getItem('cc-transit-api-key');
+        const attributions = ['© 2026 Angus Bergman'];
+        if (transitKey || config.addresses?.home) attributions.push('Transit data: Transport Victoria OpenData API (CC BY 4.0)');
+        if (config.addresses?.home) attributions.push('Weather: Bureau of Meteorology (CC BY 3.0 AU)');
+        const el = document.getElementById('cc-footer-attributions');
+        if (el) el.innerHTML = attributions.join(' • ') + ' • <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank">AGPL-3.0</a>';
+    }
+    loadFooterVersions();
+    updateGlobalFooterAttributions();
+</script>
+<div class="cc-system-footer">
+    <div class="cc-system-footer-inner">
+        <div class="cc-footer-versions">
+            <div class="cc-footer-version-item">
+                <div class="cc-footer-live-dot"></div>
+                <span class="cc-footer-version-label">CommuteCompute</span>
+                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.0</span>
+            </div>
+            <div class="cc-footer-version-item">
+                <span class="cc-footer-version-label">CCDash Renderer</span>
+                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.1</span>
+            </div>
+            <div class="cc-footer-version-item">
+                <span class="cc-footer-version-label">System</span>
+                <span class="cc-footer-version-value" id="cc-footer-system-version">v3.0.0</span>
+            </div>
+            <div class="cc-footer-version-item">
+                <span class="cc-footer-version-label">Build</span>
+                <span class="cc-footer-version-value" id="cc-footer-build-date">--</span>
+            </div>
+        </div>
+        <div class="cc-footer-attribution" id="cc-footer-attributions">
+            © 2026 Angus Bergman • <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank">AGPL-3.0</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

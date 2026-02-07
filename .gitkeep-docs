@@ -1,0 +1,5 @@
+# Documentation Structure
+docs/
+  deployment/    - Deployment guides and status
+  guides/        - User and setup guides
+  archive/       - Outdated documentation

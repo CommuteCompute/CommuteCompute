@@ -1,0 +1,32 @@
+# Commute Compute Firmware Version
+# Copyright (c) 2026 Angus Bergman - AGPL-3.0
+
+VERSION=7.4.3
+BUILD_DATE=2026-02-06
+STATUS=PRODUCTION-LOCKED
+COMMIT=pending
+
+# v7.4.3 Changes (2026-02-06):
+# - Added structured logging system with log levels
+# - LOG_LEVEL: 0=OFF, 1=ERROR, 2=WARN, 3=INFO, 4=DEBUG
+# - Production recommended: LOG_LEVEL 2 (WARN)
+# - LOG_ERROR, LOG_WARN, LOG_INFO, LOG_DEBUG macros
+# - State transition logging with stateName() helper
+# - Migrated critical error logs to LOG_ERROR
+
+# v7.4.2 Changes:
+# - Zero-config auto-pairing with DEFAULT_SERVER
+# - BLE credentials + pairing code hybrid provisioning
+# - State machine improvements
+
+# Anti-Brick Compliance: 12/12 (100%)
+# - No watchdog timer (removed - caused freezes)
+# - No blocking in setup()
+# - State machine architecture
+# - Memory-safe zone processing
+# - Exponential backoff on errors
+
+COMPATIBLE_DEVICES=TRMNL_OG,TRMNL_MINI
+# TURNKEY: Replace with your Vercel deployment URL before building
+DEFAULT_SERVER=https://your-project.vercel.app
+LOCKED=true
