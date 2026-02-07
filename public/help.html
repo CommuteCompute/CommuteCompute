@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+    Commute Compute - Help & Documentation
+    Copyright (c) 2026 Angus Bergman
+    SPDX-License-Identifier: AGPL-3.0-or-later
+    Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
+-->
+<head>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <meta name="theme-color" content="#1a2744">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Help and documentation for Commute Compute Smart Journey Dashboard">
+    <title>Help - Commute Compute</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #1a2744;
+            --bg-secondary: #1e293b;
+            --bg-card: #2a3d5f;
+            --accent: #4fb28e;
+            --accent-hover: #5fcca0;
+            --success: #22c55e;
+            --warning: #eab308;
+            --text-primary: #f1f5f9;
+            --text-secondary: #a3b8d0;
+            --border: #3d5278;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding-bottom: 60px !important;
+        }
+        
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .nav-link {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        
+        .nav-link:hover {
+            color: var(--text-primary);
+            border-bottom-color: var(--text-muted);
+        }
+        
+        .nav-link.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+        
+        /* Layout */
+        .container {
+            display: flex;
+            flex: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 24px 16px;
+            position: sticky;
+            top: 60px;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+        }
+        
+        .sidebar-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            padding-left: 12px;
+        }
+        
+        .sidebar-nav {
+            list-style: none;
+        }
+        
+        .sidebar-nav li {
+            margin-bottom: 4px;
+        }
+        
+        .sidebar-nav a {
+            display: block;
+            padding: 10px 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .sidebar-nav a:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+        
+        .sidebar-nav a.active {
+            background: var(--accent);
+            color: var(--text-primary);
+        }
+        
+        /* Main Content */
+        .main {
+            flex: 1;
+            padding: 40px;
+            max-width: 800px;
+        }
+        
+        .page-title {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin-bottom: 32px;
+        }
+        
+        /* Sections */
+        .section {
+            margin-bottom: 48px;
+        }
+        
+        .section-title {
+            font-size: 24px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-content {
+            color: var(--text-secondary);
+        }
+        
+        .section-content p {
+            margin-bottom: 16px;
+        }
+        
+        .section-content h3 {
+            color: var(--text-primary);
+            font-size: 18px;
+            margin: 24px 0 12px;
+        }
+        
+        .section-content ul, .section-content ol {
+            margin-left: 24px;
+            margin-bottom: 16px;
+        }
+        
+        .section-content li {
+            margin-bottom: 8px;
+        }
+        
+        .section-content a {
+            color: var(--accent);
+        }
+        
+        .section-content a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Cards */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin: 24px 0;
+        }
+        
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .card-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+        
+        .card-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        /* FAQ */
+        .faq-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        
+        .faq-question {
+            padding: 16px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .faq-question:hover {
+            background: var(--bg-card);
+        }
+        
+        .faq-toggle {
+            font-size: 20px;
+            transition: transform 0.2s;
+        }
+        
+        .faq-item.open .faq-toggle {
+            transform: rotate(45deg);
+        }
+        
+        .faq-answer {
+            display: none;
+            padding: 0 20px 16px;
+            color: var(--text-secondary);
+        }
+        
+        .faq-item.open .faq-answer {
+            display: block;
+        }
+        
+        /* Code blocks */
+        code {
+            background: var(--bg-primary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 13px;
+        }
+        
+        pre {
+            background: var(--bg-primary);
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+        
+        pre code {
+            padding: 0;
+            background: none;
+        }
+        
+        /* Callouts */
+        .callout {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin: 16px 0;
+            display: flex;
+            gap: 12px;
+        }
+        
+        .callout-icon {
+            font-size: 20px;
+        }
+        
+        .callout.info {
+            background: rgba(79, 178, 142, 0.1);
+            border: 1px solid var(--accent);
+        }
+        
+        .callout.warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid var(--warning);
+        }
+        
+        .callout.success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid var(--success);
+        }
+        
+        /* Footer */
+        .footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .footer-support {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        
+        .support-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .support-btn.coffee { background: #FFDD00; color: #000; }
+        .support-btn.sponsor { background: #db61a2; color: #fff; }
+        .support-btn.feedback { background: var(--accent); color: #fff; }
+        
+        .support-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .footer-legal {
+            font-size: 12px;
+        }
+        
+        .footer-legal a {
+            color: var(--text-secondary);
+        }
+
+        /* SVG Icons */
+        .svg-icon {
+            width: 24px;
+            height: 24px;
+            color: var(--accent);
+            flex-shrink: 0;
+        }
+        .svg-icon.sm { width: 18px; height: 18px; }
+        .svg-icon.lg { width: 28px; height: 28px; }
+        .svg-icon.card-size { width: 28px; height: 28px; }
+        .svg-icon.inline { width: 18px; height: 18px; vertical-align: middle; margin-right: 4px; }
+
+        /* Mobile Menu */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+        
+        .hamburger span {
+            width: 24px;
+            height: 2px;
+            background: var(--text-primary);
+            transition: all 0.3s;
+        }
+        
+        .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+        .hamburger.active span:nth-child(2) { opacity: 0; }
+        .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            top: 56px;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 16px;
+            z-index: 1000;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .mobile-nav.active { display: flex; }
+        
+        .mobile-nav a {
+            display: block;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            text-align: center;
+        }
+        
+        .mobile-nav a:hover, .mobile-nav a.active {
+            background: var(--accent);
+            color: white;
+        }
+        
+        @media (max-width: 900px) {
+            .sidebar { display: none; }
+            .nav-links { display: none; }
+            .hamburger { display: flex; }
+            .main { padding: 24px 20px; }
+        }
+
+        /* Global System Footer */
+        .cc-system-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, rgba(26, 39, 68, 0.95) 0%, rgba(18, 28, 51, 0.98) 100%);
+            border-top: 1px solid #3d5278;
+            padding: 10px 20px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        .cc-system-footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .cc-footer-versions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        .cc-footer-version-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .cc-footer-version-label {
+            opacity: 0.6;
+            font-weight: 500;
+        }
+        .cc-footer-version-value {
+            color: #4fb28e;
+            font-weight: 600;
+            font-family: 'Inter', monospace;
+        }
+        .cc-footer-attribution {
+            font-size: 10px;
+            color: #64748b;
+            text-align: right;
+            line-height: 1.5;
+        }
+        .cc-footer-attribution a {
+            color: #4fb28e;
+            text-decoration: none;
+        }
+        .cc-footer-live-dot {
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: ccPulse 1.5s infinite;
+        }
+        @keyframes ccPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        @media (max-width: 768px) {
+            .cc-system-footer-inner {
+                flex-direction: column;
+                text-align: center;
+            }
+            .cc-footer-attribution {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- SVG Icon Definitions -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <symbol id="icon-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </symbol>
+        <symbol id="icon-coffee" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/>
+        </symbol>
+        <symbol id="icon-cloud-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/>
+        </symbol>
+        <symbol id="icon-smartphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
+        </symbol>
+        <symbol id="icon-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </symbol>
+        <symbol id="icon-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+        </symbol>
+        <symbol id="icon-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </symbol>
+        <symbol id="icon-lightbulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>
+        </symbol>
+        <symbol id="icon-help-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </symbol>
+        <symbol id="icon-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </symbol>
+        <symbol id="icon-book-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </symbol>
+        <symbol id="icon-message-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+        </symbol>
+        <symbol id="icon-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </symbol>
+        <symbol id="icon-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+        </symbol>
+        <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </symbol>
+        <symbol id="icon-life-buoy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="14.83" y1="9.17" x2="18.36" y2="5.64"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>
+        </symbol>
+    </svg>
+
+    <header class="header">
+        <a href="/" class="brand">
+            <img src="/assets/brand/cc-logo-128.png" alt="CC" style="height: 56px; width: auto; margin-right: 10px;">
+            <span>Commute Compute™</span>
+        </a>
+        <nav class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/setup-wizard.html" class="nav-link">Setup</a>
+            <a href="/admin.html" class="nav-link">Dashboard</a>
+            <a href="/preview.html" class="nav-link">Preview</a>
+            <a href="/help.html" class="nav-link active">Help</a>
+        </nav>
+        <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+            <span></span><span></span><span></span>
+        </button>
+    </header>
+    
+    <div class="mobile-nav" id="mobile-nav">
+        <a href="/">Home</a>
+        <a href="/setup-wizard.html">Setup</a>
+        <a href="/admin.html">Dashboard</a>
+        <a href="/preview.html">Preview</a>
+        <a href="/help.html" class="active">Help</a>
+    </div>
+    
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-title">Getting Started</div>
+            <ul class="sidebar-nav">
+                <li><a href="#overview" class="active">Overview</a></li>
+                <li><a href="#quick-start">Quick Start</a></li>
+                <li><a href="#devices">Supported Devices</a></li>
+            </ul>
+            
+            <div class="sidebar-title" style="margin-top: 24px;">Setup</div>
+            <ul class="sidebar-nav">
+                <li><a href="#setup-wizard">Setup Wizard</a></li>
+                <li><a href="#api-keys">API Keys</a></li>
+                <li><a href="#configuration">Configuration</a></li>
+            </ul>
+            
+            <div class="sidebar-title" style="margin-top: 24px;">Troubleshooting</div>
+            <ul class="sidebar-nav">
+                <li><a href="#faq">FAQ</a></li>
+                <li><a href="#common-issues">Common Issues</a></li>
+                <li><a href="#getting-help">Getting Help</a></li>
+            </ul>
+        </aside>
+        
+        <main class="main">
+            <h1 class="page-title">Help &amp; Documentation</h1>
+            <p class="page-subtitle">Everything you need to set up and use Commute Compute</p>
+            
+            <!-- Overview -->
+            <section class="section" id="overview">
+                <h2 class="section-title">Overview</h2>
+                <div class="section-content">
+                    <p>
+                        Commute Compute is a smart transit display that shows your personalized commute information 
+                        on an e-ink screen. It tells you when to leave, shows real-time departures, and even 
+                        calculates if you have time for coffee!
+                    </p>
+                    
+                    <div class="card-grid">
+                        <div class="card">
+                            <div class="card-icon">Real-Time</div>
+                            <div class="card-title">Real-Time Data</div>
+                            <div class="card-desc">Live departure times updated every 20 seconds from Transport Victoria</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">Coffee</div>
+                            <div class="card-title">Coffee Decision</div>
+                            <div class="card-desc">Automatically calculates if you have time for a coffee stop</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">Weather</div>
+                            <div class="card-title">Weather</div>
+                            <div class="card-desc">Shows temperature and umbrella recommendations</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">Zero Config</div>
+                            <div class="card-title">Zero Config</div>
+                            <div class="card-desc">No server setup needed - everything configures via the web</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Quick Start -->
+            <section class="section" id="quick-start">
+                <h2 class="section-title">Quick Start</h2>
+                <div class="section-content">
+                    <p>Get up and running in 5 minutes:</p>
+                    
+                    <ol>
+                        <li><strong>Go to the <a href="/setup-wizard.html">Setup Wizard</a></strong></li>
+                        <li><strong>Enter your addresses</strong> - Home, work, and optional coffee stop</li>
+                        <li><strong>Set your arrival time</strong> - When do you need to be at work?</li>
+                        <li><strong>Get your webhook URL</strong> - Copy the URL generated at the end</li>
+                        <li><strong>Configure your device</strong> - Paste the URL in your TRMNL or Kindle settings</li>
+                    </ol>
+                    
+                    <div class="callout success">
+                        <span class="callout-icon">Done!</span>
+                        <div>
+                            <strong>That's it!</strong> Your display will start showing your personalized commute.
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Devices -->
+            <section class="section" id="devices">
+                <h2 class="section-title">Supported Devices</h2>
+                <div class="section-content">
+                    <h3>TRMNL Devices (Official)</h3>
+                    <ul>
+                        <li><strong>TRMNL Original</strong> - 7.5" display, 800×480, plug and play</li>
+                        <li><strong>TRMNL Mini</strong> - 4.2" display, 400×300, compact size</li>
+                    </ul>
+                    
+                    <h3>Kindle Devices (Jailbroken)</h3>
+                    <ul>
+                        <li><strong>Kindle Paperwhite 3/4/5</strong> - 6" display, requires jailbreak</li>
+                        <li><strong>Kindle Basic</strong> - 6" display, budget option</li>
+                    </ul>
+                    
+                    <h3>Inkplate (Experimental)</h3>
+                    <ul>
+                        <li><strong>Inkplate 6/10</strong> - ESP32-based, DIY friendly</li>
+                    </ul>
+                    
+                    <p>
+                        <em>See docs/hardware/DEVICE-COMPATIBILITY.md in the repository for the full guide.</em>
+                    </p>
+                </div>
+            </section>
+            
+            <!-- Setup Wizard -->
+            <section class="section" id="setup-wizard">
+                <h2 class="section-title">Setup Wizard</h2>
+                <div class="section-content">
+                    <p>
+                        The <a href="/setup-wizard.html">Setup Wizard</a> guides you through configuration step by step.
+                    </p>
+                    
+                    <h3>Step 1: Addresses</h3>
+                    <p>
+                        Enter your home address, work address, and optionally a coffee shop along your route.
+                        The wizard will find nearby transit stops automatically.
+                    </p>
+                    
+                    <h3>Step 2: Journey Settings</h3>
+                    <p>
+                        Set what time you need to arrive at work. The dashboard will calculate when you need to leave.
+                    </p>
+                    
+                    <h3>Step 3: API Keys (Optional)</h3>
+                    <p>
+                        For live data, you'll need a free API key from 
+                        <a href="https://opendata.transport.vic.gov.au" target="_blank">Transport Victoria OpenData</a>.
+                        Without a key, the system uses scheduled timetables.
+                    </p>
+                    
+                    <div class="callout info">
+                        <span class="callout-icon">Tip</span>
+                        <div>
+                            <strong>Tip:</strong> You can skip API keys to test with demo data first, then add keys later.
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- FAQ -->
+            <section class="section" id="faq">
+                <h2 class="section-title">Frequently Asked Questions</h2>
+                <div class="section-content">
+                    <div class="faq-item" onclick="this.classList.toggle('open')">
+                        <div class="faq-question">
+                            <span>How do I get an API key?</span>
+                            <span class="faq-toggle">+</span>
+                        </div>
+                        <div class="faq-answer">
+                            <p>
+                                1. Go to <a href="https://opendata.transport.vic.gov.au" target="_blank">opendata.transport.vic.gov.au</a><br>
+                                2. Create a free account<br>
+                                3. Navigate to "My API Keys"<br>
+                                4. Generate a new key<br>
+                                5. Paste it in the Setup Wizard
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item" onclick="this.classList.toggle('open')">
+                        <div class="faq-question">
+                            <span>Do I need to jailbreak my Kindle?</span>
+                            <span class="faq-toggle">+</span>
+                        </div>
+                        <div class="faq-answer">
+                            <p>
+                                Yes, Kindle devices need to be jailbroken to display custom content. 
+                                This voids your warranty but is safe when following proper guides.
+                                See the device compatibility guide in docs/hardware/ for instructions.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item" onclick="this.classList.toggle('open')">
+                        <div class="faq-question">
+                            <span>Why isn't my display updating?</span>
+                            <span class="faq-toggle">+</span>
+                        </div>
+                        <div class="faq-answer">
+                            <p>
+                                Common causes:<br>
+                                • WiFi disconnected - check device network settings<br>
+                                • Webhook URL incorrect - verify in device settings<br>
+                                • Server sleeping - first request may take 10-15 seconds<br>
+                                • Rate limited - wait a few minutes and try again
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item" onclick="this.classList.toggle('open')">
+                        <div class="faq-question">
+                            <span>How accurate is the "time for coffee" feature?</span>
+                            <span class="faq-toggle">+</span>
+                        </div>
+                        <div class="faq-answer">
+                            <p>
+                                The CoffeeDecision engine factors in:<br>
+                                • Walking time to the cafe<br>
+                                • Coffee preparation time (configurable)<br>
+                                • Walking time to your transit stop<br>
+                                • Real-time departure data<br>
+                                • Buffer time for safety<br><br>
+                                It's designed to be conservative - if it says you have time, you really do!
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item" onclick="this.classList.toggle('open')">
+                        <div class="faq-question">
+                            <span>Does this work outside Victoria?</span>
+                            <span class="faq-toggle">+</span>
+                        </div>
+                        <div class="faq-answer">
+                            <p>
+                                Currently, live data is only available for Victoria (Melbourne metro, regional V/Line).
+                                Support for NSW, QLD, and other states is planned for future releases.
+                                You can use demo mode to see how it works anywhere.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Getting Help -->
+            <section class="section" id="getting-help">
+                <h2 class="section-title">Getting Help</h2>
+                <div class="section-content">
+                    <p>Stuck? Here's how to get help:</p>
+                    
+                    <div class="card-grid">
+                        <div class="card">
+                            <div class="card-icon">Issue</div>
+                            <div class="card-title">Report an Issue</div>
+                            <div class="card-desc">
+                                <a href="https://gitlab.com/angusbergman/commute-compute-system/issues/new" target="_blank">
+                                    Open a GitLab Issue
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">Docs</div>
+                            <div class="card-title">Documentation</div>
+                            <div class="card-desc">
+                                <a href="https://gitlab.com/angusbergman/commute-compute-system/tree/main/docs" target="_blank">
+                                    Full docs on GitLab
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">Chat</div>
+                            <div class="card-title">Community</div>
+                            <div class="card-desc">
+                                Join discussions on GitLab
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="callout warning">
+                        <span class="callout-icon">Note</span>
+                        <div>
+                            <strong>Before reporting:</strong> Check the FAQ above and ensure you're using the latest version.
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <footer class="footer">
+        <div class="footer-support">
+            <a href="https://buymeacoffee.com/angusbergman" target="_blank" rel="noopener" class="support-btn coffee">
+                Buy me a coffee
+            </a>
+            <a href="https://buymeacoffee.com/angusbergman" target="_blank" rel="noopener" class="support-btn sponsor">
+                Sponsor
+            </a>
+            <a href="https://gitlab.com/angusbergman/commute-compute-system/issues/new?template=feedback.md" target="_blank" rel="noopener" class="support-btn feedback">
+                Feedback
+            </a>
+        </div>
+        <div class="footer-legal">
+            © 2026 <a href="https://gitlab.com/angusbergman" target="_blank" rel="noopener">Angus Bergman</a> •
+            <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a> •
+            <a href="/attribution.html">Attribution</a>
+        </div>
+    </footer>
+    
+    <script>
+        // Smooth scroll for sidebar links
+        document.querySelectorAll('.sidebar-nav a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    // Update active state
+                    document.querySelectorAll('.sidebar-nav a').forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                }
+            });
+        });
+        
+        // Update active sidebar link on scroll
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('.section');
+            let current = '';
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 100;
+                if (pageYOffset >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+            
+            document.querySelectorAll('.sidebar-nav a').forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+        
+        // Mobile hamburger menu
+        const hamburger = document.getElementById('hamburger');
+        const mobileNav = document.getElementById('mobile-nav');
+        hamburger?.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            mobileNav.classList.toggle('active');
+        });
+    </script>
+<!-- Global System Footer -->
+<script>
+    function sanitize(str) {
+        if (str === null || str === undefined) return '';
+        if (typeof str !== 'string') str = String(str);
+        const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'};
+        return str.replace(/[&<>"'`=/]/g, c => map[c]);
+    }
+
+    function loadFooterVersions() {
+        fetch('/api/version')
+            .then(r => r.json())
+            .then(v => {
+                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v3.0';
+                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v2.1';
+                document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
+                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.0.0');
+            })
+            .catch(() => {});
+    }
+    function updateGlobalFooterAttributions() {
+        const config = JSON.parse(localStorage.getItem('cc-config') || '{}');
+        const transitKey = localStorage.getItem('cc-transit-api-key');
+        const attributions = [sanitize('\u00a9 2026 Angus Bergman')];
+        if (transitKey || config.addresses?.home) attributions.push(sanitize('Transit data: Transport Victoria OpenData API (CC BY 4.0)'));
+        if (config.addresses?.home) attributions.push(sanitize('Weather: Bureau of Meteorology (CC BY 3.0 AU)'));
+        const el = document.getElementById('cc-footer-attributions');
+        if (el) el.innerHTML = attributions.join(' \u2022 ') + ' \u2022 <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank">AGPL-3.0</a>';
+    }
+    loadFooterVersions();
+    updateGlobalFooterAttributions();
+</script>
+<div class="cc-system-footer">
+    <div class="cc-system-footer-inner">
+        <div class="cc-footer-versions">
+            <div class="cc-footer-version-item">
+                <div class="cc-footer-live-dot"></div>
+                <span class="cc-footer-version-label">CommuteCompute</span>
+                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.0</span>
+            </div>
+            <div class="cc-footer-version-item">
+                <span class="cc-footer-version-label">CCDash Renderer</span>
+                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.1</span>
+            </div>
+            <div class="cc-footer-version-item">
+                <span class="cc-footer-version-label">System</span>
+                <span class="cc-footer-version-value" id="cc-footer-system-version">v3.0.0</span>
+            </div>
+            <div class="cc-footer-version-item">
+                <span class="cc-footer-version-label">Build</span>
+                <span class="cc-footer-version-value" id="cc-footer-build-date">--</span>
+            </div>
+        </div>
+        <div class="cc-footer-attribution" id="cc-footer-attributions">
+            © 2026 Angus Bergman • <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank">AGPL-3.0</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

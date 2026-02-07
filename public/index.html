@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+    Commute Compute - Smart Journey Dashboard
+    Unified Landing & Dashboard
+    Copyright (c) 2026 Angus Bergman
+    SPDX-License-Identifier: AGPL-3.0-or-later
+    Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
+-->
+<head>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <meta name="theme-color" content="#1a2744">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Commute Compute - Intelligent transit display for Australian public transport">
+    <title>Commute Compute - Smart Journey Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Accessibility: Skip Link */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--accent);
+            color: white;
+            padding: 8px 16px;
+            z-index: 1000;
+            text-decoration: none;
+            border-radius: 0 0 8px 0;
+        }
+        
+        .skip-link:focus {
+            top: 0;
+        }
+        
+        /* Focus visible for keyboard navigation */
+        *:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+        
+        :root {
+            --bg-primary: #1a2744;
+            --bg-secondary: #243352;
+            --bg-card: #2a3d5f;
+            --accent: #4fb28e;
+            --accent-hover: #5fcca0;
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #dc2626;
+            --text-primary: #f1f5f9;
+            --text-secondary: #a3b8d0;
+            --text-muted: #7a8fa8;
+            --border: #3d5278;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            color: var(--text-primary);
+            padding-bottom: 60px !important;
+        }
+        
+        /* Global Navigation */
+        .global-nav {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .nav-brand span { font-size: 24px; }
+        
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .nav-link {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.15s, border-color 0.15s;
+            text-decoration: none;
+        }
+        
+        .nav-link:hover {
+            color: var(--text-primary);
+            border-bottom-color: var(--text-muted);
+        }
+        
+        .nav-link.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+        
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        /* Loading State */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            gap: 20px;
+        }
+        
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Dashboard View (Configured) */
+        .dashboard { display: none; }
+        .dashboard.active { display: block; }
+        
+        .status-banner {
+            background: var(--bg-secondary);
+            border-left: 4px solid var(--accent);
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .status-info h1 {
+            font-size: 28px;
+            margin-bottom: 4px;
+        }
+        
+        .status-info p {
+            opacity: 0.9;
+            font-size: 15px;
+        }
+        
+        .status-time {
+            text-align: right;
+        }
+        
+        .status-time .time {
+            font-size: 42px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .status-time .date {
+            opacity: 0.8;
+            font-size: 14px;
+        }
+        
+        /* Quick Actions Grid */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .action-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .action-card:hover {
+            border-color: var(--accent);
+            background: var(--bg-secondary);
+        }
+        
+        .action-card .icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        
+        .action-card h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .action-card p {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        /* Journey Preview Card */
+        .journey-preview {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+        }
+        
+        .journey-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .journey-header h2 {
+            font-size: 18px;
+        }
+        
+        .journey-leg {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .journey-leg:last-child { border-bottom: none; }
+        
+        .leg-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .leg-info { flex: 1; }
+        .leg-info h4 { font-size: 14px; margin-bottom: 2px; }
+        .leg-info p { font-size: 12px; color: var(--text-secondary); }
+        
+        .leg-time {
+            text-align: right;
+            font-weight: 700;
+            font-size: 18px;
+        }
+        
+        .leg-time span {
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--text-secondary);
+            display: block;
+        }
+        
+        /* System Status Cards */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        
+        .status-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 16px 20px;
+        }
+        
+        .status-card h3 {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-card .value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-dot.online { background: var(--success); }
+        .status-dot.offline { background: var(--error); }
+        .status-dot.warning { background: var(--warning); }
+        
+        /* Setup View (New User) */
+        .setup-view { display: none; }
+        .setup-view.active { display: block; }
+        
+        .welcome-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 40px;
+            max-width: 680px;
+            margin: 40px auto;
+            text-align: center;
+        }
+        
+        .welcome-card .icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        .welcome-card h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .welcome-card p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+        
+        .welcome-features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+            text-align: left;
+        }
+        
+        .feature {
+            padding: 14px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+        
+        .feature .icon { font-size: 20px; margin-bottom: 6px; }
+        .feature h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+        .feature p { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+        
+        .btn-primary {
+            background: var(--accent);
+            color: #1a2744;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 4px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+            text-decoration: none;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            cursor: pointer;
+            transition: border-color 0.15s;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 12px;
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--accent);
+        }
+        
+        /* Mobile Menu */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            z-index: 1001;
+        }
+        
+        .hamburger span {
+            width: 24px;
+            height: 2px;
+            background: var(--text-primary);
+            transition: all 0.3s;
+        }
+        
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+        
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px);
+        }
+        
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 16px;
+            z-index: 1000;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .mobile-nav.active {
+            display: flex;
+        }
+        
+        .mobile-nav a {
+            display: block;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            text-decoration: none;
+            text-align: center;
+            transition: border-color 0.15s, color 0.15s;
+        }
+        
+        .mobile-nav a:hover {
+            border-color: var(--text-secondary);
+            color: var(--text-primary);
+        }
+        
+        .mobile-nav a.active {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .welcome-features {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .status-time { text-align: center; }
+            
+            .nav-links { display: none; }
+            
+            .hamburger { display: flex; }
+            
+            .quick-actions {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        /* Version Footer */
+        .version-footer {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+        
+        .version-footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        
+        .footer-attribution {
+            margin-bottom: 8px;
+            font-size: 11px;
+        }
+        
+        .footer-support {
+            margin-bottom: 12px;
+        }
+        
+        .support-link {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.15s;
+        }
+        
+        .support-link:hover {
+            border-bottom-color: var(--accent);
+        }
+        
+        .footer-divider {
+            margin: 0 8px;
+            opacity: 0.5;
+        }
+        
+        /* Live Attribution Bar */
+        .attribution-bar {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            margin-top: 24px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .attribution-content {
+            display: flex;
+            gap: 40px;
+            animation: scrollAttribution 30s linear infinite;
+            white-space: nowrap;
+        }
+        
+        .attribution-item {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        @keyframes scrollAttribution {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        
+        .attribution-bar:hover .attribution-content {
+            animation-play-state: paused;
+        }
+        
+        /* Feedback Button */
+        .feedback-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--accent);
+            color: #0f172a;
+            border: none;
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+            z-index: 99;
+        }
+        
+        .feedback-btn:hover {
+            background: #5fcca0;
+        }
+        
+        /* Feedback Modal */
+        .feedback-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .feedback-modal.active {
+            display: flex;
+        }
+        
+        .feedback-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            padding: 28px;
+            max-width: 480px;
+            width: 100%;
+            position: relative;
+        }
+        
+        .feedback-content h2 {
+            margin-bottom: 8px;
+        }
+        
+        .feedback-content > p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        
+        .feedback-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .feedback-modal .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .feedback-modal label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+        }
+        
+        .feedback-modal input,
+        .feedback-modal select,
+        .feedback-modal textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        .feedback-modal input:focus,
+        .feedback-modal select:focus,
+        .feedback-modal textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .feedback-modal textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .feedback-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .feedback-actions button {
+            flex: 1;
+        }
+        
+        .feedback-note {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 16px;
+        }
+        
+        .feedback-note a {
+            color: var(--accent);
+        }
+        
+        /* SVG Icons */
+        .svg-icon {
+            width: 24px;
+            height: 24px;
+            color: var(--accent);
+            flex-shrink: 0;
+        }
+        
+        .svg-icon.sm { width: 18px; height: 18px; }
+        .svg-icon.lg { width: 32px; height: 32px; }
+        .svg-icon.muted { color: var(--text-secondary); }
+        
+        /* Setup Wizard Steps */
+        .setup-step {
+            width: 32px;
+            height: 32px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        
+        .setup-step.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--bg-primary);
+        }
+        
+        .setup-step.done {
+            background: var(--success);
+            border-color: var(--success);
+            color: var(--bg-primary);
+        }
+        
+        .wizard-step {
+            display: none;
+        }
+        
+        .wizard-step.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 15px;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        /* Global System Footer */
+        .cc-system-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, rgba(26, 39, 68, 0.95) 0%, rgba(18, 28, 51, 0.98) 100%);
+            border-top: 1px solid #3d5278;
+            padding: 10px 20px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        .cc-system-footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .cc-footer-versions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        .cc-footer-version-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .cc-footer-version-label {
+            opacity: 0.6;
+            font-weight: 500;
+        }
+        .cc-footer-version-value {
+            color: #4fb28e;
+            font-weight: 600;
+            font-family: 'Inter', monospace;
+        }
+        .cc-footer-attribution {
+            font-size: 10px;
+            color: #64748b;
+            text-align: right;
+            line-height: 1.5;
+        }
+        .cc-footer-attribution a {
+            color: #4fb28e;
+            text-decoration: none;
+        }
+        .cc-footer-live-dot {
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: ccPulse 1.5s infinite;
+        }
+        @keyframes ccPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        @media (max-width: 768px) {
+            .cc-system-footer-inner {
+                flex-direction: column;
+                text-align: center;
+            }
+            .cc-footer-attribution {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- SVG Icon Definitions -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </symbol>
+        <symbol id="icon-route" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>
+        </symbol>
+        <symbol id="icon-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </symbol>
+        <symbol id="icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </symbol>
+        <symbol id="icon-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+        </symbol>
+        <symbol id="icon-thermometer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+        </symbol>
+        <symbol id="icon-train" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="3" width="16" height="16" rx="2"/><path d="M4 11h16"/><path d="M12 3v8"/><circle cx="8" cy="15" r="1"/><circle cx="16" cy="15" r="1"/><path d="m9 19-2 3"/><path d="m15 19 2 3"/>
+        </symbol>
+        <symbol id="icon-coffee" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/>
+        </symbol>
+        <symbol id="icon-building" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>
+        </symbol>
+        <symbol id="icon-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </symbol>
+        <symbol id="icon-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+        </symbol>
+    </svg>
+
+    <!-- Accessibility: Skip to main content -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <!-- Global Navigation -->
+    <nav class="global-nav" role="navigation" aria-label="Main navigation">
+        <div class="nav-brand" aria-label="Commute Compute™ Home">
+            <img src="/assets/brand/cc-logo-128.png" alt="CC" style="height: 56px; width: auto; margin-right: 10px;">
+            <span>Commute Compute™</span>
+        </div>
+        <div class="nav-links" id="nav-links" role="menubar">
+            <a href="/" class="nav-link active" role="menuitem" aria-current="page">Home</a>
+            <a href="/setup-wizard.html" class="nav-link" role="menuitem">Setup</a>
+            <a href="/admin.html" class="nav-link" role="menuitem">Dashboard</a>
+            <a href="/preview.html" class="nav-link" role="menuitem">Preview</a>
+            <a href="/help.html" class="nav-link" role="menuitem">Help</a>
+        </div>
+        <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </nav>
+    
+    <!-- Mobile Navigation -->
+    <div class="mobile-nav" id="mobile-nav">
+        <a href="/">Home</a>
+        <a href="/setup-wizard.html">Setup</a>
+        <a href="/admin.html">Dashboard</a>
+        <a href="/preview.html">Preview</a>
+        <a href="/help.html">Help</a>
+    </div>
+    
+    <main id="main-content" class="container" role="main">
+        <!-- Loading State -->
+        <div class="loading-state" id="loading-state">
+            <div class="spinner"></div>
+            <p>Loading your transit dashboard...</p>
+        </div>
+        
+        <!-- Dashboard View (Configured Users) -->
+        <div class="dashboard" id="dashboard-view">
+            <!-- Status Banner -->
+            <div class="status-banner">
+                <div class="status-info">
+                    <h1>Good <span id="greeting-time">Morning</span></h1>
+                    <p id="journey-summary">Your commute is ready</p>
+                </div>
+                <div class="status-time">
+                    <div class="time" id="current-time">--:--</div>
+                    <div class="date" id="current-date">--</div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <a href="/admin.html" class="action-card">
+                    <svg class="svg-icon lg"><use href="#icon-settings"/></svg>
+                    <div><h3>Settings</h3>
+                    <p>Change addresses, times & API keys</p></div>
+                </a>
+                <a href="/journey-display.html" class="action-card">
+                    <svg class="svg-icon lg"><use href="#icon-route"/></svg>
+                    <div><h3>Full Journey View</h3>
+                    <p>See complete route details</p></div>
+                </a>
+                <div class="action-card" onclick="recalculateJourney()">
+                    <svg class="svg-icon lg"><use href="#icon-refresh"/></svg>
+                    <div><h3>Recalculate Route</h3>
+                    <p>Get fresh transit data</p></div>
+                </div>
+            </div>
+            
+            <!-- Journey Preview -->
+            <div class="journey-preview">
+                <div class="journey-header">
+                    <h2><svg class="svg-icon sm" style="vertical-align: middle; margin-right: 6px;"><use href="#icon-pin"/></svg>Today's Journey</h2>
+                    <span id="journey-eta" style="color: var(--success); font-weight: 600;">--</span>
+                </div>
+                <div id="journey-legs">
+                    <p style="color: var(--text-secondary);">Loading journey data...</p>
+                </div>
+            </div>
+            
+            <!-- System Status -->
+            <div class="status-grid">
+                <div class="status-card">
+                    <h3><span class="status-dot" id="api-status-dot"></span> Transit API</h3>
+                    <div class="value" id="api-status">--</div>
+                </div>
+                <div class="status-card">
+                    <h3><svg class="svg-icon sm muted" style="vertical-align: middle; margin-right: 4px;"><use href="#icon-thermometer"/></svg> Weather</h3>
+                    <div class="value" id="weather-status">--</div>
+                </div>
+                <div class="status-card">
+                    <h3><svg class="svg-icon sm muted" style="vertical-align: middle; margin-right: 4px;"><use href="#icon-refresh"/></svg> Last Update</h3>
+                    <div class="value" id="last-update">--</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Setup View (New Users) - Embedded Wizard -->
+        <div class="setup-view" id="setup-view">
+            <div class="welcome-card" style="max-width: 600px; text-align: left;">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <img src="/assets/brand/cc-logo-512.png" alt="Commute Compute™" style="width: 200px; height: auto; margin-bottom: 16px;">
+                    <h1 style="font-size: 24px;">Setup Your Commute</h1>
+                    <p style="color: var(--text-secondary);">Configure your transit display in a few steps</p>
+                </div>
+                
+                <!-- Step indicators -->
+                <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 24px;">
+                    <div class="setup-step active" id="ind-1">1</div>
+                    <div class="setup-step" id="ind-2">2</div>
+                    <div class="setup-step" id="ind-3">3</div>
+                </div>
+                
+                <!-- Step 1: Addresses -->
+                <div id="wizard-step-1" class="wizard-step active">
+                    <h3 style="margin-bottom: 16px;">Step 1: Your Addresses</h3>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Home Address *</label>
+                        <input type="text" id="w-home" class="form-input" placeholder="Enter your home address" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Work Address *</label>
+                        <input type="text" id="w-work" class="form-input" placeholder="Enter your work address" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Favorite Cafe (optional)</label>
+                        <input type="text" id="w-cafe" class="form-input" placeholder="Your coffee stop">
+                    </div>
+                    
+                    <button class="btn-primary" onclick="wizardNext(1)" style="width: 100%; margin-top: 16px;">Next: Transit Settings</button>
+                </div>
+                
+                <!-- Step 2: Transit API -->
+                <div id="wizard-step-2" class="wizard-step">
+                    <h3 style="margin-bottom: 16px;">Step 2: Transit API (Optional)</h3>
+                    <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">
+                        For real-time data, add your Transport Victoria OpenData API credentials. Skip to use timetable data.
+                    </p>
+                    
+                    <div class="form-group">
+                        <label class="form-label">State/Territory</label>
+                        <select id="w-state" class="form-input">
+                            <option value="VIC">Victoria (Transport Victoria)</option>
+                            <option value="NSW">New South Wales</option>
+                            <option value="QLD">Queensland</option>
+                            <option value="SA">South Australia</option>
+                            <option value="WA">Western Australia</option>
+                            <option value="TAS">Tasmania</option>
+                            <option value="ACT">ACT</option>
+                            <option value="NT">Northern Territory</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Developer ID</label>
+                        <input type="text" id="w-devid" class="form-input" placeholder="Your OpenData Developer ID">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">API Key</label>
+                        <input type="text" id="w-apikey" class="form-input" placeholder="Your OpenData API Key">
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; margin-top: 16px;">
+                        <button class="btn-secondary" onclick="wizardBack(2)" style="flex: 1;">Back</button>
+                        <button class="btn-primary" onclick="wizardNext(2)" style="flex: 2;">Next: Preferences</button>
+                    </div>
+                </div>
+                
+                <!-- Step 3: Preferences -->
+                <div id="wizard-step-3" class="wizard-step">
+                    <h3 style="margin-bottom: 16px;">Step 3: Journey Preferences</h3>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Arrival Time at Work</label>
+                        <input type="time" id="w-arrival" class="form-input" value="09:00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="w-coffee" checked>
+                            <span>Include coffee stop in route</span>
+                        </label>
+                    </div>
+                    
+                    <div id="wizard-status" style="margin: 16px 0;"></div>
+                    
+                    <div style="display: flex; gap: 12px; margin-top: 16px;">
+                        <button class="btn-secondary" onclick="wizardBack(3)" style="flex: 1;">Back</button>
+                        <button class="btn-primary" onclick="wizardComplete()" style="flex: 2;" id="wizard-complete-btn">Complete Setup</button>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        <!-- Live Attribution Bar -->
+        <div class="attribution-bar" id="attribution-bar" role="marquee" aria-live="polite">
+            <div class="attribution-content" id="attribution-content">
+                <span class="attribution-item">Transit data: Transport for Victoria (CC BY 4.0)</span>
+            </div>
+        </div>
+        
+        <!-- Feedback Button -->
+        <button class="feedback-btn" onclick="openFeedback()" aria-label="Send Feedback">
+            Feedback
+        </button>
+        
+        <!-- Feedback Modal -->
+        <div class="feedback-modal" id="feedback-modal" role="dialog" aria-labelledby="feedback-title" aria-hidden="true">
+            <div class="feedback-content">
+                <button class="feedback-close" onclick="closeFeedback()" aria-label="Close">&times;</button>
+                <h2 id="feedback-title">Send Feedback</h2>
+                <p>Help improve Commute Compute! Your feedback goes directly to the developer.</p>
+                <form id="feedback-form" onsubmit="submitFeedback(event)">
+                    <div class="form-group">
+                        <label for="feedback-type">Type</label>
+                        <select id="feedback-type" required>
+                            <option value="bug">Bug Report</option>
+                            <option value="feature">Feature Request</option>
+                            <option value="general">General Feedback</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="feedback-message">Message</label>
+                        <textarea id="feedback-message" rows="4" placeholder="Describe your feedback..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="feedback-email">Email (optional)</label>
+                        <input type="email" id="feedback-email" placeholder="email@example.com">
+                    </div>
+                    <div class="feedback-actions">
+                        <button type="button" class="btn-secondary" onclick="closeFeedback()">Cancel</button>
+                        <button type="submit" class="btn-primary">Send to Developer</button>
+                    </div>
+                </form>
+                <p class="feedback-note">Or open an issue on <a href="https://gitlab.com/angusbergman/commute-compute-system/issues/new" target="_blank">GitLab</a></p>
+            </div>
+        </div>
+    </main>
+    
+    <footer class="version-footer" role="contentinfo">
+        <div class="footer-attribution" id="footer-attribution">
+            Data sources: <span id="active-sources">Loading...</span>
+        </div>
+        <div class="footer-support">
+            <a href="https://buymeacoffee.com/angusbergman" target="_blank" rel="noopener noreferrer" class="support-link">Support the project</a>
+            <span class="footer-divider">•</span>
+            <a href="https://buymeacoffee.com/angusbergman" target="_blank" rel="noopener noreferrer" class="support-link">Sponsor</a>
+        </div>
+        <div>
+            Commute Compute <span id="version">v--</span> •
+            <a href="https://gitlab.com/angusbergman/commute-compute-system" target="_blank" rel="noopener noreferrer">GitLab</a> •
+            <a href="/help.html#getting-help" target="_blank">Help</a> •
+            AGPL-3.0
+        </div>
+    </footer>
+    
+    <script>
+        // Time & Date Display
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours();
+            const timeStr = now.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = now.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' });
+            
+            document.getElementById('current-time').textContent = timeStr;
+            document.getElementById('current-date').textContent = dateStr;
+            
+            // Greeting based on time
+            let greeting = 'Morning';
+            if (hours >= 12 && hours < 17) greeting = 'Afternoon';
+            else if (hours >= 17) greeting = 'Evening';
+            document.getElementById('greeting-time').textContent = greeting;
+        }
+        
+        // Check if system is configured
+        async function checkConfiguration() {
+            // Hide loading
+            document.getElementById('loading-state').style.display = 'none';
+            
+            // First check localStorage (works offline and on Vercel)
+            const localConfig = localStorage.getItem('cc-config');
+            const isConfiguredLocal = localStorage.getItem('cc-configured') === 'true';
+            
+            if (isConfiguredLocal && localConfig) {
+                try {
+                    const config = JSON.parse(localConfig);
+                    if (config.addresses?.home && config.addresses?.work) {
+                        showDashboard({ preferences: config });
+                        return;
+                    }
+                } catch (e) {
+                }
+            }
+            
+            // Fallback: check server
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                if (data.version) {
+                    document.getElementById('version').textContent = 'v' + data.version;
+                }
+                
+                const isConfigured = data.preferences?.addresses?.home && data.preferences?.addresses?.work;
+                
+                if (isConfigured) {
+                    showDashboard(data);
+                } else {
+                    showSetup();
+                }
+            } catch (error) {
+                showSetup();
+            }
+        }
+        
+        function showDashboard(data) {
+            document.getElementById('dashboard-view').classList.add('active');
+            
+            // Update API status
+            const apiDot = document.getElementById('api-status-dot');
+            const apiStatus = document.getElementById('api-status');
+            
+            if (data.apiStatus?.operational) {
+                apiDot.classList.add('online');
+                apiStatus.textContent = 'Connected';
+            } else {
+                apiDot.classList.add('offline');
+                apiStatus.textContent = 'Fallback Mode';
+            }
+            
+            // Update weather if available
+            if (data.weather?.temperature) {
+                document.getElementById('weather-status').textContent = 
+                    data.weather.temperature + '°C ' + (data.weather.condition || '');
+            }
+            
+            // Load journey data
+            loadJourneyPreview();
+            
+            // Start clock
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+        
+        function showSetup() {
+            document.getElementById('setup-view').classList.add('active');
+        }
+        
+        // ==================== EMBEDDED WIZARD ====================
+        // XSS Sanitization (DEVELOPMENT-RULES Section 17.1)
+        function sanitize(str) {
+            if (str === null || str === undefined) return '';
+            if (typeof str !== 'string') str = String(str);
+            const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'};
+            return str.replace(/[&<>"'`=/]/g, c => map[c]);
+        }
+        // Alias for backward compatibility
+        const sanitizeInput = sanitize;
+        
+        let wizardStep = 1;
+        
+        function wizardNext(step) {
+            // Validate current step
+            if (step === 1) {
+                const home = document.getElementById('w-home').value.trim();
+                const work = document.getElementById('w-work').value.trim();
+                if (!home || !work) {
+                    alert('Please enter both home and work addresses');
+                    return;
+                }
+            }
+            
+            // Mark current step done and move to next
+            document.getElementById('ind-' + step).classList.remove('active');
+            document.getElementById('ind-' + step).classList.add('done');
+            document.getElementById('wizard-step-' + step).classList.remove('active');
+            
+            wizardStep = step + 1;
+            document.getElementById('ind-' + wizardStep).classList.add('active');
+            document.getElementById('wizard-step-' + wizardStep).classList.add('active');
+        }
+        
+        function wizardBack(step) {
+            document.getElementById('ind-' + step).classList.remove('active');
+            document.getElementById('wizard-step-' + step).classList.remove('active');
+            
+            wizardStep = step - 1;
+            document.getElementById('ind-' + wizardStep).classList.remove('done');
+            document.getElementById('ind-' + wizardStep).classList.add('active');
+            document.getElementById('wizard-step-' + wizardStep).classList.add('active');
+        }
+        
+        async function wizardComplete() {
+            const btn = document.getElementById('wizard-complete-btn');
+            const status = document.getElementById('wizard-status');
+            
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            status.innerHTML = '<p style="color: var(--accent);">Saving your configuration...</p>';
+            
+            try {
+                // Sanitize all user inputs (DEVELOPMENT-RULES Section 17.1)
+                const config = {
+                    addresses: {
+                        home: sanitizeInput(document.getElementById('w-home').value.trim()),
+                        work: sanitizeInput(document.getElementById('w-work').value.trim()),
+                        cafe: sanitizeInput(document.getElementById('w-cafe').value.trim())
+                    },
+                    journey: {
+                        arrivalTime: document.getElementById('w-arrival').value,
+                        coffeeEnabled: document.getElementById('w-coffee').checked
+                    },
+                    state: document.getElementById('w-state').value,
+                    api: {
+                        devId: sanitizeInput(document.getElementById('w-devid').value.trim()),
+                        key: sanitizeInput(document.getElementById('w-apikey').value.trim())
+                    }
+                };
+                
+                // Save to localStorage
+                localStorage.setItem('cc-config', JSON.stringify(config));
+                localStorage.setItem('cc-configured', 'true');
+                localStorage.setItem('cc-transit-state', config.state);
+                
+                if (config.api.key) {
+                    localStorage.setItem('cc-transit-api-key', config.api.key);
+                    localStorage.setItem('cc-transit-api-devid', config.api.devId);
+                }
+                
+                // Call setup API
+                await fetch('/api/admin/setup-complete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                
+                status.innerHTML = '<p style="color: var(--success);">Setup complete! Loading dashboard...</p>';
+                
+                // Switch to dashboard after brief delay
+                setTimeout(() => {
+                    document.getElementById('setup-view').classList.remove('active');
+                    document.getElementById('dashboard-view').classList.add('active');
+                    loadJourneyPreview();
+                    updateClock();
+                    setInterval(updateClock, 1000);
+                }, 1000);
+                
+            } catch (error) {
+                status.innerHTML = '<p style="color: var(--error);">Error: ' + sanitize(error.message) + '</p>';
+                btn.disabled = false;
+                btn.textContent = 'Complete Setup';
+            }
+        }
+        // ==================== END WIZARD ====================
+        
+        async function loadJourneyPreview() {
+            try {
+                const response = await fetch('/api/dashboard');
+                const data = await response.json();
+                
+                if (data.journey?.legs?.length > 0) {
+                    renderJourneyLegs(data.journey);
+                    
+                    // Update ETA
+                    if (data.journey.arrivalTime) {
+                        document.getElementById('journey-eta').textContent = 
+                            'Arrive by ' + data.journey.arrivalTime;
+                    }
+                    
+                    // Update summary
+                    const totalMins = data.journey.totalDuration || '--';
+                    document.getElementById('journey-summary').textContent = 
+                        `${totalMins} min commute to ${data.preferences?.addresses?.work || 'work'}`;
+                }
+                
+                // Update last update time
+                if (data.journey?.calculatedAt) {
+                    const updateTime = new Date(data.journey.calculatedAt);
+                    document.getElementById('last-update').textContent = 
+                        updateTime.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+                }
+            } catch (error) {
+                document.getElementById('journey-legs').innerHTML = 
+                    '<p style="color: var(--text-secondary);">Journey data unavailable</p>';
+            }
+        }
+        
+        function getSvgIcon(name) {
+            return `<svg class="svg-icon" style="width:20px;height:20px;"><use href="#icon-${name}"/></svg>`;
+        }
+        
+        function renderJourneyLegs(journey) {
+            const container = document.getElementById('journey-legs');
+            const iconMap = {
+                'walk': 'route',
+                'tram': 'train',
+                'train': 'train',
+                'bus': 'train',
+                'coffee': 'coffee',
+                'default': 'pin'
+            };
+            
+            let html = '';
+            journey.legs.forEach(leg => {
+                const iconName = iconMap[leg.mode?.toLowerCase()] || iconMap.default;
+                html += `
+                    <div class="journey-leg">
+                        <div class="leg-icon">${getSvgIcon(iconName)}</div>
+                        <div class="leg-info">
+                            <h4>${leg.description || leg.mode || 'Transit'}</h4>
+                            <p>${leg.from || ''} → ${leg.to || ''}</p>
+                        </div>
+                        <div class="leg-time">
+                            ${leg.duration || '--'}
+                            <span>min</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html || '<p style="color: var(--text-secondary);">No journey configured</p>';
+        }
+        
+        async function recalculateJourney() {
+            const card = event.target.closest('.action-card');
+            const originalHTML = card.innerHTML;
+            card.innerHTML = '<div class="icon">[...]</div><h3>Calculating...</h3><p>Please wait</p>';
+            
+            try {
+                const response = await fetch('/admin/calculate-journey', { method: 'POST' });
+                const result = await response.json();
+                
+                if (result.success) {
+                    card.innerHTML = '<div class="icon">[OK]</div><h3>Updated!</h3><p>Refreshing...</p>';
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    card.innerHTML = originalHTML;
+                    alert('Calculation failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                card.innerHTML = originalHTML;
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        // ==================== LIVE ATTRIBUTION ====================
+        const attributionSources = [
+            'Transit data: Transport for Victoria (CC BY 4.0)',
+            'Geocoding: OpenStreetMap / Nominatim (ODbL)',
+            'Weather: Bureau of Meteorology Australia',
+            'Maps: Google Places API / Mapbox',
+            'NSW data: Transport for NSW Open Data',
+            'QLD data: TransLink Queensland',
+            'SA data: Adelaide Metro',
+            'WA data: Transperth',
+            'Hardware: CC E-ink Display Platform',
+            'Framework: Node.js / Express',
+            'License: AGPL-3.0 © Angus Bergman'
+        ];
+        
+        function initAttribution() {
+            const container = document.getElementById('attribution-content');
+            if (!container) return;
+            
+            // Duplicate items for seamless scroll
+            const items = attributionSources.map(s => 
+                `<span class="attribution-item">${s}</span>`
+            ).join('');
+            container.innerHTML = items + items; // Duplicate for seamless loop
+            
+            // Update footer with active sources
+            updateActiveSources();
+        }
+        
+        async function updateActiveSources() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                const sources = [];
+                if (data.dataMode === 'Live') sources.push('Transport Victoria Live API');
+                else sources.push('Fallback Timetables');
+                
+                if (data.weather) sources.push('BOM Weather');
+                if (data.geocoding) sources.push('Geocoding Active');
+                
+                const el = document.getElementById('active-sources');
+                if (el) el.textContent = sources.join(' • ') || 'Loading...';
+            } catch (e) {
+            }
+        }
+        
+        // ==================== FEEDBACK SYSTEM ====================
+        function openFeedback() {
+            const modal = document.getElementById('feedback-modal');
+            modal.classList.add('active');
+            modal.setAttribute('aria-hidden', 'false');
+            document.getElementById('feedback-message').focus();
+        }
+        
+        function closeFeedback() {
+            const modal = document.getElementById('feedback-modal');
+            modal.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        
+        async function submitFeedback(event) {
+            event.preventDefault();
+            
+            const type = document.getElementById('feedback-type').value;
+            const message = document.getElementById('feedback-message').value;
+            const email = document.getElementById('feedback-email').value;
+            
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Sending...';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type, message, email })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Thank you! Your feedback has been sent to the developer.');
+                    closeFeedback();
+                    document.getElementById('feedback-form').reset();
+                } else {
+                    // Fallback to GitLab Issues
+                    const title = encodeURIComponent(`[${type}] User Feedback`);
+                    const body = encodeURIComponent(`**Type:** ${type}\n**Message:**\n${message}\n\n**Email:** ${email || 'Not provided'}`);
+                    window.open(`https://gitlab.com/angusbergman/commute-compute-system/issues/new?title=${title}&body=${body}`, '_blank');
+                    closeFeedback();
+                }
+            } catch (error) {
+                // Fallback to GitLab Issues
+                const title = encodeURIComponent(`[${type}] User Feedback`);
+                const body = encodeURIComponent(`**Type:** ${type}\n**Message:**\n${message}\n\n**Email:** ${email || 'Not provided'}`);
+                window.open(`https://gitlab.com/angusbergman/commute-compute-system/issues/new?title=${title}&body=${body}`, '_blank');
+                closeFeedback();
+            }
+            
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
+        
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeFeedback();
+        });
+        
+        // Close modal on backdrop click
+        document.getElementById('feedback-modal')?.addEventListener('click', (e) => {
+            if (e.target.classList.contains('feedback-modal')) closeFeedback();
+        });
+        
+        // Initialize
+        checkConfiguration();
+        initAttribution();
+        
+        // Update attribution sources every 30 seconds
+        setInterval(updateActiveSources, 30000);
+        
+        // Mobile hamburger menu toggle
+        const hamburger = document.getElementById('hamburger');
+        const mobileNav = document.getElementById('mobile-nav');
+        
+        if (hamburger && mobileNav) {
+            hamburger.addEventListener('click', () => {
+                hamburger.classList.toggle('active');
+                mobileNav.classList.toggle('active');
+                hamburger.setAttribute('aria-expanded', 
+                    hamburger.classList.contains('active') ? 'true' : 'false');
+            });
+            
+            // Close menu when clicking a link
+            mobileNav.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    hamburger.classList.remove('active');
+                    mobileNav.classList.remove('active');
+                    hamburger.setAttribute('aria-expanded', 'false');
+                });
+            });
+        }
+    </script>
+<!-- Global System Footer -->
+<script>
+    function loadFooterVersions() {
+        fetch('/api/version')
+            .then(r => r.json())
+            .then(v => {
+                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v3.0';
+                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v2.1';
+                document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
+                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.0.0');
+            })
+            .catch(() => {});
+    }
+    function updateGlobalFooterAttributions() {
+        const config = JSON.parse(localStorage.getItem('cc-config') || '{}');
+        const transitKey = localStorage.getItem('cc-transit-api-key');
+        const attributions = ['© 2026 Angus Bergman'];
+        if (transitKey || config.addresses?.home) attributions.push('Transit data: Transport Victoria OpenData API (CC BY 4.0)');
+        if (config.addresses?.home) attributions.push('Weather: Bureau of Meteorology (CC BY 3.0 AU)');
+        const el = document.getElementById('cc-footer-attributions');
+        if (el) el.innerHTML = attributions.join(' • ') + ' • <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank">AGPL-3.0</a>';
+    }
+    loadFooterVersions();
+    updateGlobalFooterAttributions();
+</script>
+<div class="cc-system-footer">
+    <div class="cc-system-footer-inner">
+        <div class="cc-footer-versions">
+            <div class="cc-footer-version-item">
+                <div class="cc-footer-live-dot"></div>
+                <span class="cc-footer-version-label">CommuteCompute</span>
+                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.0</span>
+            </div>
+            <div class="cc-footer-version-item">
+                <span class="cc-footer-version-label">CCDash Renderer</span>
+                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.1</span>
+            </div>
+            <div class="cc-footer-version-item">
+                <span class="cc-footer-version-label">System</span>
+                <span class="cc-footer-version-value" id="cc-footer-system-version">v3.0.0</span>
+            </div>
+            <div class="cc-footer-version-item">
+                <span class="cc-footer-version-label">Build</span>
+                <span class="cc-footer-version-value" id="cc-footer-build-date">--</span>
+            </div>
+        </div>
+        <div class="cc-footer-attribution" id="cc-footer-attributions">
+            © 2026 Angus Bergman • <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank">AGPL-3.0</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

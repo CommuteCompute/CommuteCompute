@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: commute-compute
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: npm install --no-audit --no-fund
+    startCommand: node src/server.js
+    healthCheckPath: /api/status
+    # Health check configuration (Render Free tier)
+    # Checks every 60 seconds, restarts on 3 consecutive failures
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ODATA_API_KEY
+        sync: false
+      - key: GOOGLE_PLACES_API_KEY
+        sync: false

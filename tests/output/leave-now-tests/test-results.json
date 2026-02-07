@@ -1,0 +1,177 @@
+[
+  {
+    "name": "01-early-morning-6am",
+    "description": "Very early start - would have shown \"LEAVE IN 45 MIN\" before",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/01-early-morning-6am.png",
+    "size": 60281,
+    "success": true
+  },
+  {
+    "name": "02-buffer-30min",
+    "description": "30 minute buffer - would have shown \"LEAVE IN 30 MIN\"",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/02-buffer-30min.png",
+    "size": 44350,
+    "success": true
+  },
+  {
+    "name": "03-buffer-15min",
+    "description": "15 minute buffer - edge case",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/03-buffer-15min.png",
+    "size": 41862,
+    "success": true
+  },
+  {
+    "name": "04-buffer-10min",
+    "description": "10 minute buffer - just outside threshold",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/04-buffer-10min.png",
+    "size": 50251,
+    "success": true
+  },
+  {
+    "name": "05-exact-timing",
+    "description": "Exact timing - no buffer",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/05-exact-timing.png",
+    "size": 42524,
+    "success": true
+  },
+  {
+    "name": "06-single-delay-5min",
+    "description": "Single 5 minute delay on train",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/06-single-delay-5min.png",
+    "size": 44502,
+    "success": true
+  },
+  {
+    "name": "07-multiple-delays",
+    "description": "Multiple delays on different legs",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/07-multiple-delays.png",
+    "size": 58934,
+    "success": true
+  },
+  {
+    "name": "08-severe-delay-20min",
+    "description": "Severe 20+ minute delay",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/08-severe-delay-20min.png",
+    "size": 43633,
+    "success": true
+  },
+  {
+    "name": "09-disruption-buses-replace",
+    "description": "Buses replacing trains disruption",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/09-disruption-buses-replace.png",
+    "size": 54902,
+    "success": true
+  },
+  {
+    "name": "10-tram-diversion",
+    "description": "Tram route diversion",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/10-tram-diversion.png",
+    "size": 45148,
+    "success": true
+  },
+  {
+    "name": "11-heavy-rain",
+    "description": "Heavy rain - bring umbrella",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/11-heavy-rain.png",
+    "size": 42803,
+    "success": true
+  },
+  {
+    "name": "12-extreme-heat",
+    "description": "Extreme heat warning 40°C",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/12-extreme-heat.png",
+    "size": 42594,
+    "success": true
+  },
+  {
+    "name": "13-freezing-cold",
+    "description": "Freezing cold morning 2°C",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/13-freezing-cold.png",
+    "size": 56740,
+    "success": true
+  },
+  {
+    "name": "14-storm-warning",
+    "description": "Storm warning conditions",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/14-storm-warning.png",
+    "size": 42277,
+    "success": true
+  },
+  {
+    "name": "15-simple-train-only",
+    "description": "Simple direct train journey",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/15-simple-train-only.png",
+    "size": 44345,
+    "success": true
+  },
+  {
+    "name": "16-simple-tram-only",
+    "description": "Simple direct tram journey",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/16-simple-tram-only.png",
+    "size": 43580,
+    "success": true
+  },
+  {
+    "name": "17-coffee-tram-train",
+    "description": "Full multi-modal with coffee",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/17-coffee-tram-train.png",
+    "size": 60325,
+    "success": true
+  },
+  {
+    "name": "18-bus-train-walk",
+    "description": "Bus to train connection",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/18-bus-train-walk.png",
+    "size": 57546,
+    "success": true
+  },
+  {
+    "name": "19-max-legs-6",
+    "description": "Maximum 6 journey legs",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/19-max-legs-6.png",
+    "size": 59360,
+    "success": true
+  },
+  {
+    "name": "20-late-start-11am",
+    "description": "Late start - 11am arrival",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/20-late-start-11am.png",
+    "size": 42344,
+    "success": true
+  },
+  {
+    "name": "21-afternoon-meeting",
+    "description": "Afternoon meeting - 2pm arrival",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/21-afternoon-meeting.png",
+    "size": 42083,
+    "success": true
+  },
+  {
+    "name": "22-evening-6pm",
+    "description": "Evening commute - 6pm arrival",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/22-evening-6pm.png",
+    "size": 42646,
+    "success": true
+  },
+  {
+    "name": "23-minimal-journey",
+    "description": "Minimal 10 minute journey",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/23-minimal-journey.png",
+    "size": 30157,
+    "success": true
+  },
+  {
+    "name": "24-long-journey-90min",
+    "description": "Long 90 minute journey",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/24-long-journey-90min.png",
+    "size": 56005,
+    "success": true
+  },
+  {
+    "name": "25-running-late",
+    "description": "Already running late scenario",
+    "path": "/path/to/commute-compute/tests/output/leave-now-tests/25-running-late.png",
+    "size": 41864,
+    "success": true
+  }
+]

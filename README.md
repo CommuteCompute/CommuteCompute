@@ -1,93 +1,523 @@
-# Commute Compute System
+<p align="center">
+  <img src="assets/brand/cc-mark-cropped.png" alt="Commute Compute™" width="220">
+</p>
 
+<h1 align="center">Commute Compute&#8482; System</h1>
 
+<p align="center">
+  <strong>Real-Time Commuter Intelligence for E-Ink Displays</strong>
+</p>
 
-## Getting started
+<p align="center">
+  <em>Other apps show delays. CommuteCompute&#8482; reacts to them. Live data flows into every decision- coffee, timing, connections. 1 glance. No app switching. Open Source.</em>
+</p>
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+<br>
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0_Dual_License-blue.svg?style=for-the-badge" alt="License: AGPL-3.0 Dual License"></a>
+  &nbsp;
+  <img src="https://img.shields.io/badge/Spec-CCDash%20V15.0-purple.svg?style=for-the-badge" alt="Spec: CCDash V15.0">
+  &nbsp;
+  <img src="https://img.shields.io/badge/Firmware-CC--FW--7.5.0-green.svg?style=for-the-badge" alt="Firmware: CC-FW-7.5.0">
+</p>
 
-## Add your files
+<p align="center">
+  <img src="https://img.shields.io/badge/Platform-TRMNL%20%7C%20Kindle%20%7C%20Inkplate-orange.svg?style=flat-square" alt="Platform: TRMNL | Kindle | Inkplate">
+  &nbsp;
+  <img src="https://img.shields.io/badge/States-VIC%20%7C%20NSW%20%7C%20QLD%20%7C%20SA%20%7C%20WA%20%7C%20TAS%20%7C%20NT%20%7C%20ACT-yellow.svg?style=flat-square" alt="Multi-State Support">
+  &nbsp;
+  <img src="https://img.shields.io/badge/Melbourne_Metro_Tunnel-Fully_Supported-0072CE.svg?style=flat-square" alt="Melbourne Metro Tunnel Supported">
+</p>
 
-* [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+<br>
+
+---
+
+<br>
+
+## What Makes This Different
+
+Commute Compute&#8482; is not another transit app. It is an open-source commuter intelligence system that renders a complete decision surface onto an 800x480 1-bit e-ink display. Everything a commuter needs is visible in a single glance from 1-2 meters away. No phone. No app switching. No scrolling.
+
+Here is what no other commuter tool provides:
+
+- **Single-glance intelligence on e-ink.** The entire commute -- departure countdowns, weather preparation, coffee feasibility, journey confidence, sleep optimization, and alternative transport costs -- rendered as one image. Readable from across a room.
+
+- **Five interconnected intelligence engines.** CommuteCompute&#8482;, DepartureConfidence, LifestyleContext, SleepOptimizer, and AltTransit work together. A weather change affects clothing suggestions, walking speed estimates, coffee feasibility, and confidence scoring simultaneously. They do not operate in isolation.
+
+- **Sleep optimization for next-day commute readiness.** No other transit tool calculates your optimal bedtime and alarm time based on tomorrow's journey duration, your wake routine, and desired sleep hours.
+
+- **Alternative transport cost estimation.** When public transit is cancelled, the system instantly calculates rideshare, e-scooter, and bike share costs with peak surge detection. You see what it costs to get to work before you even leave the house.
+
+- **Commute stress scoring and lifestyle preparation.** The system calculates apparent temperature, recommends umbrella/jacket/sunscreen, and provides a commute stress score. It tells you to bring layers before you step outside.
+
+- **Melbourne Metro Tunnel compliance.** Full support for Melbourne's once-in-a-generation infrastructure change: 5 new underground stations, rerouted Pakenham/Cranbourne/Sunbury lines, and discontinued City Loop services. First-to-market for this routing change.
+
+- **Zero-config setup via BLE provisioning.** No environment variables. No config files. Pair via Bluetooth, run the Setup Wizard, and you are live in under 5 minutes.
+
+- **Graceful offline degradation.** When APIs are unreachable, the system falls back to cached data and static timetables. The display always shows something useful.
+
+- **Fully open source under AGPL-3.0 (dual-licensed).** The complete system -- engines, renderer, firmware, setup wizard -- is available for inspection, modification, and self-hosting. A commercial license is also available for proprietary use.
+
+<br>
+
+---
+
+<br>
+
+## How It Works
+
+You set your home address, work address, and target arrival time. The system does the rest.
+
+Every 60 seconds, the system pulls live data from three sources, runs it through five intelligence engines, and renders a fresh dashboard image to your e-ink display.
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/angusbergman/commute-compute-system.git
-git branch -M main
-git push -uf origin main
+ YOU CONFIGURE                    DATA SOURCES                    INTELLIGENCE ENGINES
++------------------+       +------------------------+       +---------------------------+
+|                  |       |                        |       |                           |
+|  Home Address    |       |  GTFS-RT Live Transit  |       |  1. CommuteCompute(TM)    |
+|  Work Address    | ----> |  BOM Weather API       | ----> |  2. DepartureConfidence   |
+|  Arrival Time    |       |  Google Places API     |       |  3. LifestyleContext      |
+|  Preferences     |       |                        |       |  4. SleepOptimizer        |
+|                  |       +------------------------+       |  5. AltTransit            |
++------------------+               (live, cached)           +---------------------------+
+                                                                        |
+      STORAGE                       OUTPUT                              |
++------------------+       +------------------------+                   |
+|                  |       |                        |                   |
+|  Vercel KV       | <---> |  800 x 480 1-bit BMP  | <-----------------+
+|  (config, cache) |       |  Rendered by CCDash(TM)|
+|                  |       |                        |
++------------------+       +------------------------+
+                                      |
+                            +------------------------+
+                            |                        |
+                            |  TRMNL (ESP32-C3)      |
+                            |  Kindle E-Reader       |
+                            |  Inkplate 6/10         |
+                            |  Web Browser           |
+                            |                        |
+                            +------------------------+
 ```
 
-## Integrate with your tools
+The pipeline runs entirely serverless on Vercel. The device fetches a pre-rendered image -- no computation happens on the e-ink hardware.
 
-* [Set up project integrations](https://gitlab.com/angusbergman/commute-compute-system/-/settings/integrations)
+<br>
 
-## Collaborate with your team
+---
 
-* [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+<br>
 
-## Test and Deploy
+## The Five Intelligence Engines
 
-Use the built-in continuous integration in GitLab.
+All five engines operate under the CommuteCompute&#8482; umbrella. They share data, influence each other, and produce a unified commute intelligence model.
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+### 1. CommuteCompute&#8482; Engine (v2.3)
 
-***
+Core journey orchestration with real-time multi-modal planning and Melbourne Metro Tunnel compliance.
 
-# Editing this README
+| | |
+|---|---|
+| **Inputs** | Home/work addresses, transit API data, live GTFS-RT departures, stop IDs, cafe location, current time |
+| **Outputs** | Optimized journey legs with live departure countdowns, total duration, arrival estimate, coffee decision |
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+**Example Scenario:**
 
-## Suggestions for a good README
+```
+INPUT:  Home: Richmond, Work: 80 Collins St, Target: 9:00am, Current: 8:22am
+        Live GTFS-RT: Tram 70 next at 8:28, 8:36 | Train next at 8:41, 8:53
+        Cafe: 3 min walk, avg 6 min wait
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+OUTPUT: LEAVE IN 6 MIN | ARRIVE 8:58am | 36 MIN TOTAL
+        Leg 1: Walk to Cornerstone Cafe (3 min)
+        Leg 2: Coffee stop (6 min) -- LEAVE 8:31am
+        Leg 3: Walk to Swan St / Church St (2 min)
+        Leg 4: Tram 70 to Flinders St -- DEPART 8:36am (next: 4, 12 min)
+        Leg 5: Train to Flagstaff -- DEPART 8:41am (next: 5, 17 min)
+        Leg 6: Walk to Office (5 min)
 
-## Name
-Choose a self-explaining name for your project.
+DISPLAY: [C] GET COFFEE | LEAVE IN 6 MIN | ARRIVE 8:58am
+```
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+---
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### 2. DepartureConfidence Engine
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+Journey success probability scoring from 0 to 100%.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+| | |
+|---|---|
+| **Inputs** | Leg states, transit delay data, weather conditions, coffee decision, buffer time between legs |
+| **Outputs** | Confidence score (0-100%), status label, resilience rating |
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+**Example Scenario:**
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+```
+INPUT:  5 journey legs, Tram 70 running 3 min late, light rain, coffee included,
+        8 min buffer at train connection
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+OUTPUT: Confidence: 74%
+        Label: AT RISK
+        Resilience: MODERATE (can absorb 1 missed connection)
+        Factors: -12 tram delay, -8 weather, -6 coffee risk, +10 buffer
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+DISPLAY: CONFIDENCE 74% | AT RISK | "Buffer tight at Flinders connection"
+```
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+---
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+### 3. LifestyleContext Engine
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+Weather-aware lifestyle suggestions and commute stress scoring.
+
+| | |
+|---|---|
+| **Inputs** | Temperature, weather condition, wind speed, UV index, humidity, time of day, state |
+| **Outputs** | Prioritized suggestions, mindset metrics (commute stress, walk steps, apparent temperature) |
+
+**Example Scenario:**
+
+```
+INPUT:  Temp: 14C, Condition: Showers, Wind: 25km/h NW, UV: 3, Humidity: 82%,
+        Time: 7:45am, State: VIC
+
+OUTPUT: Suggestions: [UMBRELLA, JACKET, LAYERS]
+        Apparent Temp: 10C (feels colder due to wind)
+        Commute Stress: 6/10 (rain + wind + cold)
+        Walk Steps: ~2,400 (across all walking legs)
+
+DISPLAY: 14 Showers | UMBRELLA + JACKET | Feels 10C
+```
+
+---
+
+### 4. SleepOptimizer Engine
+
+Evening bedtime and alarm calculation for next-day commute readiness.
+
+| | |
+|---|---|
+| **Inputs** | Target arrival time, journey duration, current time, wake routine duration, desired sleep hours |
+| **Outputs** | Optimal bedtime, alarm time, sleep adequacy rating |
+
+**Example Scenario:**
+
+```
+INPUT:  Target arrival: 9:00am, Journey: 45 min, Current time: 9:30pm,
+        Wake routine: 30 min, Desired sleep: 8 hrs
+
+OUTPUT: Bedtime: 11:45PM
+        Alarm: 7:45AM
+        Adequacy: OPTIMAL (8.0 hrs available, 8.0 hrs desired)
+
+DISPLAY: BED BY 11:45PM | ALARM 7:45AM | SLEEP: OPTIMAL
+```
+
+```
+INPUT:  Target arrival: 8:00am, Journey: 55 min, Current time: 11:45pm,
+        Wake routine: 30 min, Desired sleep: 8 hrs
+
+OUTPUT: Bedtime: NOW
+        Alarm: 6:35AM
+        Adequacy: INSUFFICIENT (6.8 hrs available, 8.0 hrs desired)
+
+DISPLAY: GO TO BED NOW | ALARM 6:35AM | SLEEP: INSUFFICIENT
+```
+
+---
+
+### 5. AltTransit Engine
+
+Alternative transport cost estimation when public transit is cancelled or disrupted.
+
+| | |
+|---|---|
+| **Inputs** | Walk distance to destination, current time, transit disruption notice |
+| **Outputs** | Rideshare estimate ($), e-scooter estimate ($), bike share estimate ($), peak surge detection |
+
+**Example Scenario:**
+
+```
+INPUT:  Distance: 6.2 km, Time: 8:15am (peak), Disruption: "Tram 70 suspended
+        between Stop 14 and Flinders St due to emergency works"
+
+OUTPUT: Rideshare: $18-24 (1.4x surge, peak morning)
+        E-Scooter: $8.50 (unlock $1 + 22 min @ $0.34/min)
+        Bike Share: $3.50 (30 min ride)
+        Walk: 74 min (not recommended -- rain)
+
+DISPLAY: ALT TRANSIT | Uber ~$21 | Scooter ~$9 | Bike $3.50
+```
+
+<br>
+
+---
+
+<br>
+
+## Melbourne Metro Tunnel Compliance
+
+The Melbourne Metro Tunnel is the city's largest public transport infrastructure project, opening progressively from 2025 into 2026. It introduces five new underground stations and fundamentally changes how train lines route through the CBD.
+
+### What Changed
+
+| Change | Detail |
+|:-------|:-------|
+| **5 new stations** | Arden, Parkville, State Library, Town Hall, Anzac |
+| **Pakenham / Cranbourne lines** | Now routed through the Metro Tunnel instead of the City Loop |
+| **Sunbury line** | Rerouted through the Metro Tunnel |
+| **City Loop changes** | Several lines no longer loop through Flinders Street - Parliament - Melbourne Central - Flagstaff |
+| **New interchange patterns** | Passengers transferring between lines must use new stations |
+
+### How Commute Compute&#8482; Handles It
+
+The CommuteCompute&#8482; Engine includes full Metro Tunnel compliance:
+
+- **Updated stop IDs.** All five Metro Tunnel station GTFS stop IDs are registered and mapped.
+- **Line routing awareness.** The engine knows which lines now use the tunnel and which still use the City Loop, preventing invalid route suggestions.
+- **Citybound detection.** Updated CBD boundary detection accounts for the new underground stations when determining travel direction.
+- **Real-time departures.** Live GTFS-RT data from Transport Victoria OpenData API includes Metro Tunnel services from day one.
+
+This makes Commute Compute&#8482; one of the first commuter tools to fully support the new network topology -- a meaningful advantage for Melbourne commuters during the transition period.
+
+<br>
+
+---
+
+<br>
+
+## Architecture
+
+```
++--------------------------------------------------------------------------+
+|                          PRESENTATION LAYER                               |
+|  Setup Wizard | Admin Panel | Simulator | Preview | Help                  |
++--------------------------------------------------------------------------+
+|                            API LAYER                                      |
+|  /api/screen | /api/zones | /api/livedash | /api/admin/* | /api/health   |
++--------------------------------------------------------------------------+
+|                          SERVICE LAYER                                    |
+|  CommuteCompute(TM) | CCDash(TM) | CC LiveDash(TM) | Weather (BOM)      |
++--------------------------------------------------------------------------+
+|                        INTELLIGENCE LAYER                                 |
+|  DepartureConfidence | LifestyleContext | SleepOptimizer | AltTransit    |
++--------------------------------------------------------------------------+
+|                           DATA LAYER                                      |
+|  OpenData Client (GTFS-RT) | BOM API | Google Places | Vercel KV         |
++--------------------------------------------------------------------------+
+```
+
+### Data Flow
+
+1. **User Configuration** is stored in Vercel KV via the Setup Wizard (addresses, preferences, API keys).
+2. **Data Sources** are polled on each request: GTFS-RT for live transit (30s cache), BOM for weather (5min cache), Google Places for cafe status.
+3. **Five Intelligence Engines** process the combined data into a unified journey model.
+4. **CCDash&#8482; Renderer** converts the data model into an 800x480 1-bit BMP image optimized for e-ink.
+5. **The device** (TRMNL, Kindle, Inkplate, or browser) fetches the rendered image over HTTPS on a 60-second refresh cycle.
+
+### Caching Strategy
+
+| Data Source | Cache TTL | Reason |
+|:------------|:----------|:-------|
+| GTFS-RT Trip Updates | 30 seconds | Real-time accuracy for departure countdowns |
+| GTFS-RT Service Alerts | 5 minutes | Disruption notices change infrequently |
+| Static GTFS Timetables | 24 hours | Schedule data for fallback |
+| Weather (BOM) | 5 minutes | Adequate freshness for preparation advice |
+| Geocoding Results | Permanent | Resolved once at setup time |
+
+<br>
+
+---
+
+<br>
+
+## Quick Start
+
+### 1. Deploy to Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://gitlab.com/angusbergman/commute-compute-system)
+
+### 2. Create KV Database
+
+Vercel Dashboard > Storage > Create Database > **KV** > Select the Sydney region.
+
+### 3. Run Setup Wizard
+
+Open `https://your-project.vercel.app/setup-wizard.html` and follow the guided configuration (home, work, arrival time, API keys).
+
+### 4. Flash Device (TRMNL)
+
+```bash
+cd firmware && pio run -e trmnl -t upload
+```
+
+### 5. Pair and Go
+
+The device connects via BLE, receives your server URL, and begins displaying your commute dashboard.
+
+See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed step-by-step instructions including API key setup, device pairing, and troubleshooting.
+
+<br>
+
+---
+
+<br>
+
+## Technology Stack
+
+| Layer | Technology |
+|:------|:-----------|
+| **Runtime** | Node.js on Vercel Serverless Functions |
+| **Rendering** | @napi-rs/canvas -- 800x480, 1-bit BMP generation |
+| **Font** | Inter |
+| **Transit Data** | Transport Victoria OpenData API (GTFS-RT) |
+| **Weather Data** | Bureau of Meteorology (BOM) API |
+| **Place Data** | Google Places API (cafe status, busyness -- optional) |
+| **Storage** | Vercel KV (Redis-compatible, encrypted at rest) |
+| **Firmware** | ESP32-C3 via PlatformIO / Arduino framework |
+| **Frontend** | Vanilla HTML / CSS / JS -- zero framework dependency |
+| **Provisioning** | Web Bluetooth (BLE) for zero-config device setup |
+
+<br>
+
+---
+
+<br>
+
+## Supported Devices
+
+| Device | Resolution | Status |
+|:-------|:-----------|:-------|
+| TRMNL OG (ESP32-C3) | 800 x 480 | Primary target -- requires CCFirm&#8482; firmware |
+| TRMNL Mini | 400 x 300 | Supported |
+| Kindle Paperwhite 3/4/5 | 1072 x 1448 | Supported -- requires jailbreak |
+| Kindle Basic 10/11 | 600 x 800 | Supported -- requires jailbreak |
+| Inkplate 6 | 800 x 600 | Supported |
+| Inkplate 10 | 1200 x 825 | Supported |
+| Web Browser | Any | Full dashboard via `/api/screen` endpoint |
+
+<br>
+
+---
+
+<br>
+
+## Project Scale
+
+| Metric | Value |
+|:-------|:------|
+| Source Files | 271 |
+| Lines of Code | 112,000+ |
+| Intelligence Engines | 5 |
+| Development Rules Sections | 24 |
+| Automated Compliance Checks | 63+ |
+| Australian States Supported | 8 (VIC, NSW, QLD, SA, WA, TAS, NT, ACT) |
+
+<br>
+
+---
+
+<br>
+
+## Documentation
+
+| Document | Description |
+|:---------|:------------|
+| [SETUP_GUIDE.md](SETUP_GUIDE.md) | Complete setup and installation guide |
+| [SUPPORT.md](SUPPORT.md) | Support channels and troubleshooting |
+| [KNOWN-ISSUES.md](KNOWN-ISSUES.md) | Current known issues and workarounds |
+| [docs/CHANGELOG.md](docs/CHANGELOG.md) | Version history and release notes |
+| [LEGAL.md](LEGAL.md) | Trademarks, intellectual property, and licensing |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines |
+
+<br>
+
+---
+
+<br>
+
+## Data Attribution
+
+| Source | License | Usage |
+|:-------|:--------|:------|
+| Transport Victoria OpenData | CC BY 4.0 | Real-time and static transit data |
+| Bureau of Meteorology | CC BY 3.0 AU | Weather observations and forecasts |
+| OpenStreetMap | ODbL | Geocoding and mapping |
+
+<br>
+
+---
+
+<br>
+
+## Support the Project
+
+Commute Compute&#8482; is developed and maintained by **Angus Bergman** as an open-source project.
+
+<p align="center">
+  <a href="https://buymeacoffee.com/angusbergman">
+    <img src="https://img.shields.io/badge/Support_This_Project-Buy_Me_a_Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee">
+  </a>
+</p>
+
+| Type | How |
+|:-----|:----|
+| **Financial** | [buymeacoffee.com/angusbergman](https://buymeacoffee.com/angusbergman) |
+| **Star the Repo** | Helps visibility and encourages continued development |
+| **Report Issues** | [Open an issue](https://gitlab.com/angusbergman/commute-compute-system/-/issues) |
+| **Contribute** | See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines |
+
+<br>
+
+---
+
+<br>
 
 ## License
-For open source projects, say how it is licensed.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+**AGPL-3.0 Dual License** -- [GNU Affero General Public License v3.0](LICENSE)
+
+Copyright (c) 2026 Angus Bergman. All rights reserved.
+
+This project is dual-licensed:
+
+| License | Terms |
+|:--------|:------|
+| **Open Source (AGPL-3.0)** | Free to use, modify, and distribute. All modifications and network-accessible deployments must release source code under AGPL-3.0. |
+| **Commercial License** | For proprietary/closed-source use without AGPL obligations. Contact for terms. |
+
+For commercial licensing inquiries: **commutecompute.licensing@gmail.com**
+
+<br>
+
+---
+
+<br>
+
+## Trademarks
+
+The following are unregistered trademarks owned by Angus Bergman:
+
+**Commute Compute&#8482;** | **Commute Compute System&#8482;** | **CommuteCompute&#8482;** | **CCDash&#8482;** | **CC LiveDash&#8482;** | **CCFirm&#8482;**
+
+See [LEGAL.md](LEGAL.md) for complete trademark and intellectual property details.
+
+<br>
+
+---
+
+<br>
+
+<p align="center">
+  <img src="assets/brand/cc-mark-cropped.png" alt="Commute Compute™" width="80">
+</p>
+
+<p align="center">
+  <strong>Commute Compute&#8482; System v3.4.0</strong><br>
+  V15.0 Complete Journey Intelligence<br>
+  CommuteCompute&#8482; Engine v2.3 | CCDash&#8482; Renderer v1.80 | CC LiveDash&#8482; v3.0 | Admin Panel v3.2.0 | CCFirm&#8482; CC-FW-7.5.0<br>
+  <br>
+  Copyright (c) 2026 Angus Bergman. All rights reserved.<br>
+  <em>Built in Melbourne, Australia.</em>
+</p>
