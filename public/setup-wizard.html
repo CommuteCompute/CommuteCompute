@@ -110,15 +110,15 @@
 
         .form-error {
             font-size: 13px; color: #ef4444; margin-top: 6px; display: none;
-            padding: 8px 12px; background: rgba(239,68,68,0.1); border-radius: 8px;
+            padding: 8px 12px; background: rgba(30, 41, 59, 0.8); border-left: 3px solid #ef4444; border-radius: 8px;
         }
 
         .btn {
-            background: #4fb28e; color: #0f172a; border: none; border-radius: 8px;
+            background: #4fb28e; color: #fff; border: none; border-radius: 8px;
             padding: 12px 24px; font-family: 'Inter', sans-serif; font-size: 14px;
             font-weight: 600; cursor: pointer; transition: all 0.2s; width: 100%;
         }
-        .btn:hover { background: #5fcca0; }
+        .btn:hover { background: #6ec9a8; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .btn-secondary { background: rgba(255,255,255,0.1); color: #f1f5f9; }
@@ -127,14 +127,14 @@
         .btn-row { display: flex; gap: 12px; margin-top: 24px; }
 
         .info-box {
-            background: rgba(30, 41, 59, 0.8); border-left: 4px solid #0ea5e9;
+            background: rgba(30, 41, 59, 0.8); border-left: 4px solid #667eea;
             border-radius: 8px; padding: 14px 16px; margin: 16px 0;
             color: #94a3b8; font-size: 13px;
         }
 
         .success-box {
             background: rgba(34, 197, 94, 0.1); border-left: 4px solid #22c55e;
-            border-radius: 8px; padding: 16px; margin: 16px 0; color: #dcfce7;
+            border-radius: 8px; padding: 16px; margin: 16px 0; color: #f1f5f9;
         }
 
         .authority-card {
@@ -174,12 +174,14 @@
             padding: 18px; border-radius: 12px; margin-bottom: 15px;
         }
         .phase-card-ble {
-            background: linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(168,85,247,0.1) 100%);
-            border: 1px solid rgba(102,126,234,0.3);
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid #3d5278;
+            border-left: 4px solid #667eea;
         }
         .phase-card-pair {
-            background: linear-gradient(135deg, rgba(79,178,142,0.15) 0%, rgba(34,197,94,0.1) 100%);
-            border: 1px solid rgba(79,178,142,0.3);
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid #3d5278;
+            border-left: 4px solid #4fb28e;
         }
 
         .status-region { margin-top: 12px; font-size: 13px; }
@@ -212,7 +214,7 @@
         .cc-system-footer {
             position: fixed; bottom: 0; left: 0; right: 0;
             background: linear-gradient(180deg, rgba(26,39,68,0.95) 0%, rgba(18,28,51,0.98) 100%);
-            border-top: 1px solid rgba(255,255,255,0.1); padding: 10px 20px;
+            border-top: 1px solid #3d5278; padding: 10px 20px;
             z-index: 1000; backdrop-filter: blur(10px);
         }
         .cc-system-footer-inner {
@@ -223,7 +225,7 @@
         .cc-footer-version-item { display: flex; align-items: center; gap: 6px; }
         .cc-footer-version-label { opacity: 0.6; font-weight: 500; }
         .cc-footer-version-value { color: #4fb28e; font-weight: 600; font-family: 'Inter', monospace; }
-        .cc-footer-attribution { font-size: 10px; color: #64748b; text-align: right; line-height: 1.5; }
+        .cc-footer-attribution { font-size: 10px; color: #94a3b8; text-align: right; line-height: 1.5; }
         .cc-footer-attribution a { color: #4fb28e; text-decoration: none; }
         .cc-footer-live-dot {
             width: 6px; height: 6px; background: #22c55e;
@@ -330,12 +332,12 @@
             </header>
 
             <!-- Metro Tunnel Compatibility Banner -->
-            <div class="info-box" style="background: linear-gradient(135deg, #0072CE 0%, #005ba1 100%); border-left: 4px solid #00a3e0; color: #fff; text-align: center; margin-bottom: 24px;">
+            <div class="info-box" style="border-left: 4px solid #667eea; color: #f1f5f9; text-align: center; margin-bottom: 24px;">
                 <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-                    <svg class="icon-sm" style="color: #fff;"><use href="#icon-clock"/></svg>
+                    <svg class="icon-sm" style="color: #667eea;"><use href="#icon-clock"/></svg>
                     <strong style="font-size: 14px;">Melbourne Metro Tunnel Supported</strong>
                 </div>
-                <p style="margin: 8px 0 0 0; font-size: 12px; color: rgba(255,255,255,0.9);">
+                <p style="margin: 8px 0 0 0; font-size: 12px; color: #94a3b8;">
                     Full real-time support for Arden, Parkville, State Library, Town Hall, and Anzac stations.
                 </p>
             </div>
@@ -375,7 +377,7 @@
                     <div style="font-size: 12px; color: #fbbf24; margin-bottom: 8px;">
                         <svg class="icon-sm"><use href="#icon-warning"/></svg> Requires flashing with Commute Compute&#8482; custom firmware (CCFirm&#8482;)
                     </div>
-                    <div style="background: rgba(102,126,234,0.1); border: 1px solid rgba(102,126,234,0.3); border-radius: 8px; padding: 10px; font-size: 12px; color: #667eea;">
+                    <div style="background: rgba(30, 41, 59, 0.8); border: 1px solid #3d5278; border-radius: 8px; padding: 10px; font-size: 12px; color: #94a3b8;">
                         <strong>Requires Chrome or Edge browser</strong> -- Web Bluetooth is not supported in Safari or Firefox.
                     </div>
                 </div>
@@ -389,8 +391,8 @@
                         </div>
 
                         <!-- Privacy Notice -->
-                        <div style="background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); border-radius: 8px; padding: 10px 12px; margin-bottom: 15px;">
-                            <p style="color: #22c55e; font-size: 11px; margin: 0; display: flex; align-items: flex-start; gap: 8px;">
+                        <div style="background: rgba(30, 41, 59, 0.8); border: 1px solid #3d5278; border-left: 4px solid #4fb28e; border-radius: 8px; padding: 10px 12px; margin-bottom: 15px;">
+                            <p style="color: #4fb28e; font-size: 11px; margin: 0; display: flex; align-items: flex-start; gap: 8px;">
                                 <svg class="icon-sm" style="flex-shrink: 0; margin-top: 1px;"><use href="#icon-shield"/></svg>
                                 <span><strong>Privacy:</strong> Bluetooth communication is direct between your browser and device. WiFi credentials are never sent to any server.</span>
                             </p>
@@ -402,7 +404,7 @@
 
                         <!-- Find Device -->
                         <div id="ble-find-device-section">
-                            <button type="button" id="ble-connect-btn" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 600; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 8px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                            <button type="button" id="ble-connect-btn" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 600; background: #667eea; border: none; border-radius: 8px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
                                 <svg class="icon"><use href="#icon-bluetooth"/></svg>
                                 Click Here to Find Device
                             </button>
@@ -413,8 +415,8 @@
 
                         <!-- WiFi Credentials (hidden until BLE connected) -->
                         <div id="ble-wifi-credentials-section" style="display: none;">
-                            <div style="background: rgba(102,126,234,0.15); border-radius: 8px; padding: 10px; margin-bottom: 12px; text-align: center;">
-                                <span style="color: #667eea; font-size: 13px;">
+                            <div style="background: rgba(30, 41, 59, 0.8); border: 1px solid #3d5278; border-radius: 8px; padding: 10px; margin-bottom: 12px; text-align: center;">
+                                <span style="color: #4fb28e; font-size: 13px;">
                                     <svg class="icon-sm"><use href="#icon-check-circle"/></svg>
                                     Connected to device! Now select your WiFi network:
                                 </span>
@@ -423,18 +425,18 @@
                             <div style="display: grid; gap: 12px; margin-bottom: 15px;">
                                 <div>
                                     <label for="ble-wifi-ssid-select" class="form-label" style="font-size: 12px;">Select WiFi Network</label>
-                                    <select id="ble-wifi-ssid-select" class="form-input" style="border-color: rgba(102,126,234,0.5);">
+                                    <select id="ble-wifi-ssid-select" class="form-input" style="border-color: #3d5278;">
                                         <option value="">Select a network...</option>
                                     </select>
-                                    <input type="text" id="ble-wifi-ssid" class="form-input" placeholder="Or type network name manually" style="margin-top: 8px; border-color: rgba(102,126,234,0.5);" aria-label="WiFi network name">
+                                    <input type="text" id="ble-wifi-ssid" class="form-input" placeholder="Or type network name manually" style="margin-top: 8px; border-color: #3d5278;" aria-label="WiFi network name">
                                 </div>
                                 <div>
                                     <label for="ble-wifi-password" class="form-label" style="font-size: 12px;">WiFi Password</label>
-                                    <input type="password" id="ble-wifi-password" class="form-input" placeholder="Enter your WiFi password" style="border-color: rgba(102,126,234,0.5);">
+                                    <input type="password" id="ble-wifi-password" class="form-input" placeholder="Enter your WiFi password" style="border-color: #3d5278;">
                                 </div>
                             </div>
 
-                            <button type="button" id="ble-send-credentials-btn" style="width: 100%; padding: 14px; font-size: 14px; font-weight: 600; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); border: none; border-radius: 8px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <button type="button" id="ble-send-credentials-btn" style="width: 100%; padding: 14px; font-size: 14px; font-weight: 600; background: #4fb28e; border: none; border-radius: 8px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                                 <svg class="icon-sm"><use href="#icon-arrow-right"/></svg>
                                 Send WiFi Credentials to Device
                             </button>
@@ -459,7 +461,7 @@
                 </div>
 
                 <!-- Factory Reset Section (TRMNL only) -->
-                <div id="factory-reset-section" style="display: none; margin-top: 20px; padding: 15px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); border-radius: 12px;">
+                <div id="factory-reset-section" style="display: none; margin-top: 20px; padding: 15px; background: rgba(30, 41, 59, 0.8); border: 1px solid #3d5278; border-left: 4px solid #ef4444; border-radius: 12px;">
                     <div style="font-weight: 600; margin-bottom: 8px; font-size: 14px; color: #ef4444; display: flex; align-items: center; gap: 8px;">
                         <svg class="icon-sm"><use href="#icon-refresh"/></svg>
                         Factory Reset Device
@@ -480,7 +482,7 @@
                         <span id="advanced-arrow" style="transition: transform 0.2s;">&#9660;</span>
                     </button>
                     <div id="advanced-content" class="collapsible-content" role="region" aria-labelledby="advanced-toggle">
-                        <div style="padding: 15px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); border-radius: 12px;">
+                        <div style="padding: 15px; background: rgba(30, 41, 59, 0.8); border: 1px solid #3d5278; border-left: 4px solid #ef4444; border-radius: 12px;">
                             <div style="font-weight: 600; margin-bottom: 8px; font-size: 14px; color: #ef4444;">
                                 <svg class="icon-sm"><use href="#icon-trash"/></svg> Start Fresh / Wipe All Data
                             </div>
@@ -491,7 +493,7 @@
                                 <button type="button" id="wipe-all-data-btn" style="padding: 10px 18px; font-size: 13px; font-weight: 600; background: #ef4444; border: none; border-radius: 8px; color: white; cursor: pointer;">
                                     <svg class="icon-sm"><use href="#icon-trash"/></svg> Wipe All Data
                                 </button>
-                                <button type="button" id="clear-local-only-btn" style="padding: 10px 18px; font-size: 13px; font-weight: 500; background: transparent; border: 1px solid rgba(239,68,68,0.5); border-radius: 8px; color: #ef4444; cursor: pointer;">
+                                <button type="button" id="clear-local-only-btn" style="padding: 10px 18px; font-size: 13px; font-weight: 500; background: transparent; border: 1px solid #ef4444; border-radius: 8px; color: #ef4444; cursor: pointer;">
                                     Clear Browser Cache Only
                                 </button>
                             </div>
@@ -521,13 +523,13 @@
                     <a href="https://console.cloud.google.com/apis/library/places-backend.googleapis.com" target="_blank" rel="noopener" class="form-hint" style="color: #4fb28e;">Get Google Places API key (has free tier) &#8594;</a>
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button type="button" id="save-api-key-btn" class="btn" style="background: #48bb78; flex: 1;">
+                    <button type="button" id="save-api-key-btn" class="btn" style="background: #4fb28e; flex: 1;">
                         <svg class="icon-sm"><use href="#icon-save"/></svg> Save &amp; Test API Key
                     </button>
                     <button type="button" id="skip-google-key-btn" class="btn btn-secondary" style="flex: 1;">Skip for Now</button>
                 </div>
                 <div id="api-key-status" class="status-region" style="display: none;" aria-live="polite"></div>
-                <div id="skip-warning" style="display: none; margin-top: 16px; padding: 15px; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); border-radius: 8px;">
+                <div id="skip-warning" style="display: none; margin-top: 16px; padding: 15px; background: rgba(30, 41, 59, 0.8); border: 1px solid #3d5278; border-left: 4px solid #fbbf24; border-radius: 8px;">
                     <strong style="color: #fbbf24;"><svg class="icon-sm"><use href="#icon-warning"/></svg> Using OpenStreetMap</strong>
                     <p style="color: #94a3b8; font-size: 13px; margin-top: 8px; margin-bottom: 0;">
                         Address autocomplete will use OpenStreetMap. This works well for Australian addresses.
@@ -611,7 +613,7 @@
                     <div id="api-credentials-form"></div>
                     <div id="transit-api-status" class="status-region" style="display: none;" aria-live="polite"></div>
                     <div style="display: flex; gap: 10px; margin-top: 12px;">
-                        <button type="button" id="save-transit-key-btn" class="btn" style="background: #48bb78; flex: 1; font-size: 13px; padding: 10px;">
+                        <button type="button" id="save-transit-key-btn" class="btn" style="background: #4fb28e; flex: 1; font-size: 13px; padding: 10px;">
                             <svg class="icon-sm"><use href="#icon-save"/></svg> Save &amp; Test
                         </button>
                         <button type="button" id="skip-transit-btn" class="btn btn-secondary" style="flex: 1; font-size: 13px; padding: 10px;">
@@ -685,7 +687,7 @@
 
                 <div id="setup-status" class="status-region" aria-live="polite"></div>
 
-                <div id="manual-navigation" style="display: none; margin-top: 20px; padding: 15px; background: rgba(79,178,142,0.15); border: 2px solid #4fb28e; border-radius: 8px; text-align: center;">
+                <div id="manual-navigation" style="display: none; margin-top: 20px; padding: 15px; background: rgba(30, 41, 59, 0.8); border: 1px solid #3d5278; border-left: 4px solid #4fb28e; border-radius: 8px; text-align: center;">
                     <p style="color: #f1f5f9; margin-bottom: 10px; font-weight: 600;"><svg class="icon-sm" style="color: #22c55e;"><use href="#icon-check-circle"/></svg> Setup submitted!</p>
                     <a href="/admin.html" class="btn" style="display: inline-block; text-decoration: none; background: #4fb28e; color: #fff; padding: 12px 24px; border-radius: 8px; font-weight: 600;">
                         Go to Dashboard &#8594;
@@ -1072,7 +1074,7 @@
                 localStorage.setItem('cc-google-places-validated', 'true');
                 status.innerHTML = '<span style="color:#22c55e;"><svg class="icon-sm"><use href="#icon-check-circle"/></svg> API key saved and validated!</span>';
                 btn.innerHTML = '<svg class="icon-sm"><use href="#icon-check-circle"/></svg> Saved';
-                btn.style.background = '#48bb78';
+                btn.style.background = '#4fb28e';
                 nextBtn.style.display = 'block';
             } else if (result.success && !result.saved) {
                 status.innerHTML = '<span style="color:#ef4444;"><svg class="icon-sm"><use href="#icon-x-circle"/></svg> Validation failed - NOT saved: ' + sanitize(result.testResult?.message || 'Unknown error') + '</span>';
@@ -1093,7 +1095,7 @@
         var nextBtn = document.getElementById('step-2-next-btn');
         nextBtn.style.display = 'block';
         nextBtn.innerHTML = 'Continue Without API Key \u2192';
-        nextBtn.style.background = '#f59e0b';
+        nextBtn.style.background = '#fbbf24';
     }
 
     // ============================================
@@ -1191,19 +1193,19 @@
         if (stops && (stops.trainStopId || stops.tramStopId)) {
             var html = '';
             if (stops.trainStopId && stops.stationName) {
-                html += '<div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:14px;margin-bottom:10px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><svg class="icon-sm" style="color:#22c55e;"><use href="#icon-check-circle"/></svg><strong style="color:#22c55e;font-size:14px;">' + sanitize(stops.stationName) + '</strong></div><div style="color:#94a3b8;font-size:12px;line-height:1.6;"><span style="color:#f1f5f9;">Line:</span> ' + sanitize(stops.line || 'Unknown') + '<br><span style="color:#f1f5f9;">Platform:</span> Citybound (to City Loop)<br><span style="color:#64748b;font-family:monospace;font-size:11px;">Stop ID: ' + sanitize(stops.trainStopId) + '</span></div></div>';
+                html += '<div style="background:rgba(30,41,59,0.8);border:1px solid #3d5278;border-left:4px solid #4fb28e;border-radius:8px;padding:14px;margin-bottom:10px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><svg class="icon-sm" style="color:#4fb28e;"><use href="#icon-check-circle"/></svg><strong style="color:#4fb28e;font-size:14px;">' + sanitize(stops.stationName) + '</strong></div><div style="color:#94a3b8;font-size:12px;line-height:1.6;"><span style="color:#f1f5f9;">Line:</span> ' + sanitize(stops.line || 'Unknown') + '<br><span style="color:#f1f5f9;">Platform:</span> Citybound (to City Loop)<br><span style="color:#94a3b8;font-family:monospace;font-size:11px;">Stop ID: ' + sanitize(stops.trainStopId) + '</span></div></div>';
             }
             if (stops.tramStopId && stops.tramStop) {
-                html += '<div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:14px;margin-bottom:10px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><svg class="icon-sm" style="color:#22c55e;"><use href="#icon-check-circle"/></svg><strong style="color:#22c55e;font-size:14px;">Tram: ' + sanitize(stops.tramStop) + '</strong></div><div style="color:#94a3b8;font-size:12px;"><span style="color:#f1f5f9;">Direction:</span> Citybound<br><span style="color:#64748b;font-family:monospace;font-size:11px;">Stop ID: ' + sanitize(stops.tramStopId) + '</span></div></div>';
+                html += '<div style="background:rgba(30,41,59,0.8);border:1px solid #3d5278;border-left:4px solid #4fb28e;border-radius:8px;padding:14px;margin-bottom:10px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><svg class="icon-sm" style="color:#4fb28e;"><use href="#icon-check-circle"/></svg><strong style="color:#4fb28e;font-size:14px;">Tram: ' + sanitize(stops.tramStop) + '</strong></div><div style="color:#94a3b8;font-size:12px;"><span style="color:#f1f5f9;">Direction:</span> Citybound<br><span style="color:#94a3b8;font-family:monospace;font-size:11px;">Stop ID: ' + sanitize(stops.tramStopId) + '</span></div></div>';
             }
-            html += '<p style="color:#86efac;font-size:12px;margin-top:8px;"><svg class="icon-sm" style="color:#22c55e;"><use href="#icon-check-circle"/></svg> Auto-detected from your home address in <strong>' + sanitize(stops.suburb) + '</strong>.</p>';
+            html += '<p style="color:#4fb28e;font-size:12px;margin-top:8px;"><svg class="icon-sm" style="color:#22c55e;"><use href="#icon-check-circle"/></svg> Auto-detected from your home address in <strong>' + sanitize(stops.suburb) + '</strong>.</p>';
             container.innerHTML = html;
             if (!manualStopOverride) {
                 if (trainInput) trainInput.value = stops.trainStopId || '';
                 if (tramInput) tramInput.value = stops.tramStopId || '';
             }
         } else {
-            container.innerHTML = '<div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:14px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><svg class="icon-sm" style="color:#fbbf24;"><use href="#icon-warning"/></svg><strong style="color:#fbbf24;font-size:14px;">No nearby stops auto-detected</strong></div><p style="color:#94a3b8;font-size:12px;margin:0;line-height:1.5;">Your home suburb was not found in the Melbourne transit database. Your dashboard will use scheduled timetable data instead. You can enter stop IDs manually below.</p></div>';
+            container.innerHTML = '<div style="background:rgba(30,41,59,0.8);border:1px solid #3d5278;border-left:4px solid #fbbf24;border-radius:8px;padding:14px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><svg class="icon-sm" style="color:#fbbf24;"><use href="#icon-warning"/></svg><strong style="color:#fbbf24;font-size:14px;">No nearby stops auto-detected</strong></div><p style="color:#94a3b8;font-size:12px;margin:0;line-height:1.5;">Your home suburb was not found in the Melbourne transit database. Your dashboard will use scheduled timetable data instead. You can enter stop IDs manually below.</p></div>';
             if (!manualStopOverride) {
                 if (trainInput) trainInput.value = '';
                 if (tramInput) tramInput.value = '';
@@ -1279,7 +1281,7 @@
                 localStorage.setItem('cc-transit-state', selectedAuthority);
                 status.innerHTML = '<span style="color:#22c55e;"><svg class="icon-sm"><use href="#icon-check-circle"/></svg> API key saved and validated!</span>';
                 btn.innerHTML = '<svg class="icon-sm"><use href="#icon-check-circle"/></svg> Saved';
-                btn.style.background = '#48bb78';
+                btn.style.background = '#4fb28e';
                 document.getElementById('skip-transit-btn').style.display = 'none';
             } else {
                 status.innerHTML = '<span style="color:#ef4444;"><svg class="icon-sm"><use href="#icon-x-circle"/></svg> Validation failed: ' + sanitize(result.testResult?.message || result.message || 'Unknown error') + '</span>';
@@ -1434,7 +1436,7 @@
         // Configuration summary — shown for ALL device types (one hit)
         var summaryHtml = '<div class="success-box" style="margin-bottom:20px;">' +
             '<h3 style="color:#22c55e;margin-bottom:8px;"><svg class="icon"><use href="#icon-check-circle"/></svg> Setup Complete!</h3>' +
-            '<p style="color:#86efac;">Your SmartCommute\u2122 configuration has been saved to the server.</p></div>' +
+            '<p style="color:#4fb28e;">Your SmartCommute\u2122 configuration has been saved to the server.</p></div>' +
             '<div class="phase-card phase-card-pair" style="margin-bottom:20px;">' +
             '<h3 style="color:#4fb28e;margin-bottom:16px;"><svg class="icon-sm"><use href="#icon-link"/></svg> Your Configuration</h3>' +
             '<div style="display:grid;gap:12px;">' +
@@ -1530,7 +1532,7 @@
             var result = await response.json();
 
             if (result.success) {
-                document.getElementById('pairing-status').innerHTML = '<div style="color:#22c55e;font-weight:600;font-size:16px;"><svg class="icon" style="color:#22c55e;"><use href="#icon-check-circle"/></svg> Display Paired Successfully!</div><p style="color:#86efac;font-size:13px;margin-top:8px;">Your display will show your commute within 30 seconds.</p>';
+                document.getElementById('pairing-status').innerHTML = '<div style="color:#22c55e;font-weight:600;font-size:16px;"><svg class="icon" style="color:#22c55e;"><use href="#icon-check-circle"/></svg> Display Paired Successfully!</div><p style="color:#4fb28e;font-size:13px;margin-top:8px;">Your display will show your commute within 30 seconds.</p>';
                 input.disabled = true;
                 pairBtn.style.display = 'none';
                 startRedirectCountdown();
