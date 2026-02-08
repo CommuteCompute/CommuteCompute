@@ -5,7 +5,8 @@
  * This endpoint:
  * 1. Receives setup data from the wizard
  * 2. Geocodes addresses to get coordinates
- * 3. Returns location data for the frontend to save to KV
+ * 3. Auto-detects GTFS stop IDs from home address (Section 23.1.1)
+ * 4. Returns location data + detected stops for the frontend to save to KV
  *
  * Copyright (c) 2026 Angus Bergman
  * SPDX-License-Identifier: AGPL-3.0-or-later
@@ -14,6 +15,47 @@
 
 import { getGoogleApiKey } from '../../src/data/kv-preferences.js';
 import { requireAuth } from '../../src/utils/auth-middleware.js';
+
+/**
+ * Melbourne suburb to GTFS stop ID mapping (citybound platform IDs)
+ * Per DEVELOPMENT-RULES Section 23.1.1 - detectTrainStopId()
+ */
+const MELBOURNE_STOP_IDS = {
+  'south yarra': { train: '12179', tram: '2505', stationName: 'South Yarra Station', line: 'Sandringham/Pakenham/Cranbourne' },
+  'prahran': { train: '14289', tram: '2509', stationName: 'Prahran Station', line: 'Sandringham' },
+  'windsor': { train: '14297', tram: '2513', stationName: 'Windsor Station', line: 'Sandringham' },
+  'balaclava': { train: '14233', tram: '2519', stationName: 'Balaclava Station', line: 'Sandringham' },
+  'elsternwick': { train: '14247', tram: null, stationName: 'Elsternwick Station', line: 'Sandringham' },
+  'sandringham': { train: '14271', tram: null, stationName: 'Sandringham Station', line: 'Sandringham' },
+  'richmond': { train: '12173', tram: '2201', stationName: 'Richmond Station', line: 'All lines' },
+  'hawthorn': { train: '14257', tram: '3001', stationName: 'Hawthorn Station', line: 'Glen Waverley/Alamein' },
+  'camberwell': { train: '14246', tram: '3010', stationName: 'Camberwell Station', line: 'Glen Waverley/Alamein' },
+  'caulfield': { train: '14245', tram: '3012', stationName: 'Caulfield Station', line: 'Pakenham/Cranbourne/Frankston' },
+  'carnegie': { train: '14244', tram: null, stationName: 'Carnegie Station', line: 'Pakenham/Cranbourne' },
+  'oakleigh': { train: '14273', tram: null, stationName: 'Oakleigh Station', line: 'Pakenham/Cranbourne' },
+  'clifton hill': { train: '14249', tram: '2101', stationName: 'Clifton Hill Station', line: 'Hurstbridge/Mernda' },
+  'northcote': { train: '14269', tram: '2115', stationName: 'Northcote Station', line: 'Hurstbridge/Mernda' },
+  'footscray': { train: '14255', tram: null, stationName: 'Footscray Station', line: 'Werribee/Williamstown/Sunbury' },
+  'brunswick': { train: '14242', tram: '1201', stationName: 'Brunswick Station', line: 'Upfield' },
+  'coburg': { train: '14250', tram: null, stationName: 'Coburg Station', line: 'Upfield' },
+  'broadmeadows': { train: '14240', tram: null, stationName: 'Broadmeadows Station', line: 'Craigieburn' },
+  'melbourne': { train: '12204', tram: '2001', stationName: 'Flinders Street Station', line: 'All lines' },
+  'cbd': { train: '12204', tram: '2001', stationName: 'Flinders Street Station', line: 'All lines' },
+};
+
+/**
+ * Auto-detect stop IDs from address (Section 23.1.1)
+ */
+function detectStopIdsFromAddress(address) {
+  if (!address) return null;
+  const addressLower = address.toLowerCase();
+  for (const [suburb, data] of Object.entries(MELBOURNE_STOP_IDS)) {
+    if (addressLower.includes(suburb)) {
+      return { suburb, trainStopId: data.train, tramStopId: data.tram, stationName: data.stationName, line: data.line };
+    }
+  }
+  return null;
+}
 
 /**
  * Geocode an address using Google Places API (New) or Nominatim fallback
@@ -143,11 +185,15 @@ export default async function handler(req, res) {
       cafe: cafeLocation
     };
 
-    // Return success with geocoded locations
+    // Auto-detect stop IDs from home address (Section 23.1.1)
+    const detectedStops = detectStopIdsFromAddress(addresses.home);
+
+    // Return success with geocoded locations and detected stops
     res.json({
       success: true,
       message: 'Setup data processed. Locations geocoded.',
       locations,
+      detectedStops,
       transitRoute: {}
     });
 
