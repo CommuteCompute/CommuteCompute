@@ -2512,7 +2512,7 @@
                         </div>
                     </div>
                     
-                    <!-- Actual E-Ink Display Image from CCDash Renderer -->
+                    <!-- Actual E-Ink Display Image from CCDash&#8482; Renderer -->
                     <div id="eink-display-container" style="background: #1a1a1a; border-radius: 8px; padding: 16px; display: flex; justify-content: center; align-items: center; min-height: 300px;">
                         <div id="eink-image-wrapper" style="position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.5); border-radius: 4px; overflow: hidden;">
                             <img id="eink-preview-image" 
@@ -2543,7 +2543,7 @@
                         </div>
                         <div style="padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
                             <div style="font-size: 10px; text-transform: uppercase; opacity: 0.6; margin-bottom: 4px;">Firmware</div>
-                            <div style="font-size: 14px; font-weight: 600; color: #f1f5f9;">CC-FW-7.5.0</div>
+                            <div style="font-size: 14px; font-weight: 600; color: #f1f5f9;">CC-FW-7.6.0</div>
                         </div>
                     </div>
 
@@ -2741,7 +2741,7 @@
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8;">
                             <svg width="14" height="14" style="color: #4fb28e;"><use href="#icon-check"/></svg>
-                            <span id="cc-header-renderer-version">CCDash Renderer v2.0</span>
+                            <span id="cc-header-renderer-version">CCDash&#8482; Renderer v2.0</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8;">
                             <svg width="14" height="14" style="color: #667eea;"><use href="#icon-settings"/></svg>
@@ -3059,99 +3059,6 @@
                 </div>
             </div>
 
-            <!-- Refresh Rate Settings -->
-            <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.1) 100%); border-radius: 12px; border-left: 4px solid #fbbf24;">
-                <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
-                    <svg width="22" height="22" style="color: #fbbf24;"><use href="#icon-timer"/></svg>
-                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Refresh Rate Settings</h2>
-                </div>
-                <p style="margin-bottom: 20px; opacity: 0.9; font-size: 14px; line-height: 1.5;">
-                    Configure how often your device refreshes and the server recalculates your journey. Lower intervals increase accuracy but may reduce e-ink display lifespan.
-                </p>
-
-                <div id="refresh-settings-message" style="display: none; margin-bottom: 15px;"></div>
-
-                <div style="display: grid; gap: 20px;">
-                    <!-- Display Refresh -->
-                    <div style="padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
-                        <div style="font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-                            <svg width="18" height="18" style="color: #94a3b8;"><use href="#icon-smartphone"/></svg>
-                            <span>Display Refresh Interval</span>
-                        </div>
-                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-                            <input type="number" id="display-refresh-value" class="form-input" style="flex: 1; max-width: 100px;" min="5" value="15">
-                            <select id="display-refresh-unit" class="form-input" style="flex: 1; max-width: 120px;">
-                                <option value="minutes">minutes</option>
-                            </select>
-                        </div>
-                        <small style="color: rgba(255,255,255,0.6); font-size: 12px; display: block;">
-                            <span id="display-refresh-note">Minimum: 15 minutes for CC E-Ink (e-ink protection)</span>
-                        </small>
-                        <div id="display-refresh-estimate" style="margin-top: 8px; padding: 8px; background: rgba(251, 191, 36, 0.1); border-radius: 4px; font-size: 11px; display: none;">
-                            <svg width="14" height="14" style="color: #fbbf24; vertical-align: middle; margin-right: 4px;"><use href="#icon-zap"/></svg>
-                            Estimated e-ink lifespan: <span id="eink-lifespan"></span> years
-                        </div>
-                    </div>
-
-                    <!-- Journey Recalculation -->
-                    <div style="padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
-                        <div style="font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-                            <svg width="18" height="18" style="color: #94a3b8;"><use href="#icon-refresh"/></svg>
-                            <span>Journey Recalculation</span>
-                        </div>
-                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-                            <input type="number" id="journey-recalc-value" class="form-input" style="flex: 1; max-width: 100px;" min="1" value="2">
-                            <select id="journey-recalc-unit" class="form-input" style="flex: 1; max-width: 120px;">
-                                <option value="minutes">minutes</option>
-                            </select>
-                        </div>
-                        <small style="color: rgba(255,255,255,0.6); font-size: 12px;">
-                            How often the server recalculates your journey (minimum: 1 minute)
-                        </small>
-                    </div>
-
-                    <!-- Transit Data Fetch -->
-                    <div style="padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
-                        <div style="font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-                            <svg width="18" height="18" style="color: #94a3b8;"><use href="#icon-train"/></svg>
-                            <span>Transit Data Fetch</span>
-                        </div>
-                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-                            <input type="number" id="data-fetch-value" class="form-input" style="flex: 1; max-width: 100px;" min="10" value="30">
-                            <select id="data-fetch-unit" class="form-input" style="flex: 1; max-width: 120px;">
-                                <option value="seconds">seconds</option>
-                            </select>
-                        </div>
-                        <small style="color: rgba(255,255,255,0.6); font-size: 12px;">
-                            How often server checks for new departures (minimum: 10 seconds)
-                        </small>
-                    </div>
-
-                    <!-- Webhook (Fixed) -->
-                    <div style="padding: 15px; background: rgba(79, 178, 142, 0.1); border-radius: 8px; border-left: 4px solid #4fb28e;">
-                        <div style="font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-                            <svg width="18" height="18" style="color: #4fb28e;"><use href="#icon-radio"/></svg>
-                            <span>Webhook Interval</span>
-                        </div>
-                        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">
-                            <strong>Fixed:</strong> 15 minutes
-                        </div>
-                        <small style="color: rgba(255,255,255,0.6); font-size: 12px;">
-                            CC E-Ink platform enforces 15-minute minimum (cannot be changed)
-                        </small>
-                    </div>
-                </div>
-
-                <button class="btn btn-primary btn-block" onclick="saveRefreshSettings()" style="margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                    <svg width="16" height="16"><use href="#icon-save"/></svg>
-                    Save Refresh Settings
-                </button>
-
-                <div style="margin-top: 15px; padding: 12px; background: rgba(79, 178, 142, 0.1); border-radius: 8px; border-left: 4px solid #4fb28e; font-size: 12px; display: flex; align-items: flex-start; gap: 8px;">
-                    <svg width="16" height="16" style="color: #4fb28e; flex-shrink: 0; margin-top: 1px;"><use href="#icon-lightbulb"/></svg>
-                    <span><strong>Tip:</strong> Lower refresh intervals provide more up-to-date information but increase e-ink display wear. For daily commuting, 15-minute display refresh is recommended.</span>
-                </div>
-            </div>
 
             <div class="grid" style="gap: 20px;">
                 <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #4fb28e;">
@@ -3206,7 +3113,7 @@
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                     <span id="cc-badge-system-version" style="padding: 6px 14px; background: rgba(79, 178, 142, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #4fb28e;">v4.0.0</span>
                     <span id="cc-badge-renderer-version" style="padding: 6px 14px; background: rgba(102, 126, 234, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #667eea;">CCDash&#8482; v2.0</span>
-                    <span id="cc-badge-firmware-version" style="padding: 6px 14px; background: rgba(251, 191, 36, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #fbbf24;">CCFirm&#8482; CC-FW-7.5.0</span>
+                    <span id="cc-badge-firmware-version" style="padding: 6px 14px; background: rgba(251, 191, 36, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #fbbf24;">CCFirm&#8482; CC-FW-7.6.0</span>
                     <span style="padding: 6px 14px; background: rgba(168, 85, 247, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #a855f7;">Vercel KV</span>
                 </div>
             </div>
@@ -3313,10 +3220,10 @@
                 <div style="padding: 16px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0.05) 100%); border-radius: 10px; border: 1px solid rgba(168, 85, 247, 0.3);">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
                         <svg width="24" height="24" style="color: #a855f7;"><use href="#icon-cpu"/></svg>
-                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #a855f7;">CCFirm&#8482; CC-FW-7.5.0 Firmware</h3>
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #a855f7;">CCFirm&#8482; CC-FW-7.6.0 Firmware</h3>
                     </div>
                     <p style="font-size: 13px; color: #e2e8f0; line-height: 1.7; margin-bottom: 12px;">
-                        The ESP32-C3 firmware that runs on CC E-Ink devices. CCFirm handles WiFi connectivity, HTTPS image fetching, BMP rendering, and partial display refresh. Includes device pairing via 6-character codes and anti-brick safety measures.
+                        The ESP32-C3 firmware that runs on CC E-Ink devices. CCFirm&#8482; handles WiFi connectivity, HTTPS image fetching, BMP rendering, and partial display refresh. Includes device pairing via 6-character codes and anti-brick safety measures.
                     </p>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
                         <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
@@ -3434,11 +3341,11 @@
                         </div>
                         <div style="padding: 10px 14px; background: linear-gradient(90deg, rgba(251, 191, 36, 0.3) 0%, rgba(251, 191, 36, 0.1) 100%); border-radius: 6px; border-left: 3px solid #fbbf24;">
                             <span style="color: #fbbf24; font-weight: 600;">SERVICE LAYER</span>
-                            <span style="color: #94a3b8; margin-left: 12px;">CommuteCompute, CC LiveDash, Zone Renderer, Weather</span>
+                            <span style="color: #94a3b8; margin-left: 12px;">CommuteCompute&#8482;, CC LiveDash&#8482;, Zone Renderer, Weather</span>
                         </div>
                         <div style="padding: 10px 14px; background: linear-gradient(90deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.1) 100%); border-radius: 6px; border-left: 3px solid #ef4444;">
                             <span style="color: #ef4444; font-weight: 600;">CORE LAYER</span>
-                            <span style="color: #94a3b8; margin-left: 12px;">CoffeeDecision, Route Planner, Journey Engine</span>
+                            <span style="color: #94a3b8; margin-left: 12px;">CoffeeDecision&#8482;, Route Planner, Journey Engine</span>
                         </div>
                         <div style="padding: 10px 14px; background: linear-gradient(90deg, rgba(168, 85, 247, 0.3) 0%, rgba(168, 85, 247, 0.1) 100%); border-radius: 6px; border-left: 3px solid #a855f7;">
                             <span style="color: #a855f7; font-weight: 600;">DATA LAYER</span>
@@ -3466,7 +3373,7 @@
                     </h4>
                     <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; background: rgba(0,0,0,0.3); padding: 14px; border-radius: 6px; overflow-x: auto;">
                         <pre style="margin: 0; color: #94a3b8; line-height: 1.8;">
- DEVICE (CCFirm)                    VERCEL KV                      SETUP WIZARD
+ DEVICE (CCFirm&#8482;)                   VERCEL KV                      SETUP WIZARD
       |                                  |                               |
       |  1. Display 6-char code          |                               |
       |  +-----------------+             |                               |
@@ -3502,7 +3409,7 @@
                         <div style="width: 32px; height: 32px; background: #a855f7; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;">1</div>
                         <div style="flex: 1;">
                             <div style="font-weight: 600; font-size: 14px;">Device Pairing</div>
-                            <div style="font-size: 12px; color: #94a3b8;">CCFirm displays code, polls KV, receives webhook URL</div>
+                            <div style="font-size: 12px; color: #94a3b8;">CCFirm&#8482; displays code, polls KV, receives webhook URL</div>
                         </div>
                         <div style="font-size: 11px; color: #a855f7; padding: 4px 8px; background: rgba(168, 85, 247, 0.1); border-radius: 4px;">Vercel KV</div>
                     </div>
@@ -3518,7 +3425,7 @@
                         <div style="width: 32px; height: 32px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;">3</div>
                         <div style="flex: 1;">
                             <div style="font-weight: 600; font-size: 14px;">CommuteCompute&#8482; Engine</div>
-                            <div style="font-size: 12px; color: #94a3b8;">Route optimization, CoffeeDecision, journey legs with preferences from KV</div>
+                            <div style="font-size: 12px; color: #94a3b8;">Route optimization, CoffeeDecision&#8482;, journey legs with preferences from KV</div>
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
@@ -3616,7 +3523,7 @@
                     <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: rgba(255,255,255,0.03); border-radius: 6px;">
                         <span style="padding: 2px 8px; background: #22c55e; border-radius: 4px; font-size: 10px; font-weight: 700;">GET</span>
                         <span style="color: #4fb28e;">/api/livedash</span>
-                        <span style="color: #94a3b8; margin-left: auto;">CC LiveDash multi-device renderer</span>
+                        <span style="color: #94a3b8; margin-left: auto;">CC LiveDash&#8482; multi-device renderer</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: rgba(255,255,255,0.03); border-radius: 6px;">
                         <span style="padding: 2px 8px; background: #22c55e; border-radius: 4px; font-size: 10px; font-weight: 700;">GET</span>
@@ -3732,8 +3639,8 @@
     <span style="color: #fbbf24;">USER SETUP</span>                        <span style="color: #a855f7;">PERSISTENT STORAGE</span>                    <span style="color: #667eea;">DEVICE</span>
         |                                      |                                   |
    +----v----+                          +------v------+                      +-----v-----+
-   |  Setup  |   POST /pair/register    |   Vercel    |  GET /pair/poll     |  CCFirm   |
-   |  Wizard | -----------------------> |     KV      | <------------------ | CC-FW-7.5|
+   |  Setup  |   POST /pair/register    |   Vercel    |  GET /pair/poll     | CCFirm&#8482; |
+   |  Wizard | -----------------------> |     KV      | <------------------ | CC-FW-7.6|
    +---------+                          +-------------+                      +-----------+
         |                                      |                                   |
         |  Saves config token                  |  Stores: pair:{code}              |
@@ -3755,7 +3662,7 @@
                                |  +-------------------------+  |                   |
                                |  |   <span style="color: #4fb28e;">CommuteCompute&#8482; v3.0</span>   |  |                   |
                                |  |   - Route optimisation  |  |                   |
-                               |  |   - CoffeeDecision      |  |                   |
+                               |  |   - CoffeeDecision&#8482;     |  |                   |
                                |  |   - Mode preferences    |  |                   |
                                |  +-------------------------+  |                   |
                                |              |                |                   |
@@ -3893,8 +3800,8 @@
                         <strong>docs/CCDashDesignV12.md</strong> — Dashboard specification (LOCKED 2026-02-01)
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="padding: 3px 8px; background: rgba(168, 85, 247, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #a855f7;">CC-FW-7.5.0</span>
-                        <strong>docs/FIRMWARE.md</strong> — CCFirm device firmware documentation
+                        <span style="padding: 3px 8px; background: rgba(168, 85, 247, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #a855f7;">CC-FW-7.6.0</span>
+                        <strong>docs/FIRMWARE.md</strong> — CCFirm&#8482; device firmware documentation
                     </div>
                 </div>
             </div>
@@ -3909,8 +3816,11 @@
                     <svg width="24" height="24" style="color: #4fb28e;"><use href="#icon-cpu"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Commute Compute&#8482; System Overview</h2>
                 </div>
-                <p style="margin-bottom: 20px; opacity: 0.9; font-size: 14px;">
+                <p style="margin-bottom: 12px; opacity: 0.9; font-size: 14px;">
                     Real-time transit intelligence for your daily commute. Five interconnected engines working together.
+                </p>
+                <p style="margin-bottom: 20px; font-size: 13px; color: #94a3b8; font-style: italic; line-height: 1.6; padding: 12px 16px; background: rgba(79, 178, 142, 0.08); border-radius: 8px; border-left: 3px solid #4fb28e;">
+                    Other apps show delays. CommuteCompute&#8482; reacts to them. Live data flows into every decision- coffee, timing, connections. 1 glance. No app switching. Open Source.
                 </p>
                 
                 <!-- Version Grid -->
@@ -3920,12 +3830,12 @@
                         <div id="cc-grid-engine-version" style="font-size: 20px; font-weight: 700; color: #4fb28e;">v3.0</div>
                     </div>
                     <div style="padding: 15px; background: rgba(102, 126, 234, 0.15); border-radius: 8px; text-align: center;">
-                        <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">CCDash Renderer</div>
+                        <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">CCDash&#8482; Renderer</div>
                         <div id="cc-grid-renderer-version" style="font-size: 20px; font-weight: 700; color: #667eea;">v2.0</div>
                     </div>
                     <div style="padding: 15px; background: rgba(251, 191, 36, 0.15); border-radius: 8px; text-align: center;">
-                        <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">CCFirm Firmware</div>
-                        <div id="cc-grid-firmware-version" style="font-size: 20px; font-weight: 700; color: #fbbf24;">CC-FW-7.5.0</div>
+                        <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">CCFirm&#8482; Firmware</div>
+                        <div id="cc-grid-firmware-version" style="font-size: 20px; font-weight: 700; color: #fbbf24;">CC-FW-7.6.0</div>
                     </div>
                     <div style="padding: 15px; background: rgba(236, 72, 153, 0.15); border-radius: 8px; text-align: center;">
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">System Version</div>
@@ -3959,7 +3869,7 @@
 │                                │                                        │
 │                                ▼                                        │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                   CCDash Renderer v2.0                           │   │
+│   │                   CCDash&#8482; Renderer v2.0                          │   │
 │   │  • 800×480 1-bit BMP      • Zone-based partial refresh          │   │
 │   │  • V15.0 Dashboard Spec   • 60-second cycle                     │   │
 │   └────────────────────────────┬────────────────────────────────────┘   │
@@ -3974,7 +3884,7 @@
 │          └─────────────────────┼─────────────────────┘                  │
 │                                ▼                                        │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                 CCFirm Firmware CC-FW-7.5.0                    │   │
+│   │                 CCFirm&#8482; Firmware CC-FW-7.6.0                   │   │
 │   │  CC E-Ink OG      │ Kindle (WIP) │ Inkplate (WIP)               │   │
 │   └─────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
@@ -4138,7 +4048,7 @@
             <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #fbbf24;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #fbbf24;"><use href="#icon-cpu"/></svg>
-                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">CCFirm Firmware</h2>
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">CCFirm&#8482; Firmware</h2>
                 </div>
                 <p style="margin-bottom: 15px; opacity: 0.9; font-size: 14px;">
                     Custom firmware for e-ink display devices. Required for all Commute Compute displays.
@@ -4147,7 +4057,7 @@
                 <div style="padding: 15px; background: rgba(251, 191, 36, 0.1); border-radius: 8px; margin-bottom: 15px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <div style="font-weight: 600; font-size: 16px;">CC-FW-7.5.0</div>
+                            <div style="font-weight: 600; font-size: 16px;">CC-FW-7.6.0</div>
                             <div style="font-size: 12px; opacity: 0.8;">Current Production Firmware</div>
                         </div>
                         <div style="text-align: right;">
@@ -5242,7 +5152,7 @@
             const timezone = detectedTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
             document.getElementById('current-time').textContent = now.toLocaleTimeString('en-AU', {
-                timeZone: timezone, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+                timeZone: timezone, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
             });
             document.getElementById('current-date').textContent = now.toLocaleDateString('en-AU', {
                 timeZone: timezone, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
@@ -5300,7 +5210,9 @@
                         cafe: config.addresses?.cafe,
                         arrivalTime: config.journey?.arrivalTime || '09:00',
                         state: config.state || 'VIC',
-                        coffeeEnabled: config.journey?.coffeeEnabled !== false
+                        coffeeEnabled: config.journey?.coffeeEnabled !== false,
+                        selectedRouteIndex: config.selectedRouteIndex,
+                        selectedRouteId: config.selectedRouteId
                     })
                 });
                 
@@ -5343,6 +5255,7 @@
                         apis: {
                             transitAuthority: {
                                 configured: hasTransitKey && transitValidated,
+                                hasKey: hasTransitKey,
                                 name: 'Transport Victoria OpenData',
                                 baseUrl: 'https://data.ptv.vic.gov.au',
                                 status: (hasTransitKey && transitValidated) ? 'active' : 'inactive',
@@ -5368,13 +5281,23 @@
                         },
                         transitStations: {
                             mode1: {
-                                origin: scData.journey_legs?.find(l => l.type === 'train')?.stationName || 'Not configured',
-                                destination: scData.journey_legs?.find(l => l.type === 'train')?.destination?.name || 'Not configured',
+                                origin: scData.journey_legs?.find(l => l.type === 'train')?.stationName ||
+                                        scData.journey_legs?.find(l => l.type === 'train')?.originStation ||
+                                        scData.raw?.transit?.trains?.[0]?.stationName ||
+                                        (scData.raw?.transit?.trains?.length > 0 ? 'Train stop detected' : 'Not configured'),
+                                destination: scData.journey_legs?.find(l => l.type === 'train')?.destination?.name ||
+                                             scData.raw?.transit?.trains?.[0]?.destination ||
+                                             (scData.raw?.transit?.trains?.length > 0 ? 'City' : 'Not configured'),
                                 type: 'Train'
                             },
                             mode2: {
-                                origin: scData.journey_legs?.find(l => l.type === 'tram')?.stopName || 'Not configured',
-                                destination: scData.journey_legs?.find(l => l.type === 'tram')?.destination?.name || 'Not configured',
+                                origin: scData.journey_legs?.find(l => l.type === 'tram')?.stopName ||
+                                        scData.journey_legs?.find(l => l.type === 'tram')?.originStop ||
+                                        scData.raw?.transit?.trams?.[0]?.stopName ||
+                                        (scData.raw?.transit?.trams?.length > 0 ? 'Tram stop detected' : 'Not configured'),
+                                destination: scData.journey_legs?.find(l => l.type === 'tram')?.destination?.name ||
+                                             scData.raw?.transit?.trams?.[0]?.destination ||
+                                             (scData.raw?.transit?.trams?.length > 0 ? 'City' : 'Not configured'),
                                 type: 'Tram'
                             }
                         }
@@ -5425,10 +5348,22 @@
                             <div style="font-size: 24px; font-weight: 700; color: #4fb28e;">${sanitize(String(trainLeg.minutes))}<span style="font-size: 12px; font-weight: 400; color: #94a3b8;"> min</span></div>
                         </div>
                     </div>`;
+            } else if (scData.raw?.transit?.trains?.length > 0) {
+                const nextTrain = scData.raw.transit.trains[0];
+                trainEl.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px; color: #f1f5f9;">Next Train</div>
+                                <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">${sanitize(nextTrain.destination || nextTrain.lineName || 'Scheduled')}</div>
+                            </div>
+                            <div style="font-size: 24px; font-weight: 700; color: #4fb28e;">${sanitize(String(nextTrain.minutes))}<span style="font-size: 12px; font-weight: 400; color: #94a3b8;"> min</span></div>
+                        </div>
+                    </div>`;
             } else {
-                trainEl.innerHTML = '<div class="no-data" style="color: #94a3b8; text-align: center; padding: 20px;">No train in route</div>';
+                trainEl.innerHTML = '<div class="no-data" style="color: #94a3b8; text-align: center; padding: 20px;">No train data available</div>';
             }
-            
+
             if (tramLeg) {
                 tramEl.innerHTML = `
                     <div style="display: flex; flex-direction: column; gap: 12px;">
@@ -5440,8 +5375,20 @@
                             <div style="font-size: 24px; font-weight: 700; color: #667eea;">${sanitize(String(tramLeg.minutes))}<span style="font-size: 12px; font-weight: 400; color: #94a3b8;"> min</span></div>
                         </div>
                     </div>`;
+            } else if (scData.raw?.transit?.trams?.length > 0) {
+                const nextTram = scData.raw.transit.trams[0];
+                tramEl.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px; color: #f1f5f9;">Next Tram</div>
+                                <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">${sanitize(nextTram.destination || ('Route ' + (nextTram.routeNumber || '')) || 'Scheduled')}</div>
+                            </div>
+                            <div style="font-size: 24px; font-weight: 700; color: #667eea;">${sanitize(String(nextTram.minutes))}<span style="font-size: 12px; font-weight: 400; color: #94a3b8;"> min</span></div>
+                        </div>
+                    </div>`;
             } else {
-                tramEl.innerHTML = '<div class="no-data" style="color: #94a3b8; text-align: center; padding: 20px;">No tram in route</div>';
+                tramEl.innerHTML = '<div class="no-data" style="color: #94a3b8; text-align: center; padding: 20px;">No tram data available</div>';
             }
         }
         
@@ -5682,8 +5629,8 @@
                     <div style="padding: 15px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; border-left: 3px solid #4fb28e;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                             <div style="font-weight: 600; font-size: 14px;"><svg class="icon-sm"><use href="#icon-train"/></svg> Transport for Victoria - GTFS Realtime</div>
-                            <span style="padding: 4px 10px; background: rgba(251, 191, 36, 0.2); border-radius: 12px; font-size: 11px; font-weight: 600; color: #fbbf24;">
-                                Configure in API section
+                            <span style="padding: 4px 10px; background: ${apis.transitAuthority.configured ? 'rgba(72, 187, 120, 0.2)' : 'rgba(251, 191, 36, 0.2)'}; border-radius: 12px; font-size: 11px; font-weight: 600; color: ${apis.transitAuthority.configured ? '#22c55e' : '#fbbf24'};">
+                                ${apis.transitAuthority.configured ? '<svg class="icon-sm"><use href="#icon-check-circle"/></svg> Connected' : apis.transitAuthority.hasKey ? 'Validating...' : 'Configure in API section'}
                             </span>
                         </div>
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 5px;">
@@ -8211,101 +8158,6 @@
             showMessage('api-message', 'Saved!', 'success');
         }
 
-        // ==================== REFRESH RATE SETTINGS ====================
-
-        async function saveRefreshSettings() {
-            try {
-                const displayValue = parseInt(document.getElementById('display-refresh-value').value);
-                const displayUnit = document.getElementById('display-refresh-unit').value;
-                const journeyValue = parseInt(document.getElementById('journey-recalc-value').value);
-                const journeyUnit = document.getElementById('journey-recalc-unit').value;
-                const dataValue = parseInt(document.getElementById('data-fetch-value').value);
-                const dataUnit = document.getElementById('data-fetch-unit').value;
-
-                // Convert to milliseconds
-                const displayInterval = displayUnit === 'minutes' ? displayValue * 60000 : displayValue * 1000;
-                const journeyInterval = journeyUnit === 'minutes' ? journeyValue * 60000 : journeyValue * 1000;
-                const dataInterval = dataUnit === 'seconds' ? dataValue * 1000 : dataValue * 60000;
-
-                const response = await fetch(BASE_URL + '/admin/refresh-settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        displayRefresh: { interval: displayInterval, unit: displayUnit },
-                        journeyRecalc: { interval: journeyInterval, unit: journeyUnit },
-                        dataFetch: { interval: dataInterval, unit: dataUnit }
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    const messageDiv = document.getElementById('refresh-settings-message');
-                    messageDiv.style.display = 'block';
-                    messageDiv.style.background = 'rgba(72, 187, 120, 0.2)';
-                    messageDiv.style.padding = '12px';
-                    messageDiv.style.borderRadius = '8px';
-                    messageDiv.style.color = '#22c55e';
-                    messageDiv.innerHTML = `<svg class="icon-sm"><use href="#icon-check-circle"/></svg> ${sanitize(result.message)}`;
-
-                    setTimeout(() => {
-                        messageDiv.style.display = 'none';
-                    }, 3000);
-
-                    // Update e-ink lifespan estimate
-                    updateEinkLifespanEstimate();
-                } else {
-                    throw new Error(result.error || 'Failed to save settings');
-                }
-            } catch (error) {
-                const messageDiv = document.getElementById('refresh-settings-message');
-                messageDiv.style.display = 'block';
-                messageDiv.style.background = 'rgba(239, 68, 68, 0.2)';
-                messageDiv.style.padding = '12px';
-                messageDiv.style.borderRadius = '8px';
-                messageDiv.style.color = '#fca5a5';
-                messageDiv.innerHTML = `<svg class="icon-sm" style="color: #f87171;"><use href="#icon-x-circle"/></svg> Error: ${sanitize(error.message)}`;
-            }
-        }
-
-        function updateEinkLifespanEstimate() {
-            const displayValue = parseInt(document.getElementById('display-refresh-value').value);
-            const deviceSelect = document.getElementById('setup-device-select');
-            const selectedDevice = deviceSelect ? deviceSelect.value : 'trmnl-byos';
-
-            // E-ink wear factors (Development Rules v1.0.15 Section Y)
-            const wearFactors = {
-                'trmnl-byos': 0.3,       // Partial refresh = lower wear
-                'kindle-pw5': 0.5,       // Carta 1200 = moderate wear
-                'kindle-pw3': 0.7,       // Carta = higher wear
-                'kindle-pw4': 0.7,       // Carta 1100 = higher wear
-                'kindle-basic-10': 1.0,  // Pearl = highest wear
-                'kindle-11': 0.5         // Carta 1200 = moderate wear
-            };
-
-            const dailyRefreshes = (24 * 60) / displayValue;
-            const yearlyRefreshes = dailyRefreshes * 365;
-            const estimatedLifespan = 1000000 / (yearlyRefreshes * wearFactors[selectedDevice]);
-
-            const lifespanSpan = document.getElementById('eink-lifespan');
-            const estimateDiv = document.getElementById('display-refresh-estimate');
-
-            if (lifespanSpan && estimateDiv) {
-                lifespanSpan.textContent = Math.round(estimatedLifespan * 10) / 10;
-                estimateDiv.style.display = 'block';
-            }
-        }
-
-        // Update lifespan estimate when display refresh changes
-        document.addEventListener('DOMContentLoaded', function() {
-            const displayRefreshInput = document.getElementById('display-refresh-value');
-            if (displayRefreshInput) {
-                displayRefreshInput.addEventListener('input', updateEinkLifespanEstimate);
-                updateEinkLifespanEstimate(); // Initial calculation
-            }
-        });
-
-        // ==================== END REFRESH RATE SETTINGS ====================
 
         function refreshData() { loadAllData(); }
         async function clearCache() { await fetch(BASE_URL + '/admin/cache/clear', { method: 'POST' }); loadAllData(); }
@@ -9675,7 +9527,7 @@
                 .then(v => {
                     const scVersion = v.components?.commutecompute?.version || 'v3.0';
                     const rendererVersion = v.components?.renderer?.version || 'v2.0';
-                    const firmwareVersion = v.components?.firmware?.version || 'CC-FW-7.5.0';
+                    const firmwareVersion = v.components?.firmware?.version || 'CC-FW-7.6.0';
                     const buildDate = v.date || new Date().toISOString().split('T')[0];
                     const systemVersion = v.system?.version || '4.0.0';
 
@@ -9689,7 +9541,7 @@
                     const headerEngine = document.getElementById('cc-header-engine-version');
                     if (headerEngine) headerEngine.textContent = `CommuteCompute Engine ${scVersion}`;
                     const headerRenderer = document.getElementById('cc-header-renderer-version');
-                    if (headerRenderer) headerRenderer.textContent = `CCDash Renderer ${rendererVersion}`;
+                    if (headerRenderer) headerRenderer.innerHTML = `CCDash&#8482; Renderer ${rendererVersion}`;
 
                     // System info badges
                     const badgeSystem = document.getElementById('cc-badge-system-version');
@@ -9770,7 +9622,7 @@
                     <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.0</span>
                 </div>
                 <div class="cc-footer-version-item">
-                    <span class="cc-footer-version-label">CCDash Renderer</span>
+                    <span class="cc-footer-version-label">CCDash&#8482; Renderer</span>
                     <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.0</span>
                 </div>
                 <div class="cc-footer-version-item">

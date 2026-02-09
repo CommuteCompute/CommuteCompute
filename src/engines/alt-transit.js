@@ -1,6 +1,6 @@
 /**
  * Alternative Transit Engine v1.0
- * Part of the Commute Compute System
+ * Part of the Commute Compute™ System
  *
  * Estimates costs for alternative transport options when all public
  * transit services are cancelled or suspended. Provides actionable
@@ -69,7 +69,7 @@ const DISPLAY_LINE_MAX = 22;
 // =============================================================================
 
 /**
- * AltTransit - Alternative transport cost estimator for Commute Compute.
+ * AltTransit - Alternative transport cost estimator for Commute Compute™.
  *
  * When all public transit options are cancelled or unavailable, this engine
  * estimates the cost of alternative transport so the user can decide between

@@ -15,6 +15,7 @@
  */
 
 import LiveDash, { DEVICE_CONFIGS } from '../src/services/livedash.js';
+import { getPreferences, getTransitApiKey } from '../src/data/kv-preferences.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -59,12 +60,35 @@ async function loadJourneyConfig(configToken = null) {
     }
   }
   
+  // Fallback to KV preferences (Vercel serverless — synced from Setup Wizard)
+  try {
+    const kvPrefs = await getPreferences();
+    if (kvPrefs && (kvPrefs.addresses?.home || kvPrefs.locations?.home?.address)) {
+      const transitKey = await getTransitApiKey();
+      return {
+        ...kvPrefs,
+        homeAddress: kvPrefs.addresses?.home || kvPrefs.locations?.home?.address || '',
+        workAddress: kvPrefs.addresses?.work || kvPrefs.locations?.work?.address || '',
+        cafeAddress: kvPrefs.addresses?.cafe || kvPrefs.locations?.cafe?.address || '',
+        homeLocation: kvPrefs.locations?.home,
+        workLocation: kvPrefs.locations?.work,
+        cafeLocation: kvPrefs.locations?.cafe,
+        arrivalTime: kvPrefs.journey?.arrivalTime || '09:00',
+        coffeeEnabled: kvPrefs.journey?.coffeeEnabled !== false,
+        api: { key: transitKey },
+        transitApiKey: transitKey
+      };
+    }
+  } catch (e) {
+    // KV not available, continue to filesystem fallback
+  }
+
   // Fallback to filesystem (for self-hosted)
   try {
     const configPath = path.join(process.cwd(), 'config', 'sample-journey.json');
     const data = await fs.readFile(configPath, 'utf8');
     const config = JSON.parse(data);
-    
+
     // Transform to CommuteCompute preferences format
     return {
       homeAddress: config.locations?.home?.address,
@@ -78,7 +102,6 @@ async function loadJourneyConfig(configToken = null) {
       homeToCafe: config.coffeeEngine?.homeToCafe || 3,
       makeCoffee: config.coffeeEngine?.makeCoffee || 4,
       cafeToTransit: config.coffeeEngine?.cafeToTransit || 2,
-      // Route info for CommuteCompute
       preferredRoute: config.preferredRoute
     };
   } catch (e) {
@@ -518,7 +541,7 @@ function generateHtmlPreview(device, config) {
         <div class="footer-legal">
             © 2025-2026 <a href="https://gitlab.com/angusbergman" target="_blank" rel="noopener">Angus Bergman</a> •
             <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a> •
-            Commute Compute v2.8
+            Commute Compute&#8482; System v4.0.0
         </div>
     </footer>
     

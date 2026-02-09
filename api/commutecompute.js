@@ -20,6 +20,7 @@ import CafeBusyDetector from '../src/services/cafe-busy-detector.js';
 import DepartureConfidence from '../src/engines/departure-confidence.js';
 import LifestyleContext from '../src/engines/lifestyle-context.js';
 import AltTransit from '../src/engines/alt-transit.js';
+import SleepOptimizer from '../src/engines/sleep-optimizer.js';
 import { getStopNameById } from '../src/data/gtfs-stop-names.js';
 
 export default async function handler(req, res) {
@@ -50,7 +51,9 @@ export default async function handler(req, res) {
       walkingTimes = {},
       coffee = {},
       modes = {},
-      advanced = {}
+      advanced = {},
+      selectedRouteIndex,
+      selectedRouteId
     } = params;
 
     // Location-agnostic timezone (per Development Rules Section 4)
@@ -91,6 +94,13 @@ export default async function handler(req, res) {
     const engine = new CommuteCompute(preferences);
     await engine.initialize();
 
+    // Apply user's selected route if provided
+    if (selectedRouteId !== undefined) {
+      engine.selectRoute(selectedRouteId);
+    } else if (selectedRouteIndex !== undefined) {
+      engine.selectRoute(parseInt(selectedRouteIndex));
+    }
+
     // Get live transit data
     const result = await engine.getJourneyRecommendation({ forceRefresh });
 
@@ -114,8 +124,9 @@ export default async function handler(req, res) {
       };
     }
 
-    // Build CCDash-compatible journey_legs
-    const journeyLegs = buildCCDashLegs(result, preferences, melbourneNow, result.route);
+    // Build CCDash-compatible journey_legs (use selected route if available)
+    const selectedRoute = engine.getSelectedRoute();
+    const journeyLegs = buildCCDashLegs(result, preferences, melbourneNow, selectedRoute || result.route);
 
     // Build status bar text (matches CCDash status bar format)
     const statusBar = buildStatusBar(result, journeyLegs, preferences, melbourneNow);
@@ -165,6 +176,18 @@ export default async function handler(req, res) {
       legs: journeyLegs,
       localHour: melbourneNow.getHours()
     });
+
+    // V15.0: Sleep Optimizer for evening dashboard
+    const sleepEngine = new SleepOptimizer();
+    const sleep = sleepEngine.calculate({
+      targetArrivalMins: targetH * 60 + targetM,
+      totalJourneyMins: totalMinutes,
+      currentTime: now,
+      localHour: melbourneNow.getHours(),
+      localMinute: melbourneNow.getMinutes()
+    });
+
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
 
     const response = {
       success: true,
@@ -238,6 +261,13 @@ export default async function handler(req, res) {
       alt_transit_bike: altTransit.bike,
       alt_transit_distance_km: altTransit.distanceKm,
       alt_transit_is_peak: altTransit.isPeak,
+
+      // V15.0: Sleep Optimizer (evening mode)
+      sleep_active: sleep.active,
+      sleep_bedtime: sleep.bedtime,
+      sleep_alarm: sleep.alarmTime,
+      sleep_display: sleep.displayLine,
+      sleep_adequacy: sleep.adequacy,
 
       // Raw data for debugging
       raw: {

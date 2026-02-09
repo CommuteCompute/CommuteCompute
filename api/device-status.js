@@ -19,6 +19,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -56,10 +57,17 @@ export default async function handler(req, res) {
       const now = new Date();
       const minutesAgo = Math.round((now - lastSeen) / 60000);
 
+      // Battery color coding: >40% green, 21-40% yellow, <=20% red
+      const batteryPercent = status.battery_percent;
+      const batteryColor = batteryPercent != null
+        ? (batteryPercent > 40 ? 'green' : batteryPercent > 20 ? 'yellow' : 'red')
+        : null;
+
       return res.json({
         success: true,
         status: {
           ...status,
+          battery_color: batteryColor,
           minutes_ago: minutesAgo,
           online: minutesAgo < 15  // Consider online if seen in last 15 min
         }
