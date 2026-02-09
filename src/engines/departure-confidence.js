@@ -72,7 +72,13 @@ class DepartureConfidence {
       currentMins = 0
     } = params || {};
 
-    const bufferMins = targetArrivalMins - currentMins - totalMinutes;
+    // Handle overnight/next-day scenario: if target is tomorrow (current > target),
+    // add 1440 minutes (24 hours) to get the real buffer
+    let bufferMins = targetArrivalMins - currentMins - totalMinutes;
+    if (currentMins > targetArrivalMins) {
+      // Target is tomorrow: buffer = (minutes until midnight) + targetArrival - journey
+      bufferMins = (1440 - currentMins) + targetArrivalMins - totalMinutes;
+    }
 
     const timeBuffer = this._calcTimeBuffer(bufferMins);
     const serviceFrequency = this._calcServiceFrequency(legs);

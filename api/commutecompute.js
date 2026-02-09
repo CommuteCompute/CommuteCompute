@@ -168,6 +168,8 @@ export default async function handler(req, res) {
     );
     const cannotArriveOnTime = confidence.label === 'UNLIKELY';
     const showAltTransit = !hasActiveTransit || hasDisruptedTransit || cannotArriveOnTime;
+    // V15.0 FIX: Pass actual total journey minutes (not just walk) for distance estimation
+    // AltTransit uses totalWalkMins to estimate the full home→work distance
     const altTransitEngine = new AltTransit();
     const altTransit = altTransitEngine.calculate({
       totalWalkMins: totalMinutes,
@@ -185,6 +187,15 @@ export default async function handler(req, res) {
       currentTime: now,
       localHour: melbourneNow.getHours(),
       localMinute: melbourneNow.getMinutes()
+    });
+
+    // V15.0: Lifestyle Mindset - stress, steps, apparent temperature
+    const mindset = lifestyleEngine.calculateMindset({
+      legs: journeyLegs,
+      weather: result.weather || {},
+      totalWalkMins: journeyLegs.filter(l => l.type === 'walk').reduce((sum, l) => sum + (l.minutes || 0), 0),
+      disruptionCount: journeyLegs.filter(l => l.state === 'suspended' || l.state === 'cancelled' || l.hasAlert).length,
+      transferCount: journeyLegs.filter(l => ['train', 'tram', 'bus'].includes(l.type)).length
     });
 
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -267,7 +278,13 @@ export default async function handler(req, res) {
       sleep_bedtime: sleep.bedtime,
       sleep_alarm: sleep.alarmTime,
       sleep_display: sleep.displayLine,
-      sleep_adequacy: sleep.adequacy,
+      sleep_adequacy: sleep.sleepAdequacy,
+
+      // V15.0: Lifestyle Mindset
+      mindset_stress: mindset.stressLevel,
+      mindset_display: mindset.stressDisplay,
+      mindset_steps: mindset.stepsDisplay,
+      mindset_feels_like: mindset.feelsLikeDisplay,
 
       // Raw data for debugging
       raw: {
