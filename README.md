@@ -429,6 +429,7 @@ See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed step-by-step instructions 
 | [KNOWN-ISSUES.md](KNOWN-ISSUES.md) | Current known issues and workarounds |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | Version history and release notes |
 | [LEGAL.md](LEGAL.md) | Trademarks, intellectual property, and licensing |
+| [PRIVACY.md](PRIVACY.md) | Privacy policy and data collection practices |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines |
 
 <br>

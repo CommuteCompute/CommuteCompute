@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+    Commute Compute - Privacy Policy & Data Collection Disclosure
+    Copyright (c) 2026 Angus Bergman
+    SPDX-License-Identifier: AGPL-3.0-or-later
+    Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
+-->
+<head>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <meta name="theme-color" content="#1a2744">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Privacy Policy and Data Collection Disclosure for Commute Compute Smart Journey Dashboard">
+    <title>Privacy Policy - Commute Compute</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #1a2744;
+            --bg-secondary: #1e293b;
+            --bg-card: #2a3d5f;
+            --accent: #4fb28e;
+            --accent-hover: #6ec9a8;
+            --text-primary: #f1f5f9;
+            --text-secondary: #a3b8d0;
+            --text-muted: #94a3b8;
+            --border: #3d5278;
+            --purple: #667eea;
+            --warning: #fbbf24;
+            --error: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding-bottom: 80px !important;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-link {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+            border-bottom-color: var(--text-muted);
+        }
+
+        .nav-link.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        /* Layout */
+        .container {
+            display: flex;
+            flex: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 24px 16px;
+            position: sticky;
+            top: 60px;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            padding-left: 12px;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: 4px;
+        }
+
+        .sidebar-nav a {
+            display: block;
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .sidebar-nav a:hover {
+            background: rgba(79, 178, 142, 0.1);
+            color: var(--text-primary);
+        }
+
+        .sidebar-nav a.active {
+            background: rgba(79, 178, 142, 0.15);
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        /* Content */
+        .content {
+            flex: 1;
+            padding: 32px 40px;
+            max-width: 800px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 15px;
+            margin-bottom: 32px;
+        }
+
+        .section {
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .section-content p {
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+        }
+
+        .section-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-content strong {
+            color: var(--text-primary);
+        }
+
+        .section-content ul {
+            margin: 8px 0 12px 20px;
+            color: var(--text-secondary);
+        }
+
+        .section-content ul li {
+            margin-bottom: 6px;
+        }
+
+        /* Tables */
+        .policy-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 13px;
+        }
+
+        .policy-table th {
+            text-align: left;
+            padding: 10px 12px;
+            background: rgba(30, 41, 59, 0.8);
+            border-bottom: 2px solid var(--border);
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .policy-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+            vertical-align: top;
+        }
+
+        .policy-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .policy-table code {
+            background: rgba(79, 178, 142, 0.1);
+            color: var(--accent);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .policy-table a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .policy-table a:hover {
+            text-decoration: underline;
+        }
+
+        /* Info box */
+        .info-box {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--purple);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin: 12px 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .warning-box {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--warning);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin: 12px 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* SVG icons */
+        .icon { width: 20px; height: 20px; vertical-align: middle; }
+        .icon-sm { width: 16px; height: 16px; vertical-align: middle; }
+
+        /* External link */
+        a.ext-link {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        a.ext-link:hover { text-decoration: underline; }
+
+        /* Footer */
+        .cc-system-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, rgba(26, 39, 68, 0.95) 0%, rgba(18, 28, 51, 0.98) 100%);
+            border-top: 1px solid #3d5278;
+            padding: 10px 20px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        .cc-system-footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .cc-footer-versions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        .cc-footer-version-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .cc-footer-version-label {
+            opacity: 0.6;
+            font-weight: 500;
+        }
+        .cc-footer-version-value {
+            color: #4fb28e;
+            font-weight: 600;
+            font-family: 'Inter', monospace;
+        }
+        .cc-footer-attribution {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        .cc-footer-attribution a {
+            color: #4fb28e;
+            text-decoration: none;
+        }
+        .cc-footer-live-dot {
+            width: 6px;
+            height: 6px;
+            background: #4fb28e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .content { padding: 20px 16px; }
+            .cc-system-footer-inner {
+                flex-direction: column;
+                text-align: center;
+            }
+            .cc-footer-attribution {
+                text-align: center;
+            }
+            .nav-links { gap: 4px; }
+            .nav-link { padding: 8px 8px; font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- SVG Icon Definitions -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <symbol id="icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </symbol>
+        <symbol id="icon-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </symbol>
+        <symbol id="icon-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+        </symbol>
+        <symbol id="icon-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </symbol>
+        <symbol id="icon-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </symbol>
+        <symbol id="icon-trash-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+        </symbol>
+        <symbol id="icon-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+        </symbol>
+        <symbol id="icon-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+        </symbol>
+        <symbol id="icon-server" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>
+        </symbol>
+        <symbol id="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
+        </symbol>
+        <symbol id="icon-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+        </symbol>
+        <symbol id="icon-dollar-sign" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </symbol>
+        <symbol id="icon-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </symbol>
+        <symbol id="icon-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+        </symbol>
+        <symbol id="icon-external-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+        </symbol>
+    </svg>
+
+    <header class="header">
+        <a href="/" class="brand">
+            <img src="/assets/brand/cc-logo-128.png" alt="Commute Compute™" style="height: 56px; width: auto; margin-right: 10px;">
+            <span>Commute Compute™</span>
+        </a>
+        <nav class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/setup-wizard.html" class="nav-link">Setup</a>
+            <a href="/admin.html" class="nav-link">Dashboard</a>
+            <a href="/preview.html" class="nav-link">Preview</a>
+            <a href="/help.html" class="nav-link">Help</a>
+            <a href="/privacy.html" class="nav-link active">Privacy</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-title">Privacy Policy</div>
+            <ul class="sidebar-nav">
+                <li><a href="#introduction" class="active">Introduction</a></li>
+                <li><a href="#data-collected">Data We Collect</a></li>
+                <li><a href="#data-not-collected">Data We Do Not Collect</a></li>
+                <li><a href="#third-party">Third-Party Services</a></li>
+                <li><a href="#storage-security">Storage and Security</a></li>
+                <li><a href="#config-tokens">Config Token Security</a></li>
+                <li><a href="#retention">Data Retention and Deletion</a></li>
+                <li><a href="#self-hosted">Self-Hosted Architecture</a></li>
+                <li><a href="#free-tier">Free-Tier Commitment</a></li>
+                <li><a href="#open-source">Open Source Transparency</a></li>
+                <li><a href="#children">Children's Privacy</a></li>
+                <li><a href="#australian-privacy">Australian Privacy Act</a></li>
+                <li><a href="#changes">Changes to This Policy</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <h1 class="page-title">
+                <svg class="icon"><use href="#icon-shield"/></svg>
+                Privacy Policy
+            </h1>
+            <p class="page-subtitle">Privacy Policy and Data Collection Disclosure for Commute Compute™ &mdash; Effective 9 February 2026</p>
+
+            <!-- Introduction -->
+            <section class="section" id="introduction">
+                <h2 class="section-title"><svg class="icon-sm"><use href="#icon-shield"/></svg> Introduction</h2>
+                <div class="section-content">
+                    <p>Commute Compute™ is a self-hosted, open-source commute intelligence system licensed under <a class="ext-link" href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a> (dual license available &mdash; see <a class="ext-link" href="https://gitlab.com/angusbergman/commute-compute-system/-/blob/main/LEGAL.md" target="_blank" rel="noopener">LEGAL.md</a>).</p>
+                    <p>This policy describes what data the system collects, how it is stored, what third-party services receive data, and how you can delete your data.</p>
+                    <div class="info-box">
+                        <strong>Key principle:</strong> Commute Compute™ uses a privacy-first, self-hosted architecture. Each deployment runs on the user's own Vercel instance. There is no central server collecting or aggregating data across users.
+                    </div>
+                </div>
+            </section>
+
+            <!-- Data We Collect -->
+            <section class="section" id="data-collected">
+                <h2 class="section-title"><svg class="icon-sm"><use href="#icon-database"/></svg> Data We Collect</h2>
+                <div class="section-content">
+                    <p>The following data is collected when you configure and use Commute Compute™:</p>
+                    <table class="policy-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Data</th>
+                                <th>Purpose</th>
+                                <th>Storage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Addresses</strong></td>
+                                <td>Home, work, and cafe addresses (text)</td>
+                                <td>Journey calculation, geocoding</td>
+                                <td>Vercel KV <code>cc:preferences</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Coordinates</strong></td>
+                                <td>Latitude/longitude from geocoding</td>
+                                <td>Distance and walking time calculations</td>
+                                <td>Vercel KV <code>cc:preferences</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>API Keys</strong></td>
+                                <td>Transport Victoria key, Google Places key</td>
+                                <td>Authenticate with data providers</td>
+                                <td>Vercel KV <code>cc:api:transit_key</code>, <code>cc:api:google_key</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Preferences</strong></td>
+                                <td>Arrival time, coffee preference, transit modes, walking times, state</td>
+                                <td>Dashboard personalisation</td>
+                                <td>Vercel KV <code>cc:preferences</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Device Status</strong></td>
+                                <td>Battery %, voltage, device ID, last-seen timestamp</td>
+                                <td>Admin device monitoring</td>
+                                <td>Vercel KV <code>cc:device:status</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Journey Profiles</strong></td>
+                                <td>Named route configurations</td>
+                                <td>Quick route switching</td>
+                                <td>Vercel KV <code>cc-profiles</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p>All data listed above is stored exclusively in your own Vercel KV (Redis) instance, encrypted at rest by Vercel/Upstash (AES-256).</p>
+                </div>
+            </section>
+
+            <!-- Data We Do NOT Collect -->
+            <section class="section" id="data-not-collected">
+                <h2 class="section-title"><svg class="icon-sm"><use href="#icon-eye-off"/></svg> Data We Do Not Collect</h2>
+                <div class="section-content">
+                    <p>Commute Compute™ explicitly does <strong>not</strong> collect, store, or transmit:</p>
+                    <ul>
+                        <li>IP addresses (not logged by the application)</li>
+                        <li>Personal names or email addresses</li>
+                        <li>Browsing history or search history</li>
+                        <li>Analytics, tracking pixels, or usage telemetry</li>
+                        <li>Cookies for profiling or advertising</li>
+                        <li>Location history (only your current configured addresses are stored)</li>
+                        <li>User behavioural data or app usage metrics</li>
+                        <li>Health or biometric data</li>
+                    </ul>
+                    <p>There are no third-party analytics SDKs embedded in the system (no Google Analytics, Sentry, Amplitude, Mixpanel, or similar).</p>
+                </div>
+            </section>
+
+            <!-- Third-Party Services -->
+            <section class="section" id="third-party">
+                <h2 class="section-title"><svg class="icon-sm"><use href="#icon-globe"/></svg> Third-Party Services</h2>
+                <div class="section-content">
+                    <p>Commute Compute™ communicates with the following external services to provide real-time commute data:</p>
+                    <table class="policy-table">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Data Sent</th>
+                                <th>Purpose</th>
+                                <th>Required?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><a class="ext-link" href="https://opendata.transport.vic.gov.au" target="_blank" rel="noopener">Transport Victoria OpenData</a></td>
+                                <td>API key header only &mdash; <strong>no personal data</strong></td>
+                                <td>Real-time departures, service alerts</td>
+                                <td>Yes (VIC users)</td>
+                            </tr>
+                            <tr>
+                                <td><a class="ext-link" href="https://developers.google.com/maps/documentation/places/web-service" target="_blank" rel="noopener">Google Places API (New)</a></td>
+                                <td>Address search queries, Melbourne location bias</td>
+                                <td>Geocoding, place autocomplete</td>
+                                <td>Optional (free fallback available)</td>
+                            </tr>
+                            <tr>
+                                <td><a class="ext-link" href="http://www.bom.gov.au" target="_blank" rel="noopener">Bureau of Meteorology</a></td>
+                                <td>None (unauthenticated public GET)</td>
+                                <td>Weather observations</td>
+                                <td>Yes</td>
+                            </tr>
+                            <tr>
+                                <td><a class="ext-link" href="https://nominatim.openstreetmap.org" target="_blank" rel="noopener">OpenStreetMap Nominatim</a></td>
+                                <td>Address search queries</td>
+                                <td>Geocoding fallback</td>
+                                <td>Fallback only</td>
+                            </tr>
+                            <tr>
+                                <td><a class="ext-link" href="https://vercel.com" target="_blank" rel="noopener">Vercel</a></td>
+                                <td>All stored data (hosting provider)</td>
+                                <td>Hosting, serverless functions, KV storage</td>
+                                <td>Yes</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="info-box">
+                        <strong>Important:</strong> Your home, work, and cafe addresses are <strong>not</strong> sent to transit authorities. Only public GTFS stop IDs (e.g., "12179" for South Yarra Station) are used to query real-time departure data.
+                    </div>
+                    <p style="margin-top: 12px;">Third-party privacy policies:
+                        <a class="ext-link" href="https://www.ptv.vic.gov.au/footer/legal-and-policies/privacy-policy/" target="_blank" rel="noopener">Transport Victoria</a> |
+                        <a class="ext-link" href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google</a> |
+                        <a class="ext-link" href="http://www.bom.gov.au/other/privacy.shtml" target="_blank" rel="noopener">BOM</a> |
+                        <a class="ext-link" href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">OpenStreetMap</a> |
+                        <a class="ext-link" href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercel</a>
+                    </p>
+                </div>
+            </section>
+
+            <!-- Storage and Security -->
+            <section class="section" id="storage-security">
+                <h2 class="section-title"><svg class="icon-sm"><use href="#icon-lock"/></svg> Data Storage and Security</h2>
+                <div class="section-content">
+                    <p><strong>Storage:</strong></p>
+                    <ul>
+                        <li>All persistent data is stored in your Vercel KV (Redis) instance</li>
+                        <li>Vercel KV data is encrypted at rest (AES-256) by Vercel/Upstash</li>
+                        <li>No data is written to the filesystem &mdash; serverless functions are stateless</li>
+                        <li>In-memory caches (transit data, weather) are discarded when the serverless function completes</li>
+                    </ul>
+                    <p><strong>Security measures:</strong></p>
+                    <ul>
+                        <li>All external API communication uses HTTPS/TLS</li>
+                        <li>Zero-config architecture: no <code>.env</code> files, no hardcoded secrets in source code</li>
+                        <li>All user input is sanitised before display to prevent cross-site scripting (XSS)</li>
+                        <li>Admin endpoints are protected by bearer token authentication</li>
+                        <li>API keys are validated before storage and are never logged or displayed in full</li>
+                        <li>No personal information is hardcoded in the source code</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Config Token Security -->
+            <section class="section" id="config-tokens">
+                <h2 class="section-title"><svg class="icon-sm"><use href="#icon-alert-triangle"/></svg> Config Token Security</h2>
+                <div class="section-content">
+                    <p>Dashboard device URLs contain Base64URL-encoded configuration tokens. These tokens include your minified preferences (addresses, API keys, coordinates).</p>
+                    <div class="warning-box">
+                        <strong>Important:</strong> Config tokens are <strong>encoded, not encrypted</strong>. Treat your device webhook URL as sensitive &mdash; like a password. Do not share it publicly.
+                    </div>
+                </div>
+            </section>
+
+            <!-- Data Retention and Deletion -->
+            <section class="section" id="retention">
+                <h2 class="section-title"><svg class="icon-sm"><use href="#icon-trash-2"/></svg> Data Retention and Deletion</h2>
+                <div class="section-content">
+                    <table class="policy-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Retention Period</th>
+                                <th>How to Delete</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>User preferences and addresses</td>
+                                <td>Until manually deleted</td>
+                                <td>Admin panel or <code>/api/admin/reset</code></td>
+                            </tr>
+                            <tr>
+                                <td>API keys</td>
+                                <td>Until manually deleted</td>
+                                <td>Admin panel or <code>/api/admin/reset</code></td>
+                            </tr>
+                            <tr>
+                                <td>Real-time transit data</td>
+                                <td>30-60 second in-memory cache</td>
+                                <td>Automatic</td>
+                            </tr>
+                            <tr>
+                                <td>Weather data</td>
+                                <td>10 minute in-memory cache</td>
+                                <td>Automatic</td>
+                            </tr>
+                            <tr>
+                                <td>Device status</td>
+                                <td>Overwritten on next report</td>
+                                <td>Admin panel or <code>/api/admin/reset</code></td>
+                            </tr>
+                            <tr>
+                                <td>Journey profiles</td>
+                                <td>Until manually deleted</td>
+                                <td>Admin panel</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p><strong>To delete all data:</strong> Use the admin reset endpoint (<code>/api/admin/reset</code> with your admin token) or delete your Vercel project entirely. Vercel's own data retention policies apply to infrastructure-level backups.</p>
+                </div>
+            </section>
+
+            <!-- Self-Hosted Architecture -->
+            <section class="section" id="self-hosted">
+                <h2 class="section-title"><svg class="icon-sm"><use href="#icon-server"/></svg> Self-Hosted Architecture</h2>
+                <div class="section-content">
+                    <p>Commute Compute™ is architected so that each user deploys and controls their own instance:</p>
+                    <ul>
+                        <li>Each Vercel deployment is fully isolated &mdash; no data is shared between users</li>
+                        <li>There is no central Commute Compute™ server collecting or aggregating data</li>
+                        <li>There is no user profiling, behavioural analytics, or telemetry</li>
+                        <li>The full source code is available and auditable under AGPL-3.0</li>
+                        <li>Compliance is verified by 63+ automated audit checks</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Free-Tier Commitment -->
+            <section class="section" id="free-tier">
+                <h2 class="section-title"><svg class="icon-sm"><use href="#icon-dollar-sign"/></svg> Free-Tier Commitment</h2>
+                <div class="section-content">
+                    <p>Core Commute Compute™ functionality requires zero paid services:</p>
+                    <ul>
+                        <li><strong>Vercel</strong> &mdash; Free tier includes hosting and KV storage</li>
+                        <li><strong>Transport Victoria OpenData</strong> &mdash; Free registration, no usage fees</li>
+                        <li><strong>Bureau of Meteorology</strong> &mdash; Public data, no API key required</li>
+                        <li><strong>OpenStreetMap Nominatim</strong> &mdash; Free geocoding (default fallback)</li>
+                    </ul>
+                    <p>Google Places API is optional. If not configured, the system uses free OpenStreetMap geocoding. Users are never required to provide payment information to use Commute Compute™.</p>
+                </div>
+            </section>
+
+            <!-- Open Source Transparency -->
+            <section class="section" id="open-source">
+                <h2 class="section-title"><svg class="icon-sm"><use href="#icon-code"/></svg> Open Source Transparency</h2>
+                <div class="section-content">
+                    <ul>
+                        <li>Licensed under <a class="ext-link" href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a> (dual license available &mdash; see LEGAL.md)</li>
+                        <li>All data flows are visible and auditable in the source code</li>
+                        <li>No hidden telemetry, phone-home, or data exfiltration code</li>
+                        <li>Repository includes automated compliance auditing with 63+ checks across 24 rule sections</li>
+                        <li>All third-party data source attributions listed in <a class="ext-link" href="/attribution.html">Attribution</a></li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Children's Privacy -->
+            <section class="section" id="children">
+                <h2 class="section-title"><svg class="icon-sm"><use href="#icon-users"/></svg> Children's Privacy</h2>
+                <div class="section-content">
+                    <p>Commute Compute™ is not directed at children under the age of 13. We do not knowingly collect personal information from children. If you believe a child has provided personal data through this system, please contact us to have it removed.</p>
+                </div>
+            </section>
+
+            <!-- Australian Privacy Act -->
+            <section class="section" id="australian-privacy">
+                <h2 class="section-title"><svg class="icon-sm"><use href="#icon-file-text"/></svg> Australian Privacy Principles</h2>
+                <div class="section-content">
+                    <p>Commute Compute™ is designed with the Australian Privacy Principles (APPs) under the <em>Privacy Act 1988</em> (Cth) in mind:</p>
+                    <ul>
+                        <li><strong>Data minimisation:</strong> Only data necessary for commute calculations is collected</li>
+                        <li><strong>Purpose limitation:</strong> Data is used solely for rendering your personal commute dashboard</li>
+                        <li><strong>User control:</strong> You control your own data lifecycle &mdash; configure, update, and delete at any time</li>
+                        <li><strong>Transparency:</strong> This policy and the open-source code provide full visibility into data handling</li>
+                        <li><strong>Security:</strong> Encryption at rest, HTTPS in transit, input sanitisation, and token-based authentication</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Changes to This Policy -->
+            <section class="section" id="changes">
+                <h2 class="section-title"><svg class="icon-sm"><use href="#icon-file-text"/></svg> Changes to This Policy</h2>
+                <div class="section-content">
+                    <ul>
+                        <li>Policy updates are tracked in the project changelog</li>
+                        <li>The full revision history of this file is available in the git repository</li>
+                        <li>Material changes will be communicated via repository release notes</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Contact -->
+            <section class="section" id="contact">
+                <h2 class="section-title"><svg class="icon-sm"><use href="#icon-mail"/></svg> Contact</h2>
+                <div class="section-content">
+                    <p>For privacy-related enquiries:</p>
+                    <ul>
+                        <li><strong>Email:</strong> <a class="ext-link" href="mailto:commutecompute.licensing@gmail.com">commutecompute.licensing@gmail.com</a></li>
+                        <li><strong>GitLab Issues:</strong> <a class="ext-link" href="https://gitlab.com/angusbergman/commute-compute-system/issues" target="_blank" rel="noopener">gitlab.com/angusbergman/commute-compute-system/issues</a></li>
+                        <li><strong>Licensing and legal:</strong> See <a class="ext-link" href="https://gitlab.com/angusbergman/commute-compute-system/-/blob/main/LEGAL.md" target="_blank" rel="noopener">LEGAL.md</a></li>
+                    </ul>
+                </div>
+            </section>
+
+            <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-top: 32px;">
+                Commute Compute™, SmartCommute™, CCDash™, CC LiveDash™, and CCFirm™ are trademarks of Angus Bergman.<br>
+                Copyright 2026 Angus Bergman. Licensed under <a class="ext-link" href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a>.
+            </p>
+        </main>
+    </div>
+
+    <!-- Global System Footer (Section 22.9) -->
+    <div class="cc-system-footer">
+        <div class="cc-system-footer-inner">
+            <div class="cc-footer-versions">
+                <div class="cc-footer-version-item">
+                    <div class="cc-footer-live-dot"></div>
+                    <span class="cc-footer-version-label">CommuteCompute</span>
+                    <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.0</span>
+                </div>
+                <div class="cc-footer-version-item">
+                    <span class="cc-footer-version-label">CCDash Renderer</span>
+                    <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.1</span>
+                </div>
+                <div class="cc-footer-version-item">
+                    <span class="cc-footer-version-label">System</span>
+                    <span class="cc-footer-version-value" id="cc-footer-system-version">v3.0.0</span>
+                </div>
+                <div class="cc-footer-version-item">
+                    <span class="cc-footer-version-label">Build</span>
+                    <span class="cc-footer-version-value" id="cc-footer-build-date">--</span>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: center; gap: 8px; font-size: 11px; color: #94a3b8; flex-wrap: wrap;">
+                <a href="/privacy.html" style="color: #4fb28e; text-decoration: none;">Privacy</a>
+                <span>&#8226;</span>
+                <a href="/attribution.html" style="color: #4fb28e; text-decoration: none;">Attribution</a>
+                <span>&#8226;</span>
+                <a href="/help.html" style="color: #4fb28e; text-decoration: none;">Help</a>
+            </div>
+            <div class="cc-footer-attribution" id="cc-footer-attributions">
+                &#169; 2026 Angus Bergman &#8226; <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function loadFooterVersions() {
+        fetch('/api/version').then(function(r){return r.json();}).then(function(v) {
+            document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v2.3';
+            document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v1.80';
+            document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
+            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.4.0');
+        }).catch(function(){});
+    }
+    loadFooterVersions();
+
+    // Sidebar active state on scroll
+    document.addEventListener('scroll', function() {
+        var sections = document.querySelectorAll('.section');
+        var links = document.querySelectorAll('.sidebar-nav a');
+        var current = '';
+        sections.forEach(function(section) {
+            var top = section.offsetTop - 100;
+            if (window.scrollY >= top) {
+                current = section.getAttribute('id');
+            }
+        });
+        links.forEach(function(link) {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === '#' + current) {
+                link.classList.add('active');
+            }
+        });
+    });
+    </script>
+</body>
+</html>
