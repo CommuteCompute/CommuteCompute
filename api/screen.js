@@ -603,12 +603,21 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     }
 
     // V15.0: Calculate "Next: x, y, z" for timetable-only transit legs (no live data)
-    // V15.0: Calculate "Next: x, y, z" for timetable-only transit legs (no live data)
     // Estimates are generated from typical headway frequencies, not from GTFS-RT
     if (isTransitLeg && !liveData && baseLeg.nextDepartureTimesMs?.length > 0) {
       baseLeg.nextDepartures = baseLeg.nextDepartureTimesMs.map(depMs =>
         Math.round((depMs - nowMs) / 60000)
       );
+
+      // V15.0 FIX: Rebuild subtitle to include "Next:" timetable estimates.
+      // buildLegSubtitle() was called BEFORE timetable fallback populated
+      // nextDepartureTimesMs, so the subtitle is missing "Next:" data.
+      if (baseLeg.nextDepartures.length >= 2 && !baseLeg.subtitle?.includes('Next:')) {
+        const stopName = baseLeg.subtitle || '';
+        const tilde = '~';
+        const nextTimes = baseLeg.nextDepartures.slice(0, 3).join(`, ${tilde}`);
+        baseLeg.subtitle = `${stopName} • ${tilde}Next: ${tilde}${nextTimes} min`;
+      }
     }
 
     legs.push(baseLeg);
@@ -1547,10 +1556,19 @@ export default async function handler(req, res) {
     const transitApiKey = await getTransitApiKey();
     const apiOptions = transitApiKey ? { apiKey: transitApiKey } : {};
 
+    // V15.0: Extract tram/bus route numbers from journey legs for GTFS-RT route-level matching
+    // When stop-level matching fails (common for trams), route-level matching can find live data
+    const tramLeg = route?.legs?.find(l => l.type === 'tram');
+    const busLeg = route?.legs?.find(l => l.type === 'bus');
+    const tramApiOptions = { ...apiOptions };
+    if (tramLeg?.routeNumber) tramApiOptions.routeNumber = tramLeg.routeNumber;
+    const busApiOptions = { ...apiOptions };
+    if (busLeg?.routeNumber) busApiOptions.routeNumber = busLeg.routeNumber;
+
     const [trains, trams, buses, weather, disruptions] = await Promise.all([
       getDepartures(trainStopId, 0, apiOptions),
-      getDepartures(tramStopId, 1, apiOptions),
-      getDepartures(busStopId, 2, apiOptions),
+      getDepartures(tramStopId, 1, tramApiOptions),
+      getDepartures(busStopId, 2, busApiOptions),
       getWeather(locations.home?.lat, locations.home?.lon),
       getDisruptions(0, apiOptions).catch(() => [])
     ]);
@@ -1559,9 +1577,9 @@ export default async function handler(req, res) {
 
     // Determine if we actually have live transit data (from GTFS-RT, not fallback)
     // Per Section 23.6: "LIVE" indicators must reflect actual data source
-    const hasLiveTrainData = trains.some(t => t.source === 'gtfs-rt' && t.isLive === true);
-    const hasLiveTramData = trams.some(t => t.source === 'gtfs-rt' && t.isLive === true);
-    const hasLiveBusData = buses.some(t => t.source === 'gtfs-rt' && t.isLive === true);
+    const hasLiveTrainData = trains.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route') && t.isLive === true);
+    const hasLiveTramData = trams.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route') && t.isLive === true);
+    const hasLiveBusData = buses.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route') && t.isLive === true);
     const hasAnyLiveData = hasLiveTrainData || hasLiveTramData || hasLiveBusData;
 
     // =========================================================================
@@ -1885,7 +1903,8 @@ export default async function handler(req, res) {
             departureTimeMs: t.departureTimeMs,
             destination: t.destination,
             routeNumber: t.routeNumber,
-            isLive: !!t.departureTimeMs
+            isLive: !!t.departureTimeMs,
+            source: t.source || null
           })),
           _diagnostics: {
             trainFeed: transitData.trains?._feedInfo || null,

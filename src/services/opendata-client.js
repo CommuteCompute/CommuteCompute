@@ -191,7 +191,7 @@ async function fetchGtfsRt(mode, feed, options = {}) {
  * Get departures for a stop
  * @param {number} stopId - Stop ID
  * @param {number} routeType - 0=train/metro, 1=tram, 2=bus
- * @param {Object} options - { apiKey }
+ * @param {Object} options - { apiKey, routeNumber }
  * @returns {Array} - Array of departure objects
  */
 export async function getDepartures(stopId, routeType, options = {}) {
@@ -213,17 +213,19 @@ export async function getDepartures(stopId, routeType, options = {}) {
       return [];
     }
 
-    // Process GTFS-RT TripUpdates
+    // Process GTFS-RT TripUpdates - try stop-level match first
     const departures = processGtfsRtDepartures(feed, stopId, routeType);
 
     // V15.0: Attach diagnostic info for debugging GTFS-RT feed coverage
     const feedEntityCount = feed.entity?.length || 0;
     const sampleIds = new Set();
+    const routeIds = new Set();
     if (departures.length === 0 && feedEntityCount > 0) {
       for (const entity of feed.entity) {
-        if (sampleIds.size >= 10) break;
         const stus = entity.tripUpdate?.stopTimeUpdate;
-        if (stus) {
+        const routeId = entity.tripUpdate?.trip?.routeId;
+        if (routeId) routeIds.add(String(routeId));
+        if (stus && sampleIds.size < 10) {
           for (const stu of stus) {
             if (stu.stopId) sampleIds.add(String(stu.stopId));
             if (sampleIds.size >= 10) break;
@@ -231,15 +233,36 @@ export async function getDepartures(stopId, routeType, options = {}) {
         }
       }
     }
+
+    // V15.0: Route-level fallback for trams/buses when stop-level match fails.
+    // When the GTFS-RT feed has entities but none match the stop ID, search by
+    // route number. Tram feeds may use different stop ID schemes than the static GTFS.
+    // If we find trips on the matching route, extract departure estimates from any
+    // stop time update on that trip.
+    if (departures.length === 0 && feedEntityCount > 0 && options.routeNumber) {
+      const routeFallbackDepartures = processRouteLevelDepartures(
+        feed, stopId, options.routeNumber, routeType
+      );
+      if (routeFallbackDepartures.length > 0) {
+        console.log(`[OpenData] Route-level fallback found ${routeFallbackDepartures.length} departures for route ${options.routeNumber} (stopId=${stopId} not matched directly)`);
+        // Copy results to departures array (preserving array identity for _feedInfo)
+        routeFallbackDepartures.forEach(d => departures.push(d));
+      }
+    }
+
     departures._feedInfo = {
       entityCount: feedEntityCount,
       sampleStopIds: [...sampleIds],
+      sampleRouteIds: [...routeIds].slice(0, 10),
       queriedStopId: String(stopId),
-      mode
+      queriedRouteNumber: options.routeNumber || null,
+      mode,
+      matchMethod: departures.length > 0 && departures[0]?.source === 'gtfs-rt-route'
+        ? 'route-level' : departures.length > 0 ? 'stop-level' : 'none'
     };
 
     if (departures.length === 0) {
-      console.log(`[OpenData] No matching departures for stopId=${stopId} in ${mode} feed (${feedEntityCount} entities searched). Sample IDs: [${[...sampleIds].slice(0, 5).join(', ')}]`);
+      console.log(`[OpenData] No matching departures for stopId=${stopId} in ${mode} feed (${feedEntityCount} entities, ${routeIds.size} routes). Sample IDs: [${[...sampleIds].slice(0, 5).join(', ')}]. Routes: [${[...routeIds].slice(0, 5).join(', ')}]`);
       // V13.6 FIX: Per Section 23.6 - return empty array, not mock data
       return departures;
     }
@@ -252,6 +275,81 @@ export async function getDepartures(stopId, routeType, options = {}) {
     // V13.6 FIX: Per Section 23.6 - return empty array on error
     return [];
   }
+}
+
+/**
+ * V15.0: Route-level departure extraction when stop-level matching fails.
+ * Searches the GTFS-RT feed for trips matching a route number and extracts
+ * departure estimates from ANY stop on that trip. This handles cases where
+ * the GTFS-RT feed uses different stop IDs than our static GTFS data.
+ *
+ * @param {Object} feed - Decoded GTFS-RT FeedMessage
+ * @param {string|number} stopId - Original stop ID (for logging)
+ * @param {string} routeNumber - Expected route number (e.g., "58" for tram)
+ * @param {number} routeType - 0=metro, 1=tram, 2=bus
+ * @returns {Array} - Departure objects from route-level matching
+ */
+function processRouteLevelDepartures(feed, stopId, routeNumber, routeType) {
+  const nowMs = getNowMs();
+  const departures = [];
+  if (!feed?.entity || !routeNumber) return departures;
+
+  const targetRoute = String(routeNumber);
+
+  for (const entity of feed.entity) {
+    const tripUpdate = entity.tripUpdate;
+    if (!tripUpdate?.stopTimeUpdate?.length) continue;
+
+    const routeId = tripUpdate.trip?.routeId;
+    const extractedRoute = getRouteNumber(routeId);
+
+    // Match by route number
+    if (extractedRoute !== targetRoute) continue;
+
+    // Found a trip on this route — extract timing from the first available stop time update
+    // Use the middle stop (approximate midpoint) for better estimates
+    const stus = tripUpdate.stopTimeUpdate;
+    const midIdx = Math.floor(stus.length / 2);
+
+    // Try stops in order of preference: middle, first, last
+    for (const idx of [midIdx, 0, stus.length - 1]) {
+      const stu = stus[idx];
+      const depTime = stu.departure?.time || stu.arrival?.time;
+      if (!depTime) continue;
+
+      const depMs = (depTime.low || depTime) * 1000;
+      const minutes = Math.round((depMs - nowMs) / 60000);
+
+      if (minutes >= -2 && minutes <= 120) {
+        const delay = stu.departure?.delay || stu.arrival?.delay || 0;
+        const isDelayed = delay > 60;
+        const lineName = getLineName(routeId);
+        const stops = tripUpdate.stopTimeUpdate;
+        const finalStop = stops[stops.length - 1]?.stopId || '';
+
+        departures.push({
+          minutes: Math.max(0, minutes),
+          departureTimeMs: depMs,
+          destination: lineName,
+          lineName,
+          routeNumber: extractedRoute,
+          routeId,
+          tripId: tripUpdate.trip?.tripId,
+          finalStop,
+          isCitybound: false,
+          delay: Math.round(delay / 60),
+          isDelayed,
+          isLive: true,
+          source: 'gtfs-rt-route' // Distinguish from stop-level match
+        });
+        break; // One departure per trip
+      }
+    }
+  }
+
+  // Sort by departure time and limit
+  departures.sort((a, b) => a.minutes - b.minutes);
+  return departures.slice(0, 5);
 }
 
 /**
