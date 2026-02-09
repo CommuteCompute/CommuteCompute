@@ -274,10 +274,34 @@ export default async function handler(req, res) {
  * - journeyContribution: actual minutes this leg adds to total journey
  * - GTFS stop names via getStopNameById()
  */
+/**
+ * Merge consecutive walk legs into a single leg (Section 7.5.1 MANDATORY)
+ * Must be applied after ALL filtering to ensure no back-to-back walks ever appear
+ */
+function mergeConsecutiveWalkLegs(legs) {
+  const merged = [];
+  for (let i = 0; i < legs.length; i++) {
+    const current = { ...legs[i] };
+    if (current.type === 'walk' && i + 1 < legs.length && legs[i + 1].type === 'walk') {
+      const next = legs[i + 1];
+      current.minutes = (current.minutes || 0) + (next.minutes || 0);
+      current.durationMinutes = (current.durationMinutes || 0) + (next.durationMinutes || 0);
+      current.to = next.to || current.to;
+      current.stopName = next.stopName || current.stopName;
+      current.stationName = next.stationName || current.stationName;
+      current.title = `Walk to ${next.to || current.to || 'destination'}`;
+      i++;
+    }
+    merged.push(current);
+  }
+  return merged;
+}
+
 function buildCCDashLegs(result, prefs, now, route = null) {
   const transit = result.transit || {};
   const trains = transit.trains || [];
   const trams = transit.trams || [];
+  const buses = transit.buses || [];
   const routeLegs = route?.legs || [];
 
   // If engine provided no route legs, build minimal fallback
@@ -288,6 +312,7 @@ function buildCCDashLegs(result, prefs, now, route = null) {
   // Resolve stop IDs for GTFS name lookups
   const trainStopId = prefs.trainStopId || null;
   const tramStopId = prefs.tramStopId || null;
+  const busStopId = prefs.busStopId || null;
 
   // Cafe busyness for coffee legs
   const busyDetector = new CafeBusyDetector(prefs);
@@ -330,6 +355,7 @@ function buildCCDashLegs(result, prefs, now, route = null) {
         // Walking to a transit stop — resolve GTFS name
         const isToTram = routeLeg.to?.toLowerCase().includes('tram');
         const isToTrain = routeLeg.to?.toLowerCase().includes('train') || routeLeg.to?.toLowerCase().includes('platform');
+        const isToBus = routeLeg.to?.toLowerCase().includes('bus');
         let stopName;
 
         if (isToTram) {
@@ -338,9 +364,12 @@ function buildCCDashLegs(result, prefs, now, route = null) {
         } else if (isToTrain) {
           stopName = getStopNameById(trainStopId) ||
             routeLeg.stationName || routeLeg.origin?.name || 'Station';
+        } else if (isToBus) {
+          stopName = getStopNameById(busStopId) ||
+            routeLeg.stopName || routeLeg.origin?.name || 'Bus Stop';
         } else {
-          // Generic stop
-          stopName = getStopNameById(trainStopId) || getStopNameById(tramStopId) ||
+          // Generic stop — try all modes
+          stopName = getStopNameById(trainStopId) || getStopNameById(tramStopId) || getStopNameById(busStopId) ||
             routeLeg.stopName || routeLeg.stationName || routeLeg.to || 'Stop';
         }
 
@@ -401,19 +430,29 @@ function buildCCDashLegs(result, prefs, now, route = null) {
       });
       cumulativeMinutes += coffeeMinutes;
 
-    } else if (legType === 'tram' || legType === 'train') {
-      // Transit leg — match with live departure data
+    } else if (['train', 'tram', 'bus'].includes(legType)) {
+      // Transit leg — dynamically match with live departure data for any mode
       const isTrainLeg = legType === 'train';
-      const liveDepartures = isTrainLeg ? trains : trams;
+      const isTramLeg = legType === 'tram';
+      const isBusLeg = legType === 'bus';
+
+      // Departure source — dynamic by mode
+      const liveDepartures = isTrainLeg ? trains :
+                             isTramLeg ? trams :
+                             isBusLeg ? buses : [];
 
       // GTFS stop name resolution (priority: GTFS → engine origin → fallback)
-      const stopId = isTrainLeg ? trainStopId : tramStopId;
+      const stopId = isTrainLeg ? trainStopId :
+                     isTramLeg ? tramStopId :
+                     isBusLeg ? busStopId : null;
       const gtfsName = getStopNameById(stopId);
       const engineOriginName = routeLeg.origin?.name || routeLeg.originStop || routeLeg.originStation;
-      const originName = gtfsName || engineOriginName || (isTrainLeg ? 'Station' : 'Tram Stop');
+      const modeFallback = isTrainLeg ? 'Station' : isBusLeg ? 'Bus Stop' : 'Tram Stop';
+      const originName = gtfsName || engineOriginName || modeFallback;
 
       const destName = routeLeg.destination?.name || 'City';
-      const transitDuration = routeLeg.minutes || (isTrainLeg ? 15 : 20);
+      const modeLabel = legType.charAt(0).toUpperCase() + legType.slice(1);
+      const transitDuration = routeLeg.minutes || routeLeg.durationMinutes || 15;
 
       // Find catchable departure (must be after cumulative walk/coffee time)
       const catchableDeparture = liveDepartures.find(d => d.minutes >= cumulativeMinutes + 1);
@@ -449,18 +488,17 @@ function buildCCDashLegs(result, prefs, now, route = null) {
           transitSubtitle += ` • Plat ${catchableDeparture.platform}`;
         }
 
-        // journeyContribution = wait absorbed + transit ride duration
+        // journeyContribution = wait absorbed (if ≤2min) + transit ride duration
         const journeyContribution = Math.max(0, waitMinutes > 2 ? 0 : waitMinutes) + transitDuration;
 
         legs.push({
           number: legNumber++,
           type: legType,
-          title: `${isTrainLeg ? 'Train' : 'Tram'} → ${destName}`,
+          title: `${modeLabel} → ${destName}`,
           to: destName,
           destination: { name: destName },
-          originStop: !isTrainLeg ? originName : undefined,
-          originStation: isTrainLeg ? originName : undefined,
-          stopName: !isTrainLeg ? originName : undefined,
+          originStop: originName,
+          stopName: originName,
           stationName: isTrainLeg ? originName : undefined,
           subtitle: transitSubtitle,
           nextDepartures: nextTimes,
@@ -469,7 +507,7 @@ function buildCCDashLegs(result, prefs, now, route = null) {
           lineName: routeLeg.lineName || catchableDeparture.lineName,
           routeNumber: routeLeg.routeNumber || catchableDeparture.routeNumber,
           minutes: transitDuration,
-          journeyContribution: transitDuration,
+          journeyContribution,
           state: catchableDeparture.isDelayed ? 'delayed' : 'normal',
           isLive: catchableDeparture.source === 'live'
         });
@@ -480,12 +518,11 @@ function buildCCDashLegs(result, prefs, now, route = null) {
         legs.push({
           number: legNumber++,
           type: legType,
-          title: `${isTrainLeg ? 'Train' : 'Tram'} → ${destName}`,
+          title: `${modeLabel} → ${destName}`,
           to: destName,
           destination: { name: destName },
-          originStop: !isTrainLeg ? originName : undefined,
-          originStation: isTrainLeg ? originName : undefined,
-          stopName: !isTrainLeg ? originName : undefined,
+          originStop: originName,
+          stopName: originName,
           stationName: isTrainLeg ? originName : undefined,
           subtitle: transitSubtitle,
           nextDepartures: [],
@@ -499,11 +536,12 @@ function buildCCDashLegs(result, prefs, now, route = null) {
       }
 
       if (isTrainLeg) trainUsed = true;
-      else tramUsed = true;
+      else if (isTramLeg) tramUsed = true;
     }
   }
 
-  return legs;
+  // Section 7.5.1: Merge consecutive walk legs after all processing
+  return mergeConsecutiveWalkLegs(legs);
 }
 
 /**
@@ -515,16 +553,24 @@ function buildFallbackLegs(result, prefs, now) {
   const transit = result.transit || {};
   const trains = transit.trains || [];
   const trams = transit.trams || [];
+  const buses = transit.buses || [];
   const homeToStop = prefs.homeToStop || 5;
 
-  // Pick first available departure
-  const allDepartures = [...trains, ...trams].sort((a, b) => a.minutes - b.minutes);
+  // Pick first available departure from any mode
+  const allDepartures = [...trains, ...trams, ...buses].sort((a, b) => a.minutes - b.minutes);
   const departure = allDepartures.find(d => d.minutes >= homeToStop + 1);
 
-  const isTrainDep = departure ? trains.includes(departure) : true;
-  const stopName = isTrainDep
-    ? (getStopNameById(prefs.trainStopId) || 'Station')
-    : (getStopNameById(prefs.tramStopId) || 'Tram Stop');
+  // Determine mode of selected departure dynamically
+  const isTrainDep = departure ? trains.includes(departure) : false;
+  const isTramDep = departure ? trams.includes(departure) : false;
+  const isBusDep = departure ? buses.includes(departure) : false;
+  const depType = isTrainDep ? 'train' : isTramDep ? 'tram' : isBusDep ? 'bus' : 'train';
+
+  const stopId = depType === 'train' ? prefs.trainStopId :
+                 depType === 'tram' ? prefs.tramStopId :
+                 depType === 'bus' ? prefs.busStopId : null;
+  const modeFallback = depType === 'train' ? 'Station' : depType === 'bus' ? 'Bus Stop' : 'Tram Stop';
+  const stopName = getStopNameById(stopId) || modeFallback;
 
   legs.push({
     number: 1,
@@ -539,16 +585,16 @@ function buildFallbackLegs(result, prefs, now) {
   });
 
   if (departure) {
-    const type = isTrainDep ? 'train' : 'tram';
     const dest = departure.destination || 'City';
-    const transitDuration = isTrainDep ? 15 : 20;
-    const relevantDepartures = isTrainDep ? trains : trams;
+    const transitDuration = departure.duration || 15;
+    const modeLabel = depType.charAt(0).toUpperCase() + depType.slice(1);
+    const relevantDepartures = depType === 'train' ? trains : depType === 'tram' ? trams : buses;
     const nextTimes = relevantDepartures.slice(0, 2).map(d => d.minutes);
 
     legs.push({
       number: 2,
-      type,
-      title: `${type === 'train' ? 'Train' : 'Tram'} → ${dest}`,
+      type: depType,
+      title: `${modeLabel} → ${dest}`,
       to: dest,
       destination: { name: dest },
       subtitle: `${stopName} • Next: ${nextTimes.join(', ')} min`,
@@ -580,7 +626,8 @@ function buildFallbackLegs(result, prefs, now) {
     state: 'normal'
   });
 
-  return legs;
+  // Section 7.5.1: Merge consecutive walk legs after all processing
+  return mergeConsecutiveWalkLegs(legs);
 }
 
 /**
