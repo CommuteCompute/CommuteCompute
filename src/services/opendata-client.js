@@ -70,6 +70,19 @@ function getLineName(routeId) {
   return 'City';
 }
 
+/**
+ * V15.0: Extract numeric route number from GTFS route ID.
+ * Used for tram/bus route matching (e.g., "aus:vic:tram-58:" → "58")
+ * @param {string} routeId - GTFS route ID
+ * @returns {string|null} - Numeric route number or null
+ */
+function getRouteNumber(routeId) {
+  if (!routeId) return null;
+  // Match trailing number before optional colon (e.g., "-58:" or "-58")
+  const match = routeId.match(/-(\d+):?$/);
+  return match ? match[1] : null;
+}
+
 // Runtime API key storage (from user config token - Zero-Config compliant)
 let runtimeApiKey = null;
 
@@ -203,10 +216,32 @@ export async function getDepartures(stopId, routeType, options = {}) {
     // Process GTFS-RT TripUpdates
     const departures = processGtfsRtDepartures(feed, stopId, routeType);
 
+    // V15.0: Attach diagnostic info for debugging GTFS-RT feed coverage
+    const feedEntityCount = feed.entity?.length || 0;
+    const sampleIds = new Set();
+    if (departures.length === 0 && feedEntityCount > 0) {
+      for (const entity of feed.entity) {
+        if (sampleIds.size >= 10) break;
+        const stus = entity.tripUpdate?.stopTimeUpdate;
+        if (stus) {
+          for (const stu of stus) {
+            if (stu.stopId) sampleIds.add(String(stu.stopId));
+            if (sampleIds.size >= 10) break;
+          }
+        }
+      }
+    }
+    departures._feedInfo = {
+      entityCount: feedEntityCount,
+      sampleStopIds: [...sampleIds],
+      queriedStopId: String(stopId),
+      mode
+    };
+
     if (departures.length === 0) {
-      console.log(`[OpenData] No matching departures for stopId=${stopId} in ${mode} feed (${feed.entity?.length || 0} entities searched)`);
+      console.log(`[OpenData] No matching departures for stopId=${stopId} in ${mode} feed (${feedEntityCount} entities searched). Sample IDs: [${[...sampleIds].slice(0, 5).join(', ')}]`);
       // V13.6 FIX: Per Section 23.6 - return empty array, not mock data
-      return [];
+      return departures;
     }
 
     console.log(`[OpenData] Found ${departures.length} departures for stopId=${stopId} (${mode})`);
@@ -252,6 +287,7 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0) {
 
   // Stop ID matching - flexible for all modes to handle GTFS-RT ID formats
   // GTFS-RT may use bare IDs ("12179") or prefixed IDs ("aus:vic:metro:12179")
+  // V15.0: Enhanced matching for tram feeds which may use different ID schemes
   const matchesStopId = (gtfsStopId) => {
     if (!gtfsStopId) return false;
     const gtfsStr = String(gtfsStopId);
@@ -264,6 +300,14 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0) {
     if (gtfsStr.endsWith(`:${stopIdStr}`)) return true;
     if (gtfsStr.endsWith(`-${stopIdStr}`)) return true;
     if (gtfsStr.endsWith(`_${stopIdStr}`)) return true;
+    if (gtfsStr.endsWith(`/${stopIdStr}`)) return true;
+
+    // Numeric trailing match - handles non-delimited prefixes like "tram2505" or "stop2505"
+    // Only if our stop ID is fully numeric and the feed ID ends with our exact digits
+    if (/^\d+$/.test(stopIdStr)) {
+      const numMatch = gtfsStr.match(/(\d+)$/);
+      if (numMatch && numMatch[1] === stopIdStr) return true;
+    }
 
     return false;
   };
@@ -284,8 +328,8 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0) {
       const depMs = (depTime.low || depTime) * 1000;
       const minutes = Math.round((depMs - nowMs) / 60000);
 
-      // Only include upcoming departures (next 60 min)
-      if (minutes >= 0 && minutes <= 60) {
+      // V15.0: Include upcoming departures (next 120 min) — wider window for low-frequency services
+      if (minutes >= 0 && minutes <= 120) {
         // Get delay info
         const delay = stu.departure?.delay || stu.arrival?.delay || 0;
         const isDelayed = delay > 60; // More than 1 minute delay
@@ -294,7 +338,8 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0) {
         const stops = tripUpdate.stopTimeUpdate;
         const finalStop = stops[stops.length - 1]?.stopId || '';
         const isCitybound = isCityLoopStop(finalStop);
-        const lineName = getLineName(tripUpdate.trip?.routeId);
+        const routeId = tripUpdate.trip?.routeId;
+        const lineName = getLineName(routeId);
         const destination = isCitybound ? 'City Loop' : lineName;
 
         departures.push({
@@ -302,8 +347,9 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0) {
           departureTimeMs: depMs, // Absolute departure time for live countdown
           destination,
           lineName,              // V13.6: Explicit line name for display
+          routeNumber: getRouteNumber(routeId), // V15.0: Numeric route number for matching
           headsign: tripUpdate.trip?.tripHeadsign || null,
-          routeId: tripUpdate.trip?.routeId,
+          routeId,
           tripId: tripUpdate.trip?.tripId,
           finalStop,
           isCitybound,
