@@ -1,7 +1,7 @@
 /**
  * /api/screen - Full Dashboard PNG for TRMNL Webhook
  *
- * Renders the complete V14 dashboard as an 800×480 PNG image.
+ * Renders the complete V15.0 dashboard as an 800×480 PNG image.
  *
  * Data Flow (per DEVELOPMENT-RULES.md v3):
  * User Config → Data Sources → Engines → Data Model → Renderer
@@ -1872,8 +1872,7 @@ export default async function handler(req, res) {
     return res.status(200).send(png);
 
   } catch (error) {
-    // Return error image or message
-    res.setHeader('Content-Type', 'text/plain');
-    return res.status(500).send(`Render failed: ${error.message}`);
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(500).json({ error: error.message, code: 'RENDER_ERROR' });
   }
 }
