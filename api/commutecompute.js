@@ -17,6 +17,8 @@
 import { CommuteCompute } from '../src/engines/commute-compute.js';
 import { getTransitApiKey } from '../src/data/kv-preferences.js';
 import CafeBusyDetector from '../src/services/cafe-busy-detector.js';
+import DepartureConfidence from '../src/engines/departure-confidence.js';
+import LifestyleContext from '../src/engines/lifestyle-context.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -126,6 +128,25 @@ export default async function handler(req, res) {
     targetArrival.setHours(targetH, targetM, 0, 0);
     const arrivalDiff = Math.round((arriveTime - targetArrival) / 60000);
 
+    // V15.0: Analytics engines for admin dashboard
+    const confidenceEngine = new DepartureConfidence();
+    const confidence = confidenceEngine.calculate({
+      legs: journeyLegs,
+      transitData: result.transit || {},
+      weather: result.weather,
+      coffeeDecision,
+      totalMinutes,
+      targetArrivalMins: targetH * 60 + targetM,
+      currentMins: melbourneNow.getHours() * 60 + melbourneNow.getMinutes()
+    });
+
+    const lifestyleEngine = new LifestyleContext();
+    const lifestyle = lifestyleEngine.calculate({
+      weather: result.weather,
+      currentTime: now,
+      state: state || 'VIC'
+    });
+
     const response = {
       success: true,
       timestamp: now.toISOString(),
@@ -178,7 +199,14 @@ export default async function handler(req, res) {
       // State info
       state: result.state,
       fallbackMode: result.fallbackMode,
-      
+
+      // V15.0: Analytics for admin dashboard
+      confidence_score: confidence.score,
+      confidence_label: confidence.label,
+      confidence_resilience: confidence.resilience,
+      lifestyle_display: lifestyle.displayLine,
+      lifestyle_primary: lifestyle.primarySuggestion,
+
       // Raw data for debugging
       raw: {
         route: result.route,

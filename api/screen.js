@@ -261,6 +261,23 @@ async function getEngine() {
 }
 
 /**
+ * Extract suburb/location name from Australian address format
+ * e.g., "42 Chapel St, South Yarra VIC 3141" → "South Yarra"
+ * Used for e-ink header/footer display and stop name derivation
+ */
+function extractSuburb(address) {
+  if (!address) return null;
+  const parts = address.split(',');
+  if (parts.length >= 2) {
+    const suburbia = parts[1].trim();
+    const match = suburbia.match(/^([A-Za-z\s]+?)(?:\s+(?:VIC|NSW|QLD|SA|WA|TAS|NT|ACT)|\d{4})/);
+    if (match) return match[1].trim();
+    return suburbia.split(/\s+/)[0];
+  }
+  return null;
+}
+
+/**
  * Build journey legs from engine route with live transit data
  * Now includes cumulative timing and DEPART times (v1.18)
  * V13.6: Added stopIds for actual stop name lookup
@@ -271,24 +288,6 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
   const legs = [];
   let legNumber = 1;
   let cumulativeMinutes = 0;  // Minutes from journey start
-
-  // V13.6: Extract suburb/location name from address for stop names
-  // e.g., "42 Chapel St, South Yarra VIC 3141" → "South Yarra"
-  const extractSuburb = (address) => {
-    if (!address) return null;
-    // Try to extract suburb from Australian address format
-    const parts = address.split(',');
-    if (parts.length >= 2) {
-      // Second part usually contains suburb + state + postcode
-      const suburbia = parts[1].trim();
-      // Extract suburb before VIC/NSW etc
-      const match = suburbia.match(/^([A-Za-z\s]+?)(?:\s+(?:VIC|NSW|QLD|SA|WA|TAS|NT|ACT)|\d{4})/);
-      if (match) return match[1].trim();
-      // Fallback: just use first word of second part
-      return suburbia.split(/\s+/)[0];
-    }
-    return null;
-  };
 
   // V13.6: Extract location names for both home AND cafe
   // Per CommuteCompute pattern: link stops to nearest origin location
@@ -1641,8 +1640,8 @@ export default async function handler(req, res) {
 
     // Build display values (use simulated overrides if provided)
     // Per Section 3.1: Zero-Config - no process.env for user addresses
-    const displayHome = simOverrides.home || locations.home?.address || 'Home';
-    const displayWork = simOverrides.work || locations.work?.address || 'Work';
+    const displayHome = simOverrides.home || extractSuburb(locations.home?.address) || 'Home';
+    const displayWork = simOverrides.work || extractSuburb(locations.work?.address) || 'Work';
     const displayArrival = simOverrides.arrivalTime || config?.journey?.arrivalTime || '09:00';
 
     // Calculate timing using display arrival (respects simulator override)
@@ -1708,12 +1707,14 @@ export default async function handler(req, res) {
       localHour: melbourneTime.hour,
       localMinute: melbourneTime.minute
     });
-    // V15.0: Alternative Transit - cost estimates when all transit cancelled
+    // V15.0: Alternative Transit - cost estimates when ALL public transit cancelled
+    // Only activate when no transit legs remain in journey (PT fully unavailable)
+    const hasActiveTransit = journeyLegs.some(l => ['train', 'tram', 'bus'].includes(l.type));
     const altTransitEngine = new AltTransit();
     const altTransit = altTransitEngine.calculate({
       totalWalkMins: totalMinutes,
       currentTime: now,
-      transitNotice,
+      transitNotice: hasActiveTransit ? null : transitNotice,
       legs: journeyLegs,
       localHour: melbourneTime.hour
     });

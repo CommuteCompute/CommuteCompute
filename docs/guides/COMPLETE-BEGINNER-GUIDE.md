@@ -8,7 +8,7 @@
 
 **Version:** 3.0
 **Last Updated:** 2026-02-06
-**System Version:** v3.4.0 (CCDashDesignV15.0)
+**System Version:** v3.5.0 (CCDashDesignV15.0)
 **License:** AGPL-3.0 Dual License
 
 ---

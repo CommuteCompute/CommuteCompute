@@ -26,41 +26,41 @@ export default async function handler(req, res) {
     : '2026-01-31';
 
   res.json({
-    version: 'v3.4.0',
+    version: 'v3.5.0',
     date: buildDate,
     system: {
-      version: '3.4.0',
+      version: '3.5.0',
       name: 'Commute Compute System',
       copyright: '© 2026 Angus Bergman',
       license: 'AGPL-3.0'
     },
     components: {
-      // CommuteCompute journey calculation engine (V2.3)
+      // CommuteCompute journey calculation engine (V2.4)
       commutecompute: {
-        version: 'v2.3',
+        version: 'v2.4',
         name: 'CommuteCompute Engine',
-        description: 'Real-time journey planning with Metro Tunnel compliance, Departure Confidence, Sleep Optimizer, Alt Transit, Mindset analysis',
+        description: 'Real-time journey planning with Metro Tunnel compliance, Departure Confidence, Sleep Optimizer, Alt Transit, Lifestyle Context, Mindset analysis',
         metroTunnelCompliant: true,
-        effectiveDate: '2026-02-06',
+        effectiveDate: '2026-02-09',
         locked: false,
-        lockedDate: '2026-02-06'
+        lockedDate: '2026-02-09'
       },
       // CCDash renderer (implements CCDashDesignV15.0 spec)
       renderer: {
-        version: 'v1.80',
+        version: 'v1.81',
         name: 'CCDash Renderer',
         spec: 'CCDashDesignV15.0',
         specLocked: false,
-        lockedDate: '2026-02-06',
-        modifiedDate: '2026-02-06',
-        description: 'Sleep mode, alt transit panel, mindset status, enhanced glanceability, lifestyle context display'
+        lockedDate: '2026-02-09',
+        modifiedDate: '2026-02-09',
+        description: 'Sleep mode, alt transit panel, mindset status, enhanced glanceability, lifestyle context display, suburb-level location display'
       },
       // Setup wizard
       setupWizard: { version: 'v2.0', locked: true },
       // LiveDash multi-device endpoint
       livedash: { version: 'v3.0', locked: true },
       // Admin panel
-      admin: { version: 'v3.2', locked: true },
+      admin: { version: 'v4.0', locked: false },
       // Firmware (LOCKED)
       firmware: {
         version: 'CC-FW-7.5.0',
@@ -73,8 +73,8 @@ export default async function handler(req, res) {
       dashboard: {
         version: 'CCDashDesignV15.0',
         status: 'UNLOCKED',
-        lockedDate: '2026-02-06',
-        modifiedDate: '2026-02-06',
+        lockedDate: '2026-02-09',
+        modifiedDate: '2026-02-09',
         changes: [
           'Closed cafe completely removed from journey (not just skipped)',
           'Consecutive walk legs merged automatically',
