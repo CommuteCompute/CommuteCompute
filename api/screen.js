@@ -26,8 +26,16 @@ import AltTransit from '../src/engines/alt-transit.js';
 let journeyEngine = null;
 let lastPrefsHash = null;
 
+// State timezone mapping - supports all 8 Australian states/territories
+// Fallback: 'Australia/Melbourne' if state is unknown
+const STATE_TIMEZONES = {
+  'VIC': 'Australia/Melbourne', 'NSW': 'Australia/Sydney', 'ACT': 'Australia/Sydney',
+  'QLD': 'Australia/Brisbane', 'SA': 'Australia/Adelaide', 'WA': 'Australia/Perth',
+  'TAS': 'Australia/Hobart', 'NT': 'Australia/Darwin'
+};
+
 /**
- * Get Melbourne local time
+ * Get local time (as a Date object)
  * V13.6 FIX: Return actual Date object with correct timestamp
  * The timestamp (getTime()) must be accurate for timing calculations
  * Only use timezone conversion for display (hours, minutes)
@@ -39,31 +47,36 @@ function getMelbourneTime() {
 }
 
 /**
- * Get Melbourne hours and minutes from a Date object
+ * Get local hours and minutes from a Date object for the given state
  * Use this for display, not for timestamp calculations
+ * @param {Date} date - Date object to extract time from
+ * @param {string} [state] - Australian state code (e.g. 'VIC', 'NSW'). Defaults to Melbourne timezone.
  */
-function getMelbourneDisplayTime(date) {
-  const melb = new Intl.DateTimeFormat('en-AU', {
-    timeZone: 'Australia/Melbourne',
+function getMelbourneDisplayTime(date, state) {
+  const timezone = STATE_TIMEZONES[state] || 'Australia/Melbourne';
+  const parts = new Intl.DateTimeFormat('en-AU', {
+    timeZone: timezone,
     hour: 'numeric',
     minute: 'numeric',
     hour12: false,
     hourCycle: 'h23'  // V13.6 FIX: Use 0-23 hour format (not h24 which shows "24" for midnight)
   }).formatToParts(date);
 
-  let hour = parseInt(melb.find(p => p.type === 'hour')?.value || '0');
+  let hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
   // V13.6 FIX: Handle edge case where hour might still be 24
   if (hour === 24) hour = 0;
-  const minute = parseInt(melb.find(p => p.type === 'minute')?.value || '0');
+  const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
   return { hour, minute };
 }
 
 /**
- * Format time as H:MM (12-hour format, Melbourne timezone)
+ * Format time as H:MM (12-hour format, state-aware timezone)
  * Per Section 12: Business Logic - use 12-hour time format
+ * @param {Date} date
+ * @param {string} [state] - Australian state code
  */
-function formatTime(date) {
-  const melb = getMelbourneDisplayTime(date);
+function formatTime(date, state) {
+  const melb = getMelbourneDisplayTime(date, state);
   const hour12 = melb.hour % 12 || 12;  // Convert 0 to 12, 13-23 to 1-11
   return `${hour12}:${melb.minute.toString().padStart(2, '0')}`;
 }
@@ -72,11 +85,13 @@ function formatTime(date) {
 
 /**
  * Format date parts for display
+ * @param {Date} date
+ * @param {string} [state] - Australian state code
  */
-function formatDateParts(date) {
-  // V13.6 FIX: Use Melbourne timezone for date display
+function formatDateParts(date, state) {
+  const timezone = STATE_TIMEZONES[state] || 'Australia/Melbourne';
   const formatter = new Intl.DateTimeFormat('en-AU', {
-    timeZone: 'Australia/Melbourne',
+    timeZone: timezone,
     weekday: 'long',
     day: 'numeric',
     month: 'long'
@@ -118,14 +133,22 @@ async function getEngine() {
     transitApiKey: transitKey
   };
 
-  // Create hash to detect preference changes
-  const prefsHash = JSON.stringify({ state, home: preferences.homeAddress, work: preferences.workAddress });
+  // Create hash to detect preference changes (includes route selection)
+  const prefsHash = JSON.stringify({ state, home: preferences.homeAddress, work: preferences.workAddress, selectedRouteIndex: kvPrefs.selectedRouteIndex });
 
   // Re-initialize engine if preferences changed or no engine exists
   if (!journeyEngine || prefsHash !== lastPrefsHash) {
 
     journeyEngine = new CommuteCompute();
     await journeyEngine.initialize(preferences);
+
+    // Restore user's selected route from KV preferences
+    if (kvPrefs.selectedRouteIndex !== undefined) {
+      journeyEngine.selectRoute(parseInt(kvPrefs.selectedRouteIndex));
+    } else if (kvPrefs.selectedRouteId !== undefined) {
+      journeyEngine.selectRoute(kvPrefs.selectedRouteId);
+    }
+
     lastPrefsHash = prefsHash;
   }
 
@@ -140,11 +163,32 @@ async function getEngine() {
 function extractSuburb(address) {
   if (!address) return null;
   const parts = address.split(',');
+  // Pass 1: Look for "Melbourne VIC 3000" style combined suburb+state parts
+  for (let i = parts.length - 1; i >= 1; i--) {
+    const part = parts[i].trim();
+    const match = part.match(/^([A-Za-z\s]+?)(?:\s+(?:VIC|NSW|QLD|SA|WA|TAS|NT|ACT)|\s+\d{4})/);
+    if (match && match[1].trim().length > 1) return match[1].trim();
+  }
+  // Pass 2: Nominatim-style addresses where suburb and state are separate parts
+  // e.g. "..., Melbourne, City of Melbourne, Victoria, 3000, Australia"
+  const statePattern = /^(VIC|NSW|QLD|SA|WA|TAS|NT|ACT|Victoria|New South Wales|Queensland|South Australia|Western Australia|Tasmania|Northern Territory|Australian Capital Territory)$/i;
+  for (let i = 1; i < parts.length; i++) {
+    if (statePattern.test(parts[i].trim())) {
+      for (let j = i - 1; j >= 0; j--) {
+        const candidate = parts[j].trim();
+        if (/^[A-Z][a-z]/.test(candidate) && candidate.length > 2 &&
+            !/^(City of|Shire of)/i.test(candidate) &&
+            !/\b(Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Lane|Ln|Place|Pl|Court|Ct|Terrace|Tce|Boulevard|Blvd|Highway|Hwy|Way|Crescent|Cres|Parade|Pde|Close|Circuit|Esplanade|District)\b/i.test(candidate)) {
+          return candidate;
+        }
+      }
+    }
+  }
+  // Pass 3: Fallback — try second part, skip leading digits
   if (parts.length >= 2) {
     const suburbia = parts[1].trim();
-    const match = suburbia.match(/^([A-Za-z\s]+?)(?:\s+(?:VIC|NSW|QLD|SA|WA|TAS|NT|ACT)|\d{4})/);
-    if (match) return match[1].trim();
-    return suburbia.split(/\s+/)[0];
+    const alphaMatch = suburbia.match(/(?:^|\s)([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/);
+    if (alphaMatch) return alphaMatch[1];
   }
   return null;
 }
@@ -177,7 +221,7 @@ function mergeConsecutiveWalkLegs(legs) {
  * Now includes cumulative timing and DEPART times (v1.18)
  * V13.6: Added stopIds for actual stop name lookup
  */
-function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locations = {}, stopIds = {}) {
+function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locations = {}, stopIds = {}, state) {
   if (!route?.legs) return [];
 
   const legs = [];
@@ -198,7 +242,7 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
   // Parse current time for DEPART calculation
   // V13.6 FIX: Use actual Date for timestamp, Melbourne display time for hours/minutes
   const now = currentTime || new Date();
-  const melbTime = getMelbourneDisplayTime(now);
+  const melbTime = getMelbourneDisplayTime(now, state);
   const nowMins = melbTime.hour * 60 + melbTime.minute;
 
   for (let i = 0; i < route.legs.length; i++) {
@@ -352,9 +396,9 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         }
         minutesToDeparture = rawMinutes;
 
-        // V13.6 FIX: Format departure as Melbourne clock time
+        // V13.6 FIX: Format departure as local clock time (state-aware)
         const departDate = new Date(nowMs + minutesToDeparture * 60000);  // Use corrected minutes
-        const departMelb = getMelbourneDisplayTime(departDate);
+        const departMelb = getMelbourneDisplayTime(departDate, state);
         const departH12 = departMelb.hour % 12 || 12;
         const departAmPm = departMelb.hour >= 12 ? 'pm' : 'am';
         departTime = `${departH12}:${departMelb.minute.toString().padStart(2, '0')}${departAmPm}`;
@@ -363,9 +407,9 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         // Fallback: use minutes from live data (already from now)
         minutesToDeparture = liveData.minutes;
         const departMs = nowMs + (liveData.minutes * 60000);
-        // V13.6 FIX: Format departure as Melbourne clock time
+        // V13.6 FIX: Format departure as local clock time (state-aware)
         const departDate = new Date(departMs);
-        const departMelb = getMelbourneDisplayTime(departDate);
+        const departMelb = getMelbourneDisplayTime(departDate, state);
         const departH12 = departMelb.hour % 12 || 12;
         const departAmPm = departMelb.hour >= 12 ? 'pm' : 'am';
         departTime = `${departH12}:${departMelb.minute.toString().padStart(2, '0')}${departAmPm}`;
@@ -807,10 +851,13 @@ function getStatusType(legs, disruptions) {
 
 /**
  * Calculate arrival time
+ * @param {Date} now
+ * @param {number} totalMinutes
+ * @param {string} [state] - Australian state code
  */
-function calculateArrivalTime(now, totalMinutes) {
+function calculateArrivalTime(now, totalMinutes, state) {
   const arrival = new Date(now.getTime() + totalMinutes * 60000);
-  return formatTime(arrival);
+  return formatTime(arrival, state);
 }
 
 /**
@@ -1388,6 +1435,15 @@ export default async function handler(req, res) {
     };
     const hasSimOverrides = Object.values(simOverrides).some(v => v);
 
+    // Initialize engine and get route (need state before time formatting)
+    const engine = await getEngine();
+    const route = engine.getSelectedRoute();
+    const locations = engine.getLocations();
+    const config = engine.journeyConfig;
+
+    // Get user's state for timezone-aware time calculations
+    const userState = await getUserState() || 'VIC';
+
     // Get current time (or simulated time for testing)
     let now = getMelbourneTime();
     if (simOverrides.simulatedTime) {
@@ -1395,16 +1451,10 @@ export default async function handler(req, res) {
       now = new Date(now);
       now.setHours(simH, simM, 0, 0);
     }
-    const currentTime = formatTime(now);
-    const melbourneTime = getMelbourneDisplayTime(now);
+    const currentTime = formatTime(now, userState);
+    const melbourneTime = getMelbourneDisplayTime(now, userState);
     const amPm = melbourneTime.hour >= 12 ? 'PM' : 'AM';
-    const { day, date } = formatDateParts(now);
-
-    // Initialize engine and get route
-    const engine = await getEngine();
-    const route = engine.getSelectedRoute();
-    const locations = engine.getLocations();
-    const config = engine.journeyConfig;
+    const { day, date } = formatDateParts(now, userState);
 
     // If no journey configured, fall back to random mode for preview
     // This ensures the Live Data tab shows something useful even before full config
@@ -1478,8 +1528,8 @@ export default async function handler(req, res) {
     let coffeeDecision = engine.calculateCoffeeDecision(transitData, route?.legs || []);
     
     // Check if cafe is open (hours check)
-    // V13.6 FIX: Use Melbourne time for business hours check
-    const melbDisplayTime = getMelbourneDisplayTime(now);
+    // V13.6 FIX: Use local time for business hours check (state-aware)
+    const melbDisplayTime = getMelbourneDisplayTime(now, userState);
     const hour = melbDisplayTime.hour;
     const dayOfWeek = now.getDay(); // 0 = Sunday
     const cafeOpenHour = config?.coffee?.openHour || 6;
@@ -1541,7 +1591,7 @@ export default async function handler(req, res) {
     // Build journey legs with cumulative timing (Data Model v1.18)
     // V13.6: Pass locations for deriving proper stop/station names
     // V13.6: Pass stopIds for actual stop name lookup via GTFS_STOP_NAMES
-    const rawJourneyLegs = buildJourneyLegs(effectiveRoute, transitData, coffeeDecision, now, locations, { trainStopId, tramStopId, busStopId });
+    const rawJourneyLegs = buildJourneyLegs(effectiveRoute, transitData, coffeeDecision, now, locations, { trainStopId, tramStopId, busStopId }, userState);
     // Section 7.5.1: Merge consecutive walk legs after ALL filtering
     const journeyLegs = mergeConsecutiveWalkLegs(rawJourneyLegs);
     const totalMinutes = calculateTotalMinutes(journeyLegs);
@@ -1560,10 +1610,10 @@ export default async function handler(req, res) {
     const displayArrival = simOverrides.arrivalTime || config?.journey?.arrivalTime || '09:00';
 
     // Calculate timing using display arrival (respects simulator override)
-    // V13.6 FIX: Use Melbourne time for display calculations
+    // V13.6 FIX: Use local time for display calculations (state-aware)
     const [arrH, arrM] = displayArrival.split(':').map(Number);
     const targetMins = arrH * 60 + arrM;
-    const melbTimeForLeave = getMelbourneDisplayTime(now);
+    const melbTimeForLeave = getMelbourneDisplayTime(now, userState);
     const nowMinsForLeave = melbTimeForLeave.hour * 60 + melbTimeForLeave.minute;
     const leaveInMinutes = Math.max(0, targetMins - totalMinutes - nowMinsForLeave);
 
@@ -1609,7 +1659,7 @@ export default async function handler(req, res) {
     const lifestyle = lifestyleEngine.calculate({
       weather: weatherData,
       currentTime: now,
-      state: await getUserState() || 'VIC'
+      state: userState
     });
     // V15.0: Sleep Optimizer - evening mode bedtime/alarm calculation
     const sleepEngine = new SleepOptimizer();
@@ -1668,6 +1718,7 @@ export default async function handler(req, res) {
       leave_in_minutes: leaveInMinutes > 0 ? leaveInMinutes : null,
       journey_legs: journeyLegs,
       destination: displayWork,
+      destination_address: locations.work?.address || kvPrefs?.addresses?.work || '',
       // V13.6: Coffee decision for header box - shows CAFE CLOSED when applicable
       coffee_decision: coffeeDecision.cafeClosed ? 'CAFE CLOSED' :
                        coffeeDecision.canGet ? 'TIME FOR COFFEE' :

@@ -1,6 +1,6 @@
 /**
  * LifestyleContext Engine v1.1
- * Part of the Commute Compute(TM) System
+ * Part of the Commute Compute™ System
  *
  * Provides contextual lifestyle suggestions based on weather, time of day,
  * and season. Extends the CommuteCompute™ "1 glance, no app switching"
@@ -81,7 +81,7 @@ function buildNoDataResponse() {
 // =============================================================================
 
 /**
- * LifestyleContext - Contextual lifestyle suggestion engine for Commute Compute(TM).
+ * LifestyleContext - Contextual lifestyle suggestion engine for Commute Compute™.
  *
  * Analyzes weather conditions, time of day, and user location to produce
  * actionable lifestyle suggestions (umbrella, jacket, sunglasses, sunscreen,

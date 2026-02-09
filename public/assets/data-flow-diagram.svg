@@ -80,7 +80,7 @@
 
   <!-- Layer 2: CommuteCompute Engine -->
   <rect x="350" y="310" width="500" height="120" rx="12" fill="url(#grad2)" opacity="0.9" filter="url(#glow)"/>
-  <text x="600" y="343" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="white" text-anchor="middle">CommuteCompute Engine v2.4</text>
+  <text x="600" y="343" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="white" text-anchor="middle">CommuteCompute Engine v3.0</text>
   <text x="600" y="365" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#d1fae5" text-anchor="middle">Core journey planning + multi-modal routing</text>
   <text x="600" y="385" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#d1fae5" text-anchor="middle">Find nearby stops (GTFS) + calculate walking distances</text>
   <text x="600" y="405" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#d1fae5" text-anchor="middle">Build 1-4 mode routes + walk-faster-than-transit exclusion</text>
@@ -144,7 +144,7 @@
 
   <!-- Layer 5: CCDash Renderer -->
   <rect x="350" y="950" width="500" height="110" rx="12" fill="url(#grad4)" opacity="0.9" filter="url(#glow)"/>
-  <text x="600" y="985" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="white" text-anchor="middle">CCDash Renderer v1.81</text>
+  <text x="600" y="985" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="white" text-anchor="middle">CCDash Renderer v2.0</text>
   <text x="600" y="1008" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#fce7f3" text-anchor="middle">1-bit BMP rendering for e-ink display</text>
   <text x="600" y="1028" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#fce7f3" text-anchor="middle">Floyd-Steinberg dithering + font rendering</text>
   <text x="600" y="1048" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#fce7f3" text-anchor="middle">Layout engine: header, departures, weather, coffee, lifestyle</text>
@@ -175,9 +175,9 @@
 
   <!-- Layer 7: Device -->
   <rect x="350" y="1310" width="500" height="140" rx="12" fill="url(#grad1)" opacity="0.9" filter="url(#glow)"/>
-  <text x="600" y="1345" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="white" text-anchor="middle">TRMNL E-INK DEVICE</text>
+  <text x="600" y="1345" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="white" text-anchor="middle">CC E-INK DEVICE</text>
   <text x="600" y="1368" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#e0e7ff" text-anchor="middle">ESP32-C3 + 7.5" 800x480 display</text>
-  <text x="600" y="1388" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#e0e7ff" text-anchor="middle">CCFirm CC-FW-7.5.0 custom firmware</text>
+  <text x="600" y="1388" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#e0e7ff" text-anchor="middle">CCFirm CC-FW-7.6.0 custom firmware</text>
   <text x="600" y="1408" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#e0e7ff" text-anchor="middle">Partial refresh: 1 minute | Full refresh: 5 minutes</text>
   <text x="600" y="1428" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#e0e7ff" text-anchor="middle">Deep sleep between updates</text>
 
@@ -195,7 +195,7 @@
 
   <!-- Footer -->
   <text x="600" y="1690" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">
-    Commute Compute V15.0 | CommuteCompute Engine v2.4 | CCDash Renderer v1.81
+    Commute Compute V15.0 | CommuteCompute Engine v3.0 | CCDash Renderer v2.0
   </text>
   <text x="600" y="1710" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">
     Response time: 5-10 seconds | Updates every 2 minutes

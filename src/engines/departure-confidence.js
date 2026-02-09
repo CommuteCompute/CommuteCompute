@@ -1,6 +1,6 @@
 /**
  * Departure Confidence Engine v1.0
- * Part of the Commute Compute System
+ * Part of the Commute Compute™ System
  *
  * Calculates a Departure Confidence Score (0-100%) representing how likely
  * the user's planned journey will succeed on time. Uses real-time transit data,
