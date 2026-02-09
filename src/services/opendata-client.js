@@ -413,8 +413,8 @@ export async function getDashboardData(config = {}) {
   const options = { apiKey: config.apiKey };
   
   const [trains, trams, weather, disruptions] = await Promise.all([
-    trainStopId ? getDepartures(trainStopId, 0, options) : getMockDepartures(0, 'not-configured'),
-    tramStopId ? getDepartures(tramStopId, 1, options) : getMockDepartures(1, 'not-configured'),
+    trainStopId ? getDepartures(trainStopId, 0, options) : Promise.resolve([]),
+    tramStopId ? getDepartures(tramStopId, 1, options) : Promise.resolve([]),
     getWeather(lat, lon),
     getDisruptions(0, options).catch(() => [])
   ]);

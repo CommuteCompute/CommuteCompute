@@ -15,7 +15,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Commute Compute Admin</title>
+    <title>Commute Compute™ Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -676,7 +676,7 @@
         }
 
         body {
-            padding-bottom: 60px !important;
+            padding-bottom: 80px !important;
         }
 
         @media (max-width: 768px) {
@@ -1530,7 +1530,7 @@
         .icon-xl { width: 32px; height: 32px; }
         .icon-xxl { width: 48px; height: 48px; }
         .icon-hero { width: 80px; height: 80px; }
-        /* V14.0: Commute Analytics Card Styles */
+        /* V15.0: Commute Analytics Card Styles */
         .cc-card {
             background: rgba(30, 41, 59, 0.8);
             border: 1px solid #3d5278;
@@ -1687,8 +1687,12 @@
             <span>Commute Compute™</span>
         </a>
         <div class="nav-links-global">
-            <a href="/" class="nav-link-global">Dashboard</a>
-            <a href="/admin.html" class="nav-link-global active">Settings</a>
+            <a href="/" class="nav-link-global">Home</a>
+            <a href="/setup-wizard.html" class="nav-link-global">Setup</a>
+            <a href="/admin.html" class="nav-link-global active">Dashboard</a>
+            <a href="/preview.html" class="nav-link-global">Preview</a>
+            <a href="/help.html" class="nav-link-global">Help</a>
+            <a href="/privacy.html" class="nav-link-global">Privacy</a>
         </div>
     </nav>
 
@@ -1734,7 +1738,7 @@
     <div class="container" id="main-content">
         <!-- Header -->
         <div class="header">
-            <h1>Commute Compute Admin</h1>
+            <h1>Commute Compute&#8482; Admin</h1>
             <div class="live-indicator">
                 <div class="live-dot"></div>
                 <span id="data-mode">Loading...</span>
@@ -1761,7 +1765,7 @@
             <!-- Not Configured State -->
             <div id="setup-not-configured" style="display: none; text-align: center; padding: 60px 20px;">
                 <div style="margin-bottom: 20px;"><svg class="icon-hero" style="color: #4fb28e;"><use href="#icon-rocket"/></svg></div>
-                <h2 style="margin-bottom: 15px; font-size: 24px;">Welcome to Commute Compute</h2>
+                <h2 style="margin-bottom: 15px; font-size: 24px;">Welcome to Commute Compute&#8482;</h2>
                 <p style="opacity: 0.8; margin-bottom: 30px; max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.7; font-size: 15px;">
                     Set up your commute in just a few steps. We'll find the best route and keep your e-ink display updated with live transit data.
                 </p>
@@ -2577,14 +2581,14 @@
                     </div>
                 </div>
 
-                <!-- V14.0: Commute Analytics Card -->
+                <!-- V15.0: Commute Analytics Card -->
                 <div class="cc-card" id="commute-analytics-card" style="margin-top: 20px;">
                     <div class="cc-card-header">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <svg width="20" height="20" style="color: #667eea;"><use href="#icon-chart"/></svg>
                             <h3 style="margin: 0; font-size: 16px;">Commute Analytics</h3>
                         </div>
-                        <span class="cc-badge cc-badge-info">V14.0</span>
+                        <span class="cc-badge cc-badge-info">V15.0</span>
                     </div>
                     <div class="cc-card-body" style="padding: 16px;">
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
@@ -2608,7 +2612,7 @@
                             </div>
                         </div>
                         <div style="margin-top: 16px; padding: 12px; background: rgba(100, 116, 139, 0.1); border-radius: 8px;">
-                            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">V14.0 Lifestyle Intelligence</div>
+                            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">V15.0 Lifestyle Intelligence</div>
                             <div style="font-size: 11px; color: #64748b; line-height: 1.6;">
                                 Departure Confidence scores journey success probability using real-time transit data, weather conditions, and disruption alerts.
                                 Lifestyle Context provides actionable suggestions (umbrella, jacket, sunglasses) in a single glance.
@@ -3083,15 +3087,15 @@
             <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px; border-left: 4px solid #4fb28e;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #4fb28e;"><use href="#icon-layers"/></svg>
-                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Commute Compute System Architecture</h2>
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Commute Compute&#8482; System Architecture</h2>
                 </div>
                 <p style="margin-bottom: 20px; color: #cbd5e1; line-height: 1.7; font-size: 14px;">
                     A fully self-hosted smart transit display system for Australian public transport. Each user deploys their own complete stack with zero external dependencies. Features device pairing via Vercel KV for persistent configuration across serverless invocations.
                 </p>
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    <span style="padding: 6px 14px; background: rgba(79, 178, 142, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #4fb28e;">v5.3</span>
-                    <span style="padding: 6px 14px; background: rgba(102, 126, 234, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #667eea;">CCDash V12 LOCKED</span>
-                    <span style="padding: 6px 14px; background: rgba(251, 191, 36, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #fbbf24;">CCFirm v6.1-60s</span>
+                    <span style="padding: 6px 14px; background: rgba(79, 178, 142, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #4fb28e;">v3.4.0</span>
+                    <span style="padding: 6px 14px; background: rgba(102, 126, 234, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #667eea;">CCDash&#8482; v1.80</span>
+                    <span style="padding: 6px 14px; background: rgba(251, 191, 36, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #fbbf24;">CCFirm&#8482; CC-FW-7.5.0</span>
                     <span style="padding: 6px 14px; background: rgba(168, 85, 247, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #a855f7;">Vercel KV</span>
                 </div>
             </div>
@@ -3100,10 +3104,10 @@
             <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #a855f7;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #a855f7;"><use href="#icon-star"/></svg>
-                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Commute Compute Trademarked Tools</h2>
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Commute Compute&#8482; Trademarked Tools</h2>
                 </div>
                 <p style="margin: 15px 0 20px 0; font-size: 14px; color: #94a3b8;">
-                    Four proprietary engines power the Commute Compute ecosystem, each handling a specific domain of the smart transit experience.
+                    Five interconnected intelligence engines power the Commute Compute&#8482; ecosystem, each handling a specific domain of the smart transit experience.
                 </p>
 
                 <!-- CommuteCompute -->
@@ -3198,7 +3202,7 @@
                 <div style="padding: 16px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0.05) 100%); border-radius: 10px; border: 1px solid rgba(168, 85, 247, 0.3);">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
                         <svg width="24" height="24" style="color: #a855f7;"><use href="#icon-cpu"/></svg>
-                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #a855f7;">CCFirm&#8482; v6.1 Firmware</h3>
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #a855f7;">CCFirm&#8482; CC-FW-7.5.0 Firmware</h3>
                     </div>
                     <p style="font-size: 13px; color: #e2e8f0; line-height: 1.7; margin-bottom: 12px;">
                         The ESP32-C3 firmware that runs on TRMNL devices. CCFirm handles WiFi connectivity, HTTPS image fetching, BMP rendering, and partial display refresh. Includes device pairing via 6-character codes and anti-brick safety measures.
@@ -3424,11 +3428,11 @@
                 </div>
             </div>
 
-            <!-- Zone Layout (V12 LOCKED) -->
+            <!-- Zone Layout (V15.0) -->
             <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #fbbf24;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #fbbf24;"><use href="#icon-sliders"/></svg>
-                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Zone Layout (CCDash V12)</h2>
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Zone Layout (CCDash&#8482; V15.0)</h2>
                     <span style="padding: 4px 10px; background: rgba(239, 68, 68, 0.2); border-radius: 12px; font-size: 11px; font-weight: 600; color: #ef4444;">LOCKED 2026-02-01</span>
                 </div>
                 <p style="margin: 15px 0; font-size: 14px; color: #94a3b8;">
@@ -3612,13 +3616,13 @@
                     </h3>
                     <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; background: rgba(0,0,0,0.3); padding: 16px; border-radius: 6px; overflow-x: auto;">
                         <pre style="margin: 0; color: #94a3b8; line-height: 1.5;">
-                               <span style="color: #4fb28e;">COMMUTE COMPUTE SYSTEM ARCHITECTURE v5.3</span>
+                               <span style="color: #4fb28e;">COMMUTE COMPUTE SYSTEM ARCHITECTURE v3.4.0</span>
 
     <span style="color: #fbbf24;">USER SETUP</span>                        <span style="color: #a855f7;">PERSISTENT STORAGE</span>                    <span style="color: #667eea;">DEVICE</span>
         |                                      |                                   |
    +----v----+                          +------v------+                      +-----v-----+
    |  Setup  |   POST /pair/register    |   Vercel    |  GET /pair/poll     |  CCFirm   |
-   |  Wizard | -----------------------> |     KV      | <------------------ |  v6.1     |
+   |  Wizard | -----------------------> |     KV      | <------------------ | CC-FW-7.5|
    +---------+                          +-------------+                      +-----------+
         |                                      |                                   |
         |  Saves config token                  |  Stores: pair:{code}              |
@@ -3766,7 +3770,7 @@
                 </div>
                 <div style="display: grid; gap: 10px; font-size: 13px; color: #94a3b8; line-height: 1.6;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="padding: 3px 8px; background: rgba(79, 178, 142, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #4fb28e;">v5.3</span>
+                        <span style="padding: 3px 8px; background: rgba(79, 178, 142, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #4fb28e;">v3.4.0</span>
                         <strong>docs/ARCHITECTURE.md</strong> — Complete system architecture (20+ sections)
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -3778,7 +3782,7 @@
                         <strong>docs/CCDashDesignV12.md</strong> — Dashboard specification (LOCKED 2026-02-01)
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="padding: 3px 8px; background: rgba(168, 85, 247, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #a855f7;">v6.1</span>
+                        <span style="padding: 3px 8px; background: rgba(168, 85, 247, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #a855f7;">CC-FW-7.5.0</span>
                         <strong>docs/FIRMWARE.md</strong> — CCFirm device firmware documentation
                     </div>
                 </div>
@@ -3792,10 +3796,10 @@
             <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(79, 178, 142, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%); border-radius: 12px; border-left: 4px solid #4fb28e;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="24" height="24" style="color: #4fb28e;"><use href="#icon-cpu"/></svg>
-                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Commute Compute System Overview</h2>
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Commute Compute&#8482; System Overview</h2>
                 </div>
                 <p style="margin-bottom: 20px; opacity: 0.9; font-size: 14px;">
-                    Real-time transit intelligence for your daily commute. Four core components working together.
+                    Real-time transit intelligence for your daily commute. Five interconnected engines working together.
                 </p>
                 
                 <!-- Version Grid -->
@@ -4113,7 +4117,7 @@
             <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #667eea;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #667eea;"><use href="#icon-info"/></svg>
-                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">About Commute Compute</h2>
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">About Commute Compute&#8482;</h2>
                 </div>
                 <p style="line-height: 1.6; margin-bottom: 15px;">
                     An intelligent real-time transit display system that learns your commute and answers the daily question:
@@ -4121,7 +4125,7 @@
                 </p>
                 <div style="padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; line-height: 1.6; font-size: 13px;">
                     <div style="margin-bottom: 8px;"><strong>Created by:</strong> Angus Bergman</div>
-                    <div style="margin-bottom: 8px;"><strong>License:</strong> AGPL-3.0</div>
+                    <div style="margin-bottom: 8px;"><strong>Licence:</strong> AGPL-3.0 (Dual Licence)</div>
                     <div><strong>Source:</strong> <a href="https://gitlab.com/angusbergman/commute-compute-system" target="_blank" style="color: #4fb28e;">GitLab Repository</a></div>
                 </div>
             </div>
@@ -4393,77 +4397,11 @@
 
             <!-- Document Version -->
             <div style="text-align: center; padding: 20px; opacity: 0.6; font-size: 12px;">
-                Legal Documentation Version 1.1 — Last Updated: 2026-02-01<br>
+                Legal Documentation Version 1.2 — Last Updated: 2026-02-07<br>
                 <a href="https://gitlab.com/angusbergman/commute-compute-system/blob/main/LEGAL.md" target="_blank" style="color: #4fb28e;">View Full LEGAL.md on GitLab</a>
             </div>
         </div>
 
-        <!-- Version Control Footer -->
-        <div class="version-footer">
-            <span class="version-label">Version:</span>
-            <span class="version-value" id="versionHash">Loading...</span>
-            <span class="separator">•</span>
-            <span class="version-label">Build:</span>
-            <span class="version-value" id="buildDate">Loading...</span>
-            <span class="separator">•</span>
-            <span class="version-value">© 2026 Angus Bergman</span>
-        </div>
-
-        <!-- Footer -->
-        <div class="footer">
-            
-            <p style="margin-top: 15px; font-size: 12px; opacity: 0.7;">
-                © 2026 Angus Bergman. Licensed under <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" style="color: #4fb28e;">AGPL-3.0 (Dual Licence)</a><br>
-                Commute Compute - Smart Journey Dashboard
-            </p>
-            <p style="margin-top: 12px; font-size: 13px;">
-                <a href="https://buymeacoffee.com/angusbergman" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #FFDD00; color: #000; border-radius: 6px; font-weight: 500; text-decoration: none; transition: transform 0.2s;">
-                    <svg class="icon-sm"><use href="#icon-coffee"/></svg> Buy Me a Coffee
-                </a>
-            </p>
-
-            <!-- Data Source Attributions (Dynamic based on configuration) -->
-            <div id="attributions-footer" style="margin-top: 15px; padding: 10px 12px; background: rgba(255, 255, 255, 0.03); border-left: 2px solid rgba(237, 137, 54, 0.3); font-size: 10px; opacity: 0.7; line-height: 1.6;">
-                <div style="font-weight: 600; margin-bottom: 6px; font-size: 11px; opacity: 0.9;">Data Source Attributions</div>
-                <div id="attributions-content" style="font-size: 10px;">Loading...</div>
-            </div>
-
-            <!-- License Information (Collapsible) -->
-            <details style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 12px; line-height: 1.7; cursor: pointer;">
-                <summary style="font-weight: 600; font-size: 13px; cursor: pointer; user-select: none;">
-                    <svg class="icon-sm"><use href="#icon-file-text"/></svg> License Information (Click to expand)
-                </summary>
-                <div style="margin-top: 15px;">
-                    <p style="margin-bottom: 10px;">
-                        This software, including all code, architecture, and documentation, is created by <strong>Angus Bergman</strong> and is licensed under:
-                    </p>
-                    <p style="margin-bottom: 10px;">
-                        <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" style="color: #4fb28e; text-decoration: none; font-weight: 600;">
-                            AGPL-3.0 (AGPL-3.0)
-                        </a>
-                    </p>
-                    <div style="padding: 10px; background: rgba(0,0,0,0.1); border-radius: 6px; margin-top: 10px;">
-                        <div style="font-weight: 600; margin-bottom: 6px;"><svg class="icon-sm" style="color: #22c55e;"><use href="#icon-check-circle"/></svg> You ARE free to:</div>
-                        <ul style="margin-left: 20px; margin-bottom: 10px;">
-                            <li>Use this software for personal, non-commercial purposes</li>
-                            <li>Modify and adapt the code for your own use</li>
-                            <li>Share the software with proper attribution to Angus Bergman</li>
-                            <li>Study how it works and learn from it</li>
-                        </ul>
-                        <div style="font-weight: 600; margin-bottom: 6px;"><svg class="icon-sm" style="color: #f87171;"><use href="#icon-x-circle"/></svg> You are NOT allowed to:</div>
-                        <ul style="margin-left: 20px;">
-                            <li>Use this software for commercial purposes without written permission</li>
-                            <li>Sell or profit from this software or derivatives</li>
-                            <li><strong style="color: #fc8181;">Remove or obscure attribution to Angus Bergman</strong></li>
-                            <li>Claim this work as your own</li>
-                        </ul>
-                    </div>
-                    <p style="margin-top: 10px; font-size: 11px; opacity: 0.8;">
-                        For commercial licensing inquiries, contact: commutecompute.licensing@gmail.com
-                    </p>
-                </div>
-            </details>
-        </div>
     </div>
 
     <script>
@@ -4535,7 +4473,7 @@
 
         const ONBOARDING_STEPS = [
             {
-                title: "Welcome to Commute Compute!",
+                title: "Welcome to Commute Compute&#8482;!",
                 content: `
                     <p>Your intelligent transit display system for smart commute decisions.</p>
                     <ul class="onboarding-features">
@@ -5113,8 +5051,6 @@
             setInterval(updateClock, 1000);
             loadAllData();
             loadSavedPreferences();
-            loadVersionInfo();
-            loadAttributions();
             loadDeviceBattery();  // V13.6: Load device battery status
             refreshInterval = setInterval(() => {
                 loadAllData();
@@ -5138,42 +5074,9 @@
             }, 60000);
         });
 
-        // Load version control info
-        function loadVersionInfo() {
-            fetch('/api/version')
-                .then(r => r.json())
-                .then(v => {
-                    const version = v.components?.legacyAdmin?.version || v.version || 'v2.0.0';
-                    const systemVersion = v.system?.version || '1.0.0';
-                    document.getElementById('versionHash').textContent = `${version} (System ${systemVersion})`;
-                    document.getElementById('buildDate').textContent = v.date || new Date().toISOString().split('T')[0];
-                })
-                .catch(() => {
-                    document.getElementById('versionHash').textContent = 'v2.0.0';
-                    document.getElementById('buildDate').textContent = new Date().toISOString().split('T')[0];
-                });
-        }
+        // Version info now loaded by updateGlobalFooterVersions() in global footer script
 
-        // Load required attributions based on configuration
-        function loadAttributions() {
-            fetch('/api/attributions')
-                .then(r => r.json())
-                .then(data => {
-                    const content = document.getElementById('attributions-content');
-                    if (data.attributions && data.attributions.length > 0) {
-                        // Sanitize attribution text (Section 17.1)
-                        content.innerHTML = data.attributions.map(attr => {
-                            const required = attr.required ? ' (Required)' : ' (Optional)';
-                            return `<div style="margin-bottom: 4px;">• ${sanitize(attr.text || '')} • ${sanitize(attr.license || '')}${attr.required ? '' : required}</div>`;
-                        }).join('');
-                    } else {
-                        content.innerHTML = '<div>No attributions loaded</div>';
-                    }
-                })
-                .catch(() => {
-                    document.getElementById('attributions-content').innerHTML = 'Created by <strong>Angus Bergman</strong> • AGPL-3.0 (Dual Licence)';
-                });
-        }
+        // Attributions now loaded by updateGlobalFooterAttributions() in global footer script
 
         function showTab(tabId, btn) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -5306,7 +5209,7 @@
                     // Update journey summary
                     updateJourneySummaryFromCommuteCompute(scData);
 
-                    // V14.0: Update Commute Analytics
+                    // V15.0: Update Commute Analytics
                     updateCommuteAnalytics(scData);
                 } else {
                     throw new Error(scData.error || 'CommuteCompute calculation failed');
@@ -8210,7 +8113,7 @@
         function refreshData() { loadAllData(); }
         async function clearCache() { await fetch(BASE_URL + '/admin/cache/clear', { method: 'POST' }); loadAllData(); }
 
-        // V14.0: Update Commute Analytics
+        // V15.0: Update Commute Analytics
         function updateCommuteAnalytics(data) {
             const dashboard = data?.dashboard || data;
 
