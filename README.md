@@ -113,7 +113,7 @@ The pipeline runs entirely serverless on Vercel. The device fetches a pre-render
 
 All five engines operate under the CommuteCompute&#8482; umbrella. They share data, influence each other, and produce a unified commute intelligence model.
 
-### 1. CommuteCompute&#8482; Engine (v2.3)
+### 1. CommuteCompute&#8482; Engine (v2.4)
 
 Core journey orchestration with real-time multi-modal planning and Melbourne Metro Tunnel compliance.
 
@@ -515,9 +515,9 @@ See [LEGAL.md](LEGAL.md) for complete trademark and intellectual property detail
 </p>
 
 <p align="center">
-  <strong>Commute Compute&#8482; System v3.4.0</strong><br>
+  <strong>Commute Compute&#8482; System v3.5.0</strong><br>
   V15.0 Complete Journey Intelligence<br>
-  CommuteCompute&#8482; Engine v2.3 | CCDash&#8482; Renderer v1.80 | CC LiveDash&#8482; v3.0 | Admin Panel v3.2.0 | CCFirm&#8482; CC-FW-7.5.0<br>
+  CommuteCompute&#8482; Engine v2.4 | CCDash&#8482; Renderer v1.81 | CC LiveDash&#8482; v3.0 | Admin Panel v4.0 | CCFirm&#8482; CC-FW-7.5.0<br>
   <br>
   Copyright (c) 2026 Angus Bergman. All rights reserved.<br>
   <em>Built in Melbourne, Australia.</em>

@@ -817,15 +817,15 @@
                 <div class="cc-footer-version-item">
                     <div class="cc-footer-live-dot"></div>
                     <span class="cc-footer-version-label">CommuteCompute</span>
-                    <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v2.3</span>
+                    <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v2.4</span>
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">CCDash Renderer</span>
-                    <span class="cc-footer-version-value" id="cc-footer-renderer-version">v1.80</span>
+                    <span class="cc-footer-version-value" id="cc-footer-renderer-version">v1.81</span>
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">System</span>
-                    <span class="cc-footer-version-value" id="cc-footer-system-version">v3.4.0</span>
+                    <span class="cc-footer-version-value" id="cc-footer-system-version">v3.5.0</span>
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">Build</span>
@@ -848,10 +848,10 @@
     <script>
     function loadFooterVersions() {
         fetch('/api/version').then(function(r){return r.json();}).then(function(v) {
-            document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v2.3';
-            document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v1.80';
+            document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v2.4';
+            document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v1.81';
             document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.4.0');
+            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.5.0');
         }).catch(function(){});
     }
     loadFooterVersions();
