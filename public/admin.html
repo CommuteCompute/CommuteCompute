@@ -5341,15 +5341,42 @@
                             transitAuthority: 'Transport Victoria'
                         },
                         apis: {
-                            transit: { configured: hasTransitKey && transitValidated, source: 'KV' },
-                            google: { configured: !!config.addresses?.home, source: 'KV' }
+                            transitAuthority: {
+                                configured: hasTransitKey && transitValidated,
+                                name: 'Transport Victoria OpenData',
+                                baseUrl: 'https://data.ptv.vic.gov.au',
+                                status: (hasTransitKey && transitValidated) ? 'active' : 'inactive',
+                                source: 'KV'
+                            },
+                            weather: { name: 'Bureau of Meteorology', service: 'BOM API', status: 'active' },
+                            geocoding: { name: 'Geocoding Services', services: ['Nominatim', 'Photon'], status: 'active' },
+                            googlePlaces: { configured: !!config.googlePlacesKey, name: 'Google Places API (New)', status: config.googlePlacesKey ? 'active' : 'optional' },
+                            mapbox: { configured: !!config.mapboxToken, name: 'Mapbox Geocoding', status: config.mapboxToken ? 'active' : 'optional' },
+                            here: { configured: !!config.hereApiKey, name: 'HERE Geocoding', status: config.hereApiKey ? 'active' : 'optional' }
+                        },
+                        addresses: {
+                            home: config.addresses?.home || 'Not set',
+                            work: config.addresses?.work || 'Not set',
+                            cafe: config.addresses?.cafe || null
                         },
                         journey: {
-                            autoCalculation: { active: true }
+                            autoCalculation: { active: true },
+                            configured: true,
+                            arrivalTime: config.arrivalTime || scData.arrive_by || '09:00',
+                            coffeeEnabled: !!config.addresses?.cafe,
+                            walkingTimes: scData.walking_times || null
                         },
                         transitStations: {
-                            mode1: { origin: scData.journey_legs?.find(l => l.type === 'train')?.stationName || 'Not configured' },
-                            mode2: { origin: scData.journey_legs?.find(l => l.type === 'tram')?.stopName || 'Not configured' }
+                            mode1: {
+                                origin: scData.journey_legs?.find(l => l.type === 'train')?.stationName || 'Not configured',
+                                destination: scData.journey_legs?.find(l => l.type === 'train')?.destination?.name || 'Not configured',
+                                type: 'Train'
+                            },
+                            mode2: {
+                                origin: scData.journey_legs?.find(l => l.type === 'tram')?.stopName || 'Not configured',
+                                destination: scData.journey_legs?.find(l => l.type === 'tram')?.destination?.name || 'Not configured',
+                                type: 'Tram'
+                            }
                         }
                     };
                     updateSystemStatus(configStatus);
@@ -5367,9 +5394,14 @@
             } catch (error) {
                 // Show error state in widgets
                 document.getElementById('train-departures').innerHTML = `<div class="no-data">Error: ${sanitize(error.message)}</div>`;
-                document.getElementById('tram-departures').innerHTML = '<div class="no-data">See train departures</div>';
+                document.getElementById('tram-departures').innerHTML = '<div class="no-data">See tram departures</div>';
                 document.getElementById('weather-display').innerHTML = '<div class="no-data">Unable to load</div>';
                 document.getElementById('coffee-decision').innerHTML = '<div class="no-data">Unable to calculate</div>';
+                // Always update timestamp even on error
+                const lastUpdated = document.getElementById('data-last-updated');
+                if (lastUpdated) {
+                    lastUpdated.textContent = `Last updated: ${new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })} (error)`;
+                }
             }
         }
         

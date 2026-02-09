@@ -945,6 +945,29 @@ function getDynamicLegZone(legIndex, totalLegs, legs = null) {
 }
 
 /**
+ * Merge consecutive walk legs into a single leg (Section 7.5.1 MANDATORY)
+ * Defensive pass — ensures no back-to-back walks ever appear in rendering
+ */
+function mergeConsecutiveWalkLegs(legs) {
+  const merged = [];
+  for (let i = 0; i < legs.length; i++) {
+    const current = { ...legs[i] };
+    if (current.type === 'walk' && i + 1 < legs.length && legs[i + 1].type === 'walk') {
+      const next = legs[i + 1];
+      current.minutes = (current.minutes || 0) + (next.minutes || 0);
+      current.durationMinutes = (current.durationMinutes || 0) + (next.durationMinutes || 0);
+      current.to = next.to || current.to;
+      current.stopName = next.stopName || current.stopName;
+      current.stationName = next.stationName || current.stationName;
+      current.title = `Walk to ${next.to || current.to || 'destination'}`;
+      i++;
+    }
+    merged.push(current);
+  }
+  return merged;
+}
+
+/**
  * Render a journey leg zone (V10 Spec Section 5)
  * Includes: leg number, mode icon, title, subtitle, duration box
  * v1.20: Dynamic scaling based on leg height
@@ -1824,9 +1847,15 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   ctx.fillStyle = '#000';
   ctx.textBaseline = 'top';
   
-  // Location - small, top left
+  // Location - small, top left (truncated to prevent overflow)
   ctx.font = 'bold 10px Inter, sans-serif';
-  const locationText = (data.location || 'HOME').toUpperCase();
+  const locationTextRaw = (data.location || 'HOME').toUpperCase();
+  const maxLocationW = 150;
+  let locationText = locationTextRaw;
+  while (ctx.measureText(locationText).width > maxLocationW && locationText.length > 3) {
+    locationText = locationText.slice(0, -1);
+  }
+  if (locationText !== locationTextRaw) locationText += '\u2026';
   ctx.fillText(locationText, 12, 4);
 
   // V13.6: Battery indicator next to location (if provided by device)
@@ -1974,7 +2003,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
 
   // Get coffee leg and cafe busyness info
   const coffeeLeg = journeyLegs.find(l => l.type === 'coffee');
-  const cafeBusyness = coffeeLeg?.busyness || coffeeLeg?.busy_level || data.cafe_busyness || 'Unknown';
+  const cafeBusyness = coffeeLeg?.busyness || coffeeLeg?.busy_level || data.cafe_busyness || 'quiet';
   const cafeWaitTime = coffeeLeg?.waitTime || coffeeLeg?.wait_time || data.cafe_wait_time || '--';
 
   const coffeeLegCanGet = journeyLegs.find(l => l.type === 'coffee' && l.canGet !== false);
@@ -2001,13 +2030,23 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     if (earlyTimeMatch) {
       let earlyHours = parseInt(earlyTimeMatch[1]);
       const earlyMins = parseInt(earlyTimeMatch[2]);
+      // Handle 12h format with embedded am/pm
       if (data.current_time.toLowerCase().includes('pm') && earlyHours < 12) earlyHours += 12;
       if (data.current_time.toLowerCase().includes('am') && earlyHours === 12) earlyHours = 0;
+      // Use data.am_pm when current_time has no am/pm suffix (e.g. "5:45")
+      if (!data.current_time.toLowerCase().includes('am') && !data.current_time.toLowerCase().includes('pm')) {
+        if (data.am_pm === 'PM' && earlyHours < 12) earlyHours += 12;
+        if (data.am_pm === 'AM' && earlyHours === 12) earlyHours = 0;
+      }
       earlyNowMins = earlyHours * 60 + earlyMins;
     }
   } else {
-    const earlyNow = new Date();
-    earlyNowMins = earlyNow.getHours() * 60 + earlyNow.getMinutes();
+    // Timezone-aware fallback (not UTC — Vercel runs in UTC)
+    const state = data.state || 'VIC';
+    const tzMap = { VIC:'Australia/Melbourne', NSW:'Australia/Sydney', QLD:'Australia/Brisbane',
+      SA:'Australia/Adelaide', WA:'Australia/Perth', TAS:'Australia/Hobart', NT:'Australia/Darwin', ACT:'Australia/Sydney' };
+    const localNow = new Date(new Date().toLocaleString('en-US', { timeZone: tzMap[state] || 'Australia/Melbourne' }));
+    earlyNowMins = localNow.getHours() * 60 + localNow.getMinutes();
   }
   const earlyArrivalMins = earlyNowMins + earlyTotalMinutes;
   const earlyArrivalH = Math.floor(earlyArrivalMins / 60) % 24;
@@ -2259,14 +2298,23 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     if (timeMatch) {
       let hours = parseInt(timeMatch[1]);
       const mins = parseInt(timeMatch[2]);
-      // Handle 12h format
+      // Handle 12h format with embedded am/pm
       if (data.current_time.toLowerCase().includes('pm') && hours < 12) hours += 12;
       if (data.current_time.toLowerCase().includes('am') && hours === 12) hours = 0;
+      // Use data.am_pm when current_time has no am/pm suffix (e.g. "5:45")
+      if (!data.current_time.toLowerCase().includes('am') && !data.current_time.toLowerCase().includes('pm')) {
+        if (data.am_pm === 'PM' && hours < 12) hours += 12;
+        if (data.am_pm === 'AM' && hours === 12) hours = 0;
+      }
       nowMins = hours * 60 + mins;
     }
   } else {
-    const now = new Date();
-    nowMins = now.getHours() * 60 + now.getMinutes();
+    // Timezone-aware fallback (not UTC — Vercel runs in UTC)
+    const state = data.state || 'VIC';
+    const tzMap = { VIC:'Australia/Melbourne', NSW:'Australia/Sydney', QLD:'Australia/Brisbane',
+      SA:'Australia/Adelaide', WA:'Australia/Perth', TAS:'Australia/Hobart', NT:'Australia/Darwin', ACT:'Australia/Sydney' };
+    const localNow = new Date(new Date().toLocaleString('en-US', { timeZone: tzMap[state] || 'Australia/Melbourne' }));
+    nowMins = localNow.getHours() * 60 + localNow.getMinutes();
   }
   
   // Calculate arrival time (now + journey duration)
@@ -2408,7 +2456,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   ctx.textAlign = 'left';
   
   // Store calculated values for footer
-  data._calculatedArrival = calculatedArrival;
+  data._calculatedArrival = data._calculatedArrival || calculatedArrival;
   data._targetArrival = targetArrival;
   
   // =========================================================================
@@ -2423,6 +2471,9 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   if (!isWithinArrivalWindow) {
     legs = legs.filter(l => l.type !== 'coffee');
   }
+
+  // Section 7.5.1: Defensive merge — no consecutive walk legs ever
+  legs = mergeConsecutiveWalkLegs(legs);
 
   // V13.2: MUCH LARGER font sizes for e-ink visibility
   const legCount = legs.length;
@@ -3090,7 +3141,14 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   } else if (destAddress && !footerDest.includes(destAddress.toUpperCase())) {
     footerDest = `${footerDest} — ${destAddress}`.toUpperCase();
   }
-  ctx.fillText(footerDest, 16, footerTextY);
+  // Truncate to prevent overlap with CC logo (max ~300px)
+  const maxDestW = 300;
+  let truncatedDest = footerDest;
+  while (ctx.measureText(truncatedDest).width > maxDestW && truncatedDest.length > 3) {
+    truncatedDest = truncatedDest.slice(0, -1);
+  }
+  if (truncatedDest !== footerDest) truncatedDest += '\u2026';
+  ctx.fillText(truncatedDest, 16, footerTextY);
 
   // V13.6: Load and draw exact cc-footer-icon.bmp - NO conversion, NO estimation
   // The icon is drawn exactly as stored in the BMP file

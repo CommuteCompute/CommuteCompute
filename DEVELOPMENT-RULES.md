@@ -1337,6 +1337,43 @@ const isWalkLeg = leg.type === 'walk';
 if (isWalkLeg) { /* ... */ }  // Works
 ```
 
+#### 7.5.3 No Consecutive Walk Legs — Enforcement (MANDATORY)
+
+Two adjacent walk legs MUST NEVER appear in journey leg arrays or dashboard display, under any circumstances. This applies to ALL output paths:
+
+- `api/screen.js` `buildJourneyLegs()` output
+- `api/commutecompute.js` `buildCCDashLegs()` output
+- `src/services/ccdash-renderer.js` rendering input
+
+**Enforcement:** After ALL filtering operations (cafe removal, transit unavailability, arrival window exclusion, coffee skip), a final `mergeConsecutiveWalkLegs()` pass MUST run.
+
+**Merge rule:**
+- Combined duration = leg1.minutes + leg2.minutes
+- Destination = leg2.to (further along route)
+- Stop/station name = whichever leg has one
+- Title = "Walk to [leg2.to]"
+
+```javascript
+function mergeConsecutiveWalkLegs(legs) {
+  const merged = [];
+  for (let i = 0; i < legs.length; i++) {
+    const current = { ...legs[i] };
+    if (current.type === 'walk' && i + 1 < legs.length && legs[i + 1].type === 'walk') {
+      const next = legs[i + 1];
+      current.minutes = (current.minutes || 0) + (next.minutes || 0);
+      current.durationMinutes = (current.durationMinutes || 0) + (next.durationMinutes || 0);
+      current.to = next.to || current.to;
+      current.stopName = next.stopName || current.stopName;
+      current.stationName = next.stationName || current.stationName;
+      current.title = `Walk to ${next.to || current.to || 'destination'}`;
+      i++;
+    }
+    merged.push(current);
+  }
+  return merged;
+}
+```
+
 ---
 
 ## Section 8: Design Specification (LOCKED)
