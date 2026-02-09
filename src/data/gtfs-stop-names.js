@@ -55,61 +55,61 @@ export function getStopNameById(stopId) {
  */
 export const MELBOURNE_STOP_IDS = {
   // Inner suburbs - Sandringham line
-  'south yarra': { train: '12179', tram: '2505', line: 'Sandringham/Pakenham/Cranbourne' },
-  'prahran': { train: '14289', tram: '2509', line: 'Sandringham' },
-  'windsor': { train: '14297', tram: '2513', line: 'Sandringham' },
-  'balaclava': { train: '14233', tram: '2519', line: 'Sandringham' },
-  'ripponlea': { train: '14297', tram: null, line: 'Sandringham' },
-  'elsternwick': { train: '14247', tram: null, line: 'Sandringham' },
-  'brighton beach': { train: '14241', tram: null, line: 'Sandringham' },
-  'sandringham': { train: '14271', tram: null, line: 'Sandringham' },
+  'south yarra': { train: '12179', tram: '2505', bus: null, line: 'Sandringham/Pakenham/Cranbourne' },
+  'prahran': { train: '14289', tram: '2509', bus: null, line: 'Sandringham' },
+  'windsor': { train: '14297', tram: '2513', bus: null, line: 'Sandringham' },
+  'balaclava': { train: '14233', tram: '2519', bus: null, line: 'Sandringham' },
+  'ripponlea': { train: '14297', tram: null, bus: null, line: 'Sandringham' },
+  'elsternwick': { train: '14247', tram: null, bus: null, line: 'Sandringham' },
+  'brighton beach': { train: '14241', tram: null, bus: null, line: 'Sandringham' },
+  'sandringham': { train: '14271', tram: null, bus: null, line: 'Sandringham' },
 
   // Inner east - Glen Waverley/Alamein
-  'richmond': { train: '12173', tram: '2201', line: 'All lines' },
-  'burnley': { train: '14243', tram: null, line: 'Glen Waverley/Alamein' },
-  'hawthorn': { train: '14257', tram: '3001', line: 'Glen Waverley/Alamein' },
-  'camberwell': { train: '14246', tram: '3010', line: 'Glen Waverley/Alamein' },
-  'glen iris': { train: '14253', tram: null, line: 'Glen Waverley/Alamein' },
+  'richmond': { train: '12173', tram: '2201', bus: null, line: 'All lines' },
+  'burnley': { train: '14243', tram: null, bus: null, line: 'Glen Waverley/Alamein' },
+  'hawthorn': { train: '14257', tram: '3001', bus: null, line: 'Glen Waverley/Alamein' },
+  'camberwell': { train: '14246', tram: '3010', bus: null, line: 'Glen Waverley/Alamein' },
+  'glen iris': { train: '14253', tram: null, bus: null, line: 'Glen Waverley/Alamein' },
 
   // South east - Frankston/Pakenham/Cranbourne
-  'malvern': { train: '14261', tram: '3008', line: 'Pakenham/Cranbourne/Frankston' },
-  'caulfield': { train: '14245', tram: '3012', line: 'Pakenham/Cranbourne/Frankston' },
-  'carnegie': { train: '14244', tram: null, line: 'Pakenham/Cranbourne' },
-  'murrumbeena': { train: '14267', tram: null, line: 'Pakenham/Cranbourne' },
-  'hughesdale': { train: '14259', tram: null, line: 'Pakenham/Cranbourne' },
-  'oakleigh': { train: '14273', tram: null, line: 'Pakenham/Cranbourne' },
+  'malvern': { train: '14261', tram: '3008', bus: null, line: 'Pakenham/Cranbourne/Frankston' },
+  'caulfield': { train: '14245', tram: '3012', bus: null, line: 'Pakenham/Cranbourne/Frankston' },
+  'carnegie': { train: '14244', tram: null, bus: null, line: 'Pakenham/Cranbourne' },
+  'murrumbeena': { train: '14267', tram: null, bus: null, line: 'Pakenham/Cranbourne' },
+  'hughesdale': { train: '14259', tram: null, bus: null, line: 'Pakenham/Cranbourne' },
+  'oakleigh': { train: '14273', tram: null, bus: null, line: 'Pakenham/Cranbourne' },
 
   // North - Hurstbridge/Mernda
-  'clifton hill': { train: '14249', tram: '2101', line: 'Hurstbridge/Mernda' },
-  'collingwood': { train: '14251', tram: '2103', line: 'Hurstbridge/Mernda' },
-  'fitzroy north': { train: null, tram: '2107', line: 'Tram' },
-  'northcote': { train: '14269', tram: '2115', line: 'Hurstbridge/Mernda' },
-  'fairfield': { train: '14251', tram: null, line: 'Hurstbridge/Mernda' },
-  'alphington': { train: '14231', tram: null, line: 'Hurstbridge/Mernda' },
-  'ivanhoe': { train: '14261', tram: null, line: 'Hurstbridge' },
+  'clifton hill': { train: '14249', tram: '2101', bus: null, line: 'Hurstbridge/Mernda' },
+  'collingwood': { train: '14251', tram: '2103', bus: null, line: 'Hurstbridge/Mernda' },
+  'fitzroy north': { train: null, tram: '2107', bus: null, line: 'Tram' },
+  'northcote': { train: '14269', tram: '2115', bus: null, line: 'Hurstbridge/Mernda' },
+  'fairfield': { train: '14251', tram: null, bus: null, line: 'Hurstbridge/Mernda' },
+  'alphington': { train: '14231', tram: null, bus: null, line: 'Hurstbridge/Mernda' },
+  'ivanhoe': { train: '14261', tram: null, bus: null, line: 'Hurstbridge' },
 
   // West - Werribee/Williamstown
-  'footscray': { train: '14255', tram: null, line: 'Werribee/Williamstown/Sunbury' },
-  'seddon': { train: '14283', tram: null, line: 'Werribee/Williamstown' },
-  'yarraville': { train: '14303', tram: null, line: 'Werribee/Williamstown' },
-  'newport': { train: '14268', tram: null, line: 'Werribee/Williamstown' },
-  'spotswood': { train: '14287', tram: null, line: 'Williamstown' },
+  'footscray': { train: '14255', tram: null, bus: null, line: 'Werribee/Williamstown/Sunbury' },
+  'seddon': { train: '14283', tram: null, bus: null, line: 'Werribee/Williamstown' },
+  'yarraville': { train: '14303', tram: null, bus: null, line: 'Werribee/Williamstown' },
+  'newport': { train: '14268', tram: null, bus: null, line: 'Werribee/Williamstown' },
+  'spotswood': { train: '14287', tram: null, bus: null, line: 'Williamstown' },
 
   // North west - Craigieburn/Sunbury/Upfield
-  'brunswick': { train: '14242', tram: '1201', line: 'Upfield' },
-  'coburg': { train: '14250', tram: null, line: 'Upfield' },
-  'fawkner': { train: '14252', tram: null, line: 'Upfield' },
-  'glenroy': { train: '14256', tram: null, line: 'Craigieburn' },
-  'broadmeadows': { train: '14240', tram: null, line: 'Craigieburn' },
+  'brunswick': { train: '14242', tram: '1201', bus: null, line: 'Upfield' },
+  'coburg': { train: '14250', tram: null, bus: null, line: 'Upfield' },
+  'fawkner': { train: '14252', tram: null, bus: null, line: 'Upfield' },
+  'glenroy': { train: '14256', tram: null, bus: null, line: 'Craigieburn' },
+  'broadmeadows': { train: '14240', tram: null, bus: null, line: 'Craigieburn' },
 
   // CBD/Inner
-  'melbourne': { train: '12204', tram: '2001', line: 'All lines' },
-  'cbd': { train: '12204', tram: '2001', line: 'All lines' },
-  'carlton': { train: null, tram: '1105', line: 'Tram' },
-  'fitzroy': { train: null, tram: '2105', line: 'Tram' },
-  'st kilda': { train: null, tram: '3101', line: 'Tram' },
-  'port melbourne': { train: null, tram: '3201', line: 'Tram' },
-  'south melbourne': { train: null, tram: '3301', line: 'Tram' },
+  'melbourne': { train: '12204', tram: '2001', bus: null, line: 'All lines' },
+  'cbd': { train: '12204', tram: '2001', bus: null, line: 'All lines' },
+  'carlton': { train: null, tram: '1105', bus: null, line: 'Tram' },
+  'fitzroy': { train: null, tram: '2105', bus: null, line: 'Tram' },
+  'st kilda': { train: null, tram: '3101', bus: null, line: 'Tram' },
+  'port melbourne': { train: null, tram: '3201', bus: null, line: 'Tram' },
+  'south melbourne': { train: null, tram: '3301', bus: null, line: 'Tram' },
 };
 
 /**
@@ -119,7 +119,7 @@ export const MELBOURNE_STOP_IDS = {
  * @returns {Object} Stop IDs and detected suburb info
  */
 export function detectStopIdsFromAddress(address) {
-  if (!address) return { trainStopId: null, tramStopId: null };
+  if (!address) return { trainStopId: null, tramStopId: null, busStopId: null };
 
   const addressLower = address.toLowerCase();
 
@@ -128,6 +128,7 @@ export function detectStopIdsFromAddress(address) {
       return {
         trainStopId: ids.train,
         tramStopId: ids.tram,
+        busStopId: ids.bus || null,
         detectedSuburb: suburb,
         line: ids.line
       };
@@ -138,6 +139,7 @@ export function detectStopIdsFromAddress(address) {
   return {
     trainStopId: null,
     tramStopId: null,
+    busStopId: null,
     detectedSuburb: null,
     line: null
   };
