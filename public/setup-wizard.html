@@ -328,7 +328,7 @@
             <header class="wizard-header">
                 <img src="/assets/brand/cc-logo-512.png" alt="Commute Compute™" style="width: 280px; height: auto; margin-bottom: 20px;">
                 <h1>Welcome to Commute Compute&#8482;</h1>
-                <p>Powered by the SmartCommute&#8482; intelligence engine for smart departure recommendations</p>
+                <p>Powered by the CommuteCompute&#8482; intelligence engine for smart departure recommendations</p>
             </header>
 
             <!-- Metro Tunnel Compatibility Banner -->
@@ -595,8 +595,8 @@
                 <p style="color: #94a3b8; margin-bottom: 15px;">Configure your commute preferences and optional real-time transit API.</p>
 
                 <div class="info-box" style="margin-bottom: 20px;">
-                    <strong style="color: #f1f5f9;">SmartCommute&#8482; Intelligence Engine</strong><br>
-                    Your settings feed into five interconnected engines: <strong>SmartCommute&#8482;</strong> (orchestration),
+                    <strong style="color: #f1f5f9;">CommuteCompute&#8482; Intelligence Engine</strong><br>
+                    Your settings feed into five interconnected engines: <strong>CommuteCompute&#8482;</strong> (orchestration),
                     <strong>DepartureConfidence</strong> (reliability scoring), <strong>LifestyleContext</strong> (pattern analysis),
                     <strong>SleepOptimizer</strong> (departure timing), and <strong>AltTransit</strong> (alternative routes).
                 </div>
@@ -667,7 +667,7 @@
                 <div class="form-group">
                     <label class="form-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                         <input type="checkbox" id="include-coffee" checked>
-                        <svg class="icon-sm"><use href="#icon-coffee"/></svg> Calculate coffee stop times (CoffeeDecision&#8482;)
+                        <svg class="icon-sm"><use href="#icon-coffee"/></svg> Calculate coffee stop times (CoffeeDecision)
                     </label>
                 </div>
 
@@ -747,7 +747,7 @@
                 </a>
             </div>
             <div class="cc-footer-attribution" id="cc-footer-attributions">
-                &#169; 2026 Angus Bergman &#8226; <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a>
+                &#169; 2026 Angus Bergman &#8226; <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0 (Dual Licence)</a>
             </div>
         </div>
     </footer>
@@ -762,10 +762,10 @@
     }
     function loadFooterVersions() {
         fetch('/api/version').then(function(r){return r.json();}).then(function(v) {
-            document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v3.0';
-            document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v2.1';
+            document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v2.3';
+            document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v1.80';
             document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.0.0');
+            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.4.0');
         }).catch(function(){});
     }
     function updateGlobalFooterAttributions() {
@@ -775,7 +775,7 @@
         if (transitKey || config.addresses?.home) attributions.push('Transit data: Transport Victoria OpenData API (CC BY 4.0)');
         if (config.addresses?.home) attributions.push('Weather: Bureau of Meteorology (CC BY 3.0 AU)');
         var el = document.getElementById('cc-footer-attributions');
-        if (el) el.innerHTML = attributions.join(' \u2022 ') + ' \u2022 <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a>';
+        if (el) el.innerHTML = attributions.join(' \u2022 ') + ' \u2022 <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0 (Dual Licence)</a>';
     }
     loadFooterVersions();
     updateGlobalFooterAttributions();
@@ -1440,7 +1440,7 @@
         // Configuration summary — shown for ALL device types (one hit)
         var summaryHtml = '<div class="success-box" style="margin-bottom:20px;">' +
             '<h3 style="color:#22c55e;margin-bottom:8px;"><svg class="icon"><use href="#icon-check-circle"/></svg> Setup Complete!</h3>' +
-            '<p style="color:#4fb28e;">Your SmartCommute\u2122 configuration has been saved to the server.</p></div>' +
+            '<p style="color:#4fb28e;">Your CommuteCompute\u2122 configuration has been saved to the server.</p></div>' +
             '<div class="phase-card phase-card-pair" style="margin-bottom:20px;">' +
             '<h3 style="color:#4fb28e;margin-bottom:16px;"><svg class="icon-sm"><use href="#icon-link"/></svg> Your Configuration</h3>' +
             '<div style="display:grid;gap:12px;">' +
