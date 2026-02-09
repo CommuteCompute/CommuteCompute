@@ -184,8 +184,8 @@ For privacy-related enquiries:
 
 <p align="center">
 
-Commute Compute™, SmartCommute™, CCDash™, CC LiveDash™, and CCFirm™ are trademarks of Angus Bergman.
+Commute Compute™, CommuteCompute™, CCDash™, CC LiveDash™, and CCFirm™ are trademarks of Angus Bergman.
 
-Copyright &copy; 2026 Angus Bergman &bull; Licensed under [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html)
+Copyright &copy; 2026 Angus Bergman &bull; Licensed under [AGPL-3.0 (Dual Licence)](https://www.gnu.org/licenses/agpl-3.0.html)
 
 </p>
