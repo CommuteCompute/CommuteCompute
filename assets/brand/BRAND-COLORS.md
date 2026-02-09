@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="cc-mark-cropped.png" alt="Commute Compute™" width="120">
+  <img src="cc-logo-apple-touch.png" alt="Commute Compute™" width="120">
 </p>
 
 # Commute Compute(TM) Brand Colors
