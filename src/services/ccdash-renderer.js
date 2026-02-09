@@ -1061,8 +1061,22 @@ function renderLegZone(ctx, leg, zone, legNumber = 1, isHighlighted = false) {
   const subtitleMaxWidth = w - textX - timeBoxW - departColW - 8;
   
   ctx.font = `${subtitleSize}px Inter, sans-serif`;
-  let subtitle = leg.subtitle || getLegSubtitle(leg);
-  
+  // V15.0 FIX: For transit legs with departure data but no "Next:" in subtitle,
+  // append "Next:" from getLegSubtitle() while preserving stop name from original subtitle
+  let subtitle = leg.subtitle;
+  if (['train', 'tram', 'bus', 'vline', 'ferry'].includes(leg.type) &&
+      !subtitle?.includes('Next:') &&
+      (leg.nextDepartureTimesMs?.length > 0 || leg.nextDepartures?.length > 0)) {
+    const dynamicPart = getLegSubtitle(leg);
+    if (dynamicPart?.includes('Next:') && subtitle) {
+      // Combine stop name with "Next:" data
+      subtitle = `${subtitle} • ${dynamicPart}`;
+    } else {
+      subtitle = dynamicPart || subtitle;
+    }
+  }
+  subtitle = subtitle || getLegSubtitle(leg);
+
   // Truncate subtitle if too long
   while (ctx.measureText(subtitle).width > subtitleMaxWidth && subtitle.length > 10) {
     subtitle = subtitle.slice(0, -4) + '...';
@@ -2852,7 +2866,32 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       // -----------------------------------------------------------------------
       ctx.font = `${subtitleSize}px Inter, sans-serif`;
       let legSubtitle = leg.subtitle;
-    
+
+      // V15.0 FIX: For transit legs with departure data but no "Next:" in subtitle,
+      // append "Next:" from departure data while preserving stop name from original subtitle.
+      // This handles cases where screen.js subtitle was built before timetable/live data.
+      if (['train', 'tram', 'bus', 'vline', 'ferry'].includes(leg.type) &&
+          !legSubtitle?.includes('Next:') &&
+          (leg.nextDepartureTimesMs?.length > 0 || leg.nextDepartures?.length > 0)) {
+        const hasLiveDataForNext = leg.isLive === true;
+        const liveInd = hasLiveDataForNext ? ' LIVE' : '';
+        const td = hasLiveDataForNext ? '' : '~';
+        const nowMsForNext = Date.now();
+        let nextTimesForSubtitle = [];
+        if (leg.nextDepartureTimesMs?.length > 0) {
+          nextTimesForSubtitle = leg.nextDepartureTimesMs
+            .map(depMs => Math.max(0, Math.round((depMs - nowMsForNext) / 60000)))
+            .filter(mins => mins >= 0 && mins <= 120)
+            .slice(0, 3);
+        } else if (leg.nextDepartures?.length > 0) {
+          nextTimesForSubtitle = leg.nextDepartures.slice(0, 3);
+        }
+        if (nextTimesForSubtitle.length >= 2) {
+          const nextStr = `${td}Next: ${nextTimesForSubtitle.slice(0, 2).join(`, ${td}`)} min${liveInd}`;
+          legSubtitle = legSubtitle ? `${legSubtitle} • ${nextStr}` : nextStr;
+        }
+      }
+
     if (!legSubtitle) {
       if (isExtraTimeCoffee) {
         legSubtitle = '[OK] EXTRA TIME -- Disruption';
