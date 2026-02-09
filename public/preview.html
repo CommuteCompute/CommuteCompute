@@ -687,7 +687,7 @@
             
             <div class="device-frame" id="device-frame">
                 <div class="screen" id="screen" style="width: 800px; height: 480px;">
-                    <img id="dashboard-img" src="/api/livedash?device=trmnl-og" alt="Transit Dashboard Preview">
+                    <img id="dashboard-img" src="/api/screen?format=png" alt="Transit Dashboard Preview">
                     <div class="refresh-badge live" id="refresh-badge">● Live</div>
                 </div>
             </div>
@@ -715,7 +715,7 @@
                 </select>
                 <div class="device-frame">
                     <div class="screen" id="compare-screen-1" style="width: 400px; height: 240px;">
-                        <img id="compare-img-1" src="/api/livedash?device=trmnl-og" alt="Device 1">
+                        <img id="compare-img-1" src="/api/screen?format=png" alt="Device 1">
                     </div>
                 </div>
             </div>
@@ -728,7 +728,7 @@
                 </select>
                 <div class="device-frame">
                     <div class="screen" id="compare-screen-2" style="width: 400px; height: 300px;">
-                        <img id="compare-img-2" src="/api/livedash?device=trmnl-mini" alt="Device 2">
+                        <img id="compare-img-2" src="/api/screen?format=png" alt="Device 2">
                     </div>
                 </div>
             </div>
@@ -866,7 +866,7 @@
             badge.textContent = '↻ Loading...';
             badge.className = 'refresh-badge loading';
             
-            const url = `/api/livedash?device=${currentDevice}&refresh=true&t=${Date.now()}`;
+            const url = `/api/screen?format=png&t=${Date.now()}`;
             
             img.onload = () => {
                 badge.textContent = '● Live';
@@ -942,7 +942,7 @@
             screen.style.width = `${device.width * scale}px`;
             screen.style.height = `${device.height * scale}px`;
             
-            img.src = `/api/livedash?device=${deviceId}&t=${Date.now()}`;
+            img.src = `/api/screen?format=png&t=${Date.now()}`;
         }
         
         // Initialize
