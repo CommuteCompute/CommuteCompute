@@ -36,6 +36,7 @@ import CoffeeDecision from '../core/coffee-decision.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { getTransitApiKey, getGoogleApiKey } from '../data/kv-preferences.js';
+import { getStopNameById, detectStopIdsFromAddress } from '../data/gtfs-stop-names.js';
 
 // =============================================================================
 // STATE CONFIGURATION
@@ -703,23 +704,16 @@ export class CommuteCompute {
   }
 
   /**
-   * Get hardcoded fallback data when no timetables available
+   * Get fallback data when no timetables available
+   * Per DEVELOPMENT-RULES Section 23.6: NO mock data fallbacks.
+   * Returns empty arrays — the system must show "No live data available"
+   * rather than fake departure times.
    */
   getHardcodedFallback() {
-    // Basic fallback - returns scheduled departures
     return {
-      trains: [
-        { minutes: 5, destination: 'City', isScheduled: true },
-        { minutes: 15, destination: 'City', isScheduled: true },
-        { minutes: 25, destination: 'City', isScheduled: true }
-      ],
-      trams: [
-        { minutes: 3, destination: 'City', isScheduled: true },
-        { minutes: 13, destination: 'City', isScheduled: true }
-      ],
-      buses: [
-        { minutes: 10, destination: 'City', isScheduled: true }
-      ]
+      trains: [],
+      trams: [],
+      buses: []
     };
   }
 
@@ -869,13 +863,14 @@ export class CommuteCompute {
     let data;
     
     if (this.fallbackMode) {
-      // Use fallback timetables
+      // No API key available - return empty data (per Section 23.6: no mock fallbacks)
       data = this.generateFallbackDepartures();
     } else {
       // Try live API
       try {
         data = await this.fetchLiveTransitData();
       } catch (error) {
+        console.error('[CommuteCompute] Live transit fetch failed, returning empty data:', error.message);
         data = this.generateFallbackDepartures();
       }
     }
@@ -888,17 +883,18 @@ export class CommuteCompute {
   }
 
   /**
-   * Generate departures from fallback timetables
+   * Generate departures when live API is unavailable
+   * Per DEVELOPMENT-RULES Section 23.6: NO mock data fallbacks.
+   * Returns empty arrays so the UI shows "No live data available"
+   * instead of fake departure times that mislead users.
    */
   generateFallbackDepartures() {
-    const fallback = this.getHardcodedFallback();
-    
     return {
-      trains: fallback.trains.map(t => ({ ...t, source: 'fallback' })),
-      trams: fallback.trams.map(t => ({ ...t, source: 'fallback' })),
-      buses: fallback.buses.map(t => ({ ...t, source: 'fallback' })),
+      trains: [],
+      trams: [],
+      buses: [],
       source: 'fallback',
-      disclaimer: 'Using scheduled timetables - times may vary'
+      disclaimer: 'No live transit data available'
     };
   }
 
@@ -1612,14 +1608,21 @@ export class CommuteCompute {
                             locations?.work?.address?.split(',')[0]?.trim() ||
                             'Office';
     
-    // Extract nearby stop names from config if available
-    // NEVER use generic "home Station" - use actual station name or suburb-based name
-    const nearestTramStop = locations?.cafe?.nearbyStops?.tram?.name || 
+    // Resolve actual stop names via GTFS lookup FIRST (most reliable),
+    // then config nearbyStops, then suburb-derived names
+    const homeDetected = detectStopIdsFromAddress(locations?.home?.address);
+    const workDetected = detectStopIdsFromAddress(locations?.work?.address);
+
+    const nearestTramStop = locations?.cafe?.nearbyStops?.tram?.name ||
                            locations?.home?.nearbyStops?.tram?.name ||
-                           'Tram Stop';
-    const nearestTrainStation = locations?.home?.nearbyStops?.train?.name || 
+                           getStopNameById(homeDetected.tramStopId) ||
+                           (homeArea ? `${homeArea} Tram Stop` : 'Tram Stop');
+    const nearestTrainStation = locations?.home?.nearbyStops?.train?.name ||
+                               getStopNameById(homeDetected.trainStopId) ||
                                (homeArea ? `${homeArea} Station` : 'Station');
-    const workStation = locations?.work?.nearbyStops?.train?.name || 'City Station';
+    const workStation = locations?.work?.nearbyStops?.train?.name ||
+                       getStopNameById(workDetected.trainStopId) ||
+                       (workArea ? `${workArea} Station` : 'Flinders Street Station');
     
     // =========================================================================
     // ROUTE 1: Coffee + Tram + Train (PREFERRED multi-modal pattern)
@@ -1678,11 +1681,11 @@ export class CommuteCompute {
       totalMinutes: 22,
       legs: [
         { type: 'walk', to: 'station', from: 'home', minutes: 7, fromHome: true, stationName: nearestTrainStation },
-        { type: 'train', origin: { name: nearestTrainStation }, destination: { name: workStation }, minutes: 10 },
+        { type: 'train', origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 10 },
         { type: 'walk', to: 'work', minutes: 5, workName: workAddressShort }
       ]
     });
-    
+
     // =========================================================================
     // ROUTE 4: Tram + Train (no coffee)
     // Pattern: Home > Walk > Tram > Train > Walk > Office

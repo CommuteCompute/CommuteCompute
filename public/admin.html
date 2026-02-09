@@ -5219,10 +5219,16 @@
                 const scData = await scResponse.json();
                 
                 if (scData.success) {
-                    // Update Live Data banner
-                    const isLive = !scData.fallbackMode && (hasTransitKey && transitValidated);
+                    // Update Live Data banner - check ACTUAL data source, not just API key existence
+                    // Per Section 23.6: LIVE indicators must reflect actual data, not configuration state
+                    const rawTransit = scData.raw?.transit || {};
+                    const hasActualLiveTrains = (rawTransit.trains || []).some(t => t.source === 'live' || t.source === 'opendata');
+                    const hasActualLiveTrams = (rawTransit.trams || []).some(t => t.source === 'live' || t.source === 'opendata');
+                    const hasActualLiveBuses = (rawTransit.buses || []).some(t => t.source === 'live' || t.source === 'opendata');
+                    const hasActualLiveData = hasActualLiveTrains || hasActualLiveTrams || hasActualLiveBuses;
+                    const isLive = hasActualLiveData && !scData.fallbackMode;
                     const dataMode = document.getElementById('data-mode');
-                    if (dataMode) dataMode.textContent = isLive ? 'Live Data' : 'Timetable';
+                    if (dataMode) dataMode.textContent = isLive ? 'Live Data' : (hasTransitKey ? 'No Live Data' : 'Timetable');
                     updateLiveDataBanner(isLive, hasTransitKey, transitValidated);
                     
                     // Update departures from nextDeparture
@@ -5673,27 +5679,28 @@
 
             if (!indicator) return;
 
-            // Check BOTH server status AND localStorage for live data
+            // Check configuration state (not data accuracy - that comes from updateLiveDataBanner)
+            // This is the initial state shown before CommuteCompute data loads
             const transitValidated = localStorage.getItem('cc-transit-api-validated') === 'true';
             const hasTransitKey = !!localStorage.getItem('cc-transit-api-key');
             const serverHasLive = apis && apis.transitAuthority && apis.transitAuthority.configured;
-            const hasLiveData = serverHasLive || (hasTransitKey && transitValidated);
+            const hasApiConfig = serverHasLive || (hasTransitKey && transitValidated);
 
-            if (hasLiveData) {
-                // Live data mode
-                indicator.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)';
-                indicator.style.borderLeft = '4px solid #22c55e';
-                icon.innerHTML = '<svg class="icon" style="color: #22c55e;"><use href="#icon-check-circle"/></svg>';
-                title.textContent = 'Live Data Active';
-                subtitle.textContent = 'Real-time transit updates enabled • Refreshing automatically';
+            if (hasApiConfig) {
+                // API configured - show pending state until actual data loads
+                indicator.style.background = 'linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%)';
+                indicator.style.borderLeft = '4px solid #fbbf24';
+                icon.innerHTML = '<svg class="icon" style="color: #fbbf24;"><use href="#icon-refresh"/></svg>';
+                title.textContent = 'Checking Live Data...';
+                subtitle.textContent = 'API key configured. Fetching GTFS-RT data...';
                 actionBtn.innerHTML = '<svg class="icon-sm"><use href="#icon-refresh"/></svg> Refresh Now';
                 actionBtn.onclick = () => loadAllData();
             } else {
-                // Fallback data mode
+                // No API key configured
                 indicator.style.background = 'linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%)';
                 indicator.style.borderLeft = '4px solid #fbbf24';
                 icon.innerHTML = '<svg class="icon" style="color: #f87171;"><use href="#icon-x-circle"/></svg>';
-                title.textContent = 'Using Fallback Timetable Data';
+                title.textContent = 'No Transit API Key';
                 subtitle.textContent = 'Configure API keys in API Settings to enable real-time updates';
                 actionBtn.textContent = '→ API Settings';
                 actionBtn.onclick = () => showTab('api');
@@ -5707,16 +5714,26 @@
             const title = document.getElementById('data-source-title');
             const subtitle = document.getElementById('data-source-subtitle');
             const actionBtn = document.getElementById('data-source-action-btn');
-            
+
             if (!indicator) return;
-            
+
             if (isLive) {
                 indicator.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)';
                 indicator.style.borderLeft = '4px solid #22c55e';
                 icon.innerHTML = '<svg class="icon" style="color: #22c55e;"><use href="#icon-check-circle"/></svg>';
                 title.textContent = 'Live Data Active';
-                subtitle.textContent = 'Transit API validated • Real-time updates enabled';
+                subtitle.textContent = 'GTFS-RT real-time departures received';
                 actionBtn.innerHTML = '<svg class="icon-sm"><use href="#icon-refresh"/></svg> Refresh Now';
+                actionBtn.onclick = () => loadAllData();
+            } else if (hasKey && isValidated) {
+                // API key exists and validated, but no live GTFS-RT data returned
+                // This can happen when: GTFS-RT fetch fails, no matching stops, late night, etc.
+                indicator.style.background = 'linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%)';
+                indicator.style.borderLeft = '4px solid #fbbf24';
+                icon.innerHTML = '<svg class="icon" style="color: #fbbf24;"><use href="#icon-warning"/></svg>';
+                title.textContent = 'No Live Data Available';
+                subtitle.textContent = 'API key valid but no GTFS-RT departures received. May be late night or stop ID mismatch.';
+                actionBtn.innerHTML = '<svg class="icon-sm"><use href="#icon-refresh"/></svg> Retry';
                 actionBtn.onclick = () => loadAllData();
             } else if (hasKey && !isValidated) {
                 indicator.style.background = 'linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%)';

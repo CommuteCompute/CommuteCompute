@@ -113,6 +113,7 @@ function decodeGtfsRt(buffer) {
     );
     return feed;
   } catch (error) {
+    console.error('[OpenData] Protobuf decode failed:', error.message);
     return null;
   }
 }
@@ -128,35 +129,47 @@ async function fetchGtfsRt(mode, feed, options = {}) {
   if (options.apiKey) {
     setApiKey(options.apiKey);
   }
-  
+
   const apiKey = await getApiKey();
   if (!apiKey) {
+    console.warn('[OpenData] No API key available for GTFS-RT fetch');
     return null;
   }
 
   const url = `${API_BASE}/${mode}/${feed}`;
-  
+
   try {
+    console.log(`[OpenData] Fetching GTFS-RT: ${mode}/${feed}`);
     const response = await fetch(url, {
       headers: {
-        'KeyId': apiKey  // Case-sensitive as per dev rules
+        'KeyId': apiKey  // Case-sensitive as per dev rules Section 11.1
       }
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'no body');
+      console.error(`[OpenData] GTFS-RT fetch failed: HTTP ${response.status} for ${mode}/${feed}: ${errorText.substring(0, 200)}`);
       throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 100)}`);
     }
-    
+
     // Get response as ArrayBuffer for Protobuf decoding
     const buffer = await response.arrayBuffer();
+    console.log(`[OpenData] Received ${buffer.byteLength} bytes for ${mode}/${feed}`);
 
     // Decode Protobuf
     const decoded = decodeGtfsRt(buffer);
-    
+
+    if (!decoded) {
+      console.error(`[OpenData] Protobuf decode returned null for ${mode}/${feed} (${buffer.byteLength} bytes)`);
+    } else {
+      const entityCount = decoded.entity?.length || 0;
+      console.log(`[OpenData] Decoded ${entityCount} entities from ${mode}/${feed}`);
+    }
+
     return decoded;
-    
+
   } catch (error) {
+    console.error(`[OpenData] GTFS-RT error for ${mode}/${feed}: ${error.message}`);
     throw error;
   }
 }
@@ -171,6 +184,7 @@ async function fetchGtfsRt(mode, feed, options = {}) {
 export async function getDepartures(stopId, routeType, options = {}) {
   // V13.6 FIX: Per Section 23.6 - return empty array if no valid stop ID (not mock data)
   if (!stopId || stopId === 'null' || stopId === 'undefined') {
+    console.warn(`[OpenData] getDepartures called with invalid stopId: ${stopId}`);
     return [];
   }
 
@@ -182,6 +196,7 @@ export async function getDepartures(stopId, routeType, options = {}) {
     const feed = await fetchGtfsRt(mode, 'trip-updates', options);
 
     if (!feed) {
+      console.warn(`[OpenData] No feed returned for ${mode} (stopId=${stopId})`);
       return [];
     }
 
@@ -189,13 +204,16 @@ export async function getDepartures(stopId, routeType, options = {}) {
     const departures = processGtfsRtDepartures(feed, stopId, routeType);
 
     if (departures.length === 0) {
+      console.log(`[OpenData] No matching departures for stopId=${stopId} in ${mode} feed (${feed.entity?.length || 0} entities searched)`);
       // V13.6 FIX: Per Section 23.6 - return empty array, not mock data
       return [];
     }
 
+    console.log(`[OpenData] Found ${departures.length} departures for stopId=${stopId} (${mode})`);
     return departures;
 
   } catch (error) {
+    console.error(`[OpenData] getDepartures error for ${mode} stopId=${stopId}: ${error.message}`);
     // V13.6 FIX: Per Section 23.6 - return empty array on error
     return [];
   }
@@ -214,27 +232,38 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0) {
   const stopIdStr = String(stopId);
 
   if (!feed?.entity) {
+    console.warn(`[OpenData] processGtfsRtDepartures: feed has no entities for stopId=${stopIdStr}`);
     return departures;
   }
 
-  // V13.6: Stop ID matching - stricter for trams to prevent false matches
+  // Log a sample of stop IDs in the feed for diagnostic purposes (first 5 unique)
+  const sampleStopIds = new Set();
+  for (const entity of feed.entity) {
+    if (sampleStopIds.size >= 5) break;
+    const stus = entity.tripUpdate?.stopTimeUpdate;
+    if (stus) {
+      for (const stu of stus) {
+        if (stu.stopId) sampleStopIds.add(String(stu.stopId));
+        if (sampleStopIds.size >= 5) break;
+      }
+    }
+  }
+  console.log(`[OpenData] Looking for stopId=${stopIdStr} (routeType=${routeType}). Sample stop IDs in feed: [${[...sampleStopIds].join(', ')}]`);
+
+  // Stop ID matching - flexible for all modes to handle GTFS-RT ID formats
+  // GTFS-RT may use bare IDs ("12179") or prefixed IDs ("aus:vic:metro:12179")
   const matchesStopId = (gtfsStopId) => {
     if (!gtfsStopId) return false;
     const gtfsStr = String(gtfsStopId);
 
-    // Exact match - works for both trains and trams
+    // Exact match - works for all modes
     if (gtfsStr === stopIdStr) return true;
 
-    // V13.6 FIX: For trams, only match exact suffixes with proper delimiter
-    // Prevents "12505" from matching "2505"
-    if (routeType === 1) {
-      // Match with colon delimiter (e.g., "aus:vic:tram:2505" matches "2505")
-      if (gtfsStr.endsWith(`:${stopIdStr}`)) return true;
-      // Match with hyphen delimiter (e.g., "tram-2505" matches "2505")
-      if (gtfsStr.endsWith(`-${stopIdStr}`)) return true;
-      // Match with underscore delimiter
-      if (gtfsStr.endsWith(`_${stopIdStr}`)) return true;
-    }
+    // Delimited suffix match - handles prefixed GTFS-RT stop IDs
+    // e.g., "aus:vic:metro:12179" matches "12179", "tram-2505" matches "2505"
+    if (gtfsStr.endsWith(`:${stopIdStr}`)) return true;
+    if (gtfsStr.endsWith(`-${stopIdStr}`)) return true;
+    if (gtfsStr.endsWith(`_${stopIdStr}`)) return true;
 
     return false;
   };
