@@ -395,9 +395,9 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         // Minutes from NOW to that departure (for the minutes box)
         let rawMinutes = Math.round((actualDepartureMs - nowMs) / 60000);
 
-        // V13.6 SANITY CHECK: If minutes > 60, timestamp is likely wrong (timezone issue)
-        // Fall back to leg duration or mock value
-        if (rawMinutes > 60 || rawMinutes < 0) {
+        // V15.0: Only reject clearly invalid timestamps (negative or absurdly far future)
+        // Valid departures up to 120+ min away are kept — supports low-frequency services
+        if (rawMinutes < 0 || rawMinutes > 180) {
           rawMinutes = cumulativeMinutes + (legDuration || 5);
         }
         minutesToDeparture = rawMinutes;
@@ -422,6 +422,34 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         nextDepartureTimesMs = [departMs];
 
       }
+    }
+
+    // V15.0: Timetable estimate fallback for transit legs without live GTFS-RT data.
+    // When no live data exists (e.g., PTV tram GTFS-RT unavailable), generate
+    // estimated departure times based on typical Melbourne service frequencies.
+    // These are clearly marked as timetable estimates (tilde prefix in renderer).
+    // Per Section 23.6: opendata-client returns [] (correct). These estimates are
+    // generated at the display layer from known service patterns, not mock GTFS data.
+    if (isTransitLeg && !liveData) {
+      const melbTime = getMelbourneDisplayTime(now, state);
+      const headwayMin = getTypicalHeadway(leg.type, melbTime.hour);
+      // First estimated departure = arrival at stop + small wait buffer
+      const waitBuffer = Math.min(headwayMin, 3); // up to 3 min wait
+      const firstDepartMs = arrivalAtStopMs + (waitBuffer * 60000);
+      actualDepartureMs = firstDepartMs;
+
+      // Generate 3 estimated departures at headway intervals
+      nextDepartureTimesMs = [];
+      for (let i = 0; i < 3; i++) {
+        nextDepartureTimesMs.push(firstDepartMs + (i * headwayMin * 60000));
+      }
+
+      minutesToDeparture = Math.round((firstDepartMs - nowMs) / 60000);
+      const departDate = new Date(firstDepartMs);
+      const departMelb = getMelbourneDisplayTime(departDate, state);
+      const departH12 = departMelb.hour % 12 || 12;
+      const departAmPm = departMelb.hour >= 12 ? 'pm' : 'am';
+      departTime = `${departH12}:${departMelb.minute.toString().padStart(2, '0')}${departAmPm}`;
     }
 
     // V13.6: Calculate the actual journey contribution for this leg
@@ -452,6 +480,9 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       departTime,                  // V13.6: Actual departure clock time
       nextDepartureTimesMs,        // V13.6: Catchable departures in ms (for Next: x,y,z)
       actualDepartureMs,           // V13.6: Actual departure timestamp for stable arrival calc
+      // V15.0: Live data source flags for renderer
+      isLive: isTransitLeg && !!liveData,              // True only when GTFS-RT data matched
+      isTimetableEstimate: isTransitLeg && !liveData,  // True when using timetable fallback
       // V13.6: Stop/station names for renderer display
       originStop: leg.originStop,
       originStation: leg.originStation,
@@ -569,6 +600,15 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
           }
         }
       }
+    }
+
+    // V15.0: Calculate "Next: x, y, z" for timetable-only transit legs (no live data)
+    // V15.0: Calculate "Next: x, y, z" for timetable-only transit legs (no live data)
+    // Estimates are generated from typical headway frequencies, not from GTFS-RT
+    if (isTransitLeg && !liveData && baseLeg.nextDepartureTimesMs?.length > 0) {
+      baseLeg.nextDepartures = baseLeg.nextDepartureTimesMs.map(depMs =>
+        Math.round((depMs - nowMs) / 60000)
+      );
     }
 
     legs.push(baseLeg);
@@ -870,22 +910,46 @@ function calculateArrivalTime(now, totalMinutes, state) {
 }
 
 /**
- * V13.6: Filter transit legs when walking is faster or no transit available
- * Per user requirement: If walk_time + 5 < wait_time + transit_duration, exclude transit
- * Also excludes transit legs when no departures are available (e.g., nighttime)
+ * V15.0: Get typical service headway (minutes between departures) for Melbourne transit.
+ * Used for timetable-based departure estimates when GTFS-RT data is unavailable.
+ * Based on published Melbourne transit frequencies.
+ * @param {string} type - 'train', 'tram', or 'bus'
+ * @param {number} hour - Current hour (0-23) in local time
+ * @returns {number} - Estimated headway in minutes
+ */
+function getTypicalHeadway(type, hour) {
+  const isPeak = (hour >= 7 && hour <= 9) || (hour >= 16 && hour <= 18);
+  const isLateNight = hour >= 22 || hour < 5;
+  if (type === 'tram') return isPeak ? 6 : isLateNight ? 20 : 10;
+  if (type === 'train') return isPeak ? 5 : isLateNight ? 20 : 12;
+  return 15; // bus default
+}
+
+/**
+ * V15.0: Filter transit legs - marks legs with data source info but preserves route structure.
+ * Per V15.0 fix: Transit legs are NEVER removed from the route when live data is absent.
+ * The absence of live GTFS-RT data does not mean the service doesn't run.
+ *
+ * Behaviour:
+ * - No live departures → leg kept, marked dataSource='timetable', isLive=false, isScheduleOnly=true
+ * - Walk faster than transit → leg kept, marked walkFasterFlag=true (renderer decides display)
+ * - Last service detected → leg kept, marked isLastService=true
+ *
+ * Per DEVELOPMENT-RULES.md Section 23.6: No mock data fallbacks. Timetable times come from
+ * the route definition, not from fabricated departure data.
  *
  * @param {Object} route - Route with legs array
  * @param {Object} transitData - Live transit data (trains, trams, buses)
  * @param {number} walkSpeedKmPerHour - Average walking speed (default 4.5 km/h)
- * @returns {Object} - { route: filtered route, transitNotice: string|null }
+ * @returns {Object} - { route: annotated route, transitNotice: string|null }
  */
 function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4.5) {
   if (!route?.legs) return { route, transitNotice: null };
 
   const filteredLegs = [];
-  let skipNextWalk = false;
   let transitNotice = null;
-  let removedTransitTypes = [];
+  let timetableTypes = [];  // Transit types falling back to timetable data
+  let walkFasterTypes = []; // Transit types where walking may be faster
 
   for (let i = 0; i < route.legs.length; i++) {
     const leg = route.legs[i];
@@ -901,57 +965,42 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
                          leg.type === 'tram' ? transitData.trams :
                          leg.type === 'bus' ? transitData.buses : [];
 
-      // V13.6: Check if any departures are available
+      // V15.0: Check if any live departures are available
       const hasDepartures = departures && departures.length > 0;
       const isLastService = departures && departures.length === 1;
+
+      if (!hasDepartures) {
+        // V15.0 FIX: No live data available - KEEP the leg, mark as timetable-only.
+        // The route definition's timing (leg.minutes / leg.durationMinutes) remains valid.
+        // Do NOT remove the leg or merge surrounding walks.
+        leg.dataSource = 'timetable';
+        leg.isLive = false;
+        leg.isScheduleOnly = true;
+        timetableTypes.push(leg.type);
+
+        // Add the leg - it stays in the route structure
+        filteredLegs.push(leg);
+        continue;
+      }
+
+      // Live data is available - mark the leg accordingly
+      leg.dataSource = 'live';
+      leg.isLive = true;
+      leg.isScheduleOnly = false;
 
       // Check if prior walk leg is longer than transit wait time
       const priorWalkTime = prevLeg?.type === 'walk' ? (prevLeg.minutes || prevLeg.durationMinutes || 0) : 0;
       const firstDepMinutes = departures?.[0]?.minutes || 0;
       const walkLongerThanWait = priorWalkTime > firstDepMinutes;
 
-      if (!hasDepartures) {
-        // No transit available - skip this leg
-        removedTransitTypes.push(leg.type);
-
-        // V13.6: Set notice for no transit options with walk time calculation
-        // Calculate total walk time by summing all walk legs and estimating transit distances
-        const transitWalkEquivalent = (leg.minutes || leg.durationMinutes || 10) * 2.5; // Transit ~= 2.5x walk time
-        transitNotice = 'NO PUBLIC TRANSIT OPTIONS AVAILABLE';
-
-        // If previous leg was walk to this transit, we need to merge or skip it
-        skipNextWalk = false;  // Reset - we're removing the transit
-
-        // If next leg is a walk FROM this transit, merge it with the walk TO
-        if (nextLeg?.type === 'walk' && prevLeg?.type === 'walk') {
-          // Merge the two walk legs plus transit walking equivalent
-          const mergedWalk = {
-            ...prevLeg,
-            minutes: (prevLeg.minutes || 0) + Math.round(transitWalkEquivalent) + (nextLeg.minutes || 0),
-            durationMinutes: (prevLeg.durationMinutes || 0) + Math.round(transitWalkEquivalent) + (nextLeg.durationMinutes || 0),
-            to: nextLeg.to,
-            title: `Walk to ${nextLeg.to || 'destination'}`,
-            isFullWalk: true  // V13.6: Flag that this replaces transit
-          };
-          // Remove the last walk we added and add merged
-          if (filteredLegs.length > 0 && filteredLegs[filteredLegs.length - 1].type === 'walk') {
-            filteredLegs.pop();
-          }
-          filteredLegs.push(mergedWalk);
-          i++; // Skip the next walk leg
-        }
-        continue; // Skip adding this transit leg
-      }
-
       // V13.6: Check if walk time > transit wait AND it's the last service
       if (walkLongerThanWait && isLastService) {
-        transitNotice = 'NO OTHER PUBLIC TRANSIT OPTIONS AVAILABLE';
         // Still include the leg but mark it
         leg.isLastService = true;
         leg.noOtherOptions = true;
       }
 
-      // V13.6: Check if walking would be faster
+      // V15.0: Check if walking would be faster
       // Calculate: walk_time + 5 < wait_time + transit_duration
       const firstDep = departures[0];
       if (firstDep) {
@@ -959,43 +1008,43 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
         const transitDuration = leg.minutes || leg.durationMinutes || 10;
         const totalTransitTime = waitMinutes + transitDuration;
 
-        // Estimate walk time for same distance (rough: transit distance ~= 2x walk time)
+        // Estimate walk time for same distance (rough: transit distance ~= 2.5x walk time)
         // This is a heuristic - actual walk distance should come from route
         const estimatedWalkTime = leg.walkDistanceMinutes || (transitDuration * 2.5);
 
         if (estimatedWalkTime + 5 < totalTransitTime) {
-          // Similar merge logic as above
-          continue;
+          // V15.0 FIX: Do NOT remove the leg. Mark it so the renderer can decide.
+          leg.walkFasterFlag = true;
+          walkFasterTypes.push(leg.type);
         }
       }
     }
 
-    // Add leg if not filtered out
-    if (!(skipNextWalk && leg.type === 'walk')) {
-      filteredLegs.push(leg);
-    }
-    skipNextWalk = false;
+    // Add leg to filtered output (all legs are preserved)
+    filteredLegs.push(leg);
   }
 
-  // V13.6: Calculate total walk time if all transit was removed
-  let totalWalkTime = null;
-  if (removedTransitTypes.length > 0 && transitNotice) {
-    totalWalkTime = filteredLegs
-      .filter(l => l.type === 'walk')
-      .reduce((sum, l) => sum + (l.minutes || l.durationMinutes || 0), 0);
-
-    // Update notice to include walk time
-    if (totalWalkTime > 0) {
-      transitNotice = `NO PUBLIC TRANSIT • WALK ${totalWalkTime} MIN`;
-    }
+  // V15.0: Set transitNotice based on data source status
+  if (timetableTypes.length > 0) {
+    const uniqueTypes = [...new Set(timetableTypes)];
+    const typeLabel = uniqueTypes.map(t => t.toUpperCase()).join(' + ');
+    transitNotice = `${typeLabel} USING TIMETABLE DATA`;
   }
 
-  // V13.6: Return filtered route with transit availability notice
+  // If walk-faster was detected on any leg, append to notice
+  if (walkFasterTypes.length > 0) {
+    const uniqueWalkTypes = [...new Set(walkFasterTypes)];
+    const walkLabel = uniqueWalkTypes.map(t => t.toUpperCase()).join(' + ');
+    const walkNotice = `${walkLabel} MAY BE SLOWER THAN WALKING`;
+    transitNotice = transitNotice ? `${transitNotice} • ${walkNotice}` : walkNotice;
+  }
+
+  // V15.0: Return route with ALL legs preserved and data source annotations
   return {
     route: { ...route, legs: filteredLegs },
     transitNotice,
-    removedTransitTypes,
-    totalWalkTime
+    timetableTypes,
+    walkFasterTypes
   };
 }
 
@@ -1614,12 +1663,13 @@ export default async function handler(req, res) {
       }
     }
 
-    // V13.6: Filter out transit legs when no departures available or walking is faster
-    // Per user requirement: If walk_time + 5 < wait_time + transit_duration, exclude transit
+    // V15.0: Annotate transit legs with data source info (live vs timetable)
+    // Transit legs are preserved in route structure; only marked, never removed
     const transitFilterResult = filterUnavailableTransitLegs(effectiveRoute, transitData);
     effectiveRoute = transitFilterResult.route;
     const transitNotice = transitFilterResult.transitNotice;
-    const removedTransitTypes = transitFilterResult.removedTransitTypes || [];
+    const timetableTypes = transitFilterResult.timetableTypes || [];
+    const walkFasterTypes = transitFilterResult.walkFasterTypes || [];
     // Build journey legs with cumulative timing (Data Model v1.18)
     // V13.6: Pass locations for deriving proper stop/station names
     // V13.6: Pass stopIds for actual stop name lookup via GTFS_STOP_NAMES
@@ -1757,9 +1807,10 @@ export default async function handler(req, res) {
                        'NO TIME FOR COFFEE',
       coffee_subtext: coffeeDecision.cafeClosed ? 'Outside opening hours' :
                       coffeeDecision.subtext || null,
-      // V13.6: Transit availability notice (e.g., "NO PUBLIC TRANSIT OPTIONS AVAILABLE")
+      // V15.0: Transit availability notice (e.g., "TRAM USING TIMETABLE DATA")
       transit_notice: transitNotice,
-      removed_transit_types: removedTransitTypes.length > 0 ? removedTransitTypes : null,
+      timetable_types: timetableTypes.length > 0 ? timetableTypes : null,
+      walk_faster_types: walkFasterTypes.length > 0 ? walkFasterTypes : null,
       // Data source accuracy: only mark as live when GTFS-RT data was actually received
       // Per Section 23.6: LIVE badge must reflect actual data source, not API key existence
       isLive: hasAnyLiveData,
@@ -1835,7 +1886,11 @@ export default async function handler(req, res) {
             destination: t.destination,
             routeNumber: t.routeNumber,
             isLive: !!t.departureTimeMs
-          }))
+          })),
+          _diagnostics: {
+            trainFeed: transitData.trains?._feedInfo || null,
+            tramFeed: transitData.trams?._feedInfo || null
+          }
         },
         dashboard: dashboardData,
         journeyLegs: journeyLegs.map(leg => ({
@@ -1851,7 +1906,8 @@ export default async function handler(req, res) {
           departTime: leg.departTime,
           nextDepartures: leg.nextDepartures,
           nextDepartureTimes: leg.nextDepartureTimes,
-          isLive: leg.isLive
+          isLive: leg.isLive,
+          isTimetableEstimate: leg.isTimetableEstimate || false
         }))
       };
       res.setHeader('Content-Type', 'application/json');

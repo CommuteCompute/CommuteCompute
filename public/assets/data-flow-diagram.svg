@@ -105,9 +105,9 @@
   <text x="420" y="584" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Sunscreen / Hydration / Layers</text>
   <text x="420" y="602" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">calculateMindset (stress, steps)</text>
 
-  <!-- CoffeeDecision -->
+  <!-- CoffeeDecision™ -->
   <rect x="560" y="520" width="220" height="100" rx="12" fill="#1e293b" stroke="#8b5cf6" stroke-width="2"/>
-  <text x="670" y="548" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#a78bfa" text-anchor="middle">CoffeeDecision</text>
+  <text x="670" y="548" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#a78bfa" text-anchor="middle">CoffeeDecision™</text>
   <text x="670" y="566" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Cafe timing analysis</text>
   <text x="670" y="584" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Busyness check (Places)</text>
   <text x="670" y="602" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">YES / NO decision</text>

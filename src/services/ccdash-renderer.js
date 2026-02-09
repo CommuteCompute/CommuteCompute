@@ -1314,14 +1314,18 @@ function getLegSubtitle(leg) {
         parts.push(`via ${leg.via}`);
       }
       
-      // Add "Next: X, Y min" if we have real-time data
+      // Add "Next: X, Y min" with LIVE indicator or ~ prefix for timetable data
+      // V15.0: Use explicit isLive flag — only true when GTFS-RT data matched
+      const hasLiveData = leg.isLive === true;
+      const liveIndicator = hasLiveData ? ' LIVE' : '';
+      const tilde = hasLiveData ? '' : '~';
       if (nextDepartures.length >= 2) {
-        parts.push(`Next: ${nextDepartures[0]}, ${nextDepartures[1]} min`);
+        parts.push(`${tilde}Next: ${nextDepartures[0]}, ${nextDepartures[1]} min${liveIndicator}`);
       } else if (nextDepartures.length === 1) {
-        parts.push(`Next: ${nextDepartures[0]} min`);
+        parts.push(`${tilde}Next: ${nextDepartures[0]} min${liveIndicator}`);
       } else if (leg.nextIn !== undefined) {
         // Fallback to single next value
-        parts.push(`Next: ${leg.nextIn} min`);
+        parts.push(`${tilde}Next: ${leg.nextIn} min${liveIndicator}`);
       }
       
       // Add delay info if delayed
@@ -1521,21 +1525,22 @@ function renderHeaderWeather(data, prefs) {
   const isAlert = needsUmbrella || (lifestyleDisplay && /UMBRELLA|JACKET|HYDRAT/i.test(lifestyleDisplay));
 
   if (isAlert) {
-    // Black background with white text (alert state)
+    // V15.0: Black background with white text — action needed (bring umbrella, jacket, etc.)
     ctx.fillStyle = '#000';
     ctx.fillRect(umbrellaX, umbrellaY, umbrellaW, umbrellaH);
     ctx.fillStyle = '#FFF';
+    ctx.font = 'bold 10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(displayText, umbrellaX + umbrellaW / 2, umbrellaY + umbrellaH / 2);
   } else {
-    // White background with border (all-clear state)
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(umbrellaX, umbrellaY, umbrellaW, umbrellaH);
+    // V15.0: Subtle text only — no action needed (no box, no border)
     ctx.fillStyle = '#000';
+    ctx.font = '9px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(displayText, umbrellaX + umbrellaW / 2, umbrellaY + umbrellaH / 2);
   }
-  ctx.font = 'bold 10px Inter, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(displayText, umbrellaX + umbrellaW / 2, umbrellaY + umbrellaH / 2);
 
   ctx.textAlign = 'left';
   return canvasToBMP(canvas);
@@ -1612,10 +1617,13 @@ function renderStatus(data, prefs) {
   const confidenceScore = data.confidence_score;
   if (confidenceScore !== undefined && confidenceScore !== null) {
     ctx.textAlign = 'right';
-    ctx.font = 'bold 12px Inter, sans-serif';
     const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
-    // V15.0: Append mindset stress indicator when available
-    const mindsetText = data.mindset_display ? ` \u2022 ${data.mindset_display}` : '';
+    const needsAttention = confidenceScore < 75;
+    // V15.0: Bold only when action needed (AT RISK / UNLIKELY). Subtle for ON TIME.
+    ctx.font = needsAttention ? 'bold 12px Inter, sans-serif' : '11px Inter, sans-serif';
+    // V15.0: Only append mindset when stress is not LOW (action-needed only)
+    const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
+    const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
     ctx.fillText(`${confidenceScore}% ${confLabel}${mindsetText}`, zone.w - 80, zone.h / 2);
   }
 
@@ -1707,9 +1715,9 @@ async function renderFooter(data, prefs) {
   ctx.fillStyle = '#FFF';
   ctx.textAlign = 'right';
 
-  // "ARRIVE" label (smaller, above time) - use lighter color instead of opacity for 1-bit
+  // "ARRIVE" label (smaller, above time) - white text on black footer background
   ctx.font = '10px Inter, sans-serif';
-  ctx.fillStyle = '#000';
+  ctx.fillStyle = '#FFF';
   ctx.fillText('ARRIVE', zone.w - 16, zone.h / 2 - 10);
 
   // Time (larger)
@@ -2296,16 +2304,16 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   const displayText = lifestyleDisplay || (needsUmbrella ? 'BRING UMBRELLA' : 'NO UMBRELLA');
   const isAlert = needsUmbrella || (lifestyleDisplay && /UMBRELLA|JACKET|HYDRAT/i.test(lifestyleDisplay));
 
-  ctx.font = 'bold 11px Inter, sans-serif';
   if (isAlert) {
+    // V15.0: Black background with white text — action needed
+    ctx.font = 'bold 11px Inter, sans-serif';
     ctx.fillStyle = '#000';
     ctx.fillRect(weatherBoxX + 4, umbrellaY, weatherBoxW - 8, 14);
     ctx.fillStyle = '#FFF';
     ctx.fillText(displayText, weatherBoxX + weatherBoxW / 2, umbrellaY + 7);
   } else {
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(weatherBoxX + 4, umbrellaY, weatherBoxW - 8, 14);
+    // V15.0: Subtle text only — no action needed (no box, no border)
+    ctx.font = '10px Inter, sans-serif';
     ctx.fillStyle = '#000';
     ctx.fillText(displayText, weatherBoxX + weatherBoxW / 2, umbrellaY + 7);
   }
@@ -2472,10 +2480,13 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   const confidenceScore = data.confidence_score;
   if (confidenceScore !== undefined && confidenceScore !== null) {
     ctx.textAlign = 'right';
-    ctx.font = 'bold 12px Inter, sans-serif';
     const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
-    // V15.0: Append mindset stress indicator when available
-    const mindsetText = data.mindset_display ? ` \u2022 ${data.mindset_display}` : '';
+    const needsAttention = confidenceScore < 75;
+    // V15.0: Bold only when action needed (AT RISK / UNLIKELY). Subtle for ON TIME.
+    ctx.font = needsAttention ? 'bold 12px Inter, sans-serif' : '11px Inter, sans-serif';
+    // V15.0: Only append mindset when stress is not LOW (action-needed only)
+    const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
+    const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
     ctx.fillText(`${confidenceScore}% ${confLabel}${mindsetText}`, 690, 112);
   }
 
@@ -2894,6 +2905,10 @@ function _renderFullScreenCanvas(data, prefs = {}) {
 
         // V13.6: Calculate ADJUSTED "Next" times - departures user can actually catch
         // Filter to departures AFTER user arrives at the stop, then show mins from now
+        // V15.0: Use explicit isLive flag — only true when GTFS-RT data matched
+        const hasLiveData = leg.isLive === true;
+        const liveIndicator = hasLiveData ? ' LIVE' : '';
+        const tilde = hasLiveData ? '' : '~';
         if (leg.nextDepartureTimesMs && leg.nextDepartureTimesMs.length > 0) {
           // Calculate cumulative time to reach this leg's stop
           let cumulativeMins = 0;
@@ -2911,13 +2926,13 @@ function _renderFullScreenCanvas(data, prefs = {}) {
             .map(depMs => Math.max(0, Math.round((depMs - nowMs) / 60000)));
 
           if (catchableDepartures.length >= 2) {
-            parts.push(`Next: ${catchableDepartures[0]}, ${catchableDepartures[1]} min`);
+            parts.push(`Next: ${catchableDepartures[0]}, ${catchableDepartures[1]} min${liveIndicator}`);
           } else if (catchableDepartures.length === 1) {
-            parts.push(`Next: ${catchableDepartures[0]} min`);
+            parts.push(`Next: ${catchableDepartures[0]} min${liveIndicator}`);
           }
         } else if (leg.nextDepartures && leg.nextDepartures.length > 0) {
-          // Fallback to raw nextDepartures if no absolute times
-          parts.push(`Next: ${leg.nextDepartures.slice(0, 2).join(', ')} min`);
+          // Fallback to raw nextDepartures if no absolute times (timetable data)
+          parts.push(`${tilde}Next: ${leg.nextDepartures.slice(0, 2).join(', ')} min${liveIndicator}`);
         }
 
         legSubtitle = parts.join(' • ') || getLegSubtitle(leg);
@@ -3061,7 +3076,8 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       // v1.29: Walk=duration, Transit=cumulative
       ctx.fillText(displayMinutes.toString(), timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 - minOffset);
       ctx.font = `${durationLabelSize}px Inter, sans-serif`;
-      ctx.fillText('MIN', timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 + labelOffset);
+      const delayedTimeLabel = leg.type === 'walk' ? 'MIN WALK' : 'MIN';
+      ctx.fillText(delayedTimeLabel, timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 + labelOffset);
     } else {
       ctx.fillStyle = '#000';
       ctx.fillRect(timeBoxX, zone.y, timeBoxW, zone.h);
@@ -3073,7 +3089,8 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       const displayMin = leg.type === 'coffee' ? `~${displayMinutes}` : displayMinutes.toString();
       ctx.fillText(displayMin, timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 - minOffset);
       ctx.font = `${durationLabelSize}px Inter, sans-serif`;
-      ctx.fillText('MIN', timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 + labelOffset);
+      const normalTimeLabel = leg.type === 'walk' ? 'MIN WALK' : 'MIN';
+      ctx.fillText(normalTimeLabel, timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 + labelOffset);
     }
     }  // V13.3: End of !isWalkLeg block for time box
 
