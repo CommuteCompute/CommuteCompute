@@ -150,6 +150,29 @@ function extractSuburb(address) {
 }
 
 /**
+ * Merge consecutive walk legs into a single leg (Section 7.5.1 MANDATORY)
+ * Must be applied after ALL filtering to ensure no back-to-back walks ever appear
+ */
+function mergeConsecutiveWalkLegs(legs) {
+  const merged = [];
+  for (let i = 0; i < legs.length; i++) {
+    const current = { ...legs[i] };
+    if (current.type === 'walk' && i + 1 < legs.length && legs[i + 1].type === 'walk') {
+      const next = legs[i + 1];
+      current.minutes = (current.minutes || 0) + (next.minutes || 0);
+      current.durationMinutes = (current.durationMinutes || 0) + (next.durationMinutes || 0);
+      current.to = next.to || current.to;
+      current.stopName = next.stopName || current.stopName;
+      current.stationName = next.stationName || current.stationName;
+      current.title = `Walk to ${next.to || current.to || 'destination'}`;
+      i++;
+    }
+    merged.push(current);
+  }
+  return merged;
+}
+
+/**
  * Build journey legs from engine route with live transit data
  * Now includes cumulative timing and DEPART times (v1.18)
  * V13.6: Added stopIds for actual stop name lookup
@@ -260,6 +283,19 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
                          null;
 
       leg.originStation = actualName;
+    }
+    if (leg.type === 'bus') {
+      const fromCafe = prevLeg?.type === 'walk' && (prevLeg?.from === 'cafe' || currentOrigin === 'cafe');
+      const stopSuburb = fromCafe && cafeSuburb ? cafeSuburb : homeSuburb;
+      const genericNames = ['station', 'tram stop', 'bus stop', 'platform', 'stop', 'bus'];
+      const isGeneric = (name) => !name || genericNames.includes(name.toLowerCase().trim());
+      const gtfsName = getStopNameById(stopIds.busStopId);
+      const commuteComputeName = leg.origin?.name;
+      const suburbName = stopSuburb ? `${stopSuburb} Bus Stop` : null;
+      const actualName = gtfsName ||
+        (!isGeneric(commuteComputeName) ? commuteComputeName : null) ||
+        suburbName || commuteComputeName || null;
+      leg.originStop = actualName;
     }
 
     // Update origin after coffee leg (we're now leaving from cafe location)
@@ -1382,9 +1418,10 @@ export default async function handler(req, res) {
     const kvPrefs = await getPreferences();
     let trainStopId = kvPrefs?.trainStopId || null;
     let tramStopId = kvPrefs?.tramStopId || null;
+    let busStopId = kvPrefs?.busStopId || null;
 
     // V13.6: Auto-detect stop IDs if not configured (per Section 23.1.1)
-    if (!trainStopId || !tramStopId) {
+    if (!trainStopId || !tramStopId || !busStopId) {
       const homeAddress = locations.home?.address || kvPrefs?.addresses?.home;
       const detected = detectStopIdsFromAddress(homeAddress);
       if (!trainStopId && detected.trainStopId) {
@@ -1393,20 +1430,24 @@ export default async function handler(req, res) {
       if (!tramStopId && detected.tramStopId) {
         tramStopId = detected.tramStopId;
       }
+      if (!busStopId && detected.busStopId) {
+        busStopId = detected.busStopId;
+      }
     }
 
     // Per Section 11.8: Zero-Config compliant - load API key from KV storage
     const transitApiKey = await getTransitApiKey();
     const apiOptions = transitApiKey ? { apiKey: transitApiKey } : {};
 
-    const [trains, trams, weather, disruptions] = await Promise.all([
+    const [trains, trams, buses, weather, disruptions] = await Promise.all([
       getDepartures(trainStopId, 0, apiOptions),
       getDepartures(tramStopId, 1, apiOptions),
+      getDepartures(busStopId, 2, apiOptions),
       getWeather(locations.home?.lat, locations.home?.lon),
       getDisruptions(0, apiOptions).catch(() => [])
     ]);
 
-    const transitData = { trains, trams, disruptions };
+    const transitData = { trains, trams, buses, disruptions };
 
     // =========================================================================
     // APPLY SIMULATOR OVERRIDES
@@ -1500,7 +1541,9 @@ export default async function handler(req, res) {
     // Build journey legs with cumulative timing (Data Model v1.18)
     // V13.6: Pass locations for deriving proper stop/station names
     // V13.6: Pass stopIds for actual stop name lookup via GTFS_STOP_NAMES
-    const journeyLegs = buildJourneyLegs(effectiveRoute, transitData, coffeeDecision, now, locations, { trainStopId, tramStopId });
+    const rawJourneyLegs = buildJourneyLegs(effectiveRoute, transitData, coffeeDecision, now, locations, { trainStopId, tramStopId, busStopId });
+    // Section 7.5.1: Merge consecutive walk legs after ALL filtering
+    const journeyLegs = mergeConsecutiveWalkLegs(rawJourneyLegs);
     const totalMinutes = calculateTotalMinutes(journeyLegs);
     let statusType = getStatusType(journeyLegs, transitData.disruptions);
 
