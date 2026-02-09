@@ -690,7 +690,7 @@
                         <li><strong>Enter your addresses</strong> - Home, work, and optional coffee stop</li>
                         <li><strong>Set your arrival time</strong> - When do you need to be at work?</li>
                         <li><strong>Get your webhook URL</strong> - Copy the URL generated at the end</li>
-                        <li><strong>Configure your device</strong> - Paste the URL in your TRMNL or Kindle settings</li>
+                        <li><strong>Configure your device</strong> - Paste the URL in your CC E-Ink or Kindle settings</li>
                     </ol>
                     
                     <div class="callout success">
@@ -706,10 +706,10 @@
             <section class="section" id="devices">
                 <h2 class="section-title">Supported Devices</h2>
                 <div class="section-content">
-                    <h3>TRMNL Devices (Official)</h3>
+                    <h3>CC E-Ink Devices (Official)</h3>
                     <ul>
-                        <li><strong>TRMNL Original</strong> - 7.5" display, 800×480, plug and play</li>
-                        <li><strong>TRMNL Mini</strong> - 4.2" display, 400×300, compact size</li>
+                        <li><strong>CC E-Ink OG (7.5")</strong> - 7.5" display, 800×480, plug and play</li>
+                        <li><strong>CC E-Ink Mini</strong> - 4.2" display, 400×300, compact size</li>
                     </ul>
                     
                     <h3>Kindle Devices (Jailbroken)</h3>
@@ -968,10 +968,10 @@
         fetch('/api/version')
             .then(r => r.json())
             .then(v => {
-                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v2.4';
-                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v1.81';
+                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v3.0';
+                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v2.0';
                 document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.5.0');
+                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '4.0.0');
             })
             .catch(() => {});
     }
@@ -993,15 +993,15 @@
             <div class="cc-footer-version-item">
                 <div class="cc-footer-live-dot"></div>
                 <span class="cc-footer-version-label">CommuteCompute</span>
-                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v2.4</span>
+                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">CCDash Renderer</span>
-                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v1.81</span>
+                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">System</span>
-                <span class="cc-footer-version-value" id="cc-footer-system-version">v3.5.0</span>
+                <span class="cc-footer-version-value" id="cc-footer-system-version">v4.0.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">Build</span>

@@ -551,7 +551,7 @@
                         <div class="source-name">
                             <a href="https://www.waveshare.com" target="_blank" rel="noopener">Waveshare E-Paper</a>
                         </div>
-                        <p class="source-desc">E-ink display modules for TRMNL devices</p>
+                        <p class="source-desc">E-ink display modules for CC E-Ink devices</p>
                         <span class="source-license">Commercial</span>
                     </div>
                 </li>
@@ -561,7 +561,7 @@
                         <div class="source-name">
                             <a href="https://www.espressif.com" target="_blank" rel="noopener">Espressif ESP32</a>
                         </div>
-                        <p class="source-desc">ESP32-C3 microcontroller powering TRMNL firmware</p>
+                        <p class="source-desc">ESP32-C3 microcontroller powering CC E-Ink firmware</p>
                         <span class="source-license">Apache 2.0</span>
                     </div>
                 </li>
@@ -685,10 +685,10 @@
         fetch('/api/version')
             .then(r => r.json())
             .then(v => {
-                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v2.4';
-                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v1.81';
+                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v3.0';
+                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v2.0';
                 document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.5.0');
+                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '4.0.0');
             })
             .catch(() => {});
     }
@@ -710,15 +710,15 @@
             <div class="cc-footer-version-item">
                 <div class="cc-footer-live-dot"></div>
                 <span class="cc-footer-version-label">CommuteCompute</span>
-                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v2.4</span>
+                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">CCDash Renderer</span>
-                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v1.81</span>
+                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">System</span>
-                <span class="cc-footer-version-value" id="cc-footer-system-version">v3.5.0</span>
+                <span class="cc-footer-version-value" id="cc-footer-system-version">v4.0.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">Build</span>

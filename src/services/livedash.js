@@ -6,8 +6,8 @@
  * optimized for different e-ink device variants.
  * 
  * Supported devices:
- * - TRMNL OG (800×480 landscape)
- * - TRMNL Mini (400×300 landscape)
+ * - CC E-Ink OG (800×480 landscape)
+ * - CC E-Ink Mini (400×300 landscape)
  * - Kindle Paperwhite 3/4 (758×1024 portrait)
  * - Kindle Paperwhite 5 (1236×1648 portrait)
  * - Kindle Basic (600×800 portrait)
@@ -28,7 +28,7 @@ import CommuteCompute from '../engines/commute-compute.js';
 
 export const DEVICE_CONFIGS = {
   'trmnl-og': {
-    name: 'TRMNL Original',
+    name: 'CC E-Ink Original',
     width: 800,
     height: 480,
     orientation: 'landscape',
@@ -43,7 +43,7 @@ export const DEVICE_CONFIGS = {
     }
   },
   'trmnl-mini': {
-    name: 'TRMNL Mini',
+    name: 'CC E-Ink Mini',
     width: 600,
     height: 448,
     orientation: 'landscape',

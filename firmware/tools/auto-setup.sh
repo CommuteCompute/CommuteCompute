@@ -104,7 +104,7 @@ JOURNEY_PAYLOAD=$(cat <<EOF
 EOF
 )
 
-JOURNEY_RESPONSE=$(curl -s -X POST "$SERVER_URL/api/calculate-journey" \
+JOURNEY_RESPONSE=$(curl -s -X POST "$SERVER_URL/api/commutecompute" \
   -H "ID: $FRIENDLY_ID" \
   -H "Access-Token: $API_KEY" \
   -H "Content-Type: application/json" \

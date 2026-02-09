@@ -19,6 +19,8 @@ import { getTransitApiKey } from '../src/data/kv-preferences.js';
 import CafeBusyDetector from '../src/services/cafe-busy-detector.js';
 import DepartureConfidence from '../src/engines/departure-confidence.js';
 import LifestyleContext from '../src/engines/lifestyle-context.js';
+import AltTransit from '../src/engines/alt-transit.js';
+import { getStopNameById } from '../src/data/gtfs-stop-names.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -118,8 +120,8 @@ export default async function handler(req, res) {
     // Build status bar text (matches CCDash status bar format)
     const statusBar = buildStatusBar(result, journeyLegs, preferences, melbourneNow);
 
-    // Calculate times
-    const totalMinutes = journeyLegs.reduce((sum, leg) => sum + (leg.minutes || 0), 0);
+    // Calculate times using journeyContribution (includes wait + transit, matching e-ink)
+    const totalMinutes = journeyLegs.reduce((sum, leg) => sum + (leg.journeyContribution || leg.minutes || 0), 0);
     const arriveTime = addMinutes(melbourneNow, totalMinutes);
 
     // Check if on time for target arrival
@@ -147,6 +149,23 @@ export default async function handler(req, res) {
       state: state || 'VIC'
     });
 
+    // V15.0: Alternative Transit - rideshare/bike/scooter costs when transit disrupted
+    const hasActiveTransit = journeyLegs.some(l => ['train', 'tram', 'bus'].includes(l.type));
+    const hasDisruptedTransit = journeyLegs.some(l =>
+      ['train', 'tram', 'bus'].includes(l.type) &&
+      ['delayed', 'cancelled', 'suspended'].includes(l.state)
+    );
+    const cannotArriveOnTime = confidence.label === 'UNLIKELY';
+    const showAltTransit = !hasActiveTransit || hasDisruptedTransit || cannotArriveOnTime;
+    const altTransitEngine = new AltTransit();
+    const altTransit = altTransitEngine.calculate({
+      totalWalkMins: totalMinutes,
+      currentTime: now,
+      transitNotice: showAltTransit ? 'TRANSIT DISRUPTED' : null,
+      legs: journeyLegs,
+      localHour: melbourneNow.getHours()
+    });
+
     const response = {
       success: true,
       timestamp: now.toISOString(),
@@ -161,12 +180,15 @@ export default async function handler(req, res) {
       // Status bar (matches CCDash status bar)
       status_bar: statusBar,
       
-      // Coffee decision (respects cafe hours)
+      // Coffee decision (respects cafe hours + matches journey_legs coffee state)
       coffee: {
         canGet: coffeeDecision.canGet ?? false,
         cafeClosed: coffeeDecision.cafeClosed || false,
+        decision: coffeeDecision.decision || (coffeeDecision.canGet ? 'OK' : 'SKIP'),
         subtext: coffeeDecision.subtext || coffeeDecision.reason || '',
-        urgent: coffeeDecision.urgent ?? false
+        urgent: coffeeDecision.urgent ?? false,
+        skipCafe: result.skipCafe || false,
+        skipReason: result.skipReason || coffeeDecision.reason || ''
       },
       
       // Journey summary
@@ -207,6 +229,16 @@ export default async function handler(req, res) {
       lifestyle_display: lifestyle.displayLine,
       lifestyle_primary: lifestyle.primarySuggestion,
 
+      // V15.0: Alternative Transit (when transit disrupted/cancelled/unavailable)
+      alt_transit_active: altTransit.active,
+      alt_transit_display: altTransit.displayLine,
+      alt_transit_detail: altTransit.detailLine,
+      alt_transit_rideshare: altTransit.rideshare,
+      alt_transit_scooter: altTransit.scooter,
+      alt_transit_bike: altTransit.bike,
+      alt_transit_distance_km: altTransit.distanceKm,
+      alt_transit_is_peak: altTransit.isPeak,
+
       // Raw data for debugging
       raw: {
         route: result.route,
@@ -231,245 +263,323 @@ export default async function handler(req, res) {
 }
 
 /**
- * Build CCDash-compatible journey legs
- * Format: {type, title, subtitle, minutes, state}
+ * Build CCDash-compatible journey legs from engine route
  *
- * Honors coffeePosition preference:
- * - 'auto': CommuteCompute decides based on timing
- * - 'before': Always include coffee before transit (if cafe configured)
- * - 'after': Coffee after transit (not yet implemented - falls back to auto)
- * - 'never': Never include coffee stop
+ * Iterates route.legs from the CommuteCompute engine output, matching each
+ * transit leg with live departure data. This mirrors the pattern used by
+ * api/screen.js:buildJourneyLegs() for consistency between e-ink and admin.
+ *
+ * Each leg includes:
+ * - minutes: display time (for transit = wait + ride time)
+ * - journeyContribution: actual minutes this leg adds to total journey
+ * - GTFS stop names via getStopNameById()
  */
 function buildCCDashLegs(result, prefs, now, route = null) {
-  const legs = [];
   const transit = result.transit || {};
   const trains = transit.trains || [];
   const trams = transit.trams || [];
-
-  // Extract stop/station names from route legs if available
   const routeLegs = route?.legs || [];
-  const tramStopName = routeLegs.find(l => l.type === 'tram')?.origin?.name || 
-                       routeLegs.find(l => l.stopName)?.stopName || 
-                       prefs.tramStopName || 'Tram Stop';
-  const trainStationName = routeLegs.find(l => l.type === 'train')?.origin?.name ||
-                           routeLegs.find(l => l.stationName)?.stationName ||
-                           prefs.trainStationName || 'Station';
 
-  // Honor coffeePosition preference
-  const coffeePosition = prefs.coffeePosition || 'auto';
-  const coffeeNeverEnabled = coffeePosition === 'never';
-  const coffeeAlwaysBefore = coffeePosition === 'before';
+  // If engine provided no route legs, build minimal fallback
+  if (routeLegs.length === 0) {
+    return buildFallbackLegs(result, prefs, now);
+  }
 
-  // Check if cafe is open (basic hours check)
-  const hour = now.getHours();
-  const dayOfWeek = now.getDay(); // 0 = Sunday
-  const cafeOpenHour = prefs.cafeOpenHour || 6;
-  const cafeCloseHour = prefs.cafeCloseHour || 17; // Default close 5pm
-  const cafeOpenDays = prefs.cafeOpenDays || [1, 2, 3, 4, 5, 6]; // Default Mon-Sat
-  const cafeIsOpen = cafeOpenDays.includes(dayOfWeek) && hour >= cafeOpenHour && hour < cafeCloseHour;
+  // Resolve stop IDs for GTFS name lookups
+  const trainStopId = prefs.trainStopId || null;
+  const tramStopId = prefs.tramStopId || null;
 
-  // Get cafe busyness - automatically calculated based on time of day
-  // Peak times: Morning Rush (7-9am), Lunch Rush (12-2pm), Afternoon Peak (4-5pm)
+  // Cafe busyness for coffee legs
   const busyDetector = new CafeBusyDetector(prefs);
   const cafeBusyness = busyDetector.getTimeBasedBusyness();
   const busyLabel = cafeBusyness.level === 'high' ? 'Busy' : cafeBusyness.level === 'medium' ? 'Moderate' : 'Quiet';
   const coffeeWaitTime = cafeBusyness.coffeeTime || 3;
 
-  const coffeeEnabled = !coffeeNeverEnabled && prefs.coffeeEnabled && prefs.coffeeAddress && cafeIsOpen;
+  // Coffee status checks
+  const hour = now.getHours();
+  const dayOfWeek = now.getDay();
+  const cafeOpenHour = prefs.cafeOpenHour || 6;
+  const cafeCloseHour = prefs.cafeCloseHour || 17;
+  const cafeOpenDays = prefs.cafeOpenDays || [1, 2, 3, 4, 5, 6];
+  const cafeIsOpen = cafeOpenDays.includes(dayOfWeek) && hour >= cafeOpenHour && hour < cafeCloseHour;
+  const coffeePosition = prefs.coffeePosition || 'auto';
 
-  // Determine if we have time for coffee
-  const homeToCafe = prefs.homeToCafe || 5;
-  const coffeeDuration = prefs.cafeDuration || 5;
-  const cafeToStop = prefs.cafeToTransit || 2;
-  const homeToStop = prefs.homeToStop || 5;
-  const coffeeBuffer = prefs.coffeeBuffer || 3;
-  const totalCoffeeTime = homeToCafe + coffeeDuration + cafeToStop;
+  // Track cumulative time for wait calculations
+  let cumulativeMinutes = 0;
+  const legs = [];
+  let legNumber = 1;
+  // Track which transit types have been used (for multi-modal: tram then train)
+  let trainUsed = false;
+  let tramUsed = false;
 
-  // Find next usable departure
-  const allDepartures = [...trains, ...trams].sort((a, b) => a.minutes - b.minutes);
-  const directDeparture = allDepartures.find(d => d.minutes >= homeToStop + 1);
-  const coffeeDeparture = allDepartures.find(d => d.minutes >= totalCoffeeTime + coffeeBuffer);
+  for (const routeLeg of routeLegs) {
+    const legType = routeLeg.type;
 
-  // Determine if coffee is possible/wanted based on position preference
-  let canGetCoffee = false;
-  if (coffeeAlwaysBefore && coffeeEnabled) {
-    // Force coffee if configured to always have it before transit
-    canGetCoffee = coffeeDeparture != null;
-  } else if (coffeeEnabled) {
-    // Auto mode: check if timing allows
-    canGetCoffee = coffeeDeparture &&
-      (!directDeparture || (coffeeDeparture.minutes - directDeparture.minutes) <= 10);
-  }
-  
-  if (canGetCoffee && coffeeEnabled) {
-    // Route with coffee - V13 Spec Section 5.5
-    legs.push({
-      type: 'walk',
-      title: 'Walk to Cafe',
-      to: 'cafe',
-      subtitle: `From home`,
-      isFirst: true,
-      minutes: homeToCafe,
-      state: 'normal'
-    });
-    
-    legs.push({
-      type: 'coffee',
-      title: 'Coffee Stop',
-      location: shortenAddress(prefs.coffeeAddress) || 'Cafe',
-      subtitle: `[OK] ${busyLabel} • ~${coffeeWaitTime}m wait`,
-      minutes: coffeeDuration,
-      canGet: true,
-      busyness: cafeBusyness.level,
-      coffeeWaitTime,
-      state: 'normal'
-    });
-    
-    // Determine which stop we're walking to (tram or train)
-    const walkingToTram = trams.length > 0 && (trams[0]?.minutes || 99) <= (trains[0]?.minutes || 99);
-    const stopName = walkingToTram ? tramStopName : trainStationName;
-    
-    legs.push({
-      type: 'walk',
-      title: `Walk to ${stopName}`,
-      to: stopName,
-      subtitle: `${cafeToStop} min walk`,
-      minutes: cafeToStop,
-      state: 'normal'
-    });
-  } else if (prefs.coffeeEnabled && prefs.coffeeAddress && !cafeIsOpen) {
-    // Cafe is closed - show skip with reason
-    const walkingToTram = trams.length > 0 && (trams[0]?.minutes || 99) <= (trains[0]?.minutes || 99);
-    const stopName = walkingToTram ? tramStopName : trainStationName;
-    
-    legs.push({
-      type: 'walk',
-      title: `Walk to ${stopName}`,
-      to: stopName,
-      subtitle: 'From home',
-      isFirst: true,
-      minutes: homeToStop,
-      state: 'normal'
-    });
-    
-    legs.push({
-      type: 'coffee',
-      title: 'Coffee Stop',
-      location: shortenAddress(prefs.coffeeAddress) || 'Cafe',
-      subtitle: '[X] CLOSED -- Cafe not open',
-      minutes: 0,
-      canGet: false,
-      state: 'closed'
-    });
-  } else if (prefs.coffeeEnabled && prefs.coffeeAddress && !canGetCoffee) {
-    // Skip coffee - V13 Spec Section 5.1.3
-    const walkingToTram = trams.length > 0 && (trams[0]?.minutes || 99) <= (trains[0]?.minutes || 99);
-    const stopName = walkingToTram ? tramStopName : trainStationName;
-    
-    legs.push({
-      type: 'walk',
-      title: `Walk to ${stopName}`,
-      to: stopName,
-      subtitle: 'From home',
-      isFirst: true,
-      minutes: homeToStop,
-      state: 'normal'
-    });
-    
-    legs.push({
-      type: 'coffee',
-      title: 'Coffee Stop',
-      location: shortenAddress(prefs.coffeeAddress) || 'Cafe',
-      subtitle: '[X] SKIP -- Running late',
-      minutes: 0,
-      canGet: false,
-      state: 'skip'
-    });
-  } else {
-    // No coffee configured
-    const walkingToTram = trams.length > 0 && (trams[0]?.minutes || 99) <= (trains[0]?.minutes || 99);
-    const stopName = walkingToTram ? tramStopName : trainStationName;
-    
-    legs.push({
-      type: 'walk',
-      title: `Walk to ${stopName}`,
-      to: stopName,
-      subtitle: 'From home',
-      isFirst: true,
-      minutes: homeToStop,
-      state: 'normal'
-    });
-  }
-  
-  // Transit leg
-  const primaryDeparture = canGetCoffee ? coffeeDeparture : directDeparture;
-  if (primaryDeparture) {
-    const isTrainDep = trains.includes(primaryDeparture);
-    const type = isTrainDep ? 'train' : 'tram';
-    const dest = primaryDeparture.destination || 'City';
-    const originStopName = isTrainDep ? trainStationName : tramStopName;
-    
-    // Calculate wait time
-    const walkTime = canGetCoffee ? totalCoffeeTime : homeToStop;
-    const waitMinutes = Math.max(0, primaryDeparture.minutes - walkTime);
-    
-    if (waitMinutes > 2) {
+    if (legType === 'walk') {
+      // Resolve stop name for walk-to-stop legs via GTFS
+      let walkTitle;
+      let walkSubtitle;
+
+      if (routeLeg.to === 'cafe') {
+        walkTitle = 'Walk to Cafe';
+        walkSubtitle = 'From home';
+      } else if (routeLeg.to === 'work') {
+        walkTitle = 'Walk to Work';
+        walkSubtitle = routeLeg.workName || shortenAddress(prefs.workAddress) || 'Destination';
+      } else {
+        // Walking to a transit stop — resolve GTFS name
+        const isToTram = routeLeg.to?.toLowerCase().includes('tram');
+        const isToTrain = routeLeg.to?.toLowerCase().includes('train') || routeLeg.to?.toLowerCase().includes('platform');
+        let stopName;
+
+        if (isToTram) {
+          stopName = getStopNameById(tramStopId) ||
+            routeLeg.stopName || routeLeg.origin?.name || 'Tram Stop';
+        } else if (isToTrain) {
+          stopName = getStopNameById(trainStopId) ||
+            routeLeg.stationName || routeLeg.origin?.name || 'Station';
+        } else {
+          // Generic stop
+          stopName = getStopNameById(trainStopId) || getStopNameById(tramStopId) ||
+            routeLeg.stopName || routeLeg.stationName || routeLeg.to || 'Stop';
+        }
+
+        walkTitle = `Walk to ${stopName}`;
+        walkSubtitle = legs.length === 0 ? 'From home' : `${routeLeg.minutes} min walk`;
+      }
+
+      const walkMinutes = routeLeg.minutes || 0;
       legs.push({
-        type: 'wait',
-        title: `Wait at ${originStopName}`,
-        subtitle: `${waitMinutes} min until departure`,
-        minutes: waitMinutes,
+        number: legNumber++,
+        type: 'walk',
+        title: walkTitle,
+        to: routeLeg.to,
+        subtitle: walkSubtitle,
+        isFirst: legs.length === 0,
+        minutes: walkMinutes,
+        journeyContribution: walkMinutes,
         state: 'normal'
       });
+      cumulativeMinutes += walkMinutes;
+
+    } else if (legType === 'coffee') {
+      // Coffee leg — check if cafe is open and timing allows
+      const cafeName = routeLeg.cafeName || routeLeg.location ||
+        shortenAddress(prefs.coffeeAddress) || 'Cafe';
+
+      let coffeeState = 'normal';
+      let coffeeSubtitle;
+      let coffeeMinutes = routeLeg.minutes || prefs.cafeDuration || 5;
+      let canGet = true;
+
+      if (coffeePosition === 'never') {
+        coffeeState = 'skip';
+        coffeeSubtitle = '[X] SKIP -- Coffee disabled';
+        coffeeMinutes = 0;
+        canGet = false;
+      } else if (!cafeIsOpen) {
+        coffeeState = 'closed';
+        coffeeSubtitle = '[X] CLOSED -- Cafe not open';
+        coffeeMinutes = 0;
+        canGet = false;
+      } else {
+        coffeeSubtitle = `[OK] ${busyLabel} • ~${coffeeWaitTime}m wait`;
+      }
+
+      legs.push({
+        number: legNumber++,
+        type: 'coffee',
+        title: 'Coffee Stop',
+        location: cafeName,
+        subtitle: coffeeSubtitle,
+        minutes: coffeeMinutes,
+        journeyContribution: coffeeMinutes,
+        canGet,
+        busyness: cafeBusyness.level,
+        coffeeWaitTime,
+        state: coffeeState
+      });
+      cumulativeMinutes += coffeeMinutes;
+
+    } else if (legType === 'tram' || legType === 'train') {
+      // Transit leg — match with live departure data
+      const isTrainLeg = legType === 'train';
+      const liveDepartures = isTrainLeg ? trains : trams;
+
+      // GTFS stop name resolution (priority: GTFS → engine origin → fallback)
+      const stopId = isTrainLeg ? trainStopId : tramStopId;
+      const gtfsName = getStopNameById(stopId);
+      const engineOriginName = routeLeg.origin?.name || routeLeg.originStop || routeLeg.originStation;
+      const originName = gtfsName || engineOriginName || (isTrainLeg ? 'Station' : 'Tram Stop');
+
+      const destName = routeLeg.destination?.name || 'City';
+      const transitDuration = routeLeg.minutes || (isTrainLeg ? 15 : 20);
+
+      // Find catchable departure (must be after cumulative walk/coffee time)
+      const catchableDeparture = liveDepartures.find(d => d.minutes >= cumulativeMinutes + 1);
+
+      if (catchableDeparture) {
+        // Calculate wait time at stop
+        const waitMinutes = Math.max(0, catchableDeparture.minutes - cumulativeMinutes);
+
+        // Add wait leg if significant
+        if (waitMinutes > 2) {
+          legs.push({
+            number: legNumber++,
+            type: 'wait',
+            title: `Wait at ${originName}`,
+            subtitle: `${waitMinutes} min until departure`,
+            minutes: waitMinutes,
+            journeyContribution: waitMinutes,
+            state: 'normal'
+          });
+          cumulativeMinutes += waitMinutes;
+        }
+
+        // Build subtitle with next departures
+        const nextTimes = liveDepartures.slice(0, 3).map(d => d.minutes);
+        const nextDepartureTimesMs = liveDepartures.slice(0, 3).map(d => d.departureTimeMs).filter(Boolean);
+        let transitSubtitle = originName;
+        if (nextTimes.length >= 2) {
+          transitSubtitle += ` • Next: ${nextTimes[0]}, ${nextTimes[1]} min`;
+        } else if (nextTimes.length === 1) {
+          transitSubtitle += ` • Next: ${nextTimes[0]} min`;
+        }
+        if (catchableDeparture.platform) {
+          transitSubtitle += ` • Plat ${catchableDeparture.platform}`;
+        }
+
+        // journeyContribution = wait absorbed + transit ride duration
+        const journeyContribution = Math.max(0, waitMinutes > 2 ? 0 : waitMinutes) + transitDuration;
+
+        legs.push({
+          number: legNumber++,
+          type: legType,
+          title: `${isTrainLeg ? 'Train' : 'Tram'} → ${destName}`,
+          to: destName,
+          destination: { name: destName },
+          originStop: !isTrainLeg ? originName : undefined,
+          originStation: isTrainLeg ? originName : undefined,
+          stopName: !isTrainLeg ? originName : undefined,
+          stationName: isTrainLeg ? originName : undefined,
+          subtitle: transitSubtitle,
+          nextDepartures: nextTimes,
+          nextDepartureTimesMs,
+          platform: catchableDeparture.platform,
+          lineName: routeLeg.lineName || catchableDeparture.lineName,
+          routeNumber: routeLeg.routeNumber || catchableDeparture.routeNumber,
+          minutes: transitDuration,
+          journeyContribution: transitDuration,
+          state: catchableDeparture.isDelayed ? 'delayed' : 'normal',
+          isLive: catchableDeparture.source === 'live'
+        });
+        cumulativeMinutes += transitDuration;
+      } else {
+        // No live departure found — use scheduled estimate
+        let transitSubtitle = `${originName} • Check timetable`;
+        legs.push({
+          number: legNumber++,
+          type: legType,
+          title: `${isTrainLeg ? 'Train' : 'Tram'} → ${destName}`,
+          to: destName,
+          destination: { name: destName },
+          originStop: !isTrainLeg ? originName : undefined,
+          originStation: isTrainLeg ? originName : undefined,
+          stopName: !isTrainLeg ? originName : undefined,
+          stationName: isTrainLeg ? originName : undefined,
+          subtitle: transitSubtitle,
+          nextDepartures: [],
+          nextDepartureTimesMs: [],
+          minutes: transitDuration,
+          journeyContribution: transitDuration,
+          state: 'normal',
+          isLive: false
+        });
+        cumulativeMinutes += transitDuration;
+      }
+
+      if (isTrainLeg) trainUsed = true;
+      else tramUsed = true;
     }
-    
-    // Build V13 spec subtitle: "[Stop name] • Next: X, Y min"
+  }
+
+  return legs;
+}
+
+/**
+ * Fallback leg builder when engine provides no route legs
+ * Uses raw departure data to build a minimal journey
+ */
+function buildFallbackLegs(result, prefs, now) {
+  const legs = [];
+  const transit = result.transit || {};
+  const trains = transit.trains || [];
+  const trams = transit.trams || [];
+  const homeToStop = prefs.homeToStop || 5;
+
+  // Pick first available departure
+  const allDepartures = [...trains, ...trams].sort((a, b) => a.minutes - b.minutes);
+  const departure = allDepartures.find(d => d.minutes >= homeToStop + 1);
+
+  const isTrainDep = departure ? trains.includes(departure) : true;
+  const stopName = isTrainDep
+    ? (getStopNameById(prefs.trainStopId) || 'Station')
+    : (getStopNameById(prefs.tramStopId) || 'Tram Stop');
+
+  legs.push({
+    number: 1,
+    type: 'walk',
+    title: `Walk to ${stopName}`,
+    to: stopName,
+    subtitle: 'From home',
+    isFirst: true,
+    minutes: homeToStop,
+    journeyContribution: homeToStop,
+    state: 'normal'
+  });
+
+  if (departure) {
+    const type = isTrainDep ? 'train' : 'tram';
+    const dest = departure.destination || 'City';
+    const transitDuration = isTrainDep ? 15 : 20;
     const relevantDepartures = isTrainDep ? trains : trams;
     const nextTimes = relevantDepartures.slice(0, 2).map(d => d.minutes);
-    // Store absolute departure times for live countdown in renderer
-    const nextDepartureTimesMs = relevantDepartures.slice(0, 2).map(d => d.departureTimeMs).filter(Boolean);
-    let transitSubtitle = originStopName;
-    if (nextTimes.length >= 2) {
-      transitSubtitle += ` • Next: ${nextTimes[0]}, ${nextTimes[1]} min`;
-    } else if (nextTimes.length === 1) {
-      transitSubtitle += ` • Next: ${nextTimes[0]} min`;
-    } else if (primaryDeparture.platform) {
-      transitSubtitle += ` • Platform ${primaryDeparture.platform}`;
-    }
-    
+
     legs.push({
+      number: 2,
       type,
       title: `${type === 'train' ? 'Train' : 'Tram'} → ${dest}`,
       to: dest,
       destination: { name: dest },
-      subtitle: transitSubtitle || `Departs ${primaryDeparture.minutes} min`,
+      subtitle: `${stopName} • Next: ${nextTimes.join(', ')} min`,
       nextDepartures: nextTimes,
-      nextDepartureTimesMs, // Absolute times for live countdown
-      platform: primaryDeparture.platform,
-      minutes: type === 'train' ? 15 : 20, // Estimated ride time
-      state: primaryDeparture.isDelayed ? 'delayed' : 'normal'
+      minutes: transitDuration,
+      journeyContribution: transitDuration,
+      state: departure.isDelayed ? 'delayed' : 'normal'
     });
   } else {
-    // Fallback transit
     legs.push({
+      number: 2,
       type: 'transit',
       title: 'Take Transit',
       subtitle: 'Check timetable',
       minutes: 20,
+      journeyContribution: 20,
       state: 'normal'
     });
   }
-  
-  // Final walk to work - V13 Spec Section 5.5
+
   legs.push({
+    number: 3,
     type: 'walk',
     title: 'Walk to Work',
     to: 'work',
     subtitle: shortenAddress(prefs.workAddress) || 'Destination',
     minutes: prefs.walkToWork || 5,
+    journeyContribution: prefs.walkToWork || 5,
     state: 'normal'
   });
-  
+
   return legs;
 }
 
@@ -485,7 +595,7 @@ function buildStatusBar(result, legs, prefs, now) {
     legs.some(l => l.state === 'cancelled' || l.state === 'delayed');
   
   // Calculate arrival
-  const totalMinutes = legs.reduce((sum, leg) => sum + (leg.minutes || 0), 0);
+  const totalMinutes = legs.reduce((sum, leg) => sum + (leg.journeyContribution || leg.minutes || 0), 0);
   const arriveTime = addMinutes(now, totalMinutes);
   const arriveStr = formatTime12h(arriveTime);
   
