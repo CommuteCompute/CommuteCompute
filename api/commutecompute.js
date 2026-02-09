@@ -190,14 +190,14 @@ export default async function handler(req, res) {
     return res.status(200).json(response);
 
   } catch (error) {
-    return res.status(200).json({
+    return res.status(500).json({
       success: false,
       error: error.message,
       fallbackMode: true,
-      current_time: formatTime12h(melbourneNow),
+      current_time: '--:--',
       journey_legs: [],
       status_bar: { text: 'ERROR', icon: '[!]', hasDisruption: true },
-      timestamp: now.toISOString()
+      timestamp: new Date().toISOString()
     });
   }
 }
