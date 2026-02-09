@@ -207,10 +207,13 @@ function mergeConsecutiveWalkLegs(legs) {
   const merged = [];
   for (let i = 0; i < legs.length; i++) {
     const current = { ...legs[i] };
-    if (current.type === 'walk' && i + 1 < legs.length && legs[i + 1].type === 'walk') {
+    // V15.0: Merge chains of consecutive walk legs (not just pairs).
+    // When transit legs are removed (no live data), multiple walks may be adjacent.
+    while (current.type === 'walk' && i + 1 < legs.length && legs[i + 1].type === 'walk') {
       const next = legs[i + 1];
       current.minutes = (current.minutes || 0) + (next.minutes || 0);
       current.durationMinutes = (current.durationMinutes || 0) + (next.durationMinutes || 0);
+      current.journeyContribution = (current.journeyContribution || current.minutes || 0);
       current.to = next.to || current.to;
       current.stopName = next.stopName || current.stopName;
       current.stationName = next.stationName || current.stationName;
@@ -424,33 +427,10 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       }
     }
 
-    // V15.0: Timetable estimate fallback for transit legs without live GTFS-RT data.
-    // When no live data exists (e.g., PTV tram GTFS-RT unavailable), generate
-    // estimated departure times based on typical Melbourne service frequencies.
-    // These are clearly marked as timetable estimates (tilde prefix in renderer).
-    // Per Section 23.6: opendata-client returns [] (correct). These estimates are
-    // generated at the display layer from known service patterns, not mock GTFS data.
-    if (isTransitLeg && !liveData) {
-      const melbTime = getMelbourneDisplayTime(now, state);
-      const headwayMin = getTypicalHeadway(leg.type, melbTime.hour);
-      // First estimated departure = arrival at stop + small wait buffer
-      const waitBuffer = Math.min(headwayMin, 3); // up to 3 min wait
-      const firstDepartMs = arrivalAtStopMs + (waitBuffer * 60000);
-      actualDepartureMs = firstDepartMs;
-
-      // Generate 3 estimated departures at headway intervals
-      nextDepartureTimesMs = [];
-      for (let i = 0; i < 3; i++) {
-        nextDepartureTimesMs.push(firstDepartMs + (i * headwayMin * 60000));
-      }
-
-      minutesToDeparture = Math.round((firstDepartMs - nowMs) / 60000);
-      const departDate = new Date(firstDepartMs);
-      const departMelb = getMelbourneDisplayTime(departDate, state);
-      const departH12 = departMelb.hour % 12 || 12;
-      const departAmPm = departMelb.hour >= 12 ? 'pm' : 'am';
-      departTime = `${departH12}:${departMelb.minute.toString().padStart(2, '0')}${departAmPm}`;
-    }
+    // V15.0: No timetable estimate fallback. If GTFS-RT has no live data for this
+    // transit leg, departure times remain null. filterUnavailableTransitLegs() will
+    // have already removed legs where GTFS-RT confirms no services running.
+    // Per Section 23.6: No mock data. Only verified live GTFS-RT departures shown.
 
     // V13.6: Calculate the actual journey contribution for this leg
     // For display: show minutes from NOW to departure
@@ -480,9 +460,9 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       departTime,                  // V13.6: Actual departure clock time
       nextDepartureTimesMs,        // V13.6: Catchable departures in ms (for Next: x,y,z)
       actualDepartureMs,           // V13.6: Actual departure timestamp for stable arrival calc
-      // V15.0: Live data source flags for renderer
-      isLive: isTransitLeg && !!liveData,              // True only when GTFS-RT data matched
-      isTimetableEstimate: isTransitLeg && !liveData,  // True when using timetable fallback
+      // V15.0: Live data flags — transit legs only exist here when GTFS-RT matched
+      isLive: isTransitLeg && !!liveData,
+      isTimetableEstimate: false,  // V15.0: No timetable estimates — all data is live or absent
       // V13.6: Stop/station names for renderer display
       originStop: leg.originStop,
       originStation: leg.originStation,
@@ -519,13 +499,13 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         baseLeg.subtitle = `+${baseLeg.delayMinutes} MIN • ${baseLeg.subtitle}`;
       }
 
-      // V13.6: Calculate "Next: x, y, z" as minutes from NOW
+      // V15.0: Calculate "Next: x, y, z" ONLY from catchable departures.
+      // baseLeg.nextDepartureTimesMs is already filtered to departures >= arrivalAtStopMs.
+      // Do NOT fall back to liveData.nextDepartures — those include uncatchable departures.
       if (baseLeg.nextDepartureTimesMs?.length > 0) {
         baseLeg.nextDepartures = baseLeg.nextDepartureTimesMs.map(depMs =>
           Math.round((depMs - nowMs) / 60000)
         );
-      } else if (liveData.nextDepartures) {
-        baseLeg.nextDepartures = liveData.nextDepartures;
       }
 
       // V13.6: Apply disruption alerts ONLY if they EXPLICITLY affect this leg
@@ -602,21 +582,21 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       }
     }
 
-    // V15.0: Calculate "Next: x, y, z" for timetable-only transit legs (no live data)
-    // Estimates are generated from typical headway frequencies, not from GTFS-RT
-    if (isTransitLeg && !liveData && baseLeg.nextDepartureTimesMs?.length > 0) {
-      baseLeg.nextDepartures = baseLeg.nextDepartureTimesMs.map(depMs =>
-        Math.round((depMs - nowMs) / 60000)
-      );
+    // V15.0: Append "Next:" to subtitle using CATCHABLE live departures only.
+    // buildLegSubtitle() now returns stop/station name only (no "Next:").
+    // nextDepartureTimesMs is filtered to departures AFTER user arrives at stop,
+    // ensuring the subtitle matches the DEPART time box.
+    if (isTransitLeg && baseLeg.nextDepartures?.length > 0) {
+      const stopName = baseLeg.subtitle || '';
+      const times = baseLeg.nextDepartures
+        .filter(m => m >= 0)
+        .slice(0, 3)
+        .join(', ');
 
-      // V15.0 FIX: Rebuild subtitle to include "Next:" timetable estimates.
-      // buildLegSubtitle() was called BEFORE timetable fallback populated
-      // nextDepartureTimesMs, so the subtitle is missing "Next:" data.
-      if (baseLeg.nextDepartures.length >= 2 && !baseLeg.subtitle?.includes('Next:')) {
-        const stopName = baseLeg.subtitle || '';
-        const tilde = '~';
-        const nextTimes = baseLeg.nextDepartures.slice(0, 3).join(`, ${tilde}`);
-        baseLeg.subtitle = `${stopName} • ${tilde}Next: ${tilde}${nextTimes} min`;
+      if (times) {
+        baseLeg.subtitle = stopName
+          ? `${stopName} • Next: ${times} min LIVE`
+          : `Next: ${times} min LIVE`;
       }
     }
 
@@ -749,61 +729,26 @@ function buildLegSubtitle(leg, transitData) {
     case 'coffee':
       return 'TIME FOR COFFEE';
     case 'train': {
-      // V13.6: Show line name + origin STATION NAME + next departures
-      // e.g., "Sandringham • South Yarra Station • Next: 5, 12 min LIVE"
+      // V15.0: Subtitle = stop/station name ONLY. "Next:" is appended later in
+      // buildJourneyLegs() using catchable departures (filtered by user arrival time).
+      // This prevents showing uncatchable departures like "Next: 0, 20 min" when user
+      // needs 20 min to reach the station.
       const parts = [];
       const lineName = leg.lineName || leg.routeNumber || '';
-      // V13.6: Prioritize explicit station name from config
       const originName = getStopName() || 'Station';
-
       if (lineName) parts.push(lineName);
-      parts.push(originName);  // V13.6: Always show station name
-
-      const departures = findDeparturesForLeg(leg, transitData);
-      if (departures.length > 0) {
-        const times = departures.slice(0, 3).map(d => d.minutes).join(', ');
-        // V13.6: Show LIVE tag if data is live
-        const liveTag = departures[0]?.isLive ? ' LIVE' : '';
-        parts.push(`Next: ${times} min${liveTag}`);
-      }
-
+      parts.push(originName);
       return parts.join(' • ');
     }
     case 'tram': {
-      // V13.6: Show route + origin STOP NAME + next departures
-      // e.g., "Toorak Rd/Chapel St • Next: 4, 12 min LIVE"
-      const parts = [];
-      // V13.6: Prioritize explicit stop name from config
+      // V15.0: Stop name only — "Next:" appended later from catchable departures
       const originName = getStopName() || 'Tram Stop';
-
-      parts.push(originName);  // V13.6: Always show stop name
-
-      const departures = findDeparturesForLeg(leg, transitData);
-      if (departures.length > 0) {
-        const times = departures.slice(0, 3).map(d => d.minutes).join(', ');
-        // V13.6: Show LIVE tag if data is live
-        const liveTag = departures[0]?.isLive ? ' LIVE' : '';
-        parts.push(`Next: ${times} min${liveTag}`);
-      }
-
-      return parts.join(' • ');
+      return originName;
     }
     case 'bus': {
-      const parts = [];
-      // V13.6: Prioritize explicit stop name from config
+      // V15.0: Stop name only — "Next:" appended later from catchable departures
       const originName = getStopName() || 'Bus Stop';
-
-      parts.push(originName);  // V13.6: Always show stop name
-
-      const departures = findDeparturesForLeg(leg, transitData);
-      if (departures.length > 0) {
-        const times = departures.slice(0, 3).map(d => d.minutes).join(', ');
-        // V13.6: Show LIVE tag if data is live
-        const liveTag = departures[0]?.isLive ? ' LIVE' : '';
-        parts.push(`Next: ${times} min${liveTag}`);
-      }
-
-      return parts.join(' • ');
+      return originName;
     }
     default:
       return leg.subtitle || '';
@@ -935,22 +880,21 @@ function getTypicalHeadway(type, hour) {
 }
 
 /**
- * V15.0: Filter transit legs - marks legs with data source info but preserves route structure.
- * Per V15.0 fix: Transit legs are NEVER removed from the route when live data is absent.
- * The absence of live GTFS-RT data does not mean the service doesn't run.
+ * V15.0: Filter transit legs — REMOVE legs when GTFS-RT confirms no services running.
+ * Only legs with verified live departure data are kept in the route.
  *
  * Behaviour:
- * - No live departures → leg kept, marked dataSource='timetable', isLive=false, isScheduleOnly=true
- * - Walk faster than transit → leg kept, marked walkFasterFlag=true (renderer decides display)
+ * - No live departures → leg REMOVED (service not running per GTFS-RT)
+ * - Walk faster than transit → leg kept, marked walkFasterFlag=true
  * - Last service detected → leg kept, marked isLastService=true
  *
- * Per DEVELOPMENT-RULES.md Section 23.6: No mock data fallbacks. Timetable times come from
- * the route definition, not from fabricated departure data.
+ * Removed transit legs cause surrounding walk legs to become adjacent.
+ * mergeConsecutiveWalkLegs() combines them after buildJourneyLegs().
  *
  * @param {Object} route - Route with legs array
  * @param {Object} transitData - Live transit data (trains, trams, buses)
  * @param {number} walkSpeedKmPerHour - Average walking speed (default 4.5 km/h)
- * @returns {Object} - { route: annotated route, transitNotice: string|null }
+ * @returns {Object} - { route: filtered route, transitNotice: string|null }
  */
 function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4.5) {
   if (!route?.legs) return { route, transitNotice: null };
@@ -979,16 +923,14 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
       const isLastService = departures && departures.length === 1;
 
       if (!hasDepartures) {
-        // V15.0 FIX: No live data available - KEEP the leg, mark as timetable-only.
-        // The route definition's timing (leg.minutes / leg.durationMinutes) remains valid.
-        // Do NOT remove the leg or merge surrounding walks.
-        leg.dataSource = 'timetable';
+        // V15.0: No live GTFS-RT data — service likely not running.
+        // REMOVE the transit leg. Adjacent walk legs will be merged by
+        // mergeConsecutiveWalkLegs() after buildJourneyLegs().
+        // Only verified live GTFS-RT departures are shown.
+        leg.dataSource = 'none';
         leg.isLive = false;
-        leg.isScheduleOnly = true;
         timetableTypes.push(leg.type);
-
-        // Add the leg - it stays in the route structure
-        filteredLegs.push(leg);
+        // Skip adding to filteredLegs — leg is removed
         continue;
       }
 
@@ -1033,11 +975,11 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
     filteredLegs.push(leg);
   }
 
-  // V15.0: Set transitNotice based on data source status
+  // V15.0: Set transitNotice when legs were removed due to no live data
   if (timetableTypes.length > 0) {
     const uniqueTypes = [...new Set(timetableTypes)];
     const typeLabel = uniqueTypes.map(t => t.toUpperCase()).join(' + ');
-    transitNotice = `${typeLabel} USING TIMETABLE DATA`;
+    transitNotice = `${typeLabel} NOT RUNNING`;
   }
 
   // If walk-faster was detected on any leg, append to notice
@@ -1048,7 +990,7 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
     transitNotice = transitNotice ? `${transitNotice} • ${walkNotice}` : walkNotice;
   }
 
-  // V15.0: Return route with ALL legs preserved and data source annotations
+  // V15.0: Return route with legs that have verified live data
   return {
     route: { ...route, legs: filteredLegs },
     transitNotice,
@@ -1681,8 +1623,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // V15.0: Annotate transit legs with data source info (live vs timetable)
-    // Transit legs are preserved in route structure; only marked, never removed
+    // V15.0: Remove transit legs with no live GTFS-RT data (service not running)
     const transitFilterResult = filterUnavailableTransitLegs(effectiveRoute, transitData);
     effectiveRoute = transitFilterResult.route;
     const transitNotice = transitFilterResult.transitNotice;
@@ -1881,7 +1822,8 @@ export default async function handler(req, res) {
           timestamp: now.toISOString(),
           melbourneTime: currentTime,
           amPm,
-          dataSource: hasAnyLiveData ? 'gtfs-rt' : (transitApiKey ? 'api-key-present-but-no-live-data' : 'no-api-key')
+          dataSource: hasAnyLiveData ? 'gtfs-rt' : (transitApiKey ? 'api-key-present-but-no-live-data' : 'no-api-key'),
+          transitNotice: transitNotice || null
         },
         stopIds: {
           trainStopId,
