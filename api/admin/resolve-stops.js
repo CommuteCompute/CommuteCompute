@@ -10,7 +10,8 @@
  * Returns: { success, stops: { trainStopId, tramStopId, stationName, line, ... } }
  *
  * Copyright (c) 2026 Angus Bergman
- * Licensed under AGPL-3.0
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  */
 
 // Melbourne suburb to GTFS stop ID mapping (citybound platform IDs)

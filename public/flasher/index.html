@@ -100,7 +100,7 @@
     <!-- Global System Footer -->
     <div class="cc-system-footer" style="margin-top: 30px; padding: 20px; text-align: center; font-size: 13px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); width: 100%;">
       <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; font-size: 11px;">
-        <span>CCFirm&#8482; <span id="cc-footer-firmware-version">CC-FW-7.5.0</span></span>
+        <span>CCFirm&#8482; <span id="cc-footer-firmware-version">CC-FW-7.6.0</span></span>
         <span>System <span id="cc-footer-system-version">v4.0.0</span></span>
         <span>Build <span id="cc-footer-build-date">--</span></span>
       </div>
@@ -141,8 +141,8 @@
       const fw = document.getElementById('cc-footer-firmware-version');
       const sys = document.getElementById('cc-footer-system-version');
       const build = document.getElementById('cc-footer-build-date');
-      if (fw) fw.textContent = v.components?.firmware?.version || 'CC-FW-7.5.0';
-      if (sys) sys.textContent = 'v' + (v.system?.version || '3.5.0');
+      if (fw) fw.textContent = v.components?.firmware?.version || 'CC-FW-7.6.0';
+      if (sys) sys.textContent = 'v' + (v.system?.version || '4.0.0');
       if (build) build.textContent = v.date || new Date().toISOString().split('T')[0];
     }).catch(() => {});
   </script>

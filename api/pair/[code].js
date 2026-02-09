@@ -27,7 +27,7 @@ const localStore = global.pairingStore || (global.pairingStore = new Map());
 async function getPairingData(code) {
   try {
     // Try Vercel KV first
-    const data = await kv.get(`pair:${code}`);
+    const data = await kv.get(`cc:pair:${code}`);
     if (data) return data;
   } catch (e) {
     // KV not available, use local store
@@ -41,7 +41,7 @@ async function getPairingData(code) {
 async function setPairingData(code, data) {
   try {
     // Store in Vercel KV with TTL (10 minutes)
-    await kv.set(`pair:${code}`, data, { ex: 600 });
+    await kv.set(`cc:pair:${code}`, data, { ex: 600 });
   } catch (e) {
     // KV not available, use local store only
   }
@@ -53,7 +53,7 @@ async function setPairingData(code, data) {
  */
 async function deletePairingData(code) {
   try {
-    await kv.del(`pair:${code}`);
+    await kv.del(`cc:pair:${code}`);
   } catch (e) {
     // KV not available
   }
