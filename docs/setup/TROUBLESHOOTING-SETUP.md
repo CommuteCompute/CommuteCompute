@@ -3,7 +3,7 @@
 </p>
 
 # Troubleshooting Setup Issues
-**For Commute Compute(TM) v3.4.0+ (CCDashDesignV15.0)**
+**For Commute Compute(TM) v3.5.0+ (CCDashDesignV15.0)**
 **Date**: 2026-02-06
 
 ---
@@ -349,7 +349,7 @@ If you've tried all the above and it's still not working:
 ---
 
 **Last Updated**: 2026-02-06
-**Version**: v3.4.0 (CCDashDesignV15.0)
+**Version**: v3.5.0 (CCDashDesignV15.0)
 **Status**: Debugging tools active
 
 (c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual License

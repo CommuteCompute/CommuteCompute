@@ -11,6 +11,25 @@ All notable changes to this project are documented here.
 
 ---
 
+## [2026-02-09] -- System v3.5.0
+
+### Added
+- **Admin Analytics Integration** -- DepartureConfidence and LifestyleContext engines now power admin dashboard analytics via `/api/commutecompute`
+- **Sidebar Navigation** -- Admin panel redesigned with branded sidebar matching privacy/help design system
+
+### Changed
+- System version upgraded from v3.4.0 to **v3.5.0**
+- CommuteCompute(TM) Engine upgraded from v2.3 to **v2.4**
+- CCDash(TM) Renderer upgraded from v1.80 to **v1.81**
+- Admin Panel upgraded from v3.2 to **v4.0** (full redesign)
+- Firmware unchanged at **CC-FW-7.5.0**
+
+### Fixed
+- **E-ink suburb display** -- home/work locations now show suburb names instead of full geocoded addresses
+- **AltTransit false activation** -- alternative transit panel only appears when ALL public transit is cancelled, not when a single mode is unavailable
+
+---
+
 ## [2026-02-06] -- V15.0 Release (System v3.4.0)
 
 ### Added

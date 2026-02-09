@@ -20,34 +20,204 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-primary: #1a2744;
+            --bg-secondary: #1e293b;
+            --bg-card: #2a3d5f;
+            --accent: #4fb28e;
+            --accent-hover: #6ec9a8;
+            --text-primary: #f1f5f9;
+            --text-secondary: #a3b8d0;
+            --text-muted: #94a3b8;
+            --border: #3d5278;
+            --purple: #667eea;
+            --warning: #fbbf24;
+            --error: #ef4444;
+            --success: #22c55e;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #1a2744;
+            background: var(--bg-primary);
             min-height: 100vh;
-            color: #f1f5f9;
-            padding: 20px;
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
             font-size: 15px;
             line-height: 1.6;
+            padding-bottom: 80px !important;
         }
 
+        /* ===== Sticky Header (matches privacy/help) ===== */
+        .header-bar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+        .brand img { border-radius: 6px; }
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+        .nav-link {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .nav-link:hover {
+            color: var(--text-primary);
+            border-bottom-color: var(--text-muted);
+        }
+        .nav-link.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        /* ===== Layout: Sidebar + Content ===== */
         .container {
+            display: flex;
+            flex: 1;
             max-width: 1200px;
             margin: 0 auto;
+            width: 100%;
         }
 
+        /* ===== Sidebar (matches privacy/help) ===== */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 24px 16px;
+            position: sticky;
+            top: 56px;
+            height: calc(100vh - 56px);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .sidebar-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            margin-top: 20px;
+            padding-left: 12px;
+        }
+        .sidebar-title:first-child { margin-top: 0; }
+        .sidebar-nav {
+            list-style: none;
+            margin-bottom: 8px;
+        }
+        .sidebar-nav li { margin-bottom: 2px; }
+        .sidebar-nav a {
+            display: block;
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 13px;
+            transition: background 0.15s, color 0.15s;
+            cursor: pointer;
+        }
+        .sidebar-nav a:hover {
+            background: rgba(79, 178, 142, 0.1);
+            color: var(--text-primary);
+        }
+        .sidebar-nav a.active {
+            background: rgba(79, 178, 142, 0.15);
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        /* ===== Content area ===== */
+        .content {
+            flex: 1;
+            padding: 32px 40px;
+            min-width: 0;
+        }
+
+        /* ===== Section pattern (matches privacy/help) ===== */
+        .section { margin-bottom: 32px; }
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .section-content p {
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+        }
+        .section-content p:last-child { margin-bottom: 0; }
+        .section-content strong { color: var(--text-primary); }
+
+        /* Info/warning boxes */
+        .info-box {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--purple);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin: 12px 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        .warning-box {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--warning);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin: 12px 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* ===== Sub-header (time/status display inside content) ===== */
         .header {
             text-align: center;
             margin-bottom: 24px;
             padding: 20px;
-            background: #2a3d5f;
-            border: 1px solid #3d5278;
-            border-radius: 4px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
         }
 
         .header h1 {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 600;
             margin-bottom: 8px;
         }
@@ -56,23 +226,24 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: #166534;
+            background: rgba(22, 101, 52, 0.6);
             padding: 4px 12px;
+            border-radius: 20px;
             font-size: 13px;
             color: #dcfce7;
         }
 
         .live-dot {
-            width: 10px;
-            height: 10px;
-            background: #22c55e;
+            width: 8px;
+            height: 8px;
+            background: var(--success);
             border-radius: 50%;
             animation: pulse 1.5s infinite;
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
         }
 
         .time-display {
@@ -84,38 +255,16 @@
 
         .date-display {
             font-size: 16px;
-            opacity: 0.8;
+            color: var(--text-secondary);
         }
 
-        /* Navigation tabs */
+        /* Navigation tabs - hidden (replaced by sidebar) */
         .nav-tabs {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
+            display: none;
         }
 
         .nav-tab {
-            background: transparent;
-            border: none;
-            border-bottom: 2px solid transparent;
-            color: #94a3b8;
-            padding: 10px 16px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: color 0.15s, border-color 0.15s;
-        }
-
-        .nav-tab:hover {
-            color: #f1f5f9;
-            border-bottom-color: #64748b;
-        }
-
-        .nav-tab.active {
-            color: #4fb28e;
-            border-bottom-color: #4fb28e;
+            display: none;
         }
 
         /* Tab content */
@@ -137,10 +286,10 @@
 
         /* Cards */
         .card {
-            background: #2a3d5f;
+            background: var(--bg-secondary);
             padding: 24px;
-            border: 1px solid #3d5278;
-            border-radius: 4px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
         }
 
         .card-header {
@@ -149,13 +298,13 @@
             gap: 10px;
             margin-bottom: 14px;
             padding-bottom: 10px;
-            border-bottom: 1px solid #3d5278;
+            border-bottom: 1px solid var(--border);
         }
 
         .card-header h2 {
             font-size: 16px;
             font-weight: 600;
-            color: #f1f5f9;
+            color: var(--text-primary);
         }
 
         .card-icon {
@@ -229,16 +378,16 @@
             font-size: 14px;
             font-weight: 500;
             margin-bottom: 0.5rem;
-            color: #cbd5e1;
+            color: var(--text-secondary);
         }
 
         .form-input {
             width: 100%;
             padding: 10px 14px;
-            border: 1px solid #3d5278;
-            border-radius: 4px;
-            background: #1a2744;
-            color: #f1f5f9;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             font-family: 'Inter', sans-serif;
             font-size: 14px;
             transition: border-color 0.15s;
@@ -246,11 +395,11 @@
 
         .form-input:focus {
             outline: none;
-            border-color: #4fb28e;
+            border-color: var(--accent);
         }
 
         .form-input::placeholder {
-            color: #7a8fa8;
+            color: var(--text-muted);
         }
 
         .form-row {
@@ -267,8 +416,8 @@
 
         /* Buttons */
         .btn {
-            background: #4fb28e;
-            color: #f1f5f9;
+            background: var(--accent);
+            color: var(--text-primary);
             border: none;
             padding: 14px 28px;
             border-radius: 10px;
@@ -318,7 +467,7 @@
         .checkbox-group input[type="checkbox"] {
             width: 20px;
             height: 20px;
-            accent-color: #4fb28e;
+            accent-color: var(--accent);
         }
 
         /* Messages */
@@ -470,8 +619,8 @@
         }
 
         .add-mode-btn:hover {
-            border-color: #4fb28e;
-            color: #f1f5f9;
+            border-color: var(--accent);
+            color: var(--text-primary);
         }
 
         /* Footer */
@@ -549,7 +698,7 @@
             font-weight: 600;
             font-size: 16px;
             margin-bottom: 8px;
-            color: #f1f5f9;
+            color: var(--text-primary);
         }
 
         .arch-node-desc {
@@ -571,7 +720,7 @@
             justify-content: center;
             width: 20px;
             height: 20px;
-            background: #4fb28e;
+            background: var(--accent);
             color: #1a1a2e;
             border-radius: 50%;
             font-size: 11px;
@@ -604,7 +753,7 @@
 
         .version-footer .separator {
             margin: 0 10px;
-            color: #cbd5e1;
+            color: var(--text-secondary);
         }
 
         /* Global System Footer - appears on ALL tabs */
@@ -635,7 +784,7 @@
             align-items: center;
             gap: 16px;
             font-size: 11px;
-            color: #94a3b8;
+            color: var(--text-muted);
         }
 
         .cc-footer-version-item {
@@ -650,7 +799,7 @@
         }
 
         .cc-footer-version-value {
-            color: #4fb28e;
+            color: var(--accent);
             font-weight: 600;
             font-family: 'Inter', monospace;
         }
@@ -663,14 +812,14 @@
         }
 
         .cc-footer-attribution a {
-            color: #4fb28e;
+            color: var(--accent);
             text-decoration: none;
         }
 
         .cc-footer-live-dot {
             width: 6px;
             height: 6px;
-            background: #22c55e;
+            background: var(--accent);
             border-radius: 50%;
             animation: pulse 1.5s infinite;
         }
@@ -744,7 +893,7 @@
         }
 
         .onboarding-modal {
-            background: #1a2744;
+            background: var(--bg-primary);
             border-radius: 16px;
             padding: 40px;
             max-width: 600px;
@@ -762,7 +911,7 @@
         .onboarding-modal h2 {
             font-size: 28px;
             margin-bottom: 10px;
-            color: #f1f5f9;
+            color: var(--text-primary);
             font-weight: 600;
         }
 
@@ -799,7 +948,7 @@
             border-radius: 50%;
             text-align: center;
             line-height: 24px;
-            color: #4fb28e;
+            color: var(--accent);
             flex-shrink: 0;
         }
 
@@ -821,7 +970,7 @@
         .onboarding-progress-dot.active {
             width: 30px;
             border-radius: 5px;
-            background: #4fb28e;
+            background: var(--accent);
         }
 
         .onboarding-buttons {
@@ -842,8 +991,8 @@
         }
 
         .btn-onboarding-primary {
-            background: #4fb28e;
-            color: #f1f5f9;
+            background: var(--accent);
+            color: var(--text-primary);
             flex: 1;
         }
 
@@ -855,7 +1004,7 @@
 
         .btn-onboarding-secondary {
             background: rgba(51, 65, 85, 0.8);
-            color: #f1f5f9;
+            color: var(--text-primary);
         }
 
         .btn-onboarding-secondary:hover {
@@ -864,12 +1013,12 @@
 
         .btn-onboarding-skip {
             background: transparent;
-            color: #94a3b8;
+            color: var(--text-muted);
             padding: 12px 20px;
         }
 
         .btn-onboarding-skip:hover {
-            color: #cbd5e1;
+            color: var(--text-secondary);
         }
 
         /* Tutorial Highlight */
@@ -882,8 +1031,8 @@
 
         .tutorial-tooltip {
             position: absolute;
-            background: #4fb28e;
-            color: #f1f5f9;
+            background: var(--accent);
+            color: var(--text-primary);
             padding: 16px 20px;
             border-radius: 12px;
             font-size: 14px;
@@ -928,8 +1077,8 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: #4fb28e;
-            color: #f1f5f9;
+            background: var(--accent);
+            color: var(--text-primary);
             border: none;
             padding: 12px 20px;
             border-radius: 25px;
@@ -1077,7 +1226,7 @@
         }
 
         .toast {
-            background: #1a2744;
+            background: var(--bg-primary);
             border: 2px solid;
             border-radius: 12px;
             padding: 16px 20px;
@@ -1113,7 +1262,7 @@
         }
 
         .toast.toast-info {
-            border-color: #4fb28e;
+            border-color: var(--accent);
         }
 
         .toast-icon {
@@ -1168,7 +1317,7 @@
         }
 
         .confirm-modal {
-            background: #1a2744;
+            background: var(--bg-primary);
             border-radius: 12px;
             padding: 30px;
             max-width: 450px;
@@ -1193,7 +1342,7 @@
             font-size: 20px;
             margin-bottom: 16px;
             font-weight: 600;
-            color: #f1f5f9;
+            color: var(--text-primary);
         }
 
         .confirm-modal p {
@@ -1221,7 +1370,7 @@
 
         .confirm-btn-cancel {
             background: rgba(51, 65, 85, 0.8);
-            color: #f1f5f9;
+            color: var(--text-primary);
         }
 
         .confirm-btn-cancel:hover {
@@ -1229,8 +1378,8 @@
         }
 
         .confirm-btn-confirm {
-            background: #4fb28e;
-            color: #f1f5f9;
+            background: var(--accent);
+            color: var(--text-primary);
         }
 
         .confirm-btn-confirm:hover {
@@ -1387,8 +1536,8 @@
             position: absolute;
             top: -40px;
             left: 0;
-            background: #4fb28e;
-            color: #f1f5f9;
+            background: var(--accent);
+            color: var(--text-primary);
             padding: 8px;
             text-decoration: none;
             z-index: 100;
@@ -1400,16 +1549,16 @@
 
         /* High contrast text for accessibility */
         p, span, div {
-            color: #cbd5e1;
+            color: var(--text-secondary);
         }
 
         label {
-            color: #cbd5e1;
+            color: var(--text-secondary);
             font-weight: 500;
         }
 
         h1, h2, h3, h4, h5, h6 {
-            color: #f1f5f9;
+            color: var(--text-primary);
         }
 
         /* Smooth animations with 200ms timing */
@@ -1448,7 +1597,7 @@
         .arch-viz-card h3 {
             font-size: 16px;
             font-weight: 600;
-            color: #f1f5f9;
+            color: var(--text-primary);
             margin-bottom: 1rem;
         }
 
@@ -1461,67 +1610,18 @@
             padding: 1rem;
         }
 
-        /* Global Navigation */
-        .global-nav {
-            background: rgba(15, 23, 42, 0.95);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 10001;
-            backdrop-filter: blur(10px);
-        }
-        
-        .global-nav .nav-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 18px;
-            font-weight: 700;
-            color: #f1f5f9;
-            text-decoration: none;
-        }
-        
-        .global-nav .nav-brand span:first-child { font-size: 24px; }
-        
-        .global-nav .nav-links-global {
-            display: flex;
-            gap: 8px;
-        }
-        
-        .global-nav .nav-link-global {
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #94a3b8;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-        }
-        
-        .global-nav .nav-link-global:hover {
-            background: rgba(30, 41, 59, 0.8);
-            color: #f1f5f9;
-            border-color: #4fb28e;
-        }
-        
-        .global-nav .nav-link-global.active {
-            background: #4fb28e;
-            color: white;
-            border-color: #4fb28e;
-        }
-        
-        body { padding-top: 56px; }
-        
-        @media (max-width: 600px) {
-            .global-nav .nav-links-global { display: none; }
+        /* Global Navigation - now uses .header-bar (defined above) */
+        /* Legacy .global-nav hidden - replaced by .header-bar */
+        .global-nav { display: none; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .content { padding: 20px 16px; }
+            .container { flex-direction: column; }
+            .nav-links { gap: 4px; }
+            .nav-link { padding: 8px 8px; font-size: 13px; }
+            .cc-system-footer-inner { flex-direction: column; text-align: center; }
         }
         /* Icon system - compliant with DEVELOPMENT-RULES Section 22.3 */
         .icon { display: inline-block; width: 20px; height: 20px; vertical-align: middle; }
@@ -1533,7 +1633,7 @@
         /* V15.0: Commute Analytics Card Styles */
         .cc-card {
             background: rgba(30, 41, 59, 0.8);
-            border: 1px solid #3d5278;
+            border: 1px solid var(--border);
             border-radius: 12px;
             overflow: hidden;
         }
@@ -1681,20 +1781,21 @@
         </symbol>
     </svg>
     <!-- Global Navigation -->
-    <nav class="global-nav">
-        <a href="/" class="nav-brand">
-            <img src="/assets/brand/cc-logo-128.png" alt="Commute Compute™" style="height: 56px; width: auto; margin-right: 10px;">
-            <span>Commute Compute™</span>
+    <!-- Sticky Header (matches privacy/help pages) -->
+    <header class="header-bar">
+        <a href="/" class="brand">
+            <img src="/assets/brand/cc-logo-128.png" alt="Commute Compute&#8482;" style="height: 56px; width: auto; margin-right: 10px;">
+            <span>Commute Compute&#8482;</span>
         </a>
-        <div class="nav-links-global">
-            <a href="/" class="nav-link-global">Home</a>
-            <a href="/setup-wizard.html" class="nav-link-global">Setup</a>
-            <a href="/admin.html" class="nav-link-global active">Dashboard</a>
-            <a href="/preview.html" class="nav-link-global">Preview</a>
-            <a href="/help.html" class="nav-link-global">Help</a>
-            <a href="/privacy.html" class="nav-link-global">Privacy</a>
-        </div>
-    </nav>
+        <nav class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/setup-wizard.html" class="nav-link">Setup</a>
+            <a href="/admin.html" class="nav-link active">Dashboard</a>
+            <a href="/preview.html" class="nav-link">Preview</a>
+            <a href="/help.html" class="nav-link">Help</a>
+            <a href="/privacy.html" class="nav-link">Privacy</a>
+        </nav>
+    </header>
 
     <!-- Skip to content link for accessibility -->
     <a href="#main-content" class="skip-to-content">Skip to main content</a>
@@ -1705,9 +1806,7 @@
     <!-- Onboarding Overlay (shown on first visit) -->
     <div id="onboarding-overlay" class="onboarding-overlay" style="display: none;">
         <div class="onboarding-modal">
-            <div class="onboarding-step-content" id="onboarding-content">
-                <!-- Content will be dynamically inserted -->
-            </div>
+            <div class="onboarding-step-content" id="onboarding-content"></div>
             <div class="onboarding-progress" id="onboarding-progress">
                 <div class="onboarding-progress-dot active"></div>
                 <div class="onboarding-progress-dot"></div>
@@ -1715,50 +1814,62 @@
                 <div class="onboarding-progress-dot"></div>
             </div>
             <div class="onboarding-buttons">
-                <button class="btn-onboarding btn-onboarding-skip" id="onboarding-skip" onclick="skipOnboarding()">
-                    Skip Tutorial
-                </button>
+                <button class="btn-onboarding btn-onboarding-skip" id="onboarding-skip" onclick="skipOnboarding()">Skip Tutorial</button>
                 <div style="display: flex; gap: 12px; flex: 1;">
-                    <button class="btn-onboarding btn-onboarding-secondary" id="onboarding-prev" onclick="prevOnboardingStep()" style="display: none;">
-                        ← Previous
-                    </button>
-                    <button class="btn-onboarding btn-onboarding-primary" id="onboarding-next" onclick="nextOnboardingStep()">
-                        Next →
-                    </button>
+                    <button class="btn-onboarding btn-onboarding-secondary" id="onboarding-prev" onclick="prevOnboardingStep()" style="display: none;">← Previous</button>
+                    <button class="btn-onboarding btn-onboarding-primary" id="onboarding-next" onclick="nextOnboardingStep()">Next →</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Show Tutorial Again Button (hidden by default) -->
-    <button id="show-tutorial-btn" class="show-tutorial-btn" onclick="restartTutorial()" style="display: none;">
-        ? Show Tutorial
-    </button>
+    <button id="show-tutorial-btn" class="show-tutorial-btn" onclick="restartTutorial()" style="display: none;">? Show Tutorial</button>
 
     <div class="container" id="main-content">
-        <!-- Header -->
-        <div class="header">
-            <h1>Commute Compute&#8482; Admin</h1>
-            <div class="live-indicator">
-                <div class="live-dot"></div>
-                <span id="data-mode">Loading...</span>
+        <!-- Sidebar Navigation (matches privacy/help pages) -->
+        <aside class="sidebar">
+            <div class="sidebar-title">Dashboard</div>
+            <ul class="sidebar-nav">
+                <li><a href="#" data-section="live" class="active" onclick="showTab('live', null); updateSidebarActive(this); return false;">Live Data</a></li>
+                <li><a href="#" data-section="setup" onclick="showTab('setup', null); updateSidebarActive(this); return false;">Today's Journey</a></li>
+                <li><a href="#" data-section="architecture" onclick="showTab('architecture', null); updateSidebarActive(this); return false;">Architecture</a></li>
+            </ul>
+            <div class="sidebar-title">Settings</div>
+            <ul class="sidebar-nav">
+                <li><a href="#" data-section="config" onclick="showTab('config', null); updateSidebarActive(this); return false;">Configuration</a></li>
+                <li><a href="#" data-section="api" onclick="showTab('api', null); updateSidebarActive(this); return false;">Transit API</a></li>
+            </ul>
+            <div class="sidebar-title">System</div>
+            <ul class="sidebar-nav">
+                <li><a href="#" data-section="system" onclick="showTab('system', null); updateSidebarActive(this); return false;">System & Support</a></li>
+                <li><a href="#" data-section="legal" onclick="showTab('legal', null); updateSidebarActive(this); return false;">Legal</a></li>
+            </ul>
+        </aside>
+
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Sub-header: time/status display -->
+            <div class="header">
+                <h1>Commute Compute&#8482; Dashboard</h1>
+                <div class="live-indicator">
+                    <div class="live-dot"></div>
+                    <span id="data-mode">Loading...</span>
+                </div>
+                <div class="time-display" id="current-time">--:--:--</div>
+                <div class="date-display" id="current-date">Loading...</div>
             </div>
-            <div class="time-display" id="current-time">--:--:--</div>
-            <div class="date-display" id="current-date">Loading...</div>
 
-        </div>
-
-
-        <!-- Navigation -->
-        <div class="nav-tabs">
-            <button class="nav-tab" onclick="showTab('setup', this)">Setup & Journey</button>
-            <button class="nav-tab" onclick="showTab('api', this)">API Settings</button>
-            <button class="nav-tab active" onclick="showTab('live', this)">Live Data</button>
-            <button class="nav-tab" onclick="showTab('config', this)">Configuration</button>
-            <button class="nav-tab" onclick="showTab('architecture', this)">Architecture</button>
-            <button class="nav-tab" onclick="showTab('system', this)">System & Support</button>
-            <button class="nav-tab" onclick="showTab('legal', this)">Legal</button>
-        </div>
+            <!-- Old nav-tabs hidden by CSS, kept for backward compatibility -->
+            <div class="nav-tabs">
+                <button class="nav-tab" onclick="showTab('setup', this)">Setup & Journey</button>
+                <button class="nav-tab" onclick="showTab('api', this)">API Settings</button>
+                <button class="nav-tab active" onclick="showTab('live', this)">Live Data</button>
+                <button class="nav-tab" onclick="showTab('config', this)">Configuration</button>
+                <button class="nav-tab" onclick="showTab('architecture', this)">Architecture</button>
+                <button class="nav-tab" onclick="showTab('system', this)">System & Support</button>
+                <button class="nav-tab" onclick="showTab('legal', this)">Legal</button>
+            </div>
 
         <!-- Setup & Journey Tab - Rebuilt for localStorage config -->
         <div id="tab-setup" class="tab-content">
@@ -2626,11 +2737,11 @@
                     <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
                         <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8;">
                             <svg width="14" height="14" style="color: #4fb28e;"><use href="#icon-check"/></svg>
-                            <span>CommuteCompute Engine v2.3</span>
+                            <span>CommuteCompute Engine v2.4</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8;">
                             <svg width="14" height="14" style="color: #4fb28e;"><use href="#icon-check"/></svg>
-                            <span>CCDash Renderer v1.80</span>
+                            <span>CCDash Renderer v1.81</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8;">
                             <svg width="14" height="14" style="color: #667eea;"><use href="#icon-settings"/></svg>
@@ -3093,8 +3204,8 @@
                     A fully self-hosted smart transit display system for Australian public transport. Each user deploys their own complete stack with zero external dependencies. Features device pairing via Vercel KV for persistent configuration across serverless invocations.
                 </p>
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    <span style="padding: 6px 14px; background: rgba(79, 178, 142, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #4fb28e;">v3.4.0</span>
-                    <span style="padding: 6px 14px; background: rgba(102, 126, 234, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #667eea;">CCDash&#8482; v1.80</span>
+                    <span style="padding: 6px 14px; background: rgba(79, 178, 142, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #4fb28e;">v3.5.0</span>
+                    <span style="padding: 6px 14px; background: rgba(102, 126, 234, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #667eea;">CCDash&#8482; v1.81</span>
                     <span style="padding: 6px 14px; background: rgba(251, 191, 36, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #fbbf24;">CCFirm&#8482; CC-FW-7.5.0</span>
                     <span style="padding: 6px 14px; background: rgba(168, 85, 247, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #a855f7;">Vercel KV</span>
                 </div>
@@ -3114,7 +3225,7 @@
                 <div style="margin-bottom: 16px; padding: 16px; background: linear-gradient(135deg, rgba(79, 178, 142, 0.15) 0%, rgba(79, 178, 142, 0.05) 100%); border-radius: 10px; border: 1px solid rgba(79, 178, 142, 0.3);">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
                         <svg width="24" height="24" style="color: #4fb28e;"><use href="#icon-route"/></svg>
-                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #4fb28e;">CommuteCompute&#8482; Engine v2.3</h3>
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #4fb28e;">CommuteCompute&#8482; Engine v2.4</h3>
                     </div>
                     <p style="font-size: 13px; color: #e2e8f0; line-height: 1.7; margin-bottom: 12px;">
                         The intelligent journey planning core that optimises multi-modal routes across Australian public transport networks. CommuteCompute analyses real-time GTFS data, user preferences, and contextual factors to recommend the optimal departure time and route.
@@ -3143,7 +3254,7 @@
                 <div style="margin-bottom: 16px; padding: 16px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(102, 126, 234, 0.05) 100%); border-radius: 10px; border: 1px solid rgba(102, 126, 234, 0.3);">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
                         <svg width="24" height="24" style="color: #667eea;"><use href="#icon-sliders"/></svg>
-                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #667eea;">CCDash&#8482; Renderer v1.80</h3>
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #667eea;">CCDash&#8482; Renderer v1.81</h3>
                         <span style="padding: 3px 8px; background: rgba(239, 68, 68, 0.2); border-radius: 8px; font-size: 10px; font-weight: 600; color: #ef4444;">LOCKED 2026-02-01</span>
                     </div>
                     <p style="font-size: 13px; color: #e2e8f0; line-height: 1.7; margin-bottom: 12px;">
@@ -3413,7 +3524,7 @@
                     <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
                         <div style="width: 32px; height: 32px; background: #fbbf24; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;">4</div>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 14px;">CCDash&#8482; Renderer v1.80</div>
+                            <div style="font-weight: 600; font-size: 14px;">CCDash&#8482; Renderer v1.81</div>
                             <div style="font-size: 12px; color: #94a3b8;">1-bit BMP generation, zone diffing, partial refresh optimization</div>
                         </div>
                     </div>
@@ -3616,7 +3727,7 @@
                     </h3>
                     <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; background: rgba(0,0,0,0.3); padding: 16px; border-radius: 6px; overflow-x: auto;">
                         <pre style="margin: 0; color: #94a3b8; line-height: 1.5;">
-                               <span style="color: #4fb28e;">COMMUTE COMPUTE SYSTEM ARCHITECTURE v3.4.0</span>
+                               <span style="color: #4fb28e;">COMMUTE COMPUTE SYSTEM ARCHITECTURE v3.5.0</span>
 
     <span style="color: #fbbf24;">USER SETUP</span>                        <span style="color: #a855f7;">PERSISTENT STORAGE</span>                    <span style="color: #667eea;">DEVICE</span>
         |                                      |                                   |
@@ -3642,7 +3753,7 @@
                                |       <span style="color: #667eea;">VERCEL SERVERLESS</span>        |                   |
                                |                               |                   |
                                |  +-------------------------+  |                   |
-                               |  |   <span style="color: #4fb28e;">CommuteCompute&#8482; v2.3</span>   |  |                   |
+                               |  |   <span style="color: #4fb28e;">CommuteCompute&#8482; v2.4</span>   |  |                   |
                                |  |   - Route optimisation  |  |                   |
                                |  |   - CoffeeDecision      |  |                   |
                                |  |   - Mode preferences    |  |                   |
@@ -3683,7 +3794,7 @@
                     </h3>
                     <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; background: rgba(0,0,0,0.3); padding: 16px; border-radius: 6px; overflow-x: auto;">
                         <pre style="margin: 0; color: #94a3b8; line-height: 1.5;">
-                        <span style="color: #4fb28e;">COMMUTECOMPUTE ENGINE v2.3</span>
+                        <span style="color: #4fb28e;">COMMUTECOMPUTE ENGINE v2.4</span>
 
    +------------------+     +------------------+     +------------------+
    |   <span style="color: #fbbf24;">USER PREFS</span>     |     |   <span style="color: #667eea;">LIVE DATA</span>      |     |   <span style="color: #a855f7;">CONTEXT</span>        |
@@ -3770,7 +3881,7 @@
                 </div>
                 <div style="display: grid; gap: 10px; font-size: 13px; color: #94a3b8; line-height: 1.6;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="padding: 3px 8px; background: rgba(79, 178, 142, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #4fb28e;">v3.4.0</span>
+                        <span style="padding: 3px 8px; background: rgba(79, 178, 142, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #4fb28e;">v3.5.0</span>
                         <strong>docs/ARCHITECTURE.md</strong> — Complete system architecture (20+ sections)
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -3806,11 +3917,11 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
                     <div style="padding: 15px; background: rgba(79, 178, 142, 0.15); border-radius: 8px; text-align: center;">
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">CommuteCompute Engine</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #4fb28e;">v2.3</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #4fb28e;">v2.4</div>
                     </div>
                     <div style="padding: 15px; background: rgba(102, 126, 234, 0.15); border-radius: 8px; text-align: center;">
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">CCDash Renderer</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #667eea;">v1.80</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #667eea;">v1.81</div>
                     </div>
                     <div style="padding: 15px; background: rgba(251, 191, 36, 0.15); border-radius: 8px; text-align: center;">
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">CCFirm Firmware</div>
@@ -3818,7 +3929,7 @@
                     </div>
                     <div style="padding: 15px; background: rgba(236, 72, 153, 0.15); border-radius: 8px; text-align: center;">
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">System Version</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #ec4899;">v3.4.0</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #ec4899;">v3.5.0</div>
                     </div>
                 </div>
 
@@ -3839,7 +3950,7 @@
 │          └─────────────────┼─────────────────┘                          │
 │                            ▼                                            │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                   CommuteCompute Engine v2.3                       │   │
+│   │                   CommuteCompute Engine v2.4                       │   │
 │   │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │   │
 │   │  │ Route       │  │ Coffee      │  │ Cafe Busy   │              │   │
 │   │  │ Recommender │  │ Decision    │  │ Detector    │              │   │
@@ -3848,7 +3959,7 @@
 │                                │                                        │
 │                                ▼                                        │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                   CCDash Renderer v1.80                          │   │
+│   │                   CCDash Renderer v1.81                          │   │
 │   │  • 800×480 1-bit BMP      • Zone-based partial refresh          │   │
 │   │  • V15.0 Dashboard Spec   • 60-second cycle                     │   │
 │   └────────────────────────────┬────────────────────────────────────┘   │
@@ -4558,7 +4669,7 @@
 
             // Update content
             content.innerHTML = `
-                <h2>${step.title}</h2>
+                <h2>${sanitize(step.title)}</h2>
                 ${step.content}
             `;
 
@@ -4676,8 +4787,8 @@
             toast.innerHTML = `
                 <div class="toast-icon">${icons[type]}</div>
                 <div class="toast-content">
-                    <div class="toast-title">${title}</div>
-                    <div class="toast-message">${message}</div>
+                    <div class="toast-title">${sanitize(title)}</div>
+                    <div class="toast-message">${sanitize(message)}</div>
                 </div>
                 <button class="toast-close" onclick="this.parentElement.remove()">×</button>
             `;
@@ -4723,14 +4834,14 @@
 
             overlay.innerHTML = `
                 <div class="confirm-modal">
-                    <h3>${title}</h3>
-                    <p>${message}</p>
+                    <h3>${sanitize(title)}</h3>
+                    <p>${sanitize(message)}</p>
                     <div class="confirm-modal-buttons">
                         <button class="confirm-btn confirm-btn-cancel" id="confirm-cancel">
-                            ${cancelText}
+                            ${sanitize(cancelText)}
                         </button>
                         <button class="confirm-btn ${isDangerous ? 'confirm-btn-danger' : 'confirm-btn-confirm'}" id="confirm-ok">
-                            ${confirmText}
+                            ${sanitize(confirmText)}
                         </button>
                     </div>
                 </div>
@@ -5088,15 +5199,24 @@
             if (tabId === 'api') {
                 updateAPIKeysStatus();
             }
-            
+
             // Load route alternatives when Setup tab is shown
             if (tabId === 'setup') {
-                // Check if config exists before loading routes
                 const config = JSON.parse(localStorage.getItem('cc-config') || '{}');
                 if (config.addresses?.home || config.addresses?.work) {
                     refreshRouteAlternatives();
                 }
             }
+
+            // Update sidebar active state
+            const sidebarLink = document.querySelector(`.sidebar-nav a[data-section="${tabId}"]`);
+            if (sidebarLink) updateSidebarActive(sidebarLink);
+        }
+
+        // Update sidebar active state
+        function updateSidebarActive(el) {
+            document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+            if (el) el.classList.add('active');
         }
 
         // Location-agnostic timezone detection
@@ -5241,7 +5361,7 @@
                                 <div style="font-weight: 600; font-size: 14px; color: #f1f5f9;">${sanitize(trainLeg.title)}</div>
                                 <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">${sanitize(trainLeg.subtitle)}</div>
                             </div>
-                            <div style="font-size: 24px; font-weight: 700; color: #4fb28e;">${trainLeg.minutes}<span style="font-size: 12px; font-weight: 400; color: #94a3b8;"> min</span></div>
+                            <div style="font-size: 24px; font-weight: 700; color: #4fb28e;">${sanitize(String(trainLeg.minutes))}<span style="font-size: 12px; font-weight: 400; color: #94a3b8;"> min</span></div>
                         </div>
                     </div>`;
             } else {
@@ -5256,7 +5376,7 @@
                                 <div style="font-weight: 600; font-size: 14px; color: #f1f5f9;">${sanitize(tramLeg.title)}</div>
                                 <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">${sanitize(tramLeg.subtitle)}</div>
                             </div>
-                            <div style="font-size: 24px; font-weight: 700; color: #667eea;">${tramLeg.minutes}<span style="font-size: 12px; font-weight: 400; color: #94a3b8;"> min</span></div>
+                            <div style="font-size: 24px; font-weight: 700; color: #667eea;">${sanitize(String(tramLeg.minutes))}<span style="font-size: 12px; font-weight: 400; color: #94a3b8;"> min</span></div>
                         </div>
                     </div>`;
             } else {
@@ -5273,7 +5393,7 @@
             }
             el.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 20px;">
-                    <div style="font-size: 48px; font-weight: 700; color: #f1f5f9;">${weather.temp || '--'}°</div>
+                    <div style="font-size: 48px; font-weight: 700; color: #f1f5f9;">${sanitize(String(weather.temp || '--'))}°</div>
                     <div>
                         <div style="font-size: 16px; font-weight: 500; color: #f1f5f9;">${sanitize(weather.condition) || 'N/A'}</div>
                         ${weather.umbrella ? '<div style="font-size: 12px; color: #fbbf24; margin-top: 4px;"><svg class="icon-sm"><use href="#icon-umbrella"/></svg> Bring umbrella</div>' : ''}
@@ -5320,7 +5440,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(79, 178, 142, 0.15); border-radius: 8px; margin-bottom: 8px;">
                     <div style="font-size: 14px; color: #94a3b8;">Leave <strong style="color: #f1f5f9;">${sanitize(scData.summary?.leaveNow || 'Now')}</strong></div>
                     <div style="font-size: 14px; color: #94a3b8;">Arrive <strong style="color: #4fb28e;">${sanitize(scData.summary?.arriveAt || '--:--')}</strong></div>
-                    <div style="font-size: 14px; color: #94a3b8;">Total <strong style="color: #f1f5f9;">${scData.summary?.totalMinutes || '--'} min</strong></div>
+                    <div style="font-size: 14px; color: #94a3b8;">Total <strong style="color: #f1f5f9;">${sanitize(String(scData.summary?.totalMinutes || '--'))} min</strong></div>
                 </div>`;
             
             // Journey legs
@@ -5334,7 +5454,7 @@
                             <div style="font-size: 14px; font-weight: 500; color: ${stateColor};">${sanitize(leg.title)}</div>
                             <div style="font-size: 11px; color: #94a3b8;">${sanitize(leg.subtitle)}</div>
                         </div>
-                        <div style="font-size: 16px; font-weight: 600; color: #f1f5f9;">${leg.minutes} min</div>
+                        <div style="font-size: 16px; font-weight: 600; color: #f1f5f9;">${sanitize(String(leg.minutes))} min</div>
                     </div>`;
             });
             
@@ -5640,12 +5760,12 @@
                 <div style="padding: 15px; background: rgba(64, 220, 165, 0.1); border-radius: 8px;">
                     <div style="font-weight: 600; margin-bottom: 10px; font-size: 14px;"><svg class="icon-sm" style="vertical-align: middle;"><use href="#icon-map-pin"/></svg> Transit Stops</div>
                     <div style="font-size: 13px; line-height: 1.8;">
-                        <div><strong>From:</strong> ${status.transitStations.mode1.origin || 'Not set'}</div>
-                        <div><strong>To:</strong> ${status.transitStations.mode1.destination || 'Not set'}</div>
-                        <div><strong>Mode:</strong> ${status.transitStations.mode1.type || 'Not set'}</div>
+                        <div><strong>From:</strong> ${sanitize(String(status.transitStations.mode1.origin || 'Not set'))}</div>
+                        <div><strong>To:</strong> ${sanitize(String(status.transitStations.mode1.destination || 'Not set'))}</div>
+                        <div><strong>Mode:</strong> ${sanitize(String(status.transitStations.mode1.type || 'Not set'))}</div>
                         ${status.transitStations.mode2 && status.transitStations.mode2.origin !== 'Not configured' ? `
                             <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
-                                <strong>Transfer:</strong> ${status.transitStations.mode2.origin} → ${status.transitStations.mode2.destination} (${status.transitStations.mode2.type})
+                                <strong>Transfer:</strong> ${sanitize(String(status.transitStations.mode2.origin))} → ${sanitize(String(status.transitStations.mode2.destination))} (${sanitize(String(status.transitStations.mode2.type))})
                             </div>
                         ` : ''}
                     </div>
@@ -5657,15 +5777,15 @@
                 <div style="padding: 15px; background: rgba(246, 173, 85, 0.1); border-radius: 8px;">
                     <div style="font-weight: 600; margin-bottom: 10px; font-size: 14px;"><svg class="icon-sm"><use href="#icon-clock"/></svg> Journey Preferences</div>
                     <div style="font-size: 13px; line-height: 1.8;">
-                        <div><strong>Arrival Time:</strong> ${formatTime12h(status.journey.arrivalTime) || 'Not set'}</div>
+                        <div><strong>Arrival Time:</strong> ${sanitize(String(formatTime12h(status.journey.arrivalTime) || 'Not set'))}</div>
                         <div><strong>Coffee Stops:</strong> ${status.journey.coffeeEnabled ? '<svg class="icon-sm"><use href="#icon-check-circle"/></svg> Enabled' : '[X]Disabled'}</div>
                         ${status.journey.walkingTimes ? `
                             <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
                                 <strong>Walking Times:</strong><br>
-                                Home → Station: ${status.journey.walkingTimes.homeToStation || 'Calculating...'}<br>
-                                ${status.addresses.cafe ? `Home → Cafe: ${status.journey.walkingTimes.homeToCafe || 'Calculating...'}<br>` : ''}
-                                ${status.addresses.cafe ? `Cafe → Station: ${status.journey.walkingTimes.cafeToStation || 'Calculating...'}<br>` : ''}
-                                Station → Work: ${status.journey.walkingTimes.stationToWork || 'Calculating...'}
+                                Home → Station: ${sanitize(String(status.journey.walkingTimes.homeToStation || 'Calculating...'))}<br>
+                                ${status.addresses.cafe ? `Home → Cafe: ${sanitize(String(status.journey.walkingTimes.homeToCafe || 'Calculating...'))}<br>` : ''}
+                                ${status.addresses.cafe ? `Cafe → Station: ${sanitize(String(status.journey.walkingTimes.cafeToStation || 'Calculating...'))}<br>` : ''}
+                                Station → Work: ${sanitize(String(status.journey.walkingTimes.stationToWork || 'Calculating...'))}
                             </div>
                         ` : ''}
                     </div>
@@ -5836,9 +5956,9 @@
                             <span style="font-weight: 600; color: #22c55e;">Active</span>
                         </div>
                         <div style="font-size: 13px; opacity: 0.8; line-height: 1.6;">
-                            <strong>Last Calculated:</strong> ${calcTime.toLocaleTimeString()}<br>
-                            <strong>Time Ago:</strong> ${timeAgo}<br>
-                            <strong>Arrival Time:</strong> ${data.journey?.arrivalTime || 'N/A'}
+                            <strong>Last Calculated:</strong> ${sanitize(calcTime.toLocaleTimeString())}<br>
+                            <strong>Time Ago:</strong> ${sanitize(timeAgo)}<br>
+                            <strong>Arrival Time:</strong> ${sanitize(String(data.journey?.arrivalTime || 'N/A'))}
                         </div>
                     `;
                 } else {
@@ -5919,8 +6039,8 @@
             document.getElementById('weather-source').textContent = data.source || 'BOM';
             document.getElementById('weather-display').innerHTML = `
                 <div class="weather-display">
-                    <div class="weather-temp">${temp}°</div>
-                    <div><div class="weather-condition">${condition}</div><div class="weather-extra">Humidity ${humidity}%</div></div>
+                    <div class="weather-temp">${sanitize(String(temp))}°</div>
+                    <div><div class="weather-condition">${sanitize(condition)}</div><div class="weather-extra">Humidity ${sanitize(String(humidity))}%</div></div>
                 </div>
             `;
         }
@@ -5932,7 +6052,7 @@
                     document.getElementById('coffee-decision').innerHTML = `
                         <div class="coffee-icon"><svg class="icon-xxl">${route.coffee_decision.can_get_coffee ? '<use href="#icon-coffee"/>' : '<use href="#icon-clock"/>'}</svg></div>
                         <div class="coffee-text">${route.coffee_decision.can_get_coffee ? 'Time for Coffee!' : 'Skip Coffee'}</div>
-                        <div class="coffee-subtext">${route.coffee_decision.message || ''}</div>
+                        <div class="coffee-subtext">${sanitize(route.coffee_decision.message || '')}</div>
                     `;
                 } else {
                     document.getElementById('coffee-decision').innerHTML = `
@@ -5973,15 +6093,15 @@
                                 <div style="display: flex; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;">
                                     <div style="margin-right: 15px;"><svg class="icon-xl"><use href="#icon-${iconType}"/></svg></div>
                                     <div style="flex: 1;">
-                                        <div style="font-weight: 600; margin-bottom: 4px;">${leg.route || leg.description || 'Walking'}</div>
+                                        <div style="font-weight: 600; margin-bottom: 4px;">${sanitize(String(leg.route || leg.description || 'Walking'))}</div>
                                         <div style="font-size: 13px; opacity: 0.8;">
-                                            ${leg.from || ''} ${leg.to ? '→ ' + leg.to : ''}
+                                            ${sanitize(String(leg.from || ''))} ${leg.to ? '→ ' + sanitize(String(leg.to)) : ''}
                                         </div>
-                                        ${leg.departureTime ? `<div style="font-size: 12px; margin-top: 4px;">Depart: ${leg.departureTime}</div>` : ''}
+                                        ${leg.departureTime ? `<div style="font-size: 12px; margin-top: 4px;">Depart: ${sanitize(String(leg.departureTime))}</div>` : ''}
                                     </div>
                                     <div style="text-align: right; font-size: 13px;">
-                                        ${leg.duration ? `<div>${leg.duration} min</div>` : ''}
-                                        ${leg.delay ? `<div style="color: #fc8181; font-weight: 600;">+${leg.delay} min delay</div>` : ''}
+                                        ${leg.duration ? `<div>${sanitize(String(leg.duration))} min</div>` : ''}
+                                        ${leg.delay ? `<div style="color: #fc8181; font-weight: 600;">+${sanitize(String(leg.delay))} min delay</div>` : ''}
                                     </div>
                                 </div>
                             `;
@@ -5993,18 +6113,18 @@
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                                 <div style="padding: 15px; background: rgba(102, 126, 234, 0.15); border-radius: 8px;">
                                     <div style="font-size: 12px; opacity: 0.8; margin-bottom: 5px;"><svg class="icon-sm"><use href="#icon-home"/></svg> Leave Home</div>
-                                    <div style="font-size: 24px; font-weight: 700;">${journey.summary?.must_leave_home || route.startTime || '--:--'}</div>
+                                    <div style="font-size: 24px; font-weight: 700;">${sanitize(String(journey.summary?.must_leave_home || route.startTime || '--:--'))}</div>
                                 </div>
                                 <div style="padding: 15px; background: rgba(72, 187, 120, 0.15); border-radius: 8px;">
                                     <div style="font-size: 12px; opacity: 0.8; margin-bottom: 5px;"><svg class="icon-sm"><use href="#icon-briefcase"/></svg> Arrive Work</div>
-                                    <div style="font-size: 24px; font-weight: 700;">${journey.arrivalTime || journey.summary?.arrival_at_work || '--:--'}</div>
+                                    <div style="font-size: 24px; font-weight: 700;">${sanitize(String(journey.arrivalTime || journey.summary?.arrival_at_work || '--:--'))}</div>
                                 </div>
                             </div>
 
                             ${route.includedCoffee ? `
                                 <div style="padding: 12px; background: rgba(237, 137, 54, 0.15); border-radius: 8px; margin-bottom: 15px; text-align: center;">
-                                    <svg class="icon-sm"><use href="#icon-coffee"/></svg> Coffee stop included at ${route.cafeName || 'selected cafe'}
-                                    ${route.coffeeWaitTime ? ` (${route.coffeeWaitTime} min wait)` : ''}
+                                    <svg class="icon-sm"><use href="#icon-coffee"/></svg> Coffee stop included at ${sanitize(String(route.cafeName || 'selected cafe'))}
+                                    ${route.coffeeWaitTime ? ` (${sanitize(String(route.coffeeWaitTime))} min wait)` : ''}
                                 </div>
                             ` : ''}
 
@@ -6014,7 +6134,7 @@
                             ${journey.warnings && journey.warnings.length > 0 ? `
                                 <div style="margin-top: 15px; padding: 12px; background: rgba(252, 129, 129, 0.15); border-radius: 8px;">
                                     <div style="font-weight: 600; margin-bottom: 8px;"><svg class="icon-sm" style="color: #fbbf24;"><use href="#icon-warning"/></svg> Warnings:</div>
-                                    ${journey.warnings.map(w => `<div style="font-size: 13px; margin-bottom: 4px;">• ${w}</div>`).join('')}
+                                    ${journey.warnings.map(w => `<div style="font-size: 13px; margin-bottom: 4px;">• ${sanitize(String(w))}</div>`).join('')}
                                 </div>
                             ` : ''}
                         </div>
@@ -6024,8 +6144,8 @@
                     document.getElementById('journey-summary-card').style.display = 'block';
                     document.getElementById('journey-summary').innerHTML = `
                         <div class="route-summary">
-                            <div class="route-time"><div class="route-time-label">Leave Home</div><div class="route-time-value">${journey.summary.must_leave_home || '--:--'}</div></div>
-                            <div class="route-time"><div class="route-time-label">Arrive Work</div><div class="route-time-value">${journey.summary.arrival_at_work || '--:--'}</div></div>
+                            <div class="route-time"><div class="route-time-label">Leave Home</div><div class="route-time-value">${sanitize(String(journey.summary.must_leave_home || '--:--'))}</div></div>
+                            <div class="route-time"><div class="route-time-label">Arrive Work</div><div class="route-time-value">${sanitize(String(journey.summary.arrival_at_work || '--:--'))}</div></div>
                         </div>
                     `;
                 }
@@ -6074,8 +6194,8 @@
                     document.getElementById('journey-result').style.display = 'block';
                     document.getElementById('journey-result-content').innerHTML = `
                         <div class="route-summary">
-                            <div class="route-time"><div class="route-time-label">Leave Home</div><div class="route-time-value">${result.journey?.summary?.must_leave_home || '--:--'}</div></div>
-                            <div class="route-time"><div class="route-time-label">Arrive Work</div><div class="route-time-value">${result.journey?.summary?.arrival_at_work || '--:--'}</div></div>
+                            <div class="route-time"><div class="route-time-label">Leave Home</div><div class="route-time-value">${sanitize(String(result.journey?.summary?.must_leave_home || '--:--'))}</div></div>
+                            <div class="route-time"><div class="route-time-label">Arrive Work</div><div class="route-time-value">${sanitize(String(result.journey?.summary?.arrival_at_work || '--:--'))}</div></div>
                         </div>
                     `;
                     localStorage.setItem('cc-journey-prefs', JSON.stringify(data));
@@ -6347,10 +6467,10 @@
                     <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
                         <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(79, 178, 142, 0.2); display: flex; align-items: center; justify-content: center; color: #4fb28e; font-weight: 600; font-size: 14px;">${index + 1}</div>
                         <div style="flex: 1;">
-                            <div style="font-weight: 500; color: #f1f5f9; font-size: 14px;">${leg.description || leg.mode}</div>
-                            <div style="font-size: 12px; color: #94a3b8;">${leg.duration || ''}</div>
+                            <div style="font-weight: 500; color: #f1f5f9; font-size: 14px;">${sanitize(String(leg.description || leg.mode))}</div>
+                            <div style="font-size: 12px; color: #94a3b8;">${sanitize(String(leg.duration || ''))}</div>
                         </div>
-                        <div style="font-size: 14px; font-weight: 600; color: #4fb28e;">${leg.time || ''}</div>
+                        <div style="font-size: 14px; font-weight: 600; color: #4fb28e;">${sanitize(String(leg.time || ''))}</div>
                     </div>
                 `;
             });
@@ -6927,7 +7047,7 @@
                                 </div>
                             </div>
                             <div style="text-align: right;">
-                                <div style="font-size: 18px; font-weight: 700; color: ${isSelected ? colors.border : '#f1f5f9'};">${route.totalMinutes}</div>
+                                <div style="font-size: 18px; font-weight: 700; color: ${isSelected ? colors.border : '#f1f5f9'};">${sanitize(String(route.totalMinutes))}</div>
                                 <div style="font-size: 10px; opacity: 0.6;">min</div>
                             </div>
                         </div>
@@ -8775,7 +8895,7 @@
                 <div style="background: linear-gradient(135deg, #4fb28e 0%, #4f46e5 100%); padding: 25px; border-radius: 12px; color: white;">
                     <h3 style="margin: 0 0 20px 0; text-align: center; font-size: 20px;">System Architecture Map</h3>
                     <div style="font-size: 13px; opacity: 0.9; text-align: center; margin-bottom: 25px;">
-                        <strong>Location:</strong> ${location} • <strong>Transit Authority:</strong> ${transitAuthority}
+                        <strong>Location:</strong> ${sanitize(location)} • <strong>Transit Authority:</strong> ${sanitize(transitAuthority)}
                     </div>
 
                     <div style="display: grid; gap: 20px;">
@@ -9288,15 +9408,15 @@
                     setupMessage.style.display = 'block';
                     setupMessage.innerHTML = `
                         <div style="padding: 20px;">
-                            <div style="font-size: 24px; margin-bottom: 15px;"><svg class="icon icon-lg"><use href="#icon-check-circle"/></svg> Journey Configured for ${result.state || 'Your Location'}!</div>
+                            <div style="font-size: 24px; margin-bottom: 15px;"><svg class="icon icon-lg"><use href="#icon-check-circle"/></svg> Journey Configured for ${sanitize(String(result.state || 'Your Location'))}!</div>
 
                             <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                                 <div style="font-weight: 600; margin-bottom: 10px;"><svg class="icon"><use href="#icon-pin"/></svg> Your Journey:</div>
                                 <div style="font-size: 14px; line-height: 1.8;">
-                                    <div><svg class="icon icon-sm"><use href="#icon-home"/></svg> <strong>Home:</strong> ${result.homeStop || 'Not available'}</div>
-                                    <div><svg class="icon icon-sm"><use href="#icon-briefcase"/></svg> <strong>Work:</strong> ${result.workStop || 'Not available'}</div>
-                                    <div><svg class="icon icon-sm"><use href="#icon-train"/></svg> <strong>Transit Mode:</strong> ${result.routeMode || 'Auto-detected'}</div>
-                                    <div><svg class="icon icon-sm"><use href="#icon-chart"/></svg> <strong>Stops Found:</strong> ${result.stopsFound || 0} stops in your area</div>
+                                    <div><svg class="icon icon-sm"><use href="#icon-home"/></svg> <strong>Home:</strong> ${sanitize(String(result.homeStop || 'Not available'))}</div>
+                                    <div><svg class="icon icon-sm"><use href="#icon-briefcase"/></svg> <strong>Work:</strong> ${sanitize(String(result.workStop || 'Not available'))}</div>
+                                    <div><svg class="icon icon-sm"><use href="#icon-train"/></svg> <strong>Transit Mode:</strong> ${sanitize(String(result.routeMode || 'Auto-detected'))}</div>
+                                    <div><svg class="icon icon-sm"><use href="#icon-chart"/></svg> <strong>Stops Found:</strong> ${sanitize(String(result.stopsFound || 0))} stops in your area</div>
                                 </div>
                             </div>
 
@@ -9475,10 +9595,10 @@
             fetch('/api/version')
                 .then(r => r.json())
                 .then(v => {
-                    const scVersion = v.components?.commutecompute?.version || 'v2.3';
-                    const rendererVersion = v.components?.renderer?.version || 'v1.80';
+                    const scVersion = v.components?.commutecompute?.version || 'v2.4';
+                    const rendererVersion = v.components?.renderer?.version || 'v1.81';
                     const buildDate = v.date || new Date().toISOString().split('T')[0];
-                    const systemVersion = v.system?.version || '3.4.0';
+                    const systemVersion = v.system?.version || '3.5.0';
                     
                     document.getElementById('cc-footer-commutecompute-version').textContent = scVersion;
                     document.getElementById('cc-footer-renderer-version').textContent = rendererVersion;
@@ -9486,10 +9606,10 @@
                     document.getElementById('cc-footer-system-version').textContent = `v${systemVersion}`;
                 })
                 .catch(() => {
-                    document.getElementById('cc-footer-commutecompute-version').textContent = 'v2.3';
-                    document.getElementById('cc-footer-renderer-version').textContent = 'v1.80';
+                    document.getElementById('cc-footer-commutecompute-version').textContent = 'v2.4';
+                    document.getElementById('cc-footer-renderer-version').textContent = 'v1.81';
                     document.getElementById('cc-footer-build-date').textContent = new Date().toISOString().split('T')[0];
-                    document.getElementById('cc-footer-system-version').textContent = 'v3.4.0';
+                    document.getElementById('cc-footer-system-version').textContent = 'v3.5.0';
                 });
         }
 
@@ -9527,6 +9647,8 @@
             }
         }
     </script>
+        </div><!-- /.content -->
+    </div><!-- /.container -->
 
     <!-- Global System Footer - FIXED AT BOTTOM OF ALL TABS -->
     <div class="cc-system-footer">
@@ -9535,27 +9657,27 @@
                 <div class="cc-footer-version-item">
                     <div class="cc-footer-live-dot"></div>
                     <span class="cc-footer-version-label">CommuteCompute</span>
-                    <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v2.3</span>
+                    <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v2.4</span>
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">CCDash Renderer</span>
-                    <span class="cc-footer-version-value" id="cc-footer-renderer-version">v1.80</span>
+                    <span class="cc-footer-version-value" id="cc-footer-renderer-version">v1.81</span>
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">System</span>
-                    <span class="cc-footer-version-value" id="cc-footer-system-version">v3.4.0</span>
+                    <span class="cc-footer-version-value" id="cc-footer-system-version">v3.5.0</span>
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">Build</span>
                     <span class="cc-footer-version-value" id="cc-footer-build-date">--</span>
                 </div>
             </div>
-            <div style="display: flex; justify-content: center; gap: 8px; font-size: 11px; color: #94a3b8; flex-wrap: wrap;">
-                <a href="/privacy.html" style="color: #4fb28e; text-decoration: none;">Privacy</a>
+            <div style="display: flex; justify-content: center; gap: 8px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap;">
+                <a href="/privacy.html" style="color: var(--accent); text-decoration: none;">Privacy</a>
                 <span>&#8226;</span>
-                <a href="/attribution.html" style="color: #4fb28e; text-decoration: none;">Attribution</a>
+                <a href="/attribution.html" style="color: var(--accent); text-decoration: none;">Attribution</a>
                 <span>&#8226;</span>
-                <a href="/help.html" style="color: #4fb28e; text-decoration: none;">Help</a>
+                <a href="/help.html" style="color: var(--accent); text-decoration: none;">Help</a>
             </div>
             <div class="cc-footer-attribution" id="cc-footer-attributions">
                 © 2026 Angus Bergman • <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank">AGPL-3.0 (Dual Licence)</a>

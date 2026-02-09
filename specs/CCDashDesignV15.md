@@ -14,8 +14,8 @@
 **Effective Date:** 2026-02-07
 **Display:** 800×480px e-ink (TRMNL device)
 **Refresh:** 60-second partial refresh cycle
-**Renderer:** ccdash-renderer.js v1.80
-**CommuteCompute:** v2.3 (Metro Tunnel Compliant)
+**Renderer:** ccdash-renderer.js v1.81
+**CommuteCompute:** v2.4 (Metro Tunnel Compliant)
 
 ---
 
