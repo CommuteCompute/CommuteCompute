@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/brand/cc-mark-cropped.png" alt="Commute Compute™" width="220">
+  <img src="assets/brand/cc-logo-apple-touch.png" alt="Commute Compute™" width="220">
 </p>
 
 <h1 align="center">Commute Compute&#8482; System</h1>
@@ -511,7 +511,7 @@ See [LEGAL.md](LEGAL.md) for complete trademark and intellectual property detail
 <br>
 
 <p align="center">
-  <img src="assets/brand/cc-mark-cropped.png" alt="Commute Compute™" width="80">
+  <img src="assets/brand/cc-logo-apple-touch.png" alt="Commute Compute™" width="80">
 </p>
 
 <p align="center">
