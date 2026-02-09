@@ -5,7 +5,7 @@
 # Cafe Busy-ness Detection - Feature Complete
 
 **Date**: 2026-02-06
-**System Version:** v3.4.0 (CCDashDesignV15.0)
+**System Version:** v3.5.0 (CCDashDesignV15.0)
 **Status**: Complete and Production Ready
 **Feature**: Live cafe traffic/busy-ness detection with peak time fallback
 

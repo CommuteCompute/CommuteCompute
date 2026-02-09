@@ -4,7 +4,7 @@
 
 # Known Issues & Hardware Quirks
 
-**System Version:** v3.4.0 (CCDashDesignV15.0)
+**System Version:** v3.5.0 (CCDashDesignV15.0)
 **Last Updated:** 2026-02-06
 
 ---
@@ -58,7 +58,7 @@ bbep.setFont(FONT_8x8);     // ONLY use 8x8 font
 **Status:** Monitoring
 
 ### Note
-V15.0 introduces larger fonts for improved glanceability in the CCDash(TM) Renderer (v1.80). The enhanced font sizes are rendered server-side in the 1-bit BMP output, so they are not affected by the FONT_12x16 firmware rotation bug above. The firmware continues to use server-rendered images. No firmware font changes are required.
+V15.0 introduces larger fonts for improved glanceability in the CCDash(TM) Renderer (v1.81). The enhanced font sizes are rendered server-side in the 1-bit BMP output, so they are not affected by the FONT_12x16 firmware rotation bug above. The firmware continues to use server-rendered images. No firmware font changes are required.
 
 ---
 

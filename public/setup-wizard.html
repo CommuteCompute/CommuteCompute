@@ -762,10 +762,10 @@
     }
     function loadFooterVersions() {
         fetch('/api/version').then(function(r){return r.json();}).then(function(v) {
-            document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v2.3';
-            document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v1.80';
+            document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v2.4';
+            document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v1.81';
             document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.4.0');
+            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.5.0');
         }).catch(function(){});
     }
     function updateGlobalFooterAttributions() {

@@ -1,31 +1,31 @@
 {
   "system": {
-    "version": "4.0.0",
+    "version": "3.5.0",
     "name": "Commute Compute System",
-    "releaseDate": "2026-02-07",
-    "codename": "Compliance"
+    "releaseDate": "2026-02-09",
+    "codename": "Analytics"
   },
   "components": {
     "commutecompute": {
-      "version": "2.3",
+      "version": "2.4",
       "name": "CommuteCompute Engine",
-      "description": "Real-time journey planning with Metro Tunnel compliance, transit availability detection, Departure Confidence scoring, Lifestyle Context, Sleep Optimizer, Alt Transit, Mindset analysis",
+      "description": "Real-time journey planning with Metro Tunnel compliance, transit availability detection, Departure Confidence scoring, Lifestyle Context, Sleep Optimizer, Alt Transit, Mindset analysis, admin analytics integration",
       "locked": false,
-      "lastUpdated": "2026-02-06"
+      "lastUpdated": "2026-02-09"
     },
     "renderer": {
-      "version": "1.80",
+      "version": "1.81",
       "name": "CCDash Renderer",
       "spec": "CCDashDesignV15.0",
-      "description": "Sleep mode display, alt transit cost panel, mindset status bar, enhanced glanceability, confidence display, lifestyle suggestions",
+      "description": "Sleep mode display, alt transit cost panel, mindset status bar, enhanced glanceability, confidence display, lifestyle suggestions, suburb-level location display",
       "locked": false,
-      "lastUpdated": "2026-02-06"
+      "lastUpdated": "2026-02-09"
     },
     "adminPanel": {
-      "version": "3.2.0",
+      "version": "4.0.0",
       "file": "admin.html",
-      "description": "Admin Panel with Live Dashboard",
-      "lastUpdated": "2026-02-06"
+      "description": "Admin Panel with sidebar navigation, branded header, and section card layout",
+      "lastUpdated": "2026-02-09"
     },
     "setupWizard": {
       "version": "2.0.0",
@@ -84,15 +84,24 @@
   },
   "changelog": [
     {
-      "version": "4.0.0",
+      "version": "3.5.0",
+      "date": "2026-02-09",
+      "changes": [
+        "E-ink display: suburb-level location names instead of full geocoded addresses",
+        "AltTransit guard: only activates when ALL public transit is cancelled",
+        "Admin analytics: DepartureConfidence and LifestyleContext engines integrated into /api/commutecompute",
+        "Admin panel v4.0: full redesign with sidebar navigation, branded sticky header, section cards",
+        "Admin panel CSS variables aligned with privacy/help design system",
+        "CommuteCompute Engine upgraded from v2.3 to v2.4",
+        "CCDash Renderer upgraded from v1.80 to v1.81"
+      ]
+    },
+    {
+      "version": "3.4.1",
       "date": "2026-02-07",
       "changes": [
         "AGPL-3.0 dual license applied across 126+ files with SPDX headers",
-        "SmartCommute renamed to CommuteCompute across 47 files",
-        "PTV-TRMNL references replaced with CCFirm/Commute Compute System",
         "Comprehensive compliance audit: branding, licensing, security hardening",
-        "Removed orphaned test tools and audit artifacts",
-        "Firmware version aligned to CC-FW-7.4.3 with BLE provisioning",
         "All frontend pages updated with cc-system-footer and Inter font",
         "Emoji-free production UI with SVG icon replacements"
       ]
