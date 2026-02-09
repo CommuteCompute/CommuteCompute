@@ -42,8 +42,8 @@
       <h2>Supported Devices</h2>
       <div class="devices">
         <div class="device supported">
-          <span>[TRMNL]</span>
-          <strong>TRMNL OG</strong>
+          <span>[CC E-Ink]</span>
+          <strong>CC E-Ink OG</strong>
           <small>800x480 e-ink</small>
         </div>
         <div class="device supported">
@@ -72,7 +72,7 @@
       
       <div class="warning">
         <h3>WARNING: Before Flashing</h3>
-        <p>Make sure your device is in bootloader mode. For TRMNL, hold the BOOT button while connecting USB.</p>
+        <p>Make sure your device is in bootloader mode. For CC E-Ink, hold the BOOT button while connecting USB.</p>
       </div>
     </div>
     
@@ -97,13 +97,19 @@
       </p>
     </div>
     
-    <footer style="margin-top: 30px; padding: 20px; text-align: center; font-size: 13px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1);">
+    <!-- Global System Footer -->
+    <div class="cc-system-footer" style="margin-top: 30px; padding: 20px; text-align: center; font-size: 13px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); width: 100%;">
+      <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; font-size: 11px;">
+        <span>CCFirm&#8482; <span id="cc-footer-firmware-version">CC-FW-7.5.0</span></span>
+        <span>System <span id="cc-footer-system-version">v4.0.0</span></span>
+        <span>Build <span id="cc-footer-build-date">--</span></span>
+      </div>
       <div style="margin-bottom: 12px;">
         <a href="https://opendata.transport.vic.gov.au" target="_blank" rel="noopener" style="color: #94a3b8;">Transport Victoria OpenData</a> (CC BY 4.0) •
         <a href="/attribution.html" style="color: #94a3b8;">All Sources</a>
       </div>
       <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
-        <a href="https://buymeacoffee.com/angusbergman" target="_blank" rel="noopener" 
+        <a href="https://buymeacoffee.com/angusbergman" target="_blank" rel="noopener"
            style="padding: 6px 12px; background: #FFDD00; color: #000; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 12px;">
           Buy me a coffee
         </a>
@@ -120,7 +126,25 @@
         © 2026 <a href="https://gitlab.com/angusbergman" target="_blank" rel="noopener" style="color: #94a3b8;">Angus Bergman</a> •
         <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener" style="color: #94a3b8;">AGPL-3.0</a>
       </div>
-    </footer>
+    </div>
   </div>
+  <script>
+    // XSS sanitize (Section 17.1)
+    function sanitize(str) {
+      if (str === null || str === undefined) return '';
+      if (typeof str !== 'string') str = String(str);
+      const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'};
+      return str.replace(/[&<>"'`=/]/g, c => map[c]);
+    }
+    // Dynamic version loading from /api/version
+    fetch('/api/version').then(r => r.json()).then(v => {
+      const fw = document.getElementById('cc-footer-firmware-version');
+      const sys = document.getElementById('cc-footer-system-version');
+      const build = document.getElementById('cc-footer-build-date');
+      if (fw) fw.textContent = v.components?.firmware?.version || 'CC-FW-7.5.0';
+      if (sys) sys.textContent = 'v' + (v.system?.version || '3.5.0');
+      if (build) build.textContent = v.date || new Date().toISOString().split('T')[0];
+    }).catch(() => {});
+  </script>
 </body>
 </html>

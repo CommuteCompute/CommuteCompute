@@ -2040,7 +2040,7 @@
                         <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; margin-bottom: 15px;">
                             <div><svg class="icon-xl" style="color: #4fb28e;"><use href="#icon-monitor"/></svg></div>
                             <div style="flex: 1;">
-                                <div id="device-name" style="font-weight: 600; font-size: 16px; margin-bottom: 4px;">TRMNL Display (OG)</div>
+                                <div id="device-name" style="font-weight: 600; font-size: 16px; margin-bottom: 4px;">CC E-Ink Display (OG)</div>
                                 <div id="device-specs" style="font-size: 12px; opacity: 0.7;">800×480 • Landscape • ESP32</div>
                             </div>
                             <!-- V13.6: Battery Status -->
@@ -2494,7 +2494,7 @@
                             <div>
                                 <h3 style="font-size: 16px; font-weight: 600; color: #f1f5f9; margin: 0;">E-Ink Display Preview</h3>
                                 <span style="font-size: 12px; color: #94a3b8;">
-                                    <span id="eink-device-name">TRMNL OG</span> • 
+                                    <span id="eink-device-name">CC E-Ink OG</span> • 
                                     <span id="eink-dimensions">800×480</span> • 
                                     <span id="eink-last-update">--</span>
                                 </span>
@@ -2531,7 +2531,7 @@
                     <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
                         <div style="padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
                             <div style="font-size: 10px; text-transform: uppercase; opacity: 0.6; margin-bottom: 4px;">Device</div>
-                            <div id="eink-device-info" style="font-size: 14px; font-weight: 600; color: #f1f5f9;">TRMNL Display (OG)</div>
+                            <div id="eink-device-info" style="font-size: 14px; font-weight: 600; color: #f1f5f9;">CC E-Ink Display (OG)</div>
                         </div>
                         <div style="padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
                             <div style="font-size: 10px; text-transform: uppercase; opacity: 0.6; margin-bottom: 4px;">Resolution</div>
@@ -2737,11 +2737,11 @@
                     <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
                         <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8;">
                             <svg width="14" height="14" style="color: #4fb28e;"><use href="#icon-check"/></svg>
-                            <span>CommuteCompute Engine v2.4</span>
+                            <span id="cc-header-engine-version">CommuteCompute Engine v3.0</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8;">
                             <svg width="14" height="14" style="color: #4fb28e;"><use href="#icon-check"/></svg>
-                            <span>CCDash Renderer v1.81</span>
+                            <span id="cc-header-renderer-version">CCDash Renderer v2.0</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8;">
                             <svg width="14" height="14" style="color: #667eea;"><use href="#icon-settings"/></svg>
@@ -3204,9 +3204,9 @@
                     A fully self-hosted smart transit display system for Australian public transport. Each user deploys their own complete stack with zero external dependencies. Features device pairing via Vercel KV for persistent configuration across serverless invocations.
                 </p>
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    <span style="padding: 6px 14px; background: rgba(79, 178, 142, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #4fb28e;">v3.5.0</span>
-                    <span style="padding: 6px 14px; background: rgba(102, 126, 234, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #667eea;">CCDash&#8482; v1.81</span>
-                    <span style="padding: 6px 14px; background: rgba(251, 191, 36, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #fbbf24;">CCFirm&#8482; CC-FW-7.5.0</span>
+                    <span id="cc-badge-system-version" style="padding: 6px 14px; background: rgba(79, 178, 142, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #4fb28e;">v4.0.0</span>
+                    <span id="cc-badge-renderer-version" style="padding: 6px 14px; background: rgba(102, 126, 234, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #667eea;">CCDash&#8482; v2.0</span>
+                    <span id="cc-badge-firmware-version" style="padding: 6px 14px; background: rgba(251, 191, 36, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #fbbf24;">CCFirm&#8482; CC-FW-7.5.0</span>
                     <span style="padding: 6px 14px; background: rgba(168, 85, 247, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #a855f7;">Vercel KV</span>
                 </div>
             </div>
@@ -3225,7 +3225,7 @@
                 <div style="margin-bottom: 16px; padding: 16px; background: linear-gradient(135deg, rgba(79, 178, 142, 0.15) 0%, rgba(79, 178, 142, 0.05) 100%); border-radius: 10px; border: 1px solid rgba(79, 178, 142, 0.3);">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
                         <svg width="24" height="24" style="color: #4fb28e;"><use href="#icon-route"/></svg>
-                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #4fb28e;">CommuteCompute&#8482; Engine v2.4</h3>
+                        <h3 id="cc-detail-engine-version" style="margin: 0; font-size: 16px; font-weight: 700; color: #4fb28e;">CommuteCompute&#8482; Engine v3.0</h3>
                     </div>
                     <p style="font-size: 13px; color: #e2e8f0; line-height: 1.7; margin-bottom: 12px;">
                         The intelligent journey planning core that optimises multi-modal routes across Australian public transport networks. CommuteCompute analyses real-time GTFS data, user preferences, and contextual factors to recommend the optimal departure time and route.
@@ -3254,7 +3254,7 @@
                 <div style="margin-bottom: 16px; padding: 16px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(102, 126, 234, 0.05) 100%); border-radius: 10px; border: 1px solid rgba(102, 126, 234, 0.3);">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
                         <svg width="24" height="24" style="color: #667eea;"><use href="#icon-sliders"/></svg>
-                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #667eea;">CCDash&#8482; Renderer v1.81</h3>
+                        <h3 id="cc-detail-renderer-version" style="margin: 0; font-size: 16px; font-weight: 700; color: #667eea;">CCDash&#8482; Renderer v2.0</h3>
                         <span style="padding: 3px 8px; background: rgba(239, 68, 68, 0.2); border-radius: 8px; font-size: 10px; font-weight: 600; color: #ef4444;">LOCKED 2026-02-01</span>
                     </div>
                     <p style="font-size: 13px; color: #e2e8f0; line-height: 1.7; margin-bottom: 12px;">
@@ -3271,7 +3271,7 @@
                         </div>
                         <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
                             <div style="font-size: 11px; color: #667eea; font-weight: 600; margin-bottom: 4px;">RESOLUTION</div>
-                            <div style="font-size: 12px; color: #94a3b8;">800x480 (TRMNL OG)</div>
+                            <div style="font-size: 12px; color: #94a3b8;">800x480 (CC E-Ink OG)</div>
                         </div>
                         <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
                             <div style="font-size: 11px; color: #667eea; font-weight: 600; margin-bottom: 4px;">TYPOGRAPHY</div>
@@ -3291,11 +3291,11 @@
                     </p>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
                         <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
-                            <div style="font-size: 11px; color: #fbbf24; font-weight: 600; margin-bottom: 4px;">TRMNL OG</div>
+                            <div style="font-size: 11px; color: #fbbf24; font-weight: 600; margin-bottom: 4px;">CC E-INK OG</div>
                             <div style="font-size: 12px; color: #94a3b8;">800x480, 7.5" E-ink</div>
                         </div>
                         <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
-                            <div style="font-size: 11px; color: #fbbf24; font-weight: 600; margin-bottom: 4px;">TRMNL MINI</div>
+                            <div style="font-size: 11px; color: #fbbf24; font-weight: 600; margin-bottom: 4px;">CC E-INK MINI</div>
                             <div style="font-size: 12px; color: #94a3b8;">400x300, Compact</div>
                         </div>
                         <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
@@ -3316,7 +3316,7 @@
                         <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #a855f7;">CCFirm&#8482; CC-FW-7.5.0 Firmware</h3>
                     </div>
                     <p style="font-size: 13px; color: #e2e8f0; line-height: 1.7; margin-bottom: 12px;">
-                        The ESP32-C3 firmware that runs on TRMNL devices. CCFirm handles WiFi connectivity, HTTPS image fetching, BMP rendering, and partial display refresh. Includes device pairing via 6-character codes and anti-brick safety measures.
+                        The ESP32-C3 firmware that runs on CC E-Ink devices. CCFirm handles WiFi connectivity, HTTPS image fetching, BMP rendering, and partial display refresh. Includes device pairing via 6-character codes and anti-brick safety measures.
                     </p>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
                         <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
@@ -3406,7 +3406,7 @@
                     </div>
                     <div style="padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
                         <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Display</div>
-                        <div style="font-size: 14px; font-weight: 500;">E-ink 800x480 (TRMNL/Kindle)</div>
+                        <div style="font-size: 14px; font-weight: 500;">E-ink 800x480 (CC E-Ink, Kindle)</div>
                     </div>
                     <div style="padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
                         <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Typography</div>
@@ -3524,7 +3524,7 @@
                     <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
                         <div style="width: 32px; height: 32px; background: #fbbf24; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;">4</div>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 14px;">CCDash&#8482; Renderer v1.81</div>
+                            <div style="font-weight: 600; font-size: 14px;">CCDash&#8482; Renderer v2.0</div>
                             <div style="font-size: 12px; color: #94a3b8;">1-bit BMP generation, zone diffing, partial refresh optimization</div>
                         </div>
                     </div>
@@ -3689,14 +3689,14 @@
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 15px;">
                     <div style="padding: 14px; background: rgba(79, 178, 142, 0.1); border-radius: 8px; border: 1px solid rgba(79, 178, 142, 0.2);">
-                        <div style="font-weight: 600; font-size: 14px; color: #4fb28e; margin-bottom: 8px;">TRMNL OG</div>
+                        <div style="font-weight: 600; font-size: 14px; color: #4fb28e; margin-bottom: 8px;">CC E-Ink OG</div>
                         <div style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
                             800×480 • ESP32-C3<br>
                             7.5" E-ink • 60s partial refresh
                         </div>
                     </div>
                     <div style="padding: 14px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; border: 1px solid rgba(102, 126, 234, 0.2);">
-                        <div style="font-weight: 600; font-size: 14px; color: #667eea; margin-bottom: 8px;">TRMNL Mini</div>
+                        <div style="font-weight: 600; font-size: 14px; color: #667eea; margin-bottom: 8px;">CC E-Ink Mini</div>
                         <div style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
                             400×300 • ESP32-C3<br>
                             Compact form factor
@@ -3727,7 +3727,7 @@
                     </h3>
                     <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; background: rgba(0,0,0,0.3); padding: 16px; border-radius: 6px; overflow-x: auto;">
                         <pre style="margin: 0; color: #94a3b8; line-height: 1.5;">
-                               <span style="color: #4fb28e;">COMMUTE COMPUTE SYSTEM ARCHITECTURE v3.5.0</span>
+                               <span style="color: #4fb28e;">COMMUTE COMPUTE SYSTEM ARCHITECTURE v4.0.0</span>
 
     <span style="color: #fbbf24;">USER SETUP</span>                        <span style="color: #a855f7;">PERSISTENT STORAGE</span>                    <span style="color: #667eea;">DEVICE</span>
         |                                      |                                   |
@@ -3753,7 +3753,7 @@
                                |       <span style="color: #667eea;">VERCEL SERVERLESS</span>        |                   |
                                |                               |                   |
                                |  +-------------------------+  |                   |
-                               |  |   <span style="color: #4fb28e;">CommuteCompute&#8482; v2.4</span>   |  |                   |
+                               |  |   <span style="color: #4fb28e;">CommuteCompute&#8482; v3.0</span>   |  |                   |
                                |  |   - Route optimisation  |  |                   |
                                |  |   - CoffeeDecision      |  |                   |
                                |  |   - Mode preferences    |  |                   |
@@ -3794,7 +3794,7 @@
                     </h3>
                     <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; background: rgba(0,0,0,0.3); padding: 16px; border-radius: 6px; overflow-x: auto;">
                         <pre style="margin: 0; color: #94a3b8; line-height: 1.5;">
-                        <span style="color: #4fb28e;">COMMUTECOMPUTE ENGINE v2.4</span>
+                        <span style="color: #4fb28e;">COMMUTECOMPUTE ENGINE v3.0</span>
 
    +------------------+     +------------------+     +------------------+
    |   <span style="color: #fbbf24;">USER PREFS</span>     |     |   <span style="color: #667eea;">LIVE DATA</span>      |     |   <span style="color: #a855f7;">CONTEXT</span>        |
@@ -3881,7 +3881,7 @@
                 </div>
                 <div style="display: grid; gap: 10px; font-size: 13px; color: #94a3b8; line-height: 1.6;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="padding: 3px 8px; background: rgba(79, 178, 142, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #4fb28e;">v3.5.0</span>
+                        <span style="padding: 3px 8px; background: rgba(79, 178, 142, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #4fb28e;">v4.0.0</span>
                         <strong>docs/ARCHITECTURE.md</strong> — Complete system architecture (20+ sections)
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -3917,19 +3917,19 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
                     <div style="padding: 15px; background: rgba(79, 178, 142, 0.15); border-radius: 8px; text-align: center;">
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">CommuteCompute Engine</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #4fb28e;">v2.4</div>
+                        <div id="cc-grid-engine-version" style="font-size: 20px; font-weight: 700; color: #4fb28e;">v3.0</div>
                     </div>
                     <div style="padding: 15px; background: rgba(102, 126, 234, 0.15); border-radius: 8px; text-align: center;">
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">CCDash Renderer</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #667eea;">v1.81</div>
+                        <div id="cc-grid-renderer-version" style="font-size: 20px; font-weight: 700; color: #667eea;">v2.0</div>
                     </div>
                     <div style="padding: 15px; background: rgba(251, 191, 36, 0.15); border-radius: 8px; text-align: center;">
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">CCFirm Firmware</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #fbbf24;">CC-FW-7.5.0</div>
+                        <div id="cc-grid-firmware-version" style="font-size: 20px; font-weight: 700; color: #fbbf24;">CC-FW-7.5.0</div>
                     </div>
                     <div style="padding: 15px; background: rgba(236, 72, 153, 0.15); border-radius: 8px; text-align: center;">
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">System Version</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #ec4899;">v3.5.0</div>
+                        <div id="cc-grid-system-version" style="font-size: 20px; font-weight: 700; color: #ec4899;">v4.0.0</div>
                     </div>
                 </div>
 
@@ -3950,7 +3950,7 @@
 │          └─────────────────┼─────────────────┘                          │
 │                            ▼                                            │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                   CommuteCompute Engine v2.4                       │   │
+│   │                   CommuteCompute Engine v3.0                       │   │
 │   │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │   │
 │   │  │ Route       │  │ Coffee      │  │ Cafe Busy   │              │   │
 │   │  │ Recommender │  │ Decision    │  │ Detector    │              │   │
@@ -3959,7 +3959,7 @@
 │                                │                                        │
 │                                ▼                                        │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                   CCDash Renderer v1.81                          │   │
+│   │                   CCDash Renderer v2.0                           │   │
 │   │  • 800×480 1-bit BMP      • Zone-based partial refresh          │   │
 │   │  • V15.0 Dashboard Spec   • 60-second cycle                     │   │
 │   └────────────────────────────┬────────────────────────────────────┘   │
@@ -3975,7 +3975,7 @@
 │                                ▼                                        │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
 │   │                 CCFirm Firmware CC-FW-7.5.0                    │   │
-│   │  TRMNL OG Display │ Kindle (WIP) │ Inkplate (WIP)               │   │
+│   │  CC E-Ink OG      │ Kindle (WIP) │ Inkplate (WIP)               │   │
 │   └─────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -4027,7 +4027,7 @@
                             <code style="font-family: 'JetBrains Mono', monospace; color: #ec4899; font-size: 13px;">/api/livedash</code>
                             <span style="font-size: 11px; opacity: 0.7;">GET</span>
                         </div>
-                        <div style="font-size: 12px; opacity: 0.85;">Multi-device renderer for TRMNL, Kindle, Inkplate</div>
+                        <div style="font-size: 12px; opacity: 0.85;">Multi-device renderer for CC E-Ink, Kindle, Inkplate</div>
                     </div>
                 </div>
             </div>
@@ -4152,7 +4152,7 @@
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 12px; opacity: 0.7;">Commit: 7336929</div>
-                            <div style="font-size: 12px; opacity: 0.7;">Verified: TRMNL OG</div>
+                            <div style="font-size: 12px; opacity: 0.7;">Verified: CC E-Ink OG</div>
                         </div>
                     </div>
                 </div>
@@ -5331,10 +5331,39 @@
 
                     // V15.0: Update Commute Analytics
                     updateCommuteAnalytics(scData);
+
+                    // Populate Configuration tab from loaded config
+                    const configStatus = {
+                        configured: true,
+                        location: {
+                            city: config.addresses?.home?.split(',').slice(-2, -1)[0]?.trim() || 'Melbourne',
+                            state: config.state || 'VIC',
+                            transitAuthority: 'Transport Victoria'
+                        },
+                        apis: {
+                            transit: { configured: hasTransitKey && transitValidated, source: 'KV' },
+                            google: { configured: !!config.addresses?.home, source: 'KV' }
+                        },
+                        journey: {
+                            autoCalculation: { active: true }
+                        },
+                        transitStations: {
+                            mode1: { origin: scData.journey_legs?.find(l => l.type === 'train')?.stationName || 'Not configured' },
+                            mode2: { origin: scData.journey_legs?.find(l => l.type === 'tram')?.stopName || 'Not configured' }
+                        }
+                    };
+                    updateSystemStatus(configStatus);
+
+                    // Update last-updated timestamp on initial load
+                    const lastUpdated = document.getElementById('data-last-updated');
+                    if (lastUpdated) {
+                        const now = new Date();
+                        lastUpdated.textContent = `Last updated: ${now.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}`;
+                    }
                 } else {
                     throw new Error(scData.error || 'CommuteCompute calculation failed');
                 }
-                
+
             } catch (error) {
                 // Show error state in widgets
                 document.getElementById('train-departures').innerHTML = `<div class="no-data">Error: ${sanitize(error.message)}</div>`;
@@ -5982,8 +6011,10 @@
             btn.innerHTML = '<svg class="icon-sm"><use href="#icon-refresh"/></svg> Calculating...';
 
             try {
-                const response = await fetch(BASE_URL + '/api/journey-recalculate', {
-                    method: 'POST'
+                const response = await fetch(BASE_URL + '/api/commutecompute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ forceRefresh: true })
                 });
                 const data = await response.json();
 
@@ -6421,14 +6452,14 @@
         async function recalculateJourney() {
             const config = JSON.parse(localStorage.getItem('cc-config') || '{}');
             const journeySummary = document.getElementById('journey-summary');
-            
+
             if (journeySummary) {
                 journeySummary.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8;">Calculating optimal route...</div>';
             }
-            
+
             try {
-                // Call the CommuteCompute calculation endpoint
-                const response = await fetch(BASE_URL + '/api/calculate-journey', {
+                // Use the main CommuteCompute endpoint (single source of truth)
+                const response = await fetch(BASE_URL + '/api/commutecompute', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -6436,14 +6467,28 @@
                         work: config.addresses?.work,
                         cafe: config.addresses?.cafe,
                         arrivalTime: config.journey?.arrivalTime || '09:00',
-                        includesCoffee: config.journey?.coffeeEnabled !== false
+                        state: config.state || 'VIC',
+                        coffeeEnabled: config.journey?.coffeeEnabled !== false,
+                        forceRefresh: true
                     })
                 });
-                
+
                 const result = await response.json();
-                
-                if (result.success && journeySummary) {
-                    journeySummary.innerHTML = formatJourneySummary(result.journey);
+
+                if (result.success) {
+                    // Re-render all data from fresh CommuteCompute response
+                    updateCommuteComputeDepartures(result);
+                    updateJourneySummaryFromCommuteCompute(result);
+                    updateCommuteAnalytics(result);
+                    if (result.weather) updateWeatherFromCommuteCompute(result.weather);
+                    updateCoffeeFromCommuteCompute(result.coffee, result.summary);
+
+                    // Update timestamp
+                    const lastUpdated = document.getElementById('data-last-updated');
+                    if (lastUpdated) {
+                        const now = new Date();
+                        lastUpdated.textContent = `Last updated: ${now.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}`;
+                    }
                 } else {
                     throw new Error(result.error || 'Calculation failed');
                 }
@@ -6485,8 +6530,8 @@
 
         // Device configurations (matches firmware)
         const DEVICE_CONFIGS = {
-            'trmnl-og': { name: 'TRMNL Display (OG)', width: 800, height: 480, orientation: 'landscape' },
-            'trmnl-mini': { name: 'TRMNL Display (Mini)', width: 400, height: 300, orientation: 'landscape' },
+            'trmnl-og': { name: 'CC E-Ink Display (OG)', width: 800, height: 480, orientation: 'landscape' },
+            'trmnl-mini': { name: 'CC E-Ink Display (Mini)', width: 400, height: 300, orientation: 'landscape' },
             'kindle-pw3': { name: 'Kindle Paperwhite 3', width: 758, height: 1024, orientation: 'portrait' },
             'kindle-pw4': { name: 'Kindle Paperwhite 4', width: 1072, height: 1448, orientation: 'portrait' },
             'kindle-pw5': { name: 'Kindle Paperwhite 5', width: 1236, height: 1648, orientation: 'portrait' }
@@ -7190,14 +7235,14 @@
                 
                 if (deviceName) {
                     const deviceNames = {
-                        'trmnl-og': 'TRMNL Display (OG)',
-                        'trmnl-byos': 'TRMNL Display',
-                        'trmnl-mini': 'TRMNL Display (Mini)',
+                        'trmnl-og': 'CC E-Ink Display (OG)',
+                        'trmnl-byos': 'CC E-Ink Display',
+                        'trmnl-mini': 'CC E-Ink Display (Mini)',
                         'kindle-pw3': 'Kindle Paperwhite 3',
                         'kindle-pw4': 'Kindle Paperwhite 4',
                         'kindle-pw5': 'Kindle Paperwhite 5'
                     };
-                    deviceName.textContent = deviceNames[device] || 'TRMNL Display';
+                    deviceName.textContent = deviceNames[device] || 'CC E-Ink Display';
                 }
                 if (deviceSpecs) {
                     deviceSpecs.textContent = device?.startsWith('kindle') ? '1072×1448 • Portrait' : '800×480 • Landscape • ESP32';
@@ -8245,7 +8290,8 @@
 
             if (confEl && dashboard.confidence_score !== undefined) {
                 confEl.textContent = sanitize(String(dashboard.confidence_score)) + '%';
-                const label = dashboard.confidence_label || (dashboard.confidence_score >= 75 ? 'HIGH' : dashboard.confidence_score >= 50 ? 'MEDIUM' : 'LOW');
+                // Unified labels matching e-ink display: ON TIME / AT RISK / UNLIKELY
+                const label = dashboard.confidence_label || (dashboard.confidence_score >= 75 ? 'ON TIME' : dashboard.confidence_score >= 50 ? 'AT RISK' : 'UNLIKELY');
                 confLabelEl.textContent = sanitize(String(label));
                 confEl.style.color = dashboard.confidence_score >= 75 ? '#22c55e' : dashboard.confidence_score >= 50 ? '#fbbf24' : '#f87171';
             }
@@ -9595,21 +9641,53 @@
             fetch('/api/version')
                 .then(r => r.json())
                 .then(v => {
-                    const scVersion = v.components?.commutecompute?.version || 'v2.4';
-                    const rendererVersion = v.components?.renderer?.version || 'v1.81';
+                    const scVersion = v.components?.commutecompute?.version || 'v3.0';
+                    const rendererVersion = v.components?.renderer?.version || 'v2.0';
+                    const firmwareVersion = v.components?.firmware?.version || 'CC-FW-7.5.0';
                     const buildDate = v.date || new Date().toISOString().split('T')[0];
-                    const systemVersion = v.system?.version || '3.5.0';
-                    
+                    const systemVersion = v.system?.version || '4.0.0';
+
+                    // Global footer
                     document.getElementById('cc-footer-commutecompute-version').textContent = scVersion;
                     document.getElementById('cc-footer-renderer-version').textContent = rendererVersion;
                     document.getElementById('cc-footer-build-date').textContent = buildDate;
                     document.getElementById('cc-footer-system-version').textContent = `v${systemVersion}`;
+
+                    // Header version labels
+                    const headerEngine = document.getElementById('cc-header-engine-version');
+                    if (headerEngine) headerEngine.textContent = `CommuteCompute Engine ${scVersion}`;
+                    const headerRenderer = document.getElementById('cc-header-renderer-version');
+                    if (headerRenderer) headerRenderer.textContent = `CCDash Renderer ${rendererVersion}`;
+
+                    // System info badges
+                    const badgeSystem = document.getElementById('cc-badge-system-version');
+                    if (badgeSystem) badgeSystem.textContent = `v${systemVersion}`;
+                    const badgeRenderer = document.getElementById('cc-badge-renderer-version');
+                    if (badgeRenderer) badgeRenderer.innerHTML = `CCDash&#8482; ${rendererVersion}`;
+                    const badgeFirmware = document.getElementById('cc-badge-firmware-version');
+                    if (badgeFirmware) badgeFirmware.innerHTML = `CCFirm&#8482; ${firmwareVersion}`;
+
+                    // Component detail headings
+                    const detailRenderer = document.getElementById('cc-detail-renderer-version');
+                    if (detailRenderer) detailRenderer.innerHTML = `CCDash&#8482; Renderer ${rendererVersion}`;
+                    const detailEngine = document.getElementById('cc-detail-engine-version');
+                    if (detailEngine) detailEngine.innerHTML = `CommuteCompute&#8482; Engine ${scVersion}`;
+
+                    // System tab version grid
+                    const gridEngine = document.getElementById('cc-grid-engine-version');
+                    if (gridEngine) gridEngine.textContent = scVersion;
+                    const gridRenderer = document.getElementById('cc-grid-renderer-version');
+                    if (gridRenderer) gridRenderer.textContent = rendererVersion;
+                    const gridFirmware = document.getElementById('cc-grid-firmware-version');
+                    if (gridFirmware) gridFirmware.textContent = firmwareVersion;
+                    const gridSystem = document.getElementById('cc-grid-system-version');
+                    if (gridSystem) gridSystem.textContent = `v${systemVersion}`;
                 })
                 .catch(() => {
-                    document.getElementById('cc-footer-commutecompute-version').textContent = 'v2.4';
-                    document.getElementById('cc-footer-renderer-version').textContent = 'v1.81';
+                    document.getElementById('cc-footer-commutecompute-version').textContent = 'v3.0';
+                    document.getElementById('cc-footer-renderer-version').textContent = 'v2.0';
                     document.getElementById('cc-footer-build-date').textContent = new Date().toISOString().split('T')[0];
-                    document.getElementById('cc-footer-system-version').textContent = 'v3.5.0';
+                    document.getElementById('cc-footer-system-version').textContent = 'v4.0.0';
                 });
         }
 
@@ -9657,15 +9735,15 @@
                 <div class="cc-footer-version-item">
                     <div class="cc-footer-live-dot"></div>
                     <span class="cc-footer-version-label">CommuteCompute</span>
-                    <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v2.4</span>
+                    <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.0</span>
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">CCDash Renderer</span>
-                    <span class="cc-footer-version-value" id="cc-footer-renderer-version">v1.81</span>
+                    <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.0</span>
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">System</span>
-                    <span class="cc-footer-version-value" id="cc-footer-system-version">v3.5.0</span>
+                    <span class="cc-footer-version-value" id="cc-footer-system-version">v4.0.0</span>
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">Build</span>
