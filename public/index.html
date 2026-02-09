@@ -1433,7 +1433,7 @@
             card.innerHTML = '<div class="icon">[...]</div><h3>Calculating...</h3><p>Please wait</p>';
             
             try {
-                const response = await fetch('/admin/calculate-journey', { method: 'POST' });
+                const response = await fetch('/api/commutecompute', { method: 'POST' });
                 const result = await response.json();
                 
                 if (result.success) {
@@ -1599,10 +1599,10 @@
         fetch('/api/version')
             .then(r => r.json())
             .then(v => {
-                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v2.4';
-                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v1.81';
+                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v3.0';
+                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v2.0';
                 document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.5.0');
+                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '4.0.0');
             })
             .catch(() => {});
     }
@@ -1624,15 +1624,15 @@
             <div class="cc-footer-version-item">
                 <div class="cc-footer-live-dot"></div>
                 <span class="cc-footer-version-label">CommuteCompute</span>
-                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v2.4</span>
+                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">CCDash Renderer</span>
-                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v1.81</span>
+                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">System</span>
-                <span class="cc-footer-version-value" id="cc-footer-system-version">v3.5.0</span>
+                <span class="cc-footer-version-value" id="cc-footer-system-version">v4.0.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">Build</span>

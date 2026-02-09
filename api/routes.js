@@ -97,18 +97,12 @@ export default async function handler(req, res) {
       });
     }
 
-    // GET - discover and return alternatives
+    // GET - discover and return all route alternatives
     const allRoutes = await engine.discoverRoutes();
-    const selectedIndex = prefs.selectedRouteIndex ?? 0;
+    const primaryRoute = allRoutes[0] || null;
 
-    // Only show alternate routes when primary route confidence is below 40%
-    const primaryRoute = allRoutes[selectedIndex] || allRoutes[0];
-    const primaryConfidence = primaryRoute?.pattern?.confidence || primaryRoute?.preferenceMatch?.confidence || 0.5;
-    const routes = (primaryConfidence >= 0.40 && allRoutes.length > 1)
-      ? [primaryRoute]
-      : allRoutes;
-
-    const alternatives = routes.map((route, index) => formatRouteForDisplay(route, index));
+    // Format all discovered routes for display
+    const alternatives = allRoutes.map((route, index) => formatRouteForDisplay(route, index));
 
     // Mark the currently selected route
     alternatives.forEach((alt, idx) => {
@@ -121,7 +115,6 @@ export default async function handler(req, res) {
       totalDiscovered: allRoutes.length,
       selectedIndex: 0,
       selectedId: primaryRoute?.id,
-      primaryConfidence: Math.round(primaryConfidence * 100),
       alternatives,
       state: engine.state,
       fallbackMode: engine.fallbackMode,
