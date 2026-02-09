@@ -637,9 +637,9 @@
             <div class="control-group">
                 <span class="control-label">Device</span>
                 <select id="device-select" onchange="changeDevice(this.value)">
-                    <optgroup label="TRMNL Devices">
-                        <option value="trmnl-og" selected>TRMNL Original (800×480)</option>
-                        <option value="trmnl-mini">TRMNL Mini (400×300)</option>
+                    <optgroup label="CC E-Ink Devices">
+                        <option value="trmnl-og" selected>CC E-Ink OG (7.5") (800×480)</option>
+                        <option value="trmnl-mini">CC E-Ink Mini (400×300)</option>
                     </optgroup>
                     <optgroup label="Kindle Devices">
                         <option value="kindle-pw3">Kindle Paperwhite 3/4 (758×1024)</option>
@@ -681,7 +681,7 @@
         <!-- Single Device Preview -->
         <div class="preview-container" id="single-preview">
             <div class="device-info">
-                <div class="device-name" id="device-name">TRMNL Original</div>
+                <div class="device-name" id="device-name">CC E-Ink OG (7.5")</div>
                 <div class="device-specs" id="device-specs">800×480 • Landscape • 1-bit • 20s refresh</div>
             </div>
             
@@ -708,8 +708,8 @@
         <div class="comparison-container" id="compare-preview">
             <div class="comparison-panel">
                 <select id="compare-device-1" onchange="updateComparison(1, this.value)">
-                    <option value="trmnl-og">TRMNL Original</option>
-                    <option value="trmnl-mini">TRMNL Mini</option>
+                    <option value="trmnl-og">CC E-Ink OG (7.5")</option>
+                    <option value="trmnl-mini">CC E-Ink Mini</option>
                     <option value="kindle-pw3">Kindle PW3</option>
                     <option value="kindle-basic">Kindle Basic</option>
                 </select>
@@ -721,8 +721,8 @@
             </div>
             <div class="comparison-panel">
                 <select id="compare-device-2" onchange="updateComparison(2, this.value)">
-                    <option value="trmnl-og">TRMNL Original</option>
-                    <option value="trmnl-mini" selected>TRMNL Mini</option>
+                    <option value="trmnl-og">CC E-Ink OG (7.5")</option>
+                    <option value="trmnl-mini" selected>CC E-Ink Mini</option>
                     <option value="kindle-pw3">Kindle PW3</option>
                     <option value="kindle-basic">Kindle Basic</option>
                 </select>
@@ -738,12 +738,12 @@
         <div class="device-grid">
             <div class="device-card selected" data-device="trmnl-og" onclick="selectDevice('trmnl-og')">
                 <div class="device-card-icon"></div>
-                <div class="device-card-name">TRMNL OG</div>
+                <div class="device-card-name">CC E-Ink OG</div>
                 <div class="device-card-size">800×480</div>
             </div>
             <div class="device-card" data-device="trmnl-mini" onclick="selectDevice('trmnl-mini')">
                 <div class="device-card-icon"></div>
-                <div class="device-card-name">TRMNL Mini</div>
+                <div class="device-card-name">CC E-Ink Mini</div>
                 <div class="device-card-size">400×300</div>
             </div>
             <div class="device-card" data-device="kindle-pw3" onclick="selectDevice('kindle-pw3')">
@@ -805,8 +805,8 @@
 
         // Device configurations
         const DEVICES = {
-            'trmnl-og': { name: 'TRMNL Original', width: 800, height: 480, orientation: 'Landscape', bits: '1-bit', refresh: '20s' },
-            'trmnl-mini': { name: 'TRMNL Mini', width: 400, height: 300, orientation: 'Landscape', bits: '1-bit', refresh: '20s' },
+            'trmnl-og': { name: 'CC E-Ink OG (7.5")', width: 800, height: 480, orientation: 'Landscape', bits: '1-bit', refresh: '20s' },
+            'trmnl-mini': { name: 'CC E-Ink Mini', width: 400, height: 300, orientation: 'Landscape', bits: '1-bit', refresh: '20s' },
             'kindle-pw3': { name: 'Kindle Paperwhite 3/4', width: 758, height: 1024, orientation: 'Portrait', bits: '16-gray', refresh: 'Manual' },
             'kindle-pw5': { name: 'Kindle Paperwhite 5', width: 1236, height: 1648, orientation: 'Portrait', bits: '16-gray', refresh: 'Manual' },
             'kindle-basic': { name: 'Kindle Basic', width: 600, height: 800, orientation: 'Portrait', bits: '16-gray', refresh: 'Manual' },
@@ -967,10 +967,10 @@
         fetch('/api/version')
             .then(r => r.json())
             .then(v => {
-                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v2.4';
-                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v1.81';
+                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v3.0';
+                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v2.0';
                 document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.5.0');
+                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '4.0.0');
             })
             .catch(() => {});
     }
@@ -992,15 +992,15 @@
             <div class="cc-footer-version-item">
                 <div class="cc-footer-live-dot"></div>
                 <span class="cc-footer-version-label">CommuteCompute</span>
-                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v2.4</span>
+                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">CCDash Renderer</span>
-                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v1.81</span>
+                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">System</span>
-                <span class="cc-footer-version-value" id="cc-footer-system-version">v3.5.0</span>
+                <span class="cc-footer-version-value" id="cc-footer-system-version">v4.0.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">Build</span>

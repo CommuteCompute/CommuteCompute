@@ -26,20 +26,20 @@ export default async function handler(req, res) {
     : '2026-01-31';
 
   res.json({
-    version: 'v3.5.0',
+    version: 'v4.0.0',
     date: buildDate,
     system: {
-      version: '3.5.0',
+      version: '4.0.0',
       name: 'Commute Compute System',
       copyright: '© 2026 Angus Bergman',
       license: 'AGPL-3.0'
     },
     components: {
-      // CommuteCompute journey calculation engine (V2.4)
+      // CommuteCompute journey calculation engine (V3.0)
       commutecompute: {
-        version: 'v2.4',
+        version: 'v3.0',
         name: 'CommuteCompute Engine',
-        description: 'Real-time journey planning with Metro Tunnel compliance, Departure Confidence, Sleep Optimizer, Alt Transit, Lifestyle Context, Mindset analysis',
+        description: 'Real-time multi-modal journey planning with GTFS stop names, Departure Confidence, Sleep Optimizer, Alt Transit (disruption-triggered), Lifestyle Context, Mindset analysis',
         metroTunnelCompliant: true,
         effectiveDate: '2026-02-09',
         locked: false,
@@ -47,20 +47,20 @@ export default async function handler(req, res) {
       },
       // CCDash renderer (implements CCDashDesignV15.0 spec)
       renderer: {
-        version: 'v1.81',
+        version: 'v2.0',
         name: 'CCDash Renderer',
         spec: 'CCDashDesignV15.0',
         specLocked: false,
         lockedDate: '2026-02-09',
         modifiedDate: '2026-02-09',
-        description: 'Sleep mode, alt transit panel, mindset status, enhanced glanceability, lifestyle context display, suburb-level location display'
+        description: 'Unified confidence labels, AM/PM fix, alt transit disruption panel, sleep mode, mindset status, enhanced glanceability, lifestyle context display'
       },
       // Setup wizard
       setupWizard: { version: 'v2.0', locked: true },
       // LiveDash multi-device endpoint
       livedash: { version: 'v3.0', locked: true },
       // Admin panel
-      admin: { version: 'v4.0', locked: false },
+      admin: { version: 'v5.0', locked: false },
       // Firmware (LOCKED)
       firmware: {
         version: 'CC-FW-7.5.0',

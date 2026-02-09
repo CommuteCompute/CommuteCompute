@@ -187,7 +187,7 @@ export const JourneyStatus = {
  */
 export const DEVICE_CONFIGS = {
   'trmnl-og': {
-    name: 'TRMNL Original',
+    name: 'CC E-Ink Original',
     width: 800,
     height: 480,
     orientation: 'landscape',
@@ -195,7 +195,7 @@ export const DEVICE_CONFIGS = {
     format: 'bmp'
   },
   'trmnl-mini': {
-    name: 'TRMNL Mini',
+    name: 'CC E-Ink Mini',
     width: 400,
     height: 300,
     orientation: 'landscape',
@@ -3112,7 +3112,21 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   // V13.3: "ARRIVE" + time on SAME LINE (right aligned, larger for e-ink visibility)
   ctx.fillStyle = '#FFF';
   ctx.textAlign = 'right';
-  const footerArrival = data._calculatedArrival || data.arrive_by || '--:--';
+  // Ensure arrival time is in 12-hour format (per dev rules Section 12.2)
+  let footerArrival = data._calculatedArrival || '--:--';
+  if (footerArrival === '--:--' && data.arrive_by) {
+    // Convert arrive_by from 24h to 12h if needed
+    const arrMatch = String(data.arrive_by).match(/^(\d{1,2}):(\d{2})/);
+    if (arrMatch) {
+      const h = parseInt(arrMatch[1], 10);
+      const m = arrMatch[2];
+      const ampm = h >= 12 ? 'pm' : 'am';
+      const h12 = h % 12 || 12;
+      footerArrival = `${h12}:${m}${ampm}`;
+    } else {
+      footerArrival = data.arrive_by;
+    }
+  }
 
   // V13.3: Combined "ARRIVE X:XX" on same line - fits in footer without cutoff
   // V13.6: Uses footerTextY for raised position

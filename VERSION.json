@@ -1,30 +1,30 @@
 {
   "system": {
-    "version": "3.5.0",
+    "version": "4.0.0",
     "name": "Commute Compute System",
     "releaseDate": "2026-02-09",
-    "codename": "Analytics"
+    "codename": "Multi-Modal"
   },
   "components": {
     "commutecompute": {
-      "version": "2.4",
+      "version": "3.0",
       "name": "CommuteCompute Engine",
-      "description": "Real-time journey planning with Metro Tunnel compliance, transit availability detection, Departure Confidence scoring, Lifestyle Context, Sleep Optimizer, Alt Transit, Mindset analysis, admin analytics integration",
+      "description": "Real-time multi-modal journey planning with shared GTFS stop names, Departure Confidence scoring, disruption-triggered Alt Transit, Lifestyle Context, Sleep Optimizer, Mindset analysis, admin analytics integration",
       "locked": false,
       "lastUpdated": "2026-02-09"
     },
     "renderer": {
-      "version": "1.81",
+      "version": "2.0",
       "name": "CCDash Renderer",
       "spec": "CCDashDesignV15.0",
-      "description": "Sleep mode display, alt transit cost panel, mindset status bar, enhanced glanceability, confidence display, lifestyle suggestions, suburb-level location display",
+      "description": "Unified confidence labels (ON TIME/AT RISK/UNLIKELY), AM/PM fix, disruption-triggered alt transit panel, sleep mode, mindset status, enhanced glanceability, lifestyle suggestions",
       "locked": false,
       "lastUpdated": "2026-02-09"
     },
     "adminPanel": {
-      "version": "4.0.0",
+      "version": "5.0.0",
       "file": "admin.html",
-      "description": "Admin Panel with sidebar navigation, branded header, and section card layout",
+      "description": "Admin Panel with dynamic version loading, alt transit data, fixed configuration tab, TRMNL-free branding",
       "lastUpdated": "2026-02-09"
     },
     "setupWizard": {
@@ -83,6 +83,22 @@
     }
   },
   "changelog": [
+    {
+      "version": "4.0.0",
+      "date": "2026-02-09",
+      "changes": [
+        "CommuteCompute Engine v3.0: rewritten buildCCDashLegs() for multi-modal transit support",
+        "Shared GTFS stop names module (src/data/gtfs-stop-names.js) used by screen.js and commutecompute.js",
+        "CCDash Renderer v2.0: unified confidence labels (ON TIME/AT RISK/UNLIKELY), AM/PM fix",
+        "AltTransit now triggers on delays, cancellations, and low confidence (not just no-transit)",
+        "Admin Panel v5.0: dynamic version loading, fixed config tab, fixed Last Updated timestamp",
+        "Removed redundant /api/calculate-journey endpoint",
+        "All TRMNL references replaced with CC E-Ink across 15+ files",
+        "Route alternatives endpoint fixed (undefined variable references removed)",
+        "All page footers now load versions dynamically from /api/version",
+        "Flasher page: added cc-system-footer and sanitize() function"
+      ]
+    },
     {
       "version": "3.5.0",
       "date": "2026-02-09",

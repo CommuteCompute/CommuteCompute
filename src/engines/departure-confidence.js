@@ -279,12 +279,12 @@ class DepartureConfidence {
    * Get the human-readable label for a confidence score.
    *
    * @param {number} score - Confidence score 0-100
-   * @returns {string} 'HIGH', 'MEDIUM', or 'LOW'
+   * @returns {string} 'ON TIME', 'AT RISK', or 'UNLIKELY'
    */
   _getLabel(score) {
-    if (score > LABEL_HIGH_THRESHOLD) return 'HIGH';
-    if (score >= LABEL_MEDIUM_THRESHOLD) return 'MEDIUM';
-    return 'LOW';
+    if (score > LABEL_HIGH_THRESHOLD) return 'ON TIME';
+    if (score >= LABEL_MEDIUM_THRESHOLD) return 'AT RISK';
+    return 'UNLIKELY';
   }
 
   /**
