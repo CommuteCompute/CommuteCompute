@@ -1497,7 +1497,14 @@ function renderHeaderWeather(data, prefs) {
     condition = condition.slice(0, -1);
   }
   ctx.fillText(condition, zone.w / 2, 42);
-  
+
+  // V15.0: Feels-like temperature from mindset engine (wind chill)
+  if (data.mindset_feels_like) {
+    ctx.font = '10px Inter, sans-serif';
+    ctx.fillStyle = '#000';
+    ctx.fillText(data.mindset_feels_like, zone.w / 2, 56);
+  }
+
   // V14.0: Lifestyle context suggestions (replaces simple umbrella indicator)
   // Uses lifestyle_display from LifestyleContext engine, falls back to umbrella logic
   const umbrellaY = 66;
@@ -1607,7 +1614,9 @@ function renderStatus(data, prefs) {
     ctx.textAlign = 'right';
     ctx.font = 'bold 12px Inter, sans-serif';
     const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
-    ctx.fillText(`${confidenceScore}% ${confLabel}`, zone.w - 80, zone.h / 2);
+    // V15.0: Append mindset stress indicator when available
+    const mindsetText = data.mindset_display ? ` \u2022 ${data.mindset_display}` : '';
+    ctx.fillText(`${confidenceScore}% ${confLabel}${mindsetText}`, zone.w - 80, zone.h / 2);
   }
 
   // Right text - Total journey time (V10 Spec Section 4.2)
@@ -1934,7 +1943,9 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   const serviceStatus = data.service_status || (data.disruption ? 'DISRUPTIONS' : 'OK');
   const hasDisruption = data.disruption || data.status_type === 'disruption' || 
     serviceStatus.toUpperCase().includes('DISRUPTION') || serviceStatus.toUpperCase().includes('DELAY');
-  const isLiveData = data.isLive !== false && data.dataSource !== 'scheduled';  // Default to live unless specified
+  // Per Section 23.6: Only show LIVE DATA badge when data actually comes from GTFS-RT,
+  // never for fallback/timetable data. Default to false (timetable) unless explicitly marked live.
+  const isLiveData = data.isLive === true || data.dataSource === 'live';
   
   // V13.6: Service status and data status - LARGER boxes aligned with coffee/weather panels
   // Bottom edge aligns with coffee/weather box bottom (Y=90)
@@ -2268,7 +2279,14 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     condition = condition.slice(0, -1);
   }
   ctx.fillText(condition, weatherBoxX + weatherBoxW / 2, weatherBoxY + 54);
-  
+
+  // V15.0: Feels-like temperature from mindset engine (wind chill)
+  if (data.mindset_feels_like) {
+    ctx.font = '10px Inter, sans-serif';
+    ctx.fillStyle = '#000';
+    ctx.fillText(data.mindset_feels_like, weatherBoxX + weatherBoxW / 2, weatherBoxY + 68);
+  }
+
   // V14.0: Lifestyle context suggestions (replaces simple umbrella indicator)
   const needsUmbrella = data.rain_expected || data.precipitation > 30 ||
     (data.condition && /rain|shower|storm|drizzle/i.test(data.condition));
@@ -2456,7 +2474,9 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     ctx.textAlign = 'right';
     ctx.font = 'bold 12px Inter, sans-serif';
     const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
-    ctx.fillText(`${confidenceScore}% ${confLabel}`, 690, 112);
+    // V15.0: Append mindset stress indicator when available
+    const mindsetText = data.mindset_display ? ` \u2022 ${data.mindset_display}` : '';
+    ctx.fillText(`${confidenceScore}% ${confLabel}${mindsetText}`, 690, 112);
   }
 
   // -----------------------------------------------------------------------

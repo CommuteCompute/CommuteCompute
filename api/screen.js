@@ -133,14 +133,20 @@ async function getEngine() {
     transitApiKey: transitKey
   };
 
-  // Create hash to detect preference changes (includes route selection)
-  const prefsHash = JSON.stringify({ state, home: preferences.homeAddress, work: preferences.workAddress, selectedRouteIndex: kvPrefs.selectedRouteIndex });
+  // Create hash to detect preference changes (includes route selection by index and ID)
+  const prefsHash = JSON.stringify({ state, home: preferences.homeAddress, work: preferences.workAddress, selectedRouteIndex: kvPrefs.selectedRouteIndex, selectedRouteId: kvPrefs.selectedRouteId });
 
   // Re-initialize engine if preferences changed or no engine exists
   if (!journeyEngine || prefsHash !== lastPrefsHash) {
 
     journeyEngine = new CommuteCompute();
     await journeyEngine.initialize(preferences);
+
+    // Discover routes FIRST so selectedRouteIndex maps to the same routes
+    // the admin panel sees (admin calls discoverRoutes via /api/routes).
+    // Without this, discoveredRoutes is empty and getSelectedRoute() falls
+    // back to getHardcodedRoutes() with index 0, ignoring the user's choice.
+    await journeyEngine.discoverRoutes();
 
     // Restore user's selected route from KV preferences
     if (kvPrefs.selectedRouteIndex !== undefined) {
@@ -610,9 +616,12 @@ function buildLegTitle(leg) {
       if (dest === 'cafe') return 'Walk to Cafe';
       if (dest === 'work') return 'Walk to Office';
       if (dest === 'tram stop' && leg.stopName) return `Walk to ${leg.stopName}`;
-      if (dest === 'train platform' && leg.stationName) return `Walk to ${leg.stationName}`;
+      if ((dest === 'train platform' || dest === 'station') && leg.stationName) return `Walk to ${leg.stationName}`;
       if (dest === 'tram stop') return 'Walk to Tram Stop';
-      if (dest === 'train platform') return 'Walk to Platform';
+      if (dest === 'train platform' || dest === 'station') return `Walk to ${leg.stationName || 'Station'}`;
+      // Use stationName/stopName if available before falling back to generic dest
+      if (leg.stationName) return `Walk to ${leg.stationName}`;
+      if (leg.stopName) return `Walk to ${leg.stopName}`;
       return `Walk to ${cap(dest) || 'Station'}`;
     }
     case 'coffee': {
@@ -1499,6 +1508,13 @@ export default async function handler(req, res) {
 
     const transitData = { trains, trams, buses, disruptions };
 
+    // Determine if we actually have live transit data (from GTFS-RT, not fallback)
+    // Per Section 23.6: "LIVE" indicators must reflect actual data source
+    const hasLiveTrainData = trains.some(t => t.source === 'gtfs-rt' && t.isLive === true);
+    const hasLiveTramData = trams.some(t => t.source === 'gtfs-rt' && t.isLive === true);
+    const hasLiveBusData = buses.some(t => t.source === 'gtfs-rt' && t.isLive === true);
+    const hasAnyLiveData = hasLiveTrainData || hasLiveTramData || hasLiveBusData;
+
     // =========================================================================
     // APPLY SIMULATOR OVERRIDES
     // =========================================================================
@@ -1549,37 +1565,53 @@ export default async function handler(req, res) {
       };
     }
 
-    // V13.6: When cafe is CLOSED, filter out cafe legs from route entirely
-    // This recalculates route as if cafe was never there (per Dev Rules Section 7.5.1)
+    // V15.0: Unified coffee bypass — keep coffee leg visible as "skipped",
+    // recalculate bypass walk (direct home→transit). Matches buildJourneyForDisplay()
+    // in commute-compute.js. DO NOT remove the coffee leg entirely.
     let effectiveRoute = route;
-    if (coffeeDecision.cafeClosed) {
-      const filteredLegs = (route?.legs || []).filter((leg, idx, arr) => {
-        // Remove coffee leg
-        if (leg.type === 'coffee') return false;
-        // Remove walk TO cafe (walk leg immediately before coffee)
-        if (leg.type === 'walk') {
-          const nextLeg = arr[idx + 1];
-          if (nextLeg?.type === 'coffee') return false;
-        }
-        return true;
-      });
+    if (coffeeDecision.cafeClosed || !coffeeDecision.canGet) {
+      const routeLegs = [...(route?.legs || []).map(l => ({ ...l }))];
+      const coffeeIdx = routeLegs.findIndex(leg => leg.type === 'coffee');
 
-      // Merge consecutive walk legs that may result
-      const mergedLegs = [];
-      for (let i = 0; i < filteredLegs.length; i++) {
-        const current = { ...filteredLegs[i] };
-        if (current.type === 'walk' && i + 1 < filteredLegs.length && filteredLegs[i + 1].type === 'walk') {
-          const next = filteredLegs[i + 1];
-          current.minutes = (current.minutes || 0) + (next.minutes || 0);
-          current.to = next.to || current.to;
-          current.stopName = next.stopName || current.stopName;
-          current.stationName = next.stationName || current.stationName;
-          i++; // Skip next leg since we merged it
+      if (coffeeIdx >= 0) {
+        // Find walk-to-cafe (walk leg immediately before coffee)
+        const walkToCafeIdx = coffeeIdx > 0 && routeLegs[coffeeIdx - 1].type === 'walk'
+          ? coffeeIdx - 1 : -1;
+
+        // Find walk-from-cafe (walk leg immediately after coffee)
+        const walkFromCafeIdx = coffeeIdx + 1 < routeLegs.length && routeLegs[coffeeIdx + 1].type === 'walk'
+          ? coffeeIdx + 1 : -1;
+
+        // Find the leg AFTER all cafe-related legs (the "post-cafe" destination)
+        const postCafeIdx = walkFromCafeIdx >= 0 ? walkFromCafeIdx + 1 : coffeeIdx + 1;
+        const postCafeLeg = routeLegs[postCafeIdx];
+
+        // Recalculate the walk-to-cafe leg as a direct bypass walk
+        if (walkToCafeIdx >= 0 && postCafeLeg) {
+          const bypassLeg = routeLegs[walkToCafeIdx];
+          const walkFromCafeMins = walkFromCafeIdx >= 0
+            ? (routeLegs[walkFromCafeIdx].minutes || routeLegs[walkFromCafeIdx].durationMinutes || 0) : 0;
+          const walkToCafeMins = bypassLeg.minutes || bypassLeg.durationMinutes || 0;
+          bypassLeg.minutes = walkToCafeMins + walkFromCafeMins;
+          bypassLeg.durationMinutes = bypassLeg.minutes;
+          // Update destination to the post-cafe leg's location
+          bypassLeg.to = postCafeLeg.stopName || postCafeLeg.stationName || postCafeLeg.to || postCafeLeg.origin?.name || 'transit';
+          bypassLeg.stopName = postCafeLeg.stopName || bypassLeg.stopName;
+          bypassLeg.stationName = postCafeLeg.stationName || bypassLeg.stationName;
+          bypassLeg.destinationName = null;
+          bypassLeg.cafeName = null;
+          bypassLeg.coffeeBypass = true;
         }
-        mergedLegs.push(current);
+
+        // Mark walk-from-cafe for removal (absorbed into bypass walk)
+        if (walkFromCafeIdx >= 0) {
+          routeLegs[walkFromCafeIdx]._removeForBypass = true;
+        }
+
+        // Remove walk-from-cafe (absorbed into bypass), keep everything else including coffee
+        const bypassedLegs = routeLegs.filter(leg => !leg._removeForBypass);
+        effectiveRoute = { ...route, legs: bypassedLegs };
       }
-
-      effectiveRoute = { ...route, legs: mergedLegs };
     }
 
     // V13.6: Filter out transit legs when no departures available or walking is faster
@@ -1728,6 +1760,10 @@ export default async function handler(req, res) {
       // V13.6: Transit availability notice (e.g., "NO PUBLIC TRANSIT OPTIONS AVAILABLE")
       transit_notice: transitNotice,
       removed_transit_types: removedTransitTypes.length > 0 ? removedTransitTypes : null,
+      // Data source accuracy: only mark as live when GTFS-RT data was actually received
+      // Per Section 23.6: LIVE badge must reflect actual data source, not API key existence
+      isLive: hasAnyLiveData,
+      dataSource: hasAnyLiveData ? 'live' : (transitApiKey ? 'no-data' : 'no-key'),
       // V13.6: Device battery status (from CC E-Ink device request)
       battery_percent: batteryPercent,
       battery_voltage: batteryVoltage,
@@ -1776,7 +1812,7 @@ export default async function handler(req, res) {
           timestamp: now.toISOString(),
           melbourneTime: currentTime,
           amPm,
-          dataSource: transitApiKey ? 'live' : 'fallback'
+          dataSource: hasAnyLiveData ? 'gtfs-rt' : (transitApiKey ? 'api-key-present-but-no-live-data' : 'no-api-key')
         },
         stopIds: {
           trainStopId,
