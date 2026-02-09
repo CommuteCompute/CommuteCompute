@@ -1607,7 +1607,7 @@ export class CommuteCompute {
                     locations?.work?.address?.split(',')[1]?.trim() || 
                     null;
     
-    // Extract work address short name (e.g., "123 Work Streetreet" from full address)
+    // Extract work address short name (e.g., "123 Work Street" from full address)
     const workAddressShort = locations?.work?.name ||
                             locations?.work?.address?.split(',')[0]?.trim() ||
                             'Office';
@@ -1747,7 +1747,7 @@ export class CommuteCompute {
     const locations = this.getLocations();
     const prefs = this.getPrefs();
     const routes = this.getHardcodedRoutes(locations, prefs.coffeeEnabled !== false);
-    return routes[0];
+    return routes[this.selectedRouteIndex || 0] || routes[0];
   }
 
   /**
@@ -1803,39 +1803,58 @@ export class CommuteCompute {
     const shouldSkipCoffee = coffeeDecision && !coffeeDecision.canGet;
     const isCafeClosed = coffeeDecision && coffeeDecision.cafeClosed;
 
-    // V13.6: If cafe is CLOSED, completely remove cafe-related legs from journey
-    // (not just mark as skipped - remove entirely)
-    if (isCafeClosed) {
-      routeLegs = routeLegs.filter((leg, idx) => {
-        // Remove coffee leg
-        if (leg.type === 'coffee') return false;
-        // Remove walk TO cafe (leg before coffee)
-        if (leg.type === 'walk' && (leg.to === 'cafe' || leg.cafeName || leg.destinationName)) {
-          const nextLeg = routeLegs[idx + 1];
-          if (nextLeg?.type === 'coffee') return false;
-        }
-        return true;
-      });
+    // V15.0: Unified coffee bypass — both cafe-closed AND running-late
+    // Keep coffee leg visible with skipped design, recalculate direct bypass walk
+    if (isCafeClosed || shouldSkipCoffee) {
+      const coffeeIdx = routeLegs.findIndex(leg => leg.type === 'coffee');
 
-      // V13.6: Merge consecutive walk legs after removing cafe
-      routeLegs = this.mergeConsecutiveWalkLegs(routeLegs);
+      if (coffeeIdx >= 0) {
+        // Find walk-to-cafe (walk leg immediately before coffee)
+        const walkToCafeIdx = coffeeIdx > 0 && routeLegs[coffeeIdx - 1].type === 'walk'
+          ? coffeeIdx - 1 : -1;
+
+        // Find walk-from-cafe (walk leg immediately after coffee)
+        const walkFromCafeIdx = coffeeIdx + 1 < routeLegs.length && routeLegs[coffeeIdx + 1].type === 'walk'
+          ? coffeeIdx + 1 : -1;
+
+        // Find the leg AFTER all cafe-related legs (the "post-cafe" destination)
+        const postCafeIdx = walkFromCafeIdx >= 0 ? walkFromCafeIdx + 1 : coffeeIdx + 1;
+        const postCafeLeg = routeLegs[postCafeIdx];
+
+        // Recalculate the walk-to-cafe leg as a direct bypass walk
+        if (walkToCafeIdx >= 0 && postCafeLeg) {
+          const bypassLeg = routeLegs[walkToCafeIdx];
+          // Sum walk-to-cafe + walk-from-cafe durations as bypass estimate
+          const walkFromCafeMins = walkFromCafeIdx >= 0
+            ? (routeLegs[walkFromCafeIdx].minutes || routeLegs[walkFromCafeIdx].durationMinutes || 0) : 0;
+          const walkToCafeMins = bypassLeg.minutes || bypassLeg.durationMinutes || 0;
+          bypassLeg.minutes = walkToCafeMins + walkFromCafeMins;
+          bypassLeg.durationMinutes = bypassLeg.minutes;
+          // Update destination to the post-cafe leg's location
+          bypassLeg.to = postCafeLeg.stopName || postCafeLeg.stationName || postCafeLeg.to || postCafeLeg.origin?.name || 'transit';
+          bypassLeg.stopName = postCafeLeg.stopName || bypassLeg.stopName;
+          bypassLeg.stationName = postCafeLeg.stationName || bypassLeg.stationName;
+          bypassLeg.destinationName = null; // Clear cafe destination name
+          bypassLeg.cafeName = null;
+          bypassLeg.coffeeBypass = true;  // Flag for renderer subtitle
+        }
+
+        // Mark walk-from-cafe for removal (absorbed into bypass walk)
+        if (walkFromCafeIdx >= 0) {
+          routeLegs[walkFromCafeIdx]._removeForBypass = true;
+        }
+
+        // Remove walk-from-cafe (absorbed into bypass), keep everything else
+        routeLegs = routeLegs.filter(leg => !leg._removeForBypass);
+      }
     }
 
-    // V13.5: Identify cafe-related legs (walk to cafe + coffee leg)
-    // These will be marked as skipped but kept visible in the journey display
+    // V15.0: Mark cafe leg as skipped (for both closed and running late)
     const cafeRelatedLegTypes = new Set();
-    if (shouldSkipCoffee && !isCafeClosed) {
+    if (isCafeClosed || shouldSkipCoffee) {
       routeLegs.forEach((leg, idx) => {
-        // Coffee leg itself
         if (leg.type === 'coffee') {
           cafeRelatedLegTypes.add(idx);
-        }
-        // Walk TO cafe (leg before coffee, or walk with cafe destination)
-        if (leg.type === 'walk' && (leg.to === 'cafe' || leg.cafeName || leg.destinationName)) {
-          const nextLeg = routeLegs[idx + 1];
-          if (nextLeg?.type === 'coffee') {
-            cafeRelatedLegTypes.add(idx);
-          }
         }
       });
     }
@@ -1848,25 +1867,22 @@ export class CommuteCompute {
       // Format the leg for display
       const formattedLeg = this.formatLegForDisplay(leg, transitData, idx, cumulativeMinutes, currentTimeMs);
 
-      // V13.5: Mark cafe-related legs as skipped when running late (but not closed)
+      // V15.0: Mark cafe leg as skipped (both closed and running late)
       if (isSkippedCafeLeg) {
         formattedLeg.status = 'skipped';
         formattedLeg.state = 'skip';
-        formattedLeg.skippedForTiming = true;  // Flag to indicate excluded from timing
+        formattedLeg.skippedForTiming = true;
 
         if (leg.type === 'coffee') {
           formattedLeg.canGet = false;
           formattedLeg.cafeClosed = coffeeDecision.cafeClosed || false;
-          formattedLeg.skipReason = coffeeDecision.skipReason || 'late';
-          formattedLeg.subtitle = '[X] SKIPPED -- Running late';
-        } else if (leg.type === 'walk') {
-          // Walk to cafe - mark as skipped detour
-          formattedLeg.skipReason = 'detour';
-          formattedLeg.subtitle = '[X] SKIPPED -- Go direct to transit';
+          formattedLeg.skipReason = isCafeClosed ? 'closed' : (coffeeDecision.skipReason || 'late');
+          formattedLeg.subtitle = isCafeClosed
+            ? '[X] SKIPPED -- Cafe closed'
+            : '[X] SKIPPED -- Running late';
         }
 
         // Don't add skipped leg duration to cumulative time
-        // (journey proceeds as if this leg doesn't exist)
       } else {
         // Normal leg - add duration to cumulative time
         cumulativeMinutes += formattedLeg.minutes || formattedLeg.durationMinutes || 0;

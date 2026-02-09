@@ -19,11 +19,11 @@
   &nbsp;
   <img src="https://img.shields.io/badge/Spec-CCDash%20V15.0-purple.svg?style=for-the-badge" alt="Spec: CCDash V15.0">
   &nbsp;
-  <img src="https://img.shields.io/badge/Firmware-CC--FW--7.5.0-green.svg?style=for-the-badge" alt="Firmware: CC-FW-7.5.0">
+  <img src="https://img.shields.io/badge/Firmware-CC--FW--7.6.0-green.svg?style=for-the-badge" alt="Firmware: CC-FW-7.6.0">
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Platform-TRMNL%20%7C%20Kindle%20%7C%20Inkplate-orange.svg?style=flat-square" alt="Platform: TRMNL | Kindle | Inkplate">
+  <img src="https://img.shields.io/badge/Platform-CC%20E--Ink%20%7C%20Kindle%20%7C%20Inkplate-orange.svg?style=flat-square" alt="Platform: CC E-Ink | Kindle | Inkplate">
   &nbsp;
   <img src="https://img.shields.io/badge/States-VIC%20%7C%20NSW%20%7C%20QLD%20%7C%20SA%20%7C%20WA%20%7C%20TAS%20%7C%20NT%20%7C%20ACT-yellow.svg?style=flat-square" alt="Multi-State Support">
   &nbsp;
@@ -76,7 +76,7 @@ Every 60 seconds, the system pulls live data from three sources, runs it through
  YOU CONFIGURE                    DATA SOURCES                    INTELLIGENCE ENGINES
 +------------------+       +------------------------+       +---------------------------+
 |                  |       |                        |       |                           |
-|  Home Address    |       |  GTFS-RT Live Transit  |       |  1. CommuteCompute(TM)    |
+|  Home Address    |       |  GTFS-RT Live Transit  |       |  1. CommuteCompute™       |
 |  Work Address    | ----> |  BOM Weather API       | ----> |  2. DepartureConfidence   |
 |  Arrival Time    |       |  Google Places API     |       |  3. LifestyleContext      |
 |  Preferences     |       |                        |       |  4. SleepOptimizer        |
@@ -87,13 +87,13 @@ Every 60 seconds, the system pulls live data from three sources, runs it through
 +------------------+       +------------------------+                   |
 |                  |       |                        |                   |
 |  Vercel KV       | <---> |  800 x 480 1-bit BMP  | <-----------------+
-|  (config, cache) |       |  Rendered by CCDash(TM)|
+|  (config, cache) |       |  Rendered by CCDash™   |
 |                  |       |                        |
 +------------------+       +------------------------+
                                       |
                             +------------------------+
                             |                        |
-                            |  TRMNL (ESP32-C3)      |
+                            |  CC E-Ink (ESP32-C3)   |
                             |  Kindle E-Reader       |
                             |  Inkplate 6/10         |
                             |  Web Browser           |
@@ -113,7 +113,7 @@ The pipeline runs entirely serverless on Vercel. The device fetches a pre-render
 
 All five engines operate under the CommuteCompute&#8482; umbrella. They share data, influence each other, and produce a unified commute intelligence model.
 
-### 1. CommuteCompute&#8482; Engine (v2.4)
+### 1. CommuteCompute&#8482; Engine (v3.0)
 
 Core journey orchestration with real-time multi-modal planning and Melbourne Metro Tunnel compliance.
 
@@ -314,7 +314,7 @@ This makes Commute Compute&#8482; one of the first commuter tools to fully suppo
 2. **Data Sources** are polled on each request: GTFS-RT for live transit (30s cache), BOM for weather (5min cache), Google Places for cafe status.
 3. **Five Intelligence Engines** process the combined data into a unified journey model.
 4. **CCDash&#8482; Renderer** converts the data model into an 800x480 1-bit BMP image optimized for e-ink.
-5. **The device** (TRMNL, Kindle, Inkplate, or browser) fetches the rendered image over HTTPS on a 60-second refresh cycle.
+5. **The device** (CC E-Ink, Kindle, Inkplate, or browser) fetches the rendered image over HTTPS on a 60-second refresh cycle.
 
 ### Caching Strategy
 
@@ -346,7 +346,7 @@ Vercel Dashboard > Storage > Create Database > **KV** > Select the Sydney region
 
 Open `https://your-project.vercel.app/setup-wizard.html` and follow the guided configuration (home, work, arrival time, API keys).
 
-### 4. Flash Device (TRMNL)
+### 4. Flash Device (CC E-Ink)
 
 ```bash
 cd firmware && pio run -e trmnl -t upload
@@ -389,8 +389,8 @@ See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed step-by-step instructions 
 
 | Device | Resolution | Status |
 |:-------|:-----------|:-------|
-| TRMNL OG (ESP32-C3) | 800 x 480 | Primary target -- requires CCFirm&#8482; firmware |
-| TRMNL Mini | 400 x 300 | Supported |
+| CC E-Ink OG (ESP32-C3) | 800 x 480 | Primary target -- requires CCFirm&#8482; firmware |
+| CC E-Ink Mini | 400 x 300 | Supported |
 | Kindle Paperwhite 3/4/5 | 1072 x 1448 | Supported -- requires jailbreak |
 | Kindle Basic 10/11 | 600 x 800 | Supported -- requires jailbreak |
 | Inkplate 6 | 800 x 600 | Supported |
@@ -515,9 +515,9 @@ See [LEGAL.md](LEGAL.md) for complete trademark and intellectual property detail
 </p>
 
 <p align="center">
-  <strong>Commute Compute&#8482; System v3.5.0</strong><br>
+  <strong>Commute Compute&#8482; System v4.0.0</strong><br>
   V15.0 Complete Journey Intelligence<br>
-  CommuteCompute&#8482; Engine v2.4 | CCDash&#8482; Renderer v1.81 | CC LiveDash&#8482; v3.0 | Admin Panel v4.0 | CCFirm&#8482; CC-FW-7.5.0<br>
+  CommuteCompute&#8482; Engine v3.0 | CCDash&#8482; Renderer v2.0 | CC LiveDash&#8482; v3.0 | Admin Panel v5.0 | CCFirm&#8482; CC-FW-7.6.0<br>
   <br>
   Copyright (c) 2026 Angus Bergman. All rights reserved.<br>
   <em>Built in Melbourne, Australia.</em>

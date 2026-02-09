@@ -667,7 +667,7 @@
                 <div class="form-group">
                     <label class="form-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                         <input type="checkbox" id="include-coffee" checked>
-                        <svg class="icon-sm"><use href="#icon-coffee"/></svg> Calculate coffee stop times (CoffeeDecision)
+                        <svg class="icon-sm"><use href="#icon-coffee"/></svg> Calculate coffee stop times (CoffeeDecision&#8482;)
                     </label>
                 </div>
 
@@ -720,7 +720,7 @@
                     <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">--</span>
                 </div>
                 <div class="cc-footer-version-item">
-                    <span class="cc-footer-version-label">CCDash Renderer</span>
+                    <span class="cc-footer-version-label">CCDash&#8482; Renderer</span>
                     <span class="cc-footer-version-value" id="cc-footer-renderer-version">--</span>
                 </div>
                 <div class="cc-footer-version-item">
@@ -801,6 +801,7 @@
     const BLE_SERVICE_UUID = 'cc000001-0000-1000-8000-00805f9b34fb';
     const BLE_CHAR_SSID_UUID = 'cc000002-0000-1000-8000-00805f9b34fb';
     const BLE_CHAR_PASSWORD_UUID = 'cc000003-0000-1000-8000-00805f9b34fb';
+    const BLE_CHAR_URL_UUID = 'cc000004-0000-1000-8000-00805f9b34fb';
     const BLE_CHAR_STATUS_UUID = 'cc000005-0000-1000-8000-00805f9b34fb';
     const BLE_CHAR_WIFI_LIST_UUID = 'cc000006-0000-1000-8000-00805f9b34fb';
 
@@ -999,13 +1000,14 @@
         try {
             var charSSID = await bleService.getCharacteristic(BLE_CHAR_SSID_UUID);
             var charPassword = await bleService.getCharacteristic(BLE_CHAR_PASSWORD_UUID);
+            var charURL = await bleService.getCharacteristic(BLE_CHAR_URL_UUID);
             var charStatus = await bleService.getCharacteristic(BLE_CHAR_STATUS_UUID);
 
             await charStatus.startNotifications();
             charStatus.addEventListener('characteristicvaluechanged', function(event) {
                 var value = new TextDecoder().decode(event.target.value);
-                if (value === 'wifi_saved' || value === 'credentials_saved') {
-                    statusDiv.innerHTML = '<div style="color:#22c55e;text-align:center;"><div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;"><svg class="icon-sm"><use href="#icon-check-circle"/></svg><strong>WiFi credentials sent!</strong></div><p style="color:#94a3b8;font-size:13px;">Your device is connecting to WiFi. Continue with setup -- you\'ll pair it in Step 6.</p></div>';
+                if (value === 'configured' || value === 'wifi_saved' || value === 'credentials_saved') {
+                    statusDiv.innerHTML = '<div style="color:#22c55e;text-align:center;"><div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;"><svg class="icon-sm"><use href="#icon-check-circle"/></svg><strong>Device configured!</strong></div><p style="color:#94a3b8;font-size:13px;">WiFi credentials and server URL sent. Your device will connect and display the dashboard.</p></div>';
                     setTimeout(function(){ if (bleServer && bleServer.connected) bleServer.disconnect(); }, 2000);
                 }
             });
@@ -1014,11 +1016,16 @@
             await charSSID.writeValue(encoder.encode(ssid));
             setStatus('ble-status', 'Sent WiFi network name...', 'info');
             await charPassword.writeValue(encoder.encode(password));
-            setStatus('ble-status', 'Sent WiFi password... Device connecting to WiFi...', 'info');
+            setStatus('ble-status', 'Sent WiFi password...', 'info');
+
+            // Send webhook URL — derived from this Setup Wizard's server origin
+            var webhookUrl = window.location.origin + '/api/screen';
+            await charURL.writeValue(encoder.encode(webhookUrl));
+            setStatus('ble-status', 'Sent server URL... Device configuring...', 'info');
 
             setTimeout(function() {
-                if (statusDiv.innerHTML.includes('Device connecting')) {
-                    statusDiv.innerHTML = '<div style="color:#22c55e;text-align:center;"><div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;"><svg class="icon-sm"><use href="#icon-check-circle"/></svg><strong>WiFi credentials sent!</strong></div><p style="color:#94a3b8;font-size:13px;">Your device is connecting to WiFi. Continue with setup -- you\'ll pair it in Step 6.</p></div>';
+                if (statusDiv.innerHTML.includes('Device configuring')) {
+                    statusDiv.innerHTML = '<div style="color:#22c55e;text-align:center;"><div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;"><svg class="icon-sm"><use href="#icon-check-circle"/></svg><strong>Device configured!</strong></div><p style="color:#94a3b8;font-size:13px;">WiFi credentials and server URL sent. Your device will connect and display the dashboard.</p></div>';
                 }
             }, 5000);
 

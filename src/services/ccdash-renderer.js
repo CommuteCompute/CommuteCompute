@@ -183,7 +183,7 @@ export const JourneyStatus = {
 // =============================================================================
 
 /**
- * Device configurations for CC LiveDash multi-device rendering
+ * Device configurations for CC LiveDash™ multi-device rendering
  */
 export const DEVICE_CONFIGS = {
   'trmnl-og': {
@@ -1211,6 +1211,12 @@ function getLegTitle(leg) {
       }
       const busDest = getDestName();
       return `Bus ${leg.routeNumber || ''} to ${busDest}`;
+    case 'ferry':
+      const ferryDest = getDestName();
+      return `Ferry to ${ferryDest}`;
+    case 'vline':
+      const vlineDest = getDestName();
+      return `V/Line to ${vlineDest}`;
     case 'transit':
       const transitDest = getDestName();
       return `${leg.mode || 'Transit'} ${leg.routeNumber || ''} to ${transitDest}`;
@@ -1229,6 +1235,11 @@ function getLegSubtitle(leg) {
   
   switch (leg.type) {
     case 'walk':
+      // V15.0: Coffee bypass walk — direct route skipping cafe
+      if (leg.coffeeBypass) {
+        const dest = leg.to || leg.stopName || leg.stationName || '';
+        return dest ? `Bypass coffee, direct to ${dest}` : 'Bypass coffee, recalculating direct';
+      }
       // Diversion walk (per ref image 8)
       if (leg.isDiversion) {
         return leg.diversionReason || 'Extra walk due to works';
@@ -1255,6 +1266,10 @@ function getLegSubtitle(leg) {
         const opensAt = leg.opensAt || leg.cafeOpensAt;
         return opensAt ? `CLOSED — Opens at ${opensAt}` : 'CLOSED — Cafe not open';
       }
+      // V15.0: Handle skipped coffee (running late or other skip reasons)
+      if (leg.canGet === false || leg.status === 'skipped' || leg.state === 'skip') {
+        return leg.subtitle || '[X] SKIPPED — No time for coffee';
+      }
 
       // V13.2: Show busyness level only (not timing-dependent)
       const busyness = leg.busyness || leg.busyLevel || 'low';
@@ -1270,6 +1285,7 @@ function getLegSubtitle(leg) {
     case 'tram':
     case 'train':
     case 'bus':
+    case 'ferry':
     case 'vline':
     case 'transit':
       // Transit: show line name + routing + "Next: X, Y min"
@@ -1623,7 +1639,7 @@ function renderLeg(legIndex, data, prefs) {
     leg.isFirst = true;
   }
   
-  const zone = getDynamicLegZone(legIndex, totalLegs);
+  const zone = getDynamicLegZone(legIndex, totalLegs, legs);
   const canvas = createCanvas(zone.w, zone.h);
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -1684,7 +1700,7 @@ async function renderFooter(data, prefs) {
 
   // "ARRIVE" label (smaller, above time) - use lighter color instead of opacity for 1-bit
   ctx.font = '10px Inter, sans-serif';
-  ctx.fillStyle = '#666666';
+  ctx.fillStyle = '#000';
   ctx.fillText('ARRIVE', zone.w - 16, zone.h / 2 - 10);
 
   // Time (larger)
@@ -2100,8 +2116,8 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     
     ctx.textAlign = 'left';
     ctx.fillStyle = '#000';
-  } else if (data.sleep_active && data.sleep_display) {
-    // V15.0: Sleep mode - evening bedtime/alarm display
+  } else if (!isWithinArrivalWindow && data.sleep_active && data.sleep_display) {
+    // V15.0: Sleep mode - evening bedtime/alarm display (only outside commute window)
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 2;
     ctx.strokeRect(coffeeBoxX, coffeeBoxY, coffeeBoxW, coffeeBoxH);
@@ -2440,10 +2456,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     ctx.textAlign = 'right';
     ctx.font = 'bold 12px Inter, sans-serif';
     const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
-    // Show mindset stress alongside confidence when available
-    const mindsetLabel = data.mindset_display || '';
-    const confText = mindsetLabel ? `${confidenceScore}% ${confLabel} · ${mindsetLabel}` : `${confidenceScore}% ${confLabel}`;
-    ctx.fillText(confText, 690, 112);
+    ctx.fillText(`${confidenceScore}% ${confLabel}`, 690, 112);
   }
 
   // -----------------------------------------------------------------------

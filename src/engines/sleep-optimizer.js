@@ -1,6 +1,6 @@
 /**
  * Sleep Optimizer Engine v1.0
- * Part of the Commute Compute System
+ * Part of the Commute Compute™ System
  *
  * Calculates optimal bedtime and alarm time based on the user's
  * next-day commute requirements. Extends the CommuteCompute "1 glance"
@@ -44,7 +44,7 @@ const DISPLAY_LINE_MAX = 22;
 // =============================================================================
 
 /**
- * SleepOptimizer - Evening preparation engine for Commute Compute.
+ * SleepOptimizer - Evening preparation engine for Commute Compute™.
  *
  * When the dashboard is viewed in the evening (after 6pm), this engine
  * calculates when the user should go to bed and set their alarm to
