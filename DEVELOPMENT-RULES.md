@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/brand/cc-mark-cropped.png" alt="Commute Compute™" width="120">
+  <img src="assets/brand/cc-logo-apple-touch.png" alt="Commute Compute™" width="120">
 </p>
 
 # Commute Compute™ Development Rules
@@ -2096,15 +2096,15 @@ Every technical document must include:
 
 ```markdown
 <p align="center">
-  <img src="assets/brand/cc-mark-cropped.png" alt="Commute Compute™" width="120">
+  <img src="assets/brand/cc-logo-apple-touch.png" alt="Commute Compute™" width="120">
 </p>
 ```
 
 **Adjust the `src` path based on file location:**
-- Root files: `assets/brand/cc-mark-cropped.png`
-- docs/ files: `../assets/brand/cc-mark-cropped.png`
-- firmware/ files: `../assets/brand/cc-mark-cropped.png`
-- specs/ files: `../assets/brand/cc-mark-cropped.png`
+- Root files: `assets/brand/cc-logo-apple-touch.png`
+- docs/ files: `../assets/brand/cc-logo-apple-touch.png`
+- firmware/ files: `../assets/brand/cc-logo-apple-touch.png`
+- specs/ files: `../assets/brand/cc-logo-apple-touch.png`
 
 #### 16.3.2 Logo Assets
 
@@ -2115,7 +2115,7 @@ Mark-only variants show "TM" near the top-right of the CC icon.
 | Asset | Path | Usage |
 |-------|------|-------|
 | Source Logo | `assets/brand/cc-logo-square.png` | Official 900x900 source (all variants derived from this) |
-| Mark Header | `assets/brand/cc-mark-cropped.png` | Standard markdown header (mark with TM) |
+| Logo Header | `assets/brand/cc-logo-apple-touch.png` | Standard markdown header (full logo with wordmark + TM) |
 | Logo 512px | `assets/brand/cc-logo-512.png` | Setup wizard, high-res branding |
 | Logo 256px | `assets/brand/cc-logo-256.png` | Medium displays |
 | Logo 128px | `assets/brand/cc-logo-128.png` | HTML page footers |

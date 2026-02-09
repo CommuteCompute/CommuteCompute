@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../assets/brand/cc-mark-cropped.png" alt="Commute Compute™" width="120">
+  <img src="../assets/brand/cc-logo-apple-touch.png" alt="Commute Compute™" width="120">
 </p>
 
 # LinkedIn Launch Post - Commute Compute™
