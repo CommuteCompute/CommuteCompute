@@ -907,7 +907,7 @@
         </div>
         <div class="footer-legal">
             © 2026 <a href="https://gitlab.com/angusbergman" target="_blank" rel="noopener">Angus Bergman</a> •
-            <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a> •
+            <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0 (Dual Licence)</a> •
             <a href="/attribution.html">Attribution</a>
         </div>
     </footer>
@@ -968,10 +968,10 @@
         fetch('/api/version')
             .then(r => r.json())
             .then(v => {
-                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v3.0';
-                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v2.1';
+                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v2.3';
+                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v1.80';
                 document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.0.0');
+                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '3.4.0');
             })
             .catch(() => {});
     }
@@ -982,7 +982,7 @@
         if (transitKey || config.addresses?.home) attributions.push(sanitize('Transit data: Transport Victoria OpenData API (CC BY 4.0)'));
         if (config.addresses?.home) attributions.push(sanitize('Weather: Bureau of Meteorology (CC BY 3.0 AU)'));
         const el = document.getElementById('cc-footer-attributions');
-        if (el) el.innerHTML = attributions.join(' \u2022 ') + ' \u2022 <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank">AGPL-3.0</a>';
+        if (el) el.innerHTML = attributions.join(' \u2022 ') + ' \u2022 <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank">AGPL-3.0 (Dual Licence)</a>';
     }
     loadFooterVersions();
     updateGlobalFooterAttributions();
@@ -993,15 +993,15 @@
             <div class="cc-footer-version-item">
                 <div class="cc-footer-live-dot"></div>
                 <span class="cc-footer-version-label">CommuteCompute</span>
-                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.0</span>
+                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v2.3</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">CCDash Renderer</span>
-                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.1</span>
+                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v1.80</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">System</span>
-                <span class="cc-footer-version-value" id="cc-footer-system-version">v3.0.0</span>
+                <span class="cc-footer-version-value" id="cc-footer-system-version">v3.4.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">Build</span>
@@ -1016,7 +1016,7 @@
             <a href="/help.html" style="color: #4fb28e; text-decoration: none;">Help</a>
         </div>
         <div class="cc-footer-attribution" id="cc-footer-attributions">
-            © 2026 Angus Bergman • <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank">AGPL-3.0</a>
+            © 2026 Angus Bergman • <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank">AGPL-3.0 (Dual Licence)</a>
         </div>
     </div>
 </div>
