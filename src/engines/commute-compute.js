@@ -1623,6 +1623,11 @@ export class CommuteCompute {
     const workStation = locations?.work?.nearbyStops?.train?.name ||
                        getStopNameById(workDetected.trainStopId) ||
                        (workArea ? `${workArea} Station` : 'Flinders Street Station');
+
+    // Resolve tram/bus route numbers from nearby stop data for GTFS-RT matching
+    const tramRouteNumber = locations?.cafe?.nearbyStops?.tram?.route_number ||
+                            locations?.home?.nearbyStops?.tram?.route_number || null;
+    const busRouteNumber = locations?.home?.nearbyStops?.bus?.route_number || null;
     
     // =========================================================================
     // ROUTE 1: Coffee + Tram + Train (PREFERRED multi-modal pattern)
@@ -1640,7 +1645,7 @@ export class CommuteCompute {
           { type: 'walk', to: 'cafe', from: 'home', minutes: 3, fromHome: true, cafeName, destinationName: cafeName },
           { type: 'coffee', location: cafeName, cafeName, minutes: 5, canGet: true },
           { type: 'walk', to: 'tram stop', minutes: 2, stopName: nearestTramStop },
-          { type: 'tram', routeNumber: '', origin: { name: nearestTramStop }, destination: { name: nearestTrainStation }, originStop: nearestTramStop, minutes: 6 },
+          { type: 'tram', routeNumber: tramRouteNumber || '', origin: { name: nearestTramStop }, destination: { name: nearestTrainStation }, originStop: nearestTramStop, minutes: 6 },
           { type: 'walk', to: 'train platform', minutes: 2, stationName: nearestTrainStation },
           { type: 'train', origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 8 },
           { type: 'walk', to: 'work', minutes: 5, workName: workAddressShort }
@@ -1698,8 +1703,8 @@ export class CommuteCompute {
       totalMinutes: 28,
       legs: [
         { type: 'walk', to: 'tram stop', from: 'home', minutes: 4, fromHome: true, stopName: nearestTramStop },
-        { type: 'tram', origin: { name: nearestTramStop }, destination: { name: nearestTrainStation }, minutes: 10 },
-        { type: 'train', origin: { name: nearestTrainStation }, destination: { name: workStation }, minutes: 10 },
+        { type: 'tram', routeNumber: tramRouteNumber || '', origin: { name: nearestTramStop }, destination: { name: nearestTrainStation }, originStop: nearestTramStop, minutes: 10 },
+        { type: 'train', origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 10 },
         { type: 'walk', to: 'work', minutes: 4, workName: workAddressShort }
       ]
     });
@@ -1715,7 +1720,7 @@ export class CommuteCompute {
       type: 'express',
       totalMinutes: 20,
       legs: [
-        { type: 'tram', origin: { name: nearestTramStop }, destination: { name: workArea || 'CBD' }, minutes: 14, fromHome: true },
+        { type: 'tram', routeNumber: tramRouteNumber || '', origin: { name: nearestTramStop }, destination: { name: workArea || 'CBD' }, originStop: nearestTramStop, minutes: 14, fromHome: true },
         { type: 'walk', to: 'work', minutes: 6, workName: workAddressShort }
       ]
     });
@@ -1732,7 +1737,7 @@ export class CommuteCompute {
       totalMinutes: 30,
       legs: [
         { type: 'walk', to: 'bus stop', from: 'home', minutes: 4, fromHome: true },
-        { type: 'bus', origin: { name: homeArea || 'Home' }, destination: { name: workArea || 'CBD' }, minutes: 20 },
+        { type: 'bus', routeNumber: busRouteNumber || '', origin: { name: homeArea || 'Home' }, destination: { name: workArea || 'CBD' }, originStop: homeArea || 'Home', minutes: 20 },
         { type: 'walk', to: 'work', minutes: 6, workName: workAddressShort }
       ]
     });
