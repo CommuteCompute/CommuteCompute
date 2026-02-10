@@ -213,7 +213,7 @@ function mergeConsecutiveWalkLegs(legs) {
       const next = legs[i + 1];
       current.minutes = (current.minutes || 0) + (next.minutes || 0);
       current.durationMinutes = (current.durationMinutes || 0) + (next.durationMinutes || 0);
-      current.journeyContribution = (current.journeyContribution || current.minutes || 0);
+      current.journeyContribution = (current.journeyContribution || current.minutes || 0) + (next.journeyContribution || next.minutes || 0);
       current.to = next.to || current.to;
       current.stopName = next.stopName || current.stopName;
       current.stationName = next.stationName || current.stationName;
@@ -373,7 +373,7 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     let minutesToDeparture = legDuration; // Default to leg duration
     let actualDepartureMs = null;
     let nextDepartureTimesMs = null;
-    const isTransitLeg = ['train', 'tram', 'bus'].includes(leg.type);
+    const isTransitLeg = ['train', 'tram', 'bus', 'vline'].includes(leg.type);
     const nowMs = now.getTime();
     const liveData = isTransitLeg ? findMatchingDeparture(leg, transitData, nowMs) : null;
     const arrivalAtStopMs = nowMs + (cumulativeMinutes * 60000);
@@ -767,11 +767,13 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
 
   const departures = leg.type === 'train' ? transitData.trains :
                      leg.type === 'tram' ? transitData.trams :
-                     leg.type === 'bus' ? transitData.buses : [];
+                     leg.type === 'bus' ? transitData.buses :
+                     leg.type === 'vline' ? transitData.trains : [];
 
   if (!departures?.length) return null;
 
-  // Find by route number if available
+  // Find by route number if available — do NOT fall back to all departures
+  // Showing wrong-route data is worse than showing no data
   let matchedDepartures = departures;
   if (leg.routeNumber) {
     const routeMatches = departures.filter(d =>
@@ -779,14 +781,16 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
     );
     if (routeMatches.length > 0) {
       matchedDepartures = routeMatches;
+    } else {
+      // No route match — return null rather than showing wrong-route data
+      return null;
     }
   }
 
-  // Get first departure as primary, but include all departure times
-  const primary = matchedDepartures[0];
+  // Clone primary to avoid mutating shared transitData objects
+  const primary = { ...matchedDepartures[0] };
   if (primary) {
-    // V13.6: Collect all departure times in milliseconds for live countdown
-    // If departureTimeMs exists, use it; otherwise calculate from minutes
+    // Collect all departure times in milliseconds for live countdown
     const depTimes = [];
     for (const d of matchedDepartures.slice(0, 5)) {
       if (d.departureTimeMs) {
@@ -800,17 +804,6 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
   }
 
   return primary;
-}
-
-/**
- * Find all departures for a leg type
- */
-function findDeparturesForLeg(leg, transitData) {
-  if (!transitData) return [];
-
-  return leg.type === 'train' ? (transitData.trains || []) :
-         leg.type === 'tram' ? (transitData.trams || []) :
-         leg.type === 'bus' ? (transitData.buses || []) : [];
 }
 
 /**
@@ -864,22 +857,6 @@ function calculateArrivalTime(now, totalMinutes, state) {
 }
 
 /**
- * V15.0: Get typical service headway (minutes between departures) for Melbourne transit.
- * Used for timetable-based departure estimates when GTFS-RT data is unavailable.
- * Based on published Melbourne transit frequencies.
- * @param {string} type - 'train', 'tram', or 'bus'
- * @param {number} hour - Current hour (0-23) in local time
- * @returns {number} - Estimated headway in minutes
- */
-function getTypicalHeadway(type, hour) {
-  const isPeak = (hour >= 7 && hour <= 9) || (hour >= 16 && hour <= 18);
-  const isLateNight = hour >= 22 || hour < 5;
-  if (type === 'tram') return isPeak ? 6 : isLateNight ? 20 : 10;
-  if (type === 'train') return isPeak ? 5 : isLateNight ? 20 : 12;
-  return 15; // bus default
-}
-
-/**
  * V15.0: Filter transit legs — REMOVE legs when GTFS-RT confirms no services running.
  * Only legs with verified live departure data are kept in the route.
  *
@@ -901,7 +878,7 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
 
   const filteredLegs = [];
   let transitNotice = null;
-  let timetableTypes = [];  // Transit types falling back to timetable data
+  let removedTypes = [];  // Transit types falling back to timetable data
   let walkFasterTypes = []; // Transit types where walking may be faster
 
   for (let i = 0; i < route.legs.length; i++) {
@@ -910,7 +887,7 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
     const prevLeg = i > 0 ? route.legs[i - 1] : null;
 
     // Check if this is a transit leg
-    const isTransitLeg = ['train', 'tram', 'bus'].includes(leg.type);
+    const isTransitLeg = ['train', 'tram', 'bus', 'vline'].includes(leg.type);
 
     if (isTransitLeg) {
       // Get departures for this transit type
@@ -918,9 +895,20 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
                          leg.type === 'tram' ? transitData.trams :
                          leg.type === 'bus' ? transitData.buses : [];
 
-      // V15.0: Check if any live departures are available
-      const hasDepartures = departures && departures.length > 0;
-      const isLastService = departures && departures.length === 1;
+      // V15.0: Check for route-specific departures first, then fall back to mode-level
+      // This prevents keeping a tram leg for route 58 when only route 86 is running
+      let routeDepartures = departures;
+      if (leg.routeNumber && departures && departures.length > 0) {
+        const routeMatches = departures.filter(d =>
+          d.routeNumber?.toString() === leg.routeNumber.toString()
+        );
+        if (routeMatches.length > 0) {
+          routeDepartures = routeMatches;
+        }
+      }
+
+      const hasDepartures = routeDepartures && routeDepartures.length > 0;
+      const isLastService = routeDepartures && routeDepartures.length === 1;
 
       if (!hasDepartures) {
         // V15.0: No live GTFS-RT data — service likely not running.
@@ -929,7 +917,7 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
         // Only verified live GTFS-RT departures are shown.
         leg.dataSource = 'none';
         leg.isLive = false;
-        timetableTypes.push(leg.type);
+        removedTypes.push(leg.type);
         // Skip adding to filteredLegs — leg is removed
         continue;
       }
@@ -976,8 +964,8 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
   }
 
   // V15.0: Set transitNotice when legs were removed due to no live data
-  if (timetableTypes.length > 0) {
-    const uniqueTypes = [...new Set(timetableTypes)];
+  if (removedTypes.length > 0) {
+    const uniqueTypes = [...new Set(removedTypes)];
     const typeLabel = uniqueTypes.map(t => t.toUpperCase()).join(' + ');
     transitNotice = `${typeLabel} NOT RUNNING`;
   }
@@ -994,7 +982,7 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
   return {
     route: { ...route, legs: filteredLegs },
     transitNotice,
-    timetableTypes,
+    removedTypes,
     walkFasterTypes
   };
 }
@@ -1248,7 +1236,7 @@ function generateRandomJourney(targetLegs = null) {
     const ampm = aH >= 12 ? 'pm' : 'am';
     
     // For transit legs, show DEPART time (when service departs)
-    if (['train', 'tram', 'bus'].includes(leg.type)) {
+    if (['train', 'tram', 'bus', 'vline'].includes(leg.type)) {
       // Assume next departure is arrival time + 1-3 min wait
       const waitMin = 1 + Math.floor(Math.random() * 3);
       const departMins = arriveAtLegMins + waitMin;
@@ -1507,13 +1495,16 @@ export default async function handler(req, res) {
     const busApiOptions = { ...apiOptions };
     if (busLeg?.routeNumber) busApiOptions.routeNumber = busLeg.routeNumber;
 
-    const [trains, trams, buses, weather, disruptions] = await Promise.all([
+    const [trains, trams, buses, weather, metroDisruptions, tramDisruptions, busDisruptions] = await Promise.all([
       getDepartures(trainStopId, 0, apiOptions),
       getDepartures(tramStopId, 1, tramApiOptions),
       getDepartures(busStopId, 2, busApiOptions),
       getWeather(locations.home?.lat, locations.home?.lon),
-      getDisruptions(0, apiOptions).catch(() => [])
+      getDisruptions(0, apiOptions).catch(() => []),
+      getDisruptions(1, apiOptions).catch(() => []),
+      getDisruptions(2, apiOptions).catch(() => [])
     ]);
+    const disruptions = [...metroDisruptions, ...tramDisruptions, ...busDisruptions];
 
     const transitData = { trains, trams, buses, disruptions };
 
@@ -1627,7 +1618,7 @@ export default async function handler(req, res) {
     const transitFilterResult = filterUnavailableTransitLegs(effectiveRoute, transitData);
     effectiveRoute = transitFilterResult.route;
     const transitNotice = transitFilterResult.transitNotice;
-    const timetableTypes = transitFilterResult.timetableTypes || [];
+    const removedTypes = transitFilterResult.removedTypes || [];
     const walkFasterTypes = transitFilterResult.walkFasterTypes || [];
     // Build journey legs with cumulative timing (Data Model v1.18)
     // V13.6: Pass locations for deriving proper stop/station names
@@ -1716,9 +1707,9 @@ export default async function handler(req, res) {
     // V15.0: Alternative Transit - cost estimates when public transit is disrupted
     // Activate when: no transit available, services cancelled/delayed/suspended,
     // or confidence score indicates user cannot arrive on time (UNLIKELY)
-    const hasActiveTransit = journeyLegs.some(l => ['train', 'tram', 'bus'].includes(l.type));
+    const hasActiveTransit = journeyLegs.some(l => ['train', 'tram', 'bus', 'vline'].includes(l.type));
     const hasDisruptedTransit = journeyLegs.some(l =>
-      ['train', 'tram', 'bus'].includes(l.type) &&
+      ['train', 'tram', 'bus', 'vline'].includes(l.type) &&
       ['delayed', 'cancelled', 'suspended'].includes(l.state)
     );
     const cannotArriveOnTime = confidence.label === 'UNLIKELY';
@@ -1737,7 +1728,7 @@ export default async function handler(req, res) {
       weather: weatherData,
       totalWalkMins: journeyLegs.filter(l => l.type === 'walk').reduce((sum, l) => sum + (l.minutes || 0), 0),
       disruptionCount: journeyLegs.filter(l => l.state === 'suspended' || l.state === 'cancelled' || l.hasAlert).length,
-      transferCount: journeyLegs.filter(l => ['train', 'tram', 'bus'].includes(l.type)).length
+      transferCount: journeyLegs.filter(l => ['train', 'tram', 'bus', 'vline'].includes(l.type)).length
     });
     const dashboardData = {
       location: displayHome,
@@ -1768,7 +1759,7 @@ export default async function handler(req, res) {
                       coffeeDecision.subtext || null,
       // V15.0: Transit availability notice (e.g., "TRAM USING TIMETABLE DATA")
       transit_notice: transitNotice,
-      timetable_types: timetableTypes.length > 0 ? timetableTypes : null,
+      timetable_types: removedTypes.length > 0 ? removedTypes : null,
       walk_faster_types: walkFasterTypes.length > 0 ? walkFasterTypes : null,
       // Data source accuracy: only mark as live when GTFS-RT data was actually received
       // Per Section 23.6: LIVE badge must reflect actual data source, not API key existence

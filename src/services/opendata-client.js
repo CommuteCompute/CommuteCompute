@@ -38,17 +38,28 @@ const METRO_LINE_NAMES = {
   'UFD': 'Upfield', 'WER': 'Werribee', 'WIL': 'Williamstown', 'MDD': 'Mernda'
 };
 
+// V/Line regional line names (GTFS route ID suffix → line name)
+const VLINE_LINE_NAMES = {
+  'GEL': 'Geelong', 'BAL': 'Ballarat', 'BEN': 'Bendigo', 'GIP': 'Gippsland',
+  'SEY': 'Seymour', 'ART': 'Ararat', 'MBR': 'Maryborough', 'SWH': 'Swan Hill',
+  'ECH': 'Echuca', 'ALB': 'Albury', 'WAR': 'Warrnambool', 'TRA': 'Traralgon',
+  'BAW': 'Bairnsdale', 'EPC': 'Epsom', 'SHE': 'Shepparton'
+};
+
 /**
  * Check if a stop ID is in the Melbourne City Loop area
  * City Loop stations: Parliament, Melbourne Central, Flagstaff, Southern Cross, Flinders Street
  * These stops are typically 26xxx or 12204 (Flinders Street)
  */
+// City Loop and Flinders Street stop IDs — exact set for precision
+const CITY_LOOP_STOP_IDS = new Set([
+  '26001', '26002', '26003', '26004', // Parliament, Melbourne Central, Flagstaff, Southern Cross
+  '12204', '12205'                     // Flinders Street platforms
+]);
+
 function isCityLoopStop(stopId) {
   if (!stopId) return false;
-  // City Loop terminus stops on metro lines
-  // 26xxx = City Loop stations (Parliament, Melbourne Central, Flagstaff, Southern Cross)
-  // 12204, 12205 = Flinders Street area
-  return stopId.startsWith('26') || stopId === '12204' || stopId === '12205';
+  return CITY_LOOP_STOP_IDS.has(String(stopId));
 }
 
 /**
@@ -59,10 +70,11 @@ function getLineName(routeId) {
   if (!routeId) return 'City';
   // Extract line code (e.g., SHM from aus:vic:vic-02-SHM:)
   const match = routeId.match(/-([A-Z]{3}):?$/);
-  if (match && METRO_LINE_NAMES[match[1]]) {
-    return METRO_LINE_NAMES[match[1]];
+  if (match) {
+    if (METRO_LINE_NAMES[match[1]]) return METRO_LINE_NAMES[match[1]];
+    if (VLINE_LINE_NAMES[match[1]]) return VLINE_LINE_NAMES[match[1]];
   }
-  // For trams, extract route number
+  // For trams/buses, extract route number
   const tramMatch = routeId.match(/-(\d+):?$/);
   if (tramMatch) {
     return `Route ${tramMatch[1]}`;
@@ -153,11 +165,15 @@ async function fetchGtfsRt(mode, feed, options = {}) {
 
   try {
     console.log(`[OpenData] Fetching GTFS-RT: ${mode}/${feed}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     const response = await fetch(url, {
       headers: {
         'KeyId': apiKey  // Case-sensitive as per dev rules Section 11.1
-      }
+      },
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'no body');
@@ -202,7 +218,8 @@ export async function getDepartures(stopId, routeType, options = {}) {
   }
 
   // Map route type to GTFS-RT mode
-  const modeMap = { 0: 'metro', 1: 'tram', 2: 'bus' };
+  // 0=metro train, 1=tram, 2=bus, 3=vline (regional train)
+  const modeMap = { 0: 'metro', 1: 'tram', 2: 'bus', 3: 'vline' };
   const mode = modeMap[routeType] || 'metro';
 
   try {
@@ -427,7 +444,8 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0) {
       const minutes = Math.round((depMs - nowMs) / 60000);
 
       // V15.0: Include upcoming departures (next 120 min) — wider window for low-frequency services
-      if (minutes >= 0 && minutes <= 120) {
+      // Allow -2 min for just-departed services (consistent with route-level matching)
+      if (minutes >= -2 && minutes <= 120) {
         // Get delay info
         const delay = stu.departure?.delay || stu.arrival?.delay || 0;
         const isDelayed = delay > 60; // More than 1 minute delay
@@ -474,7 +492,7 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0) {
  * @param {Object} options - { apiKey }
  */
 export async function getDisruptions(routeType, options = {}) {
-  const modeMap = { 0: 'metro', 1: 'tram', 2: 'bus' };
+  const modeMap = { 0: 'metro', 1: 'tram', 2: 'bus', 3: 'vline' };
   const mode = modeMap[routeType] || 'metro';
   
   try {
@@ -581,20 +599,23 @@ export async function getDashboardData(config = {}) {
   // Stop IDs must come from: 1) user config, 2) CommuteCompute auto-detect, 3) null → fallback
   const trainStopId = config.trainStopId || null;
   const tramStopId = config.tramStopId || null;
+  const busStopId = config.busStopId || null;
   const lat = config.lat || MELBOURNE_LAT;
   const lon = config.lon || MELBOURNE_LON;
   const options = { apiKey: config.apiKey };
-  
-  const [trains, trams, weather, disruptions] = await Promise.all([
+
+  const [trains, trams, buses, weather, disruptions] = await Promise.all([
     trainStopId ? getDepartures(trainStopId, 0, options) : Promise.resolve([]),
     tramStopId ? getDepartures(tramStopId, 1, options) : Promise.resolve([]),
+    busStopId ? getDepartures(busStopId, 2, options) : Promise.resolve([]),
     getWeather(lat, lon),
     getDisruptions(0, options).catch(() => [])
   ]);
-  
+
   return {
     trains,
     trams,
+    buses,
     weather,
     disruptions,
     timestamp: new Date().toISOString()

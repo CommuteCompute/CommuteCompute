@@ -59,7 +59,7 @@ export const MELBOURNE_STOP_IDS = {
   'prahran': { train: '14289', tram: '2509', bus: null, line: 'Sandringham' },
   'windsor': { train: '14297', tram: '2513', bus: null, line: 'Sandringham' },
   'balaclava': { train: '14233', tram: '2519', bus: null, line: 'Sandringham' },
-  'ripponlea': { train: '14297', tram: null, bus: null, line: 'Sandringham' },
+  'ripponlea': { train: null, tram: null, bus: null, line: 'Sandringham' },  // Was 14297 (Windsor duplicate)
   'elsternwick': { train: '14247', tram: null, bus: null, line: 'Sandringham' },
   'brighton beach': { train: '14241', tram: null, bus: null, line: 'Sandringham' },
   'sandringham': { train: '14271', tram: null, bus: null, line: 'Sandringham' },
@@ -84,9 +84,9 @@ export const MELBOURNE_STOP_IDS = {
   'collingwood': { train: '14251', tram: '2103', bus: null, line: 'Hurstbridge/Mernda' },
   'fitzroy north': { train: null, tram: '2107', bus: null, line: 'Tram' },
   'northcote': { train: '14269', tram: '2115', bus: null, line: 'Hurstbridge/Mernda' },
-  'fairfield': { train: '14251', tram: null, bus: null, line: 'Hurstbridge/Mernda' },
+  'fairfield': { train: null, tram: null, bus: null, line: 'Hurstbridge/Mernda' },  // Was 14251 (Collingwood duplicate)
   'alphington': { train: '14231', tram: null, bus: null, line: 'Hurstbridge/Mernda' },
-  'ivanhoe': { train: '14261', tram: null, bus: null, line: 'Hurstbridge' },
+  'ivanhoe': { train: null, tram: null, bus: null, line: 'Hurstbridge' },  // Was 14261 (Malvern duplicate)
 
   // West - Werribee/Williamstown
   'footscray': { train: '14255', tram: null, bus: null, line: 'Werribee/Williamstown/Sunbury' },
