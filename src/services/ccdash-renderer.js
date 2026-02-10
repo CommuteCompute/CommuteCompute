@@ -13,7 +13,7 @@
  * - Large clock (82px) positioned at bottom, touching status bar
  * - AM/PM aligned with bottom of coffee/weather boxes
  * - Service status indicator ([OK] SERVICES OK / [!] DISRUPTIONS)
- * - Data source indicator (● LIVE DATA / ○ TIMETABLE FALLBACK)
+ * - Data source indicator (● LIVE DATA / ○ NO LIVE DATA)
  * - Coffee decision box (GET A COFFEE / NO TIME FOR COFFEE with sad face)
  * - Weather box with temp, condition, umbrella indicator
  *
@@ -717,6 +717,52 @@ function drawCoffeeIconOutline(ctx, x, y, size = 32) {
 }
 
 /**
+ * Draw ferry icon (canvas-drawn, no emojis)
+ * Simple boat hull with cabin and wave line
+ * @param {boolean} outline - If true, draw outline only
+ */
+function drawFerryIcon(ctx, x, y, size = 32, outline = false) {
+  ctx.save();
+  ctx.translate(x, y);
+  const s = size / 32;
+  ctx.scale(s, s);
+
+  ctx.strokeStyle = '#000';
+  ctx.fillStyle = '#000';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Hull
+  ctx.beginPath();
+  ctx.moveTo(4, 20);
+  ctx.lineTo(8, 26);
+  ctx.lineTo(24, 26);
+  ctx.lineTo(28, 20);
+  ctx.closePath();
+  if (outline) { ctx.stroke(); } else { ctx.fill(); }
+
+  // Cabin
+  ctx.beginPath();
+  ctx.rect(11, 12, 10, 8);
+  if (outline) { ctx.stroke(); } else { ctx.fill(); }
+
+  // Funnel
+  ctx.beginPath();
+  ctx.rect(14, 6, 4, 6);
+  if (outline) { ctx.stroke(); } else { ctx.fill(); }
+
+  // Wave line beneath hull
+  ctx.beginPath();
+  ctx.moveTo(2, 29);
+  ctx.quadraticCurveTo(8, 32, 16, 29);
+  ctx.quadraticCurveTo(24, 26, 30, 29);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+/**
  * Draw mode icon by type
  * @param {boolean} outline - If true, draw outline variant (for delayed/skipped states)
  */
@@ -736,10 +782,13 @@ function drawModeIcon(ctx, type, x, y, size = 32, outline = false) {
       case 'coffee':
         drawCoffeeIconOutline(ctx, x, y, size);
         return;
+      case 'ferry':
+        drawFerryIcon(ctx, x, y, size, true);
+        return;
       // Walk icon doesn't have outline variant - always show solid
     }
   }
-  
+
   switch (type) {
     case 'walk':
       drawWalkIcon(ctx, x, y, size);
@@ -756,6 +805,9 @@ function drawModeIcon(ctx, type, x, y, size = 32, outline = false) {
       break;
     case 'coffee':
       drawCoffeeIcon(ctx, x, y, size);
+      break;
+    case 'ferry':
+      drawFerryIcon(ctx, x, y, size);
       break;
     default:
       // Default: draw a simple transit icon (circle with T)
@@ -1294,12 +1346,16 @@ function getLegSubtitle(leg) {
       const lineName = leg.lineName || leg.routeName || '';
       
       // v1.40: Calculate live countdown from absolute times if available
-      let nextDepartures = leg.nextDepartures || leg.upcoming || [];
+      // V15.0: Filter to catchable departures only (per Critical Pattern #6)
+      let nextDepartures = [];
       if (leg.nextDepartureTimesMs && leg.nextDepartureTimesMs.length > 0) {
         const nowMs = Date.now();
         nextDepartures = leg.nextDepartureTimesMs
           .map(depMs => Math.max(0, Math.round((depMs - nowMs) / 60000)))
           .filter(mins => mins >= 0 && mins <= 60);
+      } else if (leg.nextDepartures && leg.nextDepartures.length > 0) {
+        // Only use pre-filtered catchable departures from screen.js
+        nextDepartures = leg.nextDepartures.filter(m => m >= 0 && m <= 60);
       }
       
       let parts = [];
@@ -1324,9 +1380,6 @@ function getLegSubtitle(leg) {
         parts.push(`${tilde}Next: ${nextDepartures[0]}, ${nextDepartures[1]} min${liveIndicator}`);
       } else if (nextDepartures.length === 1) {
         parts.push(`${tilde}Next: ${nextDepartures[0]} min${liveIndicator}`);
-      } else if (leg.nextIn !== undefined) {
-        // Fallback to single next value
-        parts.push(`${tilde}Next: ${leg.nextIn} min${liveIndicator}`);
       }
       
       // Add delay info if delayed
@@ -1996,7 +2049,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     ctx.lineWidth = 1.5;
     ctx.strokeRect(statusBoxX, dataBoxY, statusBoxW, dataBoxH);
     ctx.fillStyle = '#000';
-    ctx.fillText('○ TIMETABLE', statusBoxX + 8, dataBoxY + dataBoxH / 2);  // V13.6: Shortened text
+    ctx.fillText('○ NO LIVE DATA', statusBoxX + 8, dataBoxY + dataBoxH / 2);
   }
   
   ctx.fillStyle = '#000';
