@@ -9,6 +9,7 @@
  */
 
 import PreferencesManager from '../src/data/preferences-manager.js';
+import { getGoogleApiKey } from '../src/data/kv-preferences.js';
 
 export default async function handler(req, res) {
   const query = req.query.q;
@@ -26,12 +27,19 @@ export default async function handler(req, res) {
     let googleValidated = !!googleKeyFromQuery; // If client passes it, they validated it
     
     if (!googleKey) {
-      // Try preferences (works locally, ephemeral on Vercel serverless)
-      const prefs = new PreferencesManager();
-      await prefs.load();
-      const currentPrefs = prefs.get();
-      googleKey = currentPrefs?.additionalAPIs?.google_places;
-      googleValidated = currentPrefs?.additionalAPIs?.google_places_validated === true;
+      // Try KV-stored key first (admin panel uses pre-configured keys)
+      const kvKey = await getGoogleApiKey();
+      if (kvKey) {
+        googleKey = kvKey;
+        googleValidated = true;
+      } else {
+        // Fallback to local preferences file (works locally, ephemeral on Vercel)
+        const prefs = new PreferencesManager();
+        await prefs.load();
+        const currentPrefs = prefs.get();
+        googleKey = currentPrefs?.additionalAPIs?.google_places;
+        googleValidated = currentPrefs?.additionalAPIs?.google_places_validated === true;
+      }
     }
     
     
