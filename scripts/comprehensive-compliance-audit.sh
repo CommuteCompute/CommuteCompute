@@ -4,16 +4,17 @@
 # Copyright (c) 2026 Angus Bergman
 # Licensed under AGPL-3.0
 #
-# Systematically checks ALL 24 sections of DEVELOPMENT-RULES.md
-# 180+ automated checks across 8 groups:
+# Systematically checks ALL 25 sections of DEVELOPMENT-RULES.md
+# 200+ automated checks across 9 groups:
 #   G1: Static Analysis (Sections 0-3, 14, 20)
 #   G2: Per-Page Verification (all HTML pages)
 #   G3: Per-Endpoint Verification (all API endpoints)
 #   G4: Data Flow Verification (config, rendering, admin, KV, mock data)
 #   G5: Caching Verification (headers, refresh timing, TTLs)
 #   G6: Version Consistency (cross-file version checks)
-#   G7: Security (Section 17 expanded)
-#   G8: Architecture & Design (Sections 4-5, 7-10, 22-24)
+#   G7: Security (Section 17 expanded + BLE provisioning URL checks)
+#   G8: Architecture & Design (Sections 4-5, 7-10, 21-24)
+#   G9: Metro Tunnel Compliance (Section 25)
 #
 # Run from repository root: ./scripts/comprehensive-compliance-audit.sh
 #
@@ -1673,6 +1674,74 @@ if [ -f "api/version.js" ]; then
     fi
 else
     fail "api/version.js not found"
+fi
+
+# ============================================================================
+# GROUP 9: METRO TUNNEL COMPLIANCE (Section 25)
+# ============================================================================
+group_header "GROUP 9: METRO TUNNEL COMPLIANCE (Section 25)"
+
+# 25.2: METRO_TUNNEL_LINE_CODES must exist in opendata-client.js
+section "Metro Tunnel line codes in opendata-client.js"
+if grep -q "METRO_TUNNEL_LINE_CODES" src/services/opendata-client.js 2>/dev/null; then
+    pass "METRO_TUNNEL_LINE_CODES constant exists in opendata-client.js"
+else
+    fail "Missing METRO_TUNNEL_LINE_CODES in opendata-client.js (Section 25.6)"
+fi
+
+# Check all 5 line codes are present
+for code in PKM CBE SUY CGB UFD; do
+    if grep -q "'$code'" src/services/opendata-client.js 2>/dev/null; then
+        pass "Metro Tunnel line code $code present"
+    else
+        fail "Missing Metro Tunnel line code $code in opendata-client.js"
+    fi
+done
+
+# 25.4: Metro Tunnel stop IDs
+section "Metro Tunnel station stop IDs"
+if grep -q "METRO_TUNNEL_STOP_IDS" src/services/opendata-client.js 2>/dev/null; then
+    pass "METRO_TUNNEL_STOP_IDS constant exists in opendata-client.js"
+else
+    fail "Missing METRO_TUNNEL_STOP_IDS in opendata-client.js (Section 25.4)"
+fi
+
+for stopid in 26010 26011 26012 26013 26014; do
+    if grep -q "'$stopid'" src/services/opendata-client.js 2>/dev/null; then
+        pass "Metro Tunnel stop ID $stopid present"
+    else
+        fail "Missing Metro Tunnel stop ID $stopid in opendata-client.js"
+    fi
+done
+
+# 25.5: isMetroTunnel flag in departure processing
+section "isMetroTunnel flag in GTFS-RT departures"
+if grep -q "isMetroTunnel" src/services/opendata-client.js 2>/dev/null; then
+    pass "isMetroTunnel flag used in opendata-client.js"
+else
+    fail "Missing isMetroTunnel flag in GTFS-RT departure processing (Section 25.5)"
+fi
+
+# 25.5: Metro Tunnel filtering in screen.js
+section "Metro Tunnel departure filtering in screen.js"
+if grep -q "requiresCityLoop\|requiresMetroTunnel" api/screen.js 2>/dev/null; then
+    pass "City Loop / Metro Tunnel filtering present in screen.js"
+else
+    fail "Missing Metro Tunnel vs City Loop filtering in screen.js (Section 25.5)"
+fi
+
+# 25.6: METRO_TUNNEL_LINES in commute-compute.js
+section "Metro Tunnel config in commute-compute engine"
+if grep -q "METRO_TUNNEL_LINES" src/engines/commute-compute.js 2>/dev/null; then
+    pass "METRO_TUNNEL_LINES exists in commute-compute.js"
+else
+    fail "Missing METRO_TUNNEL_LINES in commute-compute.js (Section 25.6)"
+fi
+
+if grep -q "METRO_TUNNEL_STATIONS" src/engines/commute-compute.js 2>/dev/null; then
+    pass "METRO_TUNNEL_STATIONS exists in commute-compute.js"
+else
+    fail "Missing METRO_TUNNEL_STATIONS in commute-compute.js (Section 25.6)"
 fi
 
 # ============================================================================

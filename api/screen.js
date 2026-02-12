@@ -343,6 +343,20 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       const cityStations = ['flinders', 'parliament', 'melbourne central', 'flagstaff',
         'southern cross', 'town hall', 'state library', 'parkville', 'arden', 'anzac', 'city'];
       leg.isCitybound = cityStations.some(s => destName.includes(s));
+
+      // Metro Tunnel vs City Loop destination filtering.
+      // City Loop stations: Flinders Street, Parliament, Melbourne Central, Flagstaff, Southern Cross
+      // Metro Tunnel stations: Town Hall, State Library, Parkville, Arden, Anzac
+      // Trains on Metro Tunnel lines (Pakenham/Cranbourne/Sunbury/Craigieburn/Upfield)
+      // do NOT stop at City Loop stations, and vice versa.
+      const cityLoopStations = ['flinders', 'parliament', 'melbourne central', 'flagstaff', 'southern cross'];
+      const metroTunnelStations = ['town hall', 'state library', 'parkville', 'arden', 'anzac'];
+      if (cityLoopStations.some(s => destName.includes(s))) {
+        leg.requiresCityLoop = true;
+      } else if (metroTunnelStations.some(s => destName.includes(s))) {
+        leg.requiresMetroTunnel = true;
+      }
+      // If destination is generic 'city', accept either — user doesn't care which tunnel/loop
     }
     if (leg.type === 'bus') {
       const fromCafe = prevLeg?.type === 'walk' && (prevLeg?.from === 'cafe' || currentOrigin === 'cafe');
@@ -786,7 +800,15 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
     // Multiple lines serve the same station — user catches the next one going their way.
     // isCitybound is set by processGtfsRtDepartures from the trip's final stop.
     if (leg.isCitybound !== undefined) {
-      const dirMatches = departures.filter(d => d.isCitybound === leg.isCitybound);
+      let dirMatches = departures.filter(d => d.isCitybound === leg.isCitybound);
+      // Metro Tunnel vs City Loop filtering:
+      // If destination is a City Loop station (e.g., Flinders Street), exclude Metro Tunnel trains.
+      // If destination is a Metro Tunnel station (e.g., Town Hall), exclude City Loop trains.
+      if (leg.requiresCityLoop) {
+        dirMatches = dirMatches.filter(d => !d.isMetroTunnel);
+      } else if (leg.requiresMetroTunnel) {
+        dirMatches = dirMatches.filter(d => d.isMetroTunnel);
+      }
       if (dirMatches.length > 0) {
         matchedDepartures = dirMatches;
       } else {
@@ -919,7 +941,13 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
       if (leg.type === 'train' || leg.type === 'vline') {
         // For trains: filter by direction, not route number — any line in the right direction
         if (leg.isCitybound !== undefined && departures && departures.length > 0) {
-          const dirMatches = departures.filter(d => d.isCitybound === leg.isCitybound);
+          let dirMatches = departures.filter(d => d.isCitybound === leg.isCitybound);
+          // Metro Tunnel vs City Loop: exclude wrong tunnel/loop trains
+          if (leg.requiresCityLoop) {
+            dirMatches = dirMatches.filter(d => !d.isMetroTunnel);
+          } else if (leg.requiresMetroTunnel) {
+            dirMatches = dirMatches.filter(d => d.isMetroTunnel);
+          }
           routeDepartures = dirMatches.length > 0 ? dirMatches : [];
         }
       } else if (leg.routeNumber && departures && departures.length > 0) {
