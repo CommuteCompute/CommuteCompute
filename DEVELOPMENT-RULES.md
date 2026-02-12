@@ -4910,7 +4910,90 @@ The following MUST exist in `commute-compute.js`:
 
 ---
 
-**Document Version:** 1.13
+## Section 26: API Authentication & CORS Security (MANDATORY)
+
+### 26.1 Auth on All Admin Endpoints
+
+All admin and state-mutating endpoints MUST require authentication for **every HTTP method** (including GET), not just non-GET methods. Endpoints returning personal configuration data (addresses, coordinates, API key status) MUST check auth before returning any data.
+
+```javascript
+// CORRECT — auth checked before any data returned
+const authError = requireAuth(req);
+if (authError) return res.status(401).json(authError);
+
+// WRONG — skips auth for GET, exposing personal data
+if (req.method !== 'GET') {
+  const authError = requireAuth(req);
+  ...
+}
+```
+
+### 26.2 Deny by Default
+
+`requireAuth()` MUST deny access when `CC_ADMIN_TOKEN` is not configured. Silent pass-through when the token is unset is a critical vulnerability.
+
+```javascript
+// CORRECT — deny when token not set
+if (!adminToken) {
+  return { error: 'Authentication not configured', message: 'CC_ADMIN_TOKEN must be set' };
+}
+
+// WRONG — silent pass when token missing
+if (!adminToken) return null;
+```
+
+### 26.3 First-Time Setup Exception
+
+Setup-flow endpoints (`save-transit-key`, `save-google-key`, `setup-complete`, `sync-config`, `generate-webhook`) may allow unauthenticated access ONLY during first-time setup (when no transit API key exists in KV). Once the system is configured, these endpoints MUST require auth.
+
+```javascript
+if (!(await isFirstTimeSetup())) {
+  const authError = requireAuth(req);
+  if (authError) return res.status(401).json(authError);
+}
+```
+
+### 26.4 No Wildcard CORS on State-Mutating Endpoints
+
+State-mutating and admin endpoints MUST NOT use `Access-Control-Allow-Origin: *`. Use `setAdminCorsHeaders()` which only sets CORS when `CC_ALLOWED_ORIGIN` env var is configured.
+
+```javascript
+// CORRECT — same-origin only (or configured origin)
+setAdminCorsHeaders(res);
+
+// WRONG — allows any origin to read admin data
+res.setHeader('Access-Control-Allow-Origin', process.env.CC_ALLOWED_ORIGIN || '*');
+```
+
+Device-facing read-only endpoints (`/api/screen`, `/api/zones`, `/api/status`, `/api/health`, `/api/livedash`) may use wildcard CORS for firmware compatibility.
+
+### 26.5 KV-First Configuration Check
+
+Endpoints that check whether the system is configured MUST use KV storage (via `getTransitApiKey()`) as the source of truth, not `PreferencesManager.isConfigured()` which reads from local files.
+
+```javascript
+// CORRECT — KV-first, consistent with screen.js
+const transitApiKey = await getTransitApiKey();
+if (!transitApiKey) { /* setup_required */ }
+
+// WRONG — checks local file, not KV
+const prefs = new PreferencesManager();
+if (!prefs.isConfigured()) { /* setup_required */ }
+```
+
+### 26.6 ESM Compatibility
+
+All API endpoint files use ES Modules. Never use `__dirname` or `__filename` directly — these are not defined in ESM. Use:
+
+```javascript
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const __dirname = dirname(fileURLToPath(import.meta.url));
+```
+
+---
+
+**Document Version:** 1.14
 **Maintained By:** Angus Bergman
 **Last Updated:** 2026-02-13
 

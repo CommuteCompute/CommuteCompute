@@ -4,8 +4,8 @@
 # Copyright (c) 2026 Angus Bergman
 # Licensed under AGPL-3.0
 #
-# Systematically checks ALL 25 sections of DEVELOPMENT-RULES.md
-# 200+ automated checks across 9 groups:
+# Systematically checks ALL 26 sections of DEVELOPMENT-RULES.md
+# 210+ automated checks across 10 groups:
 #   G1: Static Analysis (Sections 0-3, 14, 20)
 #   G2: Per-Page Verification (all HTML pages)
 #   G3: Per-Endpoint Verification (all API endpoints)
@@ -15,6 +15,7 @@
 #   G7: Security (Section 17 expanded + BLE provisioning URL checks)
 #   G8: Architecture & Design (Sections 4-5, 7-10, 21-24)
 #   G9: Metro Tunnel Compliance (Section 25)
+#   G10: API Security & Auth (Section 26)
 #
 # Run from repository root: ./scripts/comprehensive-compliance-audit.sh
 #
@@ -1742,6 +1743,156 @@ if grep -q "METRO_TUNNEL_STATIONS" src/engines/commute-compute.js 2>/dev/null; t
     pass "METRO_TUNNEL_STATIONS exists in commute-compute.js"
 else
     fail "Missing METRO_TUNNEL_STATIONS in commute-compute.js (Section 25.6)"
+fi
+
+# ============================================================================
+# GROUP 10: API SECURITY & AUTH (Section 26)
+# ============================================================================
+group_header "GROUP 10: API SECURITY & AUTH (Section 26)"
+
+# 26.1: No skip-auth-for-GET pattern in admin endpoints
+section "Admin endpoints auth on all methods"
+
+# Check for the dangerous pattern: auth only checked inside if (req.method !== 'GET') block
+# This skips auth for GET requests, exposing data
+# Pattern: lines with req.method !== 'GET' followed within 2 lines by requireAuth
+ADMIN_SKIP_AUTH=""
+for f in api/admin/preferences.js api/admin/reset.js api/profiles.js; do
+    if [ -f "$f" ]; then
+        MATCH=$(grep -n "req\.method !== 'GET'" "$f" 2>/dev/null | while read -r line; do
+            LINENUM=$(echo "$line" | cut -d: -f1)
+            # Check if requireAuth appears within the next 3 lines (inside the block)
+            NEXT_LINES=$(sed -n "$((LINENUM+1)),$((LINENUM+3))p" "$f" 2>/dev/null)
+            if echo "$NEXT_LINES" | grep -q "requireAuth"; then
+                echo "$f:$LINENUM: auth gated behind method check"
+            fi
+        done || true)
+        if [ -n "$MATCH" ]; then
+            ADMIN_SKIP_AUTH="${ADMIN_SKIP_AUTH}${MATCH}"
+        fi
+    fi
+done
+if [ -z "$ADMIN_SKIP_AUTH" ]; then
+    pass "No skip-auth-for-GET pattern in admin endpoints"
+else
+    fail "Admin endpoints skip auth for GET: $ADMIN_SKIP_AUTH (Section 26.1)"
+fi
+
+# 26.2: Auth middleware denies by default when CC_ADMIN_TOKEN unset
+section "Auth middleware deny-by-default"
+
+if grep -q "return null" src/utils/auth-middleware.js 2>/dev/null; then
+    # Check if the null return is ONLY for successful auth, not for missing token
+    SKIP_AUTH_PATTERN=$(grep -B2 "return null" src/utils/auth-middleware.js | grep -c "adminToken\|skip auth\|backward" || true)
+    if [ "$SKIP_AUTH_PATTERN" -gt 0 ]; then
+        fail "Auth middleware silently passes when CC_ADMIN_TOKEN unset (Section 26.2)"
+    else
+        pass "Auth middleware denies by default when CC_ADMIN_TOKEN unset"
+    fi
+else
+    pass "Auth middleware denies by default when CC_ADMIN_TOKEN unset"
+fi
+
+# 26.3: Setup endpoints use isFirstTimeSetup
+section "Setup endpoints use first-time-setup guard"
+
+SETUP_ENDPOINTS="api/save-transit-key.js api/save-google-key.js api/admin/setup-complete.js api/sync-config.js api/admin/generate-webhook.js"
+SETUP_GUARD_COUNT=0
+SETUP_TOTAL=0
+for f in $SETUP_ENDPOINTS; do
+    if [ -f "$f" ]; then
+        SETUP_TOTAL=$((SETUP_TOTAL + 1))
+        if grep -q "isFirstTimeSetup" "$f" 2>/dev/null; then
+            SETUP_GUARD_COUNT=$((SETUP_GUARD_COUNT + 1))
+        fi
+    fi
+done
+
+if [ "$SETUP_GUARD_COUNT" -eq "$SETUP_TOTAL" ] && [ "$SETUP_TOTAL" -gt 0 ]; then
+    pass "All setup endpoints use isFirstTimeSetup guard ($SETUP_GUARD_COUNT/$SETUP_TOTAL)"
+else
+    fail "Setup endpoints missing isFirstTimeSetup guard ($SETUP_GUARD_COUNT/$SETUP_TOTAL) (Section 26.3)"
+fi
+
+# 26.4: No wildcard CORS on admin/state-mutating endpoints
+section "No wildcard CORS on admin endpoints"
+
+WILDCARD_CORS=$(grep -rn "CC_ALLOWED_ORIGIN || '\*'" api/admin/ api/save-transit-key.js api/save-google-key.js api/sync-config.js api/profiles.js 2>/dev/null | grep -v "node_modules" || true)
+if [ -z "$WILDCARD_CORS" ]; then
+    pass "No wildcard CORS fallback on admin/state-mutating endpoints"
+else
+    fail "Wildcard CORS on admin endpoints: $WILDCARD_CORS (Section 26.4)"
+fi
+
+# 26.4: Admin endpoints use setAdminCorsHeaders
+section "Admin endpoints use setAdminCorsHeaders"
+
+ADMIN_CORS_COUNT=0
+ADMIN_CORS_TOTAL=0
+ADMIN_CORS_FILES="api/admin/preferences.js api/admin/setup-complete.js api/admin/generate-webhook.js api/admin/reset.js api/save-transit-key.js api/save-google-key.js api/sync-config.js api/profiles.js"
+for f in $ADMIN_CORS_FILES; do
+    if [ -f "$f" ]; then
+        ADMIN_CORS_TOTAL=$((ADMIN_CORS_TOTAL + 1))
+        if grep -q "setAdminCorsHeaders" "$f" 2>/dev/null; then
+            ADMIN_CORS_COUNT=$((ADMIN_CORS_COUNT + 1))
+        fi
+    fi
+done
+
+if [ "$ADMIN_CORS_COUNT" -eq "$ADMIN_CORS_TOTAL" ] && [ "$ADMIN_CORS_TOTAL" -gt 0 ]; then
+    pass "All admin endpoints use setAdminCorsHeaders ($ADMIN_CORS_COUNT/$ADMIN_CORS_TOTAL)"
+else
+    fail "Admin endpoints not using setAdminCorsHeaders ($ADMIN_CORS_COUNT/$ADMIN_CORS_TOTAL) (Section 26.4)"
+fi
+
+# 26.5: Zone APIs use KV-first config check
+section "Zone APIs KV-first config check"
+
+ZONE_KV_OK=0
+for f in api/zones.js api/zones-tiered.js; do
+    if [ -f "$f" ]; then
+        if grep -q "getTransitApiKey" "$f" 2>/dev/null; then
+            ZONE_KV_OK=$((ZONE_KV_OK + 1))
+        fi
+    fi
+done
+
+if [ "$ZONE_KV_OK" -ge 2 ]; then
+    pass "Zone APIs use KV-first config check (getTransitApiKey)"
+else
+    fail "Zone APIs not using KV-first config check ($ZONE_KV_OK/2) (Section 26.5)"
+fi
+
+# 26.6: No bare __dirname in ESM files
+section "No bare __dirname in ESM API files"
+
+# Check each API file for __dirname — only flag if file lacks ESM-compatible definition
+BARE_DIRNAME=""
+for f in $(grep -rl "__dirname" api/ --include="*.js" 2>/dev/null | grep -v "node_modules" || true); do
+    # If file has ESM-compatible __dirname definition (fileURLToPath), it's fine
+    if ! grep -q "fileURLToPath" "$f" 2>/dev/null; then
+        BARE_DIRNAME="${BARE_DIRNAME}${f} "
+    fi
+done
+if [ -z "$BARE_DIRNAME" ]; then
+    pass "No bare __dirname usage in API files (ESM-safe)"
+else
+    fail "Bare __dirname in ESM files without import.meta.url polyfill: $BARE_DIRNAME (Section 26.6)"
+fi
+
+# Auth middleware imports isFirstTimeSetup and setAdminCorsHeaders
+section "Auth middleware exports security helpers"
+
+if grep -q "isFirstTimeSetup" src/utils/auth-middleware.js 2>/dev/null; then
+    pass "auth-middleware.js exports isFirstTimeSetup"
+else
+    fail "auth-middleware.js missing isFirstTimeSetup export (Section 26.3)"
+fi
+
+if grep -q "setAdminCorsHeaders" src/utils/auth-middleware.js 2>/dev/null; then
+    pass "auth-middleware.js exports setAdminCorsHeaders"
+else
+    fail "auth-middleware.js missing setAdminCorsHeaders export (Section 26.4)"
 fi
 
 # ============================================================================

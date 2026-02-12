@@ -8,7 +8,7 @@
  */
 
 import { getPreferences, getUserState, getTransitApiKey, getGoogleApiKey } from '../../src/data/kv-preferences.js';
-import { requireAuth } from '../../src/utils/auth-middleware.js';
+import { requireAuth, setAdminCorsHeaders } from '../../src/utils/auth-middleware.js';
 
 /**
  * Decode config token back to preferences
@@ -41,17 +41,17 @@ function decodeConfigToken(token) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', process.env.CC_ALLOWED_ORIGIN || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  setAdminCorsHeaders(res);
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
+  // Auth required on ALL methods — preferences contain personal addresses (Section 26.1)
+  const authError = requireAuth(req);
+  if (authError) return res.status(401).json(authError);
+
   if (req.method !== 'GET') {
-    const authError = requireAuth(req);
-    if (authError) return res.status(401).json(authError);
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
