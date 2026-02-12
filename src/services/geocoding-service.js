@@ -401,8 +401,8 @@ class GeocodingService {
 
     // Sequential fallback chain for reverse geocoding
     const services = [
-      // Tier 1: Google Places (best accuracy)
-      { name: 'Google Places', fn: () => this.reverseGeocodeGooglePlaces(lat, lon) },
+      // Tier 1: Google Geocoding API (best accuracy)
+      { name: 'Google Geocoding', fn: () => this.reverseGeocodeGoogle(lat, lon) },
 
       // Tier 2: Mapbox (excellent for addresses)
       { name: 'Mapbox', fn: () => this.reverseGeocodeMapbox(lat, lon) },
@@ -452,12 +452,12 @@ class GeocodingService {
   }
 
   /**
-   * Google Places API - Reverse geocode
-   * Uses Geocoding API (not Places API)
+   * Google Geocoding API - Reverse geocode
+   * Per Section 11.3: Uses Geocoding API endpoint (not legacy Places API)
    */
-  async reverseGeocodeGooglePlaces(lat, lon) {
+  async reverseGeocodeGoogle(lat, lon) {
     if (!this.googlePlacesKey) {
-      throw new Error('Google Places API key not configured');
+      throw new Error('Google API key not configured');
     }
 
     const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${this.googlePlacesKey}`;

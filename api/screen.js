@@ -895,8 +895,9 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
                          leg.type === 'tram' ? transitData.trams :
                          leg.type === 'bus' ? transitData.buses : [];
 
-      // V15.0: Check for route-specific departures first, then fall back to mode-level
-      // This prevents keeping a tram leg for route 58 when only route 86 is running
+      // V15.0: Check for route-specific departures first — consistent with findMatchingDeparture().
+      // When leg has a route number, ONLY route-matching departures count.
+      // Wrong-route data is treated as no data (leg removed).
       let routeDepartures = departures;
       if (leg.routeNumber && departures && departures.length > 0) {
         const routeMatches = departures.filter(d =>
@@ -904,6 +905,9 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
         );
         if (routeMatches.length > 0) {
           routeDepartures = routeMatches;
+        } else {
+          // No route match — treat as no departures (consistent with findMatchingDeparture)
+          routeDepartures = [];
         }
       }
 
@@ -1468,6 +1472,8 @@ export default async function handler(req, res) {
     let busStopId = kvPrefs?.busStopId || null;
 
     // V13.6: Auto-detect stop IDs if not configured (per Section 23.1.1)
+    // V15.0: Also extract tram route number for GTFS-RT route-level fallback
+    let detectedTramRoute = null;
     if (!trainStopId || !tramStopId || !busStopId) {
       const homeAddress = locations.home?.address || kvPrefs?.addresses?.home;
       const detected = detectStopIdsFromAddress(homeAddress);
@@ -1480,6 +1486,7 @@ export default async function handler(req, res) {
       if (!busStopId && detected.busStopId) {
         busStopId = detected.busStopId;
       }
+      detectedTramRoute = detected.tramRouteNumber || null;
     }
 
     // Per Section 11.8: Zero-Config compliant - load API key from KV storage
@@ -1488,10 +1495,12 @@ export default async function handler(req, res) {
 
     // V15.0: Extract tram/bus route numbers from journey legs for GTFS-RT route-level matching
     // When stop-level matching fails (common for trams), route-level matching can find live data
+    // Fallback chain: engine route leg → auto-detected from address suburb
     const tramLeg = route?.legs?.find(l => l.type === 'tram');
     const busLeg = route?.legs?.find(l => l.type === 'bus');
     const tramApiOptions = { ...apiOptions };
-    if (tramLeg?.routeNumber) tramApiOptions.routeNumber = tramLeg.routeNumber;
+    const tramRouteNum = tramLeg?.routeNumber || detectedTramRoute;
+    if (tramRouteNum) tramApiOptions.routeNumber = tramRouteNum;
     const busApiOptions = { ...apiOptions };
     if (busLeg?.routeNumber) busApiOptions.routeNumber = busLeg.routeNumber;
 

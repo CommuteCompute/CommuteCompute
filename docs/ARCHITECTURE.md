@@ -1521,11 +1521,11 @@ function detectState(address) {
 
 ```javascript
 const BOM_FORECAST_URLS = {
-  VIC: 'http://www.bom.gov.au/fwo/IDV10753.xml',  // Melbourne
-  NSW: 'http://www.bom.gov.au/fwo/IDN10064.xml',  // Sydney
-  QLD: 'http://www.bom.gov.au/fwo/IDQ10095.xml',  // Brisbane
-  SA: 'http://www.bom.gov.au/fwo/IDS10044.xml',   // Adelaide
-  WA: 'http://www.bom.gov.au/fwo/IDW14199.xml',   // Perth
+  VIC: 'https://www.bom.gov.au/fwo/IDV10753.xml',  // Melbourne
+  NSW: 'https://www.bom.gov.au/fwo/IDN10064.xml',  // Sydney
+  QLD: 'https://www.bom.gov.au/fwo/IDQ10095.xml',  // Brisbane
+  SA: 'https://www.bom.gov.au/fwo/IDS10044.xml',   // Adelaide
+  WA: 'https://www.bom.gov.au/fwo/IDW14199.xml',   // Perth
   // ... other states
 };
 ```
