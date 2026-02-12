@@ -13,7 +13,7 @@
 
 import { kv } from '@vercel/kv';
 import { Redis } from '@upstash/redis';
-import { requireAuth } from '../../src/utils/auth-middleware.js';
+import { requireAuth, setAdminCorsHeaders } from '../../src/utils/auth-middleware.js';
 
 // All KV keys used by the system
 const ALL_KEYS = [
@@ -66,20 +66,16 @@ function getClient() {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', process.env.CC_ALLOWED_ORIGIN || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
+  setAdminCorsHeaders(res);
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  if (req.method !== 'GET') {
-    const authError = requireAuth(req);
-    if (authError) return res.status(401).json(authError);
-  }
+  // Factory reset always requires auth — no first-setup exception (Section 26.1)
+  const authError = requireAuth(req);
+  if (authError) return res.status(401).json(authError);
 
   if (req.method !== 'POST') {
     return res.status(405).json({ 
