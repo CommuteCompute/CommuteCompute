@@ -8,33 +8,37 @@
 
 # CCDashDesignV15 - Commute Compute™ Dashboard Specification
 
-**Status:** LOCKED — V15.0 (2026-02-07)
+**Status:** UNLOCKED — V15.0 (active development)
 **Version:** 15.0
-**Modified Date:** 2026-02-07
+**Modified Date:** 2026-02-13
 **Effective Date:** 2026-02-07
 **Display:** 800×480px e-ink (TRMNL device)
 **Refresh:** 60-second partial refresh cycle
-**Renderer:** ccdash-renderer.js v1.81
-**CommuteCompute:** v2.4 (Metro Tunnel Compliant)
+**Renderer:** ccdash-renderer.js v2.1
+**CommuteCompute:** v3.1 (Metro Tunnel Compliant)
 
 ---
 
-> **LOCKED** — V15.0 specification locked (2026-02-07).
-> Includes Departure Confidence, Lifestyle Context, Commute Analytics, and complete documentation compliance.
+> **UNLOCKED** — V15.0 specification under active development (2026-02-13).
+> Includes 5 Intelligence Engines, Metro Tunnel compliance, strictly-live GTFS-RT data, and full transit pipeline.
 >
-> **V13 Changes from V12:**
-> - **Walking legs:** Half height of transit legs, single line of text
-> - **Transit legs:** Double height for better focus and visibility
-> - **Coffee stop:** Double size when configured
-> - **Font sizes:** Increased slightly for e-ink readability
-> - **Footer bar:** Increased height (32px → 40px), centered CC logo (inverted, no text)
-> - **Live departures:** Transit "Next: X, Y min" times are LIVE UPDATED every refresh cycle
->
-> **V12 Changes (inherited):**
-> - Metro Tunnel compliance (effective 2026-02-01)
-> - Next 2 departures display on all transit legs
-> - Delay badge and bordered leg styling
-> - Metro Tunnel station routing support
+> **V15.0 Changes from V14 (current):**
+> - **5 Intelligence Engines:** DepartureConfidence (0-100%), LifestyleContext (weather-aware), SleepOptimizer (evening mode), AltTransit (rideshare/bike/scooter), Mindset (stress/steps/feels-like)
+> - **Strictly live data:** No timetable fallbacks — transit legs removed when GTFS-RT has no matching departures
+> - **Transit-to-walk conversion:** Removed transit legs converted to estimated walks (speed ratios: train 4x, tram 2.5x, bus 3x)
+> - **Catchable departures only:** "Next: X, Y min LIVE" shows only departures reachable after walking to stop
+> - **Route-aware filtering:** Transit legs filtered by specific route number, not just mode
+> - **Lifestyle obligation styling:** Black-filled box for positive obligations (BRING UMBRELLA, JACKET), plain text for passive notices (NO UMBRELLA)
+> - **V/Line support:** 4th transit mode (regional rail) with named lines (Geelong, Ballarat, Bendigo, etc.)
+> - **Ferry icon:** Canvas-drawn ferry for water transit legs
+> - **All-mode disruptions:** Service alerts fetched for metro + tram + bus in parallel
+> - **Suburb display:** Home/work locations show suburb names (Places API → Nominatim → address-derived)
+> - **Consecutive walk merging:** Adjacent walk legs merged automatically (handles chains)
+> - **Metro Tunnel inline detection:** Destination-based citybound/tunnel detection in transit filtering
+> - **Sleep mode:** Evening display (after 6pm) replaces coffee box with bedtime/alarm
+> - **Alt transit panel:** UBER/BIKE/SCOOTER costs shown when transit unavailable
+> - **Admin KV persistence:** Address edits geocoded and saved to Vercel KV with Places API autocomplete
+> - **Security hardening:** Auth deny-by-default, CORS restriction, KV-first config
 >
 > **V14 Changes from V13.6:**
 > - **Departure Confidence Score:** Real-time journey success probability (0-100%) displayed in status bar
@@ -42,6 +46,15 @@
 > - **Commute Analytics:** KV-stored departure patterns for adaptive timing
 > - **Enhanced Status Bar:** Confidence percentage alongside arrival time
 > - **Enhanced Weather Zone:** Lifestyle suggestions below weather condition
+>
+> **V13 Changes from V12:**
+> - Walking legs half height, transit legs double height
+> - Footer 40px with centered CC logo
+> - Live departures on every 60s refresh cycle
+>
+> **V12 Changes (inherited):**
+> - Metro Tunnel compliance (effective 2026-02-01)
+> - Next 2 departures display, delay badge, bordered leg styling
 
 ---
 
@@ -143,8 +156,10 @@
 
 | Source | Background | Border | Text |
 |--------|------------|--------|------|
-| Live Data | Black fill | None | "● LIVE DATA" (white text) |
-| Timetable Fallback | White | 1px black | "○ TIMETABLE FALLBACK" |
+| Live Data | Black fill | None | "LIVE DATA" (white text) |
+| No Live Data | White | 1px black | "NO LIVE DATA" (black text) |
+
+> **V15.0:** Timetable fallback indicator REMOVED. System is strictly live GTFS-RT only — no timetable estimates are ever shown. When no live data is available, transit legs are removed and converted to estimated walk legs.
 
 ### 2.8 Coffee Decision Box (Conditional)
 - **Position:** Between status indicators and weather box
@@ -179,14 +194,25 @@
 - **Font:** 11px
 - **Content:** Weather description (e.g., "Partly Cloudy")
 
-#### 2.9.3 Umbrella Indicator
+#### 2.9.3 Lifestyle Context Indicator (V15.0)
 - **Position:** Bottom of weather box, 4px inset
 - **Size:** 164×14px
+- **Source:** `lifestyle_display` from LifestyleContext engine
 
-| Condition | Background | Text |
-|-----------|------------|------|
-| Rain expected | Black fill | "BRING UMBRELLA" (white) |
-| No rain | White + 1px border | "NO UMBRELLA" (black) |
+**V15.0 Obligation Styling:** Black-filled box ONLY for positive obligations requiring user action. Passive notices render as plain text.
+
+| Condition | Background | Text | Example |
+|-----------|------------|------|---------|
+| Positive obligation | Black fill | White, bold 11px | "BRING UMBRELLA", "JACKET RECOMMENDED", "SUNGLASSES", "STAY HYDRATED", "SUNSCREEN", "WEAR LAYERS" |
+| Passive notice | None (transparent) | Black, bold 11px | "NO UMBRELLA", "SMOOTH COMMUTE" |
+
+**Logic:** `isObligation = needsUmbrella || (lifestyleDisplay && !/^NO\s/i.test(lifestyleDisplay) && /UMBRELLA|JACKET|HYDRAT|SUNGLASSES|SUNSCREEN|LAYERS/i.test(lifestyleDisplay))`
+
+#### 2.9.4 Feels-Like Temperature (V15.0)
+- **Position:** Below condition text, `top: 68px`
+- **Font:** 10px regular
+- **Source:** `mindset_feels_like` from Mindset engine
+- **Content:** Wind chill / apparent temperature (e.g., "FEELS 18°")
 
 ---
 
@@ -305,8 +331,10 @@ Coffee legs display busyness and timing status:
 ### 4.4 Mode Icons (Canvas-Drawn)
 - **Position:** Right of leg number, 6px gap
 - **Size:** Walk: 24px, Transit/Coffee: 32px
-- **Types:** walk, train, tram, bus, coffee
+- **Types:** walk, train, tram, bus, vline, ferry, coffee
 - **Variants:** Solid (normal), Outline (delayed/skipped)
+
+> **V15.0:** V/Line (regional rail) added as 4th transit mode. Ferry icon canvas-drawn (no emojis). Mode map: `{ 0: 'metro', 1: 'tram', 2: 'bus', 3: 'vline' }`
 
 ### 4.5 Title & Subtitle
 - **Position:** Right of icon, 10px gap
@@ -364,13 +392,24 @@ Coffee legs display busyness and timing status:
 - **Style:** Filled black downward triangle
 - **Size:** 12×8px (smaller for compact layout)
 
-### 4.10 Live Departure Updates
+### 4.10 Live Departure Updates (V15.0 — Strictly Live)
 
-**🔴 CRITICAL:** Transit leg "Next: X, Y min" times MUST be live updated on every 60-second refresh cycle.
+**CRITICAL:** Transit leg "Next: X, Y min LIVE" times MUST be live updated on every 60-second refresh cycle. **No timetable fallbacks.**
 
-- Data source: Transport Victoria OpenData API GTFS-RT feed
-- Display format: `Next: 3, 8 min (LIVE)` or `Next: 3, 8 min` with live indicator
-- Fallback: `Next: ~3, ~8 min` (timetable data, no LIVE indicator)
+- **Data source:** Transport Victoria OpenData API GTFS-RT feed (metro, tram, bus, vline)
+- **Display format:** `Next: 3, 8 min LIVE` — only CATCHABLE departures (arrival at stop time >= departure time)
+- **No fallback:** If no GTFS-RT data matches, transit leg is REMOVED and converted to estimated walk
+- **`isLive: true`** only from GTFS-RT matches; `isTimetableEstimate` is always false
+- **Route-aware:** Departures filtered by specific route number when available (prevents wrong-route matches)
+
+### 4.11 Transit-to-Walk Conversion (V15.0)
+
+When transit legs are removed due to no live GTFS-RT data:
+- Transit leg converted to estimated walk using speed ratios
+- **Speed ratios:** train/vline 4x, tram 2.5x, bus 3x (walk minutes = transit minutes × ratio)
+- Adjacent walks automatically merged by `mergeConsecutiveWalkLegs()` (handles chains)
+- Merged walk uses the last segment's destination title
+- Total journey time recalculated to reflect actual walk distance
 
 ---
 
@@ -434,15 +473,25 @@ The footer logo is drawn programmatically to ensure pixel-perfect rendering:
 ### 6.2 Journey Leg Structure
 ```javascript
 {
-  type: "tram",  // walk, train, tram, bus, coffee
+  type: "tram",        // walk, train, tram, bus, vline, ferry, coffee
+  title: "Route 58 Tram",
+  subtitle: "Toorak Rd/Chapel St",  // stop/station name ONLY (from buildLegSubtitle)
   to: "City",
   minutes: 21,
-  departTime: "7:40am",  // for transit
-  lineName: "Route 96",
-  nextDepartures: [3, 8],  // minutes until next 2 departures
-  status: "delayed",  // optional
-  delayMinutes: 8,  // optional
-  canGet: true  // for coffee legs
+  journeyContribution: 21,  // minutes this leg adds to total journey
+  departTime: "7:40am",     // for transit legs
+  arriveTime: "7:19am",     // arrival at this leg's start point
+  lineName: "Route 58",
+  routeNumber: "58",        // V15.0: used for route-aware GTFS-RT matching
+  isLive: true,             // V15.0: true ONLY from GTFS-RT match
+  isTimetableEstimate: false, // V15.0: ALWAYS false (no timetable fallbacks)
+  nextDepartureTimesMs: [1707890400000, 1707890880000],  // raw epoch ms (catchable only)
+  actualDepartureMs: 1707890400000,  // matched departure epoch ms
+  state: "normal",          // normal, delayed, skip
+  delayMinutes: 0,
+  canGet: true,             // for coffee legs
+  walkFasterFlag: false,    // V15.0: true when walking is faster than transit
+  dataSource: "gtfs-rt"     // gtfs-rt, none, or omitted
 }
 ```
 
@@ -642,60 +691,116 @@ This section documents what each display element means to the user, ensuring the
 
 ---
 
-## 11. Version History
+## 11. V15.0 Intelligence Engine Displays
+
+### 11.1 Departure Confidence Score (V14+)
+
+Displayed in the status bar alongside arrival time.
+
+- **Position:** Status bar, right of arrival time text
+- **Format:** `XX%` (e.g., "80%") with label (ON TIME / AT RISK / UNLIKELY)
+- **Source:** `confidence_score`, `confidence_label`, `confidence_text` from DepartureConfidence engine
+- **Resilience:** `confidence_resilience` (HIGH / MEDIUM / LOW) — indicates journey buffer
+
+| Score | Label | Meaning |
+|-------|-------|---------|
+| 70-100 | ON TIME | High probability of on-time arrival |
+| 40-69 | AT RISK | Journey may be delayed |
+| 0-39 | UNLIKELY | Significant delays expected |
+
+### 11.2 Sleep Mode Display (V15.0 — Evening)
+
+After 6pm, the coffee decision box is replaced by the sleep optimizer display.
+
+- **Condition:** `sleep_active: true`
+- **Position:** Same as coffee box (header area)
+- **Content:**
+  - Primary: `sleep_display` (e.g., "ALARM 8:12AM")
+  - Secondary: `sleep_secondary` (e.g., "ALARM 8:12AM")
+  - Bedtime: `sleep_bedtime` (e.g., "12:12AM")
+  - Adequacy: `sleep_adequacy` (SUFFICIENT / INSUFFICIENT / CRITICAL)
+
+### 11.3 Alternative Transit Display (V15.0)
+
+Shown when public transit is unavailable (all transit legs removed).
+
+- **Position:** Footer area or dedicated panel
+- **Content:** `alt_transit_display` (e.g., "UBER ~$8 | BIKE ~$4")
+- **Detail:** `alt_transit_detail` (e.g., "WALK 18 MIN TOTAL")
+- **Sources:**
+  - `alt_transit_rideshare`: `{ type, cost, label, tripMins, isPeak }`
+  - `alt_transit_bike`: `{ type, cost, label, tripMins }`
+  - `alt_transit_scooter`: `{ type, cost, label, tripMins }`
+
+### 11.4 Mindset Indicator (V15.0)
+
+Commute stress and activity context in the status bar.
+
+- **Position:** Status bar, alongside confidence
+- **Content:** `mindset_display` (e.g., "SMOOTH COMMUTE")
+- **Steps:** `mindset_steps` (e.g., "~1800 STEPS")
+- **Stress levels:** LOW / MODERATE / HIGH
+- **Feels-like:** `mindset_feels_like` — wind chill temperature
+
+### 11.5 Lifestyle Suggestions (V15.0)
+
+Full-day forecast-driven equipment suggestions.
+
+- **Source:** `lifestyle_suggestions` array from LifestyleContext engine
+- **Types:** umbrella, jacket, sunglasses, sunscreen, hydration, layers
+- **Priority-sorted:** Higher priority suggestions displayed first
+- **Primary display:** `lifestyle_display` shown in weather box (Section 2.9.3)
+
+---
+
+## 12. Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
-| v1.51 | 2026-02-05 | **V13.1 SEMANTIC UPDATE** - Coffee busyness display, departure countdown, disruption type distinction |
-| v1.50 | 2026-02-05 | **V13 UPDATE** - Variable leg heights, footer logo, live departures |
-| v1.40 | 2026-02-01 | **V12 LOCKDOWN** - Metro Tunnel compliance, Next 2 departures |
-| v1.39 | 2026-02-01 | Metro Tunnel routing, discontinued services |
-| v1.38 | 2026-01-31 | Same-size status boxes, work address in footer |
-| v1.37 | 2026-01-31 | AM/PM bottom-aligned, status bar full black |
-| v1.36 | 2026-01-31 | AM/PM alignment with boxes |
-| v1.35 | 2026-01-31 | Clock lower, touching status bar |
-| v1.34 | 2026-01-31 | Delay box, timetable fallback label |
-| v1.33 | 2026-01-31 | Live/scheduled data indicator |
-| v1.32 | 2026-01-31 | Larger coffee box, sad face, thinner borders |
-| v1.31 | 2026-01-31 | Coffee indicator in header |
-| v1.30 | 2026-01-31 | Service status box, closer text |
-| v1.29 | 2026-01-31 | Major layout improvements |
+| v2.1 | 2026-02-13 | **V15.0 UPDATE** — Lifestyle obligation styling, transit-to-walk conversion, suburb extraction, admin KV persistence, security hardening |
+| v2.0 | 2026-02-10 | **V15.0** — 5 intelligence engines, strictly live GTFS-RT, route-aware filtering, V/Line, ferry, all-mode disruptions, catchable departures |
+| v1.81 | 2026-02-09 | Suburb-level location names, AltTransit guard, admin analytics |
+| v1.80 | 2026-02-06 | V15.0 initial: Sleep Optimizer, AltTransit, Mindset, enhanced glanceability |
+| v1.70 | 2026-02-06 | V14.0: Departure Confidence, Lifestyle Context, commute analytics |
+| v1.51 | 2026-02-05 | V13.1: Coffee busyness display, departure countdown, disruption types |
+| v1.50 | 2026-02-05 | V13: Variable leg heights, footer logo, live departures |
+| v1.40 | 2026-02-01 | V12: Metro Tunnel compliance, Next 2 departures |
 
 ---
 
-## 12. V13.1 Implementation Checklist
+## 13. V15.0 Implementation Checklist
 
-Before locking V13.1, verify:
+**V15.0 Core (Renderer v2.1, Engine v3.1):**
+- [x] Strictly live GTFS-RT data — no timetable fallbacks
+- [x] Transit legs removed when no GTFS-RT match (not shown with fallback)
+- [x] Removed transit legs converted to estimated walk (speed ratios)
+- [x] Catchable departures only in "Next:" subtitles (>= arrival at stop)
+- [x] Route-aware transit filtering (specific route number, not just mode)
+- [x] V/Line support as 4th transit mode with named lines
+- [x] Ferry canvas-drawn icon (no emojis)
+- [x] All-mode disruptions (metro + tram + bus in parallel)
+- [x] Consecutive walk leg merging (handles chains)
+- [x] Metro Tunnel inline destination detection in transit filter
+- [x] Suburb display for home/work (Places API → Nominatim → address-derived)
+- [x] Lifestyle obligation styling (black = positive, plain = passive)
+- [x] Sleep mode display replacing coffee box after 6pm
+- [x] Alt transit cost panel when transit unavailable
+- [x] Departure Confidence score (0-100%) in status bar
+- [x] Mindset indicator (stress, steps, feels-like) in status bar
+- [x] Admin panel edits persist to KV with geocoding
+- [x] Address autocomplete uses KV-stored API keys
+- [x] Security: auth deny-by-default, CORS restriction, KV-first config
+- [x] `isLive: true` only from GTFS-RT; `isTimetableEstimate` always false
 
-**V13 Core:**
-- [x] Walking legs render at half height (single line)
-- [x] Transit legs render at double height (3 lines)
-- [x] Coffee legs render at double height when configured
-- [x] Footer is 40px with centered CC logo (programmatic)
-- [x] Font sizes increased for e-ink readability
-- [x] "Next: X, Y min" times are LIVE from GTFS-RT
-- [x] Renderer version updated to v1.50
-
-**V13.1 Semantic Updates:**
-- [x] Coffee leg shows busyness level (Quiet/Moderate/Busy)
-- [x] Coffee leg shows open/closed status with hours
-- [x] Coffee leg shows "Cutting it fine" warning when timing is tight
-- [x] Time box shows "minutes until departure" for transit/coffee legs
-- [x] Coffee leg has LEAVE column (not DEPART) with scheduled time
+**Inherited (V13/V14 — verified):**
+- [x] Variable leg heights (walk 32px, transit/coffee 64px)
+- [x] Footer 40px with centered CC logo
+- [x] Coffee busyness display (Quiet/Moderate/Busy)
 - [x] Disruptions distinguished: Service alerts vs Late arrival
-- [x] Late arrival badge shows "LATE +X min" (white bg)
-- [x] Service alert badge shows "DISRUPTION" (inverted)
-- [x] Renderer version updated to v1.51
-
-> **V15 Changes from V14:**
-> - **Renderer:** Updated to v1.80
-> - **CommuteCompute Engine:** Updated to v2.3
-> - **Documentation:** Full compliance audit completed (AGPL-3.0 Dual License, branding, forbidden terms)
-> - **Status:** LOCKED (2026-02-07)
 
 ---
 
-## 11. Licensing
+## 14. Licensing
 
 **Copyright (c) 2026 Angus Bergman**
 AGPL-3.0 Dual License

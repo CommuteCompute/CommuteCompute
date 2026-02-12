@@ -26,10 +26,10 @@ export default async function handler(req, res) {
     : '2026-01-31';
 
   res.json({
-    version: 'v4.1.0',
+    version: 'v4.2.0',
     date: buildDate,
     system: {
-      version: '4.1.0',
+      version: '4.2.0',
       name: 'Commute Compute System',
       copyright: '© 2026 Angus Bergman',
       license: 'AGPL-3.0'
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
       commutecompute: {
         version: 'v3.1',
         name: 'CommuteCompute Engine',
-        description: 'Real-time multi-modal journey planning with GTFS stop names, Metro Tunnel citybound detection, direction-based train filtering, Departure Confidence, Sleep Optimizer, Alt Transit (disruption-triggered), Lifestyle Context with all-day forecast, Mindset analysis',
+        description: 'Real-time multi-modal journey planning with route-aware transit filtering, transit-to-walk conversion, suburb extraction, Metro Tunnel citybound detection, strictly live GTFS-RT, Departure Confidence, Sleep Optimizer, Alt Transit, Lifestyle Context, Mindset analysis',
         metroTunnelCompliant: true,
         effectiveDate: '2026-02-12',
         locked: false,
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
         specLocked: false,
         lockedDate: null,
         modifiedDate: '2026-02-12',
-        description: 'V15.0 spec-compliant box sizing, font sizes, status indicators, unified cafe closed/skipped rendering, confidence labels, sleep mode, mindset status, lifestyle context display'
+        description: 'V15.0 spec-compliant rendering with lifestyle obligation styling, transit-to-walk display, suburb locations, confidence labels, sleep mode, mindset status, lifestyle context display'
       },
       // Setup wizard
       setupWizard: { version: 'v2.0', locked: false },
@@ -76,28 +76,23 @@ export default async function handler(req, res) {
         lockedDate: null,
         modifiedDate: '2026-02-12',
         changes: [
-          'Metro Tunnel citybound detection (Town Hall, State Library, Parkville, Arden, Anzac)',
-          'Direction-based train filtering (any citybound train, not route-locked)',
-          'Tram route-level future-departure heuristic for accurate timing',
-          'All-day weather forecast for equipment decisions (umbrella, jacket, hydration, layers)',
-          'V15.0 spec-compliant status/data box sizing (16px)',
-          'V15.0 spec-compliant font sizes (8px status, 36px temp, 13px status bar)',
-          'Unified cafe closed/skipped rendering path',
-          'Closed cafe completely removed from journey (not just skipped)',
-          'Consecutive walk legs merged automatically',
-          'Live departure times factor in time to reach stop',
-          'Larger transit time boxes (72px to 88px)',
-          'Bigger countdown numbers (30px to 38px)',
-          'Actual disruption text shown (not generic DISRUPTION)',
-          'Smart coffee skip - cafe leg visible but excluded from timing when late',
-          'Variable leg heights',
-          'Live departures with proper timing',
-          'Coffee busyness display (outside +/-2hr shows busyness only)',
-          'Departure countdown times (live calculated)',
-          'Walk legs show duration in text (no box)',
-          'ARRIVE + time on same line in footer',
-          'Specific stop/station names in legs',
-          'CommuteCompute engine with live departTime and nextDepartures'
+          'Strictly live GTFS-RT data — no timetable fallbacks, transit legs removed when no match',
+          'Transit-to-walk conversion with speed ratios (train 4x, tram 2.5x, bus 3x)',
+          'Route-aware transit filtering (specific route number, not just mode)',
+          'Catchable departures only in Next: subtitles (>= arrival at stop time)',
+          'Lifestyle obligation styling (black fill for positive, plain for passive notices)',
+          'Suburb display for home/work (Places API → Nominatim → address-derived)',
+          'V/Line support as 4th transit mode with named lines',
+          'Ferry canvas-drawn icon, all-mode disruptions (metro + tram + bus)',
+          'Consecutive walk leg merging (handles chains)',
+          'Metro Tunnel inline destination detection in transit filter',
+          'Departure Confidence score (0-100%) in status bar',
+          'Sleep mode display replacing coffee box after 6pm',
+          'Alt transit cost panel (UBER/BIKE/SCOOTER) when transit unavailable',
+          'Mindset indicator (stress, steps, feels-like) in status bar',
+          'Admin panel edits persist to KV with geocoding and Places API autocomplete',
+          'Security: auth deny-by-default, CORS restriction, KV-first config',
+          'Variable leg heights, coffee busyness, specific stop/station names'
         ]
       }
     },
