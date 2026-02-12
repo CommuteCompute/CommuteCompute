@@ -2003,53 +2003,53 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   
   // v1.33: Service status box with live/scheduled data indicator
   const serviceStatus = data.service_status || (data.disruption ? 'DISRUPTIONS' : 'OK');
-  const hasDisruption = data.disruption || data.status_type === 'disruption' || 
+  const hasDisruption = data.disruption || data.status_type === 'disruption' ||
     serviceStatus.toUpperCase().includes('DISRUPTION') || serviceStatus.toUpperCase().includes('DELAY');
   // Per Section 23.6: Only show LIVE DATA badge when data actually comes from GTFS-RT,
   // never for fallback/timetable data. Default to false (timetable) unless explicitly marked live.
   const isLiveData = data.isLive === true || data.dataSource === 'live';
-  
-  // V13.6: Service status and data status - LARGER boxes aligned with coffee/weather panels
-  // Bottom edge aligns with coffee/weather box bottom (Y=90)
+
+  // V15.0 SPEC FIX: Service status and data source indicators per CCDashDesignV15.0 Section 2.6-2.7
+  // Size: 115×16px each, positioned below day/date
   const statusBoxX = dayDateX;
-  const statusBoxY = 42;      // V13.6: Start below day/date text
+  const statusBoxY = 46;      // Per spec Section 2.6: top: 46px
   const statusBoxW = 115;
-  const statusBoxH = 22;      // V13.6: Increased from 16px
+  const statusBoxH = 16;      // Per spec Section 2.6: 115×16px
 
-  // Data source indicator (below status box) - aligned to Y=90 bottom
-  const dataBoxY = statusBoxY + statusBoxH + 4;  // V13.6: 4px gap
-  const dataBoxH = 22;        // V13.6: Increased from 16px (bottom at Y=90)
+  // Data source indicator (below status box) per spec Section 2.7: top: 64px
+  const dataBoxY = 64;
+  const dataBoxH = 16;        // Per spec Section 2.7: 115×16px
 
-  ctx.font = 'bold 11px Inter, sans-serif';  // V13.6: Increased from 8px for e-ink
+  ctx.font = 'bold 8px Inter, sans-serif';
   ctx.textBaseline = 'middle';
 
-  // Service status box
+  // Service status box — per spec Section 2.6
   if (hasDisruption) {
     ctx.fillStyle = '#000';
     ctx.fillRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
     ctx.fillStyle = '#FFF';
-    ctx.fillText('[!] DISRUPTIONS', statusBoxX + 8, statusBoxY + statusBoxH / 2);
+    ctx.fillText('\u26A0 DISRUPTIONS', statusBoxX + 6, statusBoxY + statusBoxH / 2);
   } else {
     ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     ctx.strokeRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
     ctx.fillStyle = '#000';
-    ctx.fillText('[OK] SERVICES OK', statusBoxX + 8, statusBoxY + statusBoxH / 2);
+    ctx.fillText('\u2713 SERVICES OK', statusBoxX + 6, statusBoxY + statusBoxH / 2);
   }
 
-  // Data source indicator - same size as service status
-  ctx.font = 'bold 11px Inter, sans-serif';  // V13.6: Increased from 8px
+  // Data source indicator — per spec Section 2.7
+  ctx.font = 'bold 8px Inter, sans-serif';
   if (isLiveData) {
     ctx.fillStyle = '#000';
     ctx.fillRect(statusBoxX, dataBoxY, statusBoxW, dataBoxH);
     ctx.fillStyle = '#FFF';
-    ctx.fillText('● LIVE DATA', statusBoxX + 8, dataBoxY + dataBoxH / 2);
+    ctx.fillText('\u25CF LIVE DATA', statusBoxX + 6, dataBoxY + dataBoxH / 2);
   } else {
     ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     ctx.strokeRect(statusBoxX, dataBoxY, statusBoxW, dataBoxH);
     ctx.fillStyle = '#000';
-    ctx.fillText('○ NO LIVE DATA', statusBoxX + 8, dataBoxY + dataBoxH / 2);
+    ctx.fillText('\u25CB TIMETABLE FALLBACK', statusBoxX + 6, dataBoxY + dataBoxH / 2);
   }
   
   ctx.fillStyle = '#000';
@@ -2229,32 +2229,9 @@ function _renderFullScreenCanvas(data, prefs = {}) {
 
     ctx.textAlign = 'left';
     ctx.fillStyle = '#000';
-  } else if (cafeClosed) {
-    // v1.41: Cafe closed - show CLOSED status instead of sad face
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(coffeeBoxX, coffeeBoxY, coffeeBoxW, coffeeBoxH);
-    
-    // X mark (crossed out coffee)
-    ctx.fillStyle = "#000";
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(coffeeBoxX + 15, coffeeBoxY + 25);
-    ctx.lineTo(coffeeBoxX + 45, coffeeBoxY + 65);
-    ctx.moveTo(coffeeBoxX + 45, coffeeBoxY + 25);
-    ctx.lineTo(coffeeBoxX + 15, coffeeBoxY + 65);
-    ctx.stroke();
-    
-    // "CAFE CLOSED" text
-    ctx.font = "bold 16px Inter, sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText("CAFE", coffeeBoxX + 62, coffeeBoxY + 28);
-    ctx.fillText("CLOSED", coffeeBoxX + 62, coffeeBoxY + 48);
-    
-    ctx.textAlign = "left";
-    ctx.fillStyle = "#000";
-  } else if (coffeeSkipped) {
+  } else if (cafeClosed || coffeeSkipped) {
+    // V15.0 SPEC FIX: Per CCDashDesignV15.0 Section 2.8.2 — canGet: false
+    // White box with 2px black border, sad face icon, "NO TIME FOR COFFEE"
     // v1.32: "No time for coffee" box with sad face
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 2;
@@ -2327,15 +2304,15 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   ctx.strokeRect(weatherBoxX, weatherBoxY, weatherBoxW, weatherBoxH);
   
   // Temperature - centered in upper portion of box
-  // V13.3: Larger temp for glanceability
-  ctx.font = 'bold 42px Inter, sans-serif';
+  // V15.0 SPEC FIX: Per CCDashDesignV15.0 Section 2.9.1 — 36px bold
+  ctx.font = 'bold 36px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(`${data.temp || '--'}°`, weatherBoxX + weatherBoxW / 2, weatherBoxY + 28);
+  ctx.fillText(`${data.temp || '--'}°`, weatherBoxX + weatherBoxW / 2, weatherBoxY + 26);
 
   // Condition - below temp
-  // V13.3: Larger condition text for readability
-  ctx.font = '14px Inter, sans-serif';
+  // V15.0 SPEC FIX: Per CCDashDesignV15.0 Section 2.9.2 — 11px
+  ctx.font = '11px Inter, sans-serif';
   let condition = data.condition || '';
   while (ctx.measureText(condition).width > weatherBoxW - 12 && condition.length > 3) {
     condition = condition.slice(0, -1);
@@ -2433,12 +2410,12 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   const isEarly = hasArriveByTarget && diffMins < -5;
   const isOnTime = hasArriveByTarget && !isLate && !isEarly;
 
-  // V13.2: Status bar - LARGER text for e-ink visibility
+  // V15.0 SPEC FIX: Status bar per CCDashDesignV15.0 Section 3 — 28px height, 13px bold
   ctx.fillStyle = '#000';
-  ctx.fillRect(0, 96, 800, 32);  // Slightly taller status bar
+  ctx.fillRect(0, 96, 800, 28);
 
   ctx.fillStyle = '#FFF';
-  ctx.font = 'bold 16px Inter, sans-serif';  // V13.2: Increased from 13px
+  ctx.font = 'bold 13px Inter, sans-serif';
   ctx.textBaseline = 'middle';
 
   // -----------------------------------------------------------------------
