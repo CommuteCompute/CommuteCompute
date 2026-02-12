@@ -176,18 +176,30 @@ function extractSuburb(address) {
     if (match && match[1].trim().length > 1) return match[1].trim();
   }
   // Pass 2: Nominatim-style addresses where suburb and state are separate parts
-  // e.g. "..., Melbourne, City of Melbourne, Victoria, 3000, Australia"
+  // e.g. "..., South Yarra, Melbourne, City of Melbourne, Victoria, 3141, Australia"
+  // Municipality names (e.g. "Melbourne") appear closer to state than suburbs (e.g. "South Yarra").
+  // Detect municipalities via matching "City of [name]" parts and prefer the suburb.
   const statePattern = /^(VIC|NSW|QLD|SA|WA|TAS|NT|ACT|Victoria|New South Wales|Queensland|South Australia|Western Australia|Tasmania|Northern Territory|Australian Capital Territory)$/i;
   for (let i = 1; i < parts.length; i++) {
     if (statePattern.test(parts[i].trim())) {
+      let municipalityFallback = null;
       for (let j = i - 1; j >= 0; j--) {
         const candidate = parts[j].trim();
         if (/^[A-Z][a-z]/.test(candidate) && candidate.length > 2 &&
             !/^(City of|Shire of)/i.test(candidate) &&
-            !/\b(Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Lane|Ln|Place|Pl|Court|Ct|Terrace|Tce|Boulevard|Blvd|Highway|Hwy|Way|Crescent|Cres|Parade|Pde|Close|Circuit|Esplanade|District)\b/i.test(candidate)) {
+            !/\b(Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Lane|Ln|Place|Pl|Court|Ct|Terrace|Tce|Boulevard|Blvd|Highway|Hwy|Way|Crescent|Cres|Parade|Pde|Close|Circuit|Esplanade|District|House|Tower|Centre|Center|Building|Complex|Plaza|Mall)\b/i.test(candidate)) {
+          // Skip municipality-level names — prefer suburb if available
+          const isMunicipality = parts.some(p =>
+            p.trim().toLowerCase() === `city of ${candidate.toLowerCase()}`
+          );
+          if (isMunicipality) {
+            if (!municipalityFallback) municipalityFallback = candidate;
+            continue;
+          }
           return candidate;
         }
       }
+      if (municipalityFallback) return municipalityFallback;
     }
   }
   // Pass 3: Fallback — try second part, skip leading digits
@@ -217,7 +229,8 @@ function mergeConsecutiveWalkLegs(legs) {
       current.to = next.to || current.to;
       current.stopName = next.stopName || current.stopName;
       current.stationName = next.stationName || current.stationName;
-      current.title = `Walk to ${next.to || current.to || 'destination'}`;
+      // Use the last walk's formatted title (from buildLegTitle) when available
+      current.title = next.title || current.title || `Walk to ${next.to || current.to || 'destination'}`;
       i++;
     }
     merged.push(current);
@@ -979,15 +992,21 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
       const isLastService = routeDepartures && routeDepartures.length === 1;
 
       if (!hasDepartures) {
-        // V15.0: No live GTFS-RT data — service likely not running.
-        // REMOVE the transit leg. Adjacent walk legs will be merged by
-        // mergeConsecutiveWalkLegs() after buildJourneyLegs().
-        // Only verified live GTFS-RT departures are shown.
+        // V15.0: No live GTFS-RT data — service not running.
+        // Convert to estimated walk so total distance remains accurate for
+        // alt-transit cost calculations and walk-only journey display.
+        // Speed ratios: how much longer walking takes vs transit for same distance.
+        const originalType = leg.type;
+        const walkSpeedRatio = (originalType === 'train' || originalType === 'vline') ? 4 :
+                               originalType === 'tram' ? 2.5 : 3;
+        const transitMins = leg.minutes || leg.durationMinutes || 0;
+        leg.type = 'walk';
+        leg.minutes = Math.round(transitMins * walkSpeedRatio);
+        leg.durationMinutes = leg.minutes;
         leg.dataSource = 'none';
         leg.isLive = false;
-        removedTypes.push(leg.type);
-        // Skip adding to filteredLegs — leg is removed
-        continue;
+        removedTypes.push(originalType);
+        // Fall through — add as walk. mergeConsecutiveWalkLegs() will combine.
       }
 
       // Live data is available - mark the leg accordingly
@@ -1710,8 +1729,9 @@ export default async function handler(req, res) {
 
     // Build display values (use simulated overrides if provided)
     // Per Section 3.1: Zero-Config - no process.env for user addresses
-    const displayHome = simOverrides.home || extractSuburb(locations.home?.address) || 'Home';
-    const displayWork = simOverrides.work || extractSuburb(locations.work?.address) || 'Work';
+    // Use stored suburb from Places API first, fall back to extractSuburb()
+    const displayHome = simOverrides.home || locations.home?.suburb || extractSuburb(locations.home?.address) || 'Home';
+    const displayWork = simOverrides.work || locations.work?.suburb || extractSuburb(locations.work?.address) || 'Work';
     const displayArrival = simOverrides.arrivalTime || config?.journey?.arrivalTime || '09:00';
 
     // Calculate timing using display arrival (respects simulator override)

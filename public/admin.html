@@ -1911,7 +1911,10 @@
                                             <span style="margin-left: 8px; opacity: 0.5;"><svg class="icon-sm"><use href="#icon-edit"/></svg></span>
                                         </div>
                                         <div id="edit-home-container" style="display: none; margin-top: 8px;">
-                                            <input type="text" id="edit-home-input" class="form-input" placeholder="Enter home address" style="margin-bottom: 8px;">
+                                            <div style="position: relative;">
+                                                <input type="text" id="edit-home-input" class="form-input" placeholder="Enter home address" style="margin-bottom: 8px;" autocomplete="off">
+                                                <div id="edit-home-suggestions" class="autocomplete-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#1e293b;border:1px solid #334155;border-radius:8px;max-height:200px;overflow-y:auto;z-index:100;"></div>
+                                            </div>
                                             <div style="display: flex; gap: 8px;">
                                                 <button onclick="saveFieldEdit('home')" class="btn btn-success" style="padding: 6px 12px; font-size: 12px;"><svg class="icon-sm"><use href="#icon-check-circle"/></svg> Save</button>
                                                 <button onclick="cancelFieldEdit('home')" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">[X] Cancel</button>
@@ -1939,7 +1942,10 @@
                                                 <span style="margin-left: 8px; opacity: 0.5;"><svg class="icon-sm"><use href="#icon-edit"/></svg></span>
                                             </div>
                                             <div id="edit-cafe-container" style="display: none; margin-top: 8px;">
-                                                <input type="text" id="edit-cafe-input" class="form-input" placeholder="Enter cafe name/address" style="margin-bottom: 8px;">
+                                                <div style="position: relative;">
+                                                    <input type="text" id="edit-cafe-input" class="form-input" placeholder="Enter cafe name/address" style="margin-bottom: 8px;" autocomplete="off">
+                                                    <div id="edit-cafe-suggestions" class="autocomplete-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#1e293b;border:1px solid #334155;border-radius:8px;max-height:200px;overflow-y:auto;z-index:100;"></div>
+                                                </div>
                                                 <div style="display: flex; gap: 8px;">
                                                     <button onclick="saveFieldEdit('cafe')" class="btn btn-success" style="padding: 6px 12px; font-size: 12px;"><svg class="icon-sm"><use href="#icon-check-circle"/></svg> Save</button>
                                                     <button onclick="cancelFieldEdit('cafe')" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">[X] Cancel</button>
@@ -1960,7 +1966,10 @@
                                             <span style="margin-left: 8px; opacity: 0.5;"><svg class="icon-sm"><use href="#icon-edit"/></svg></span>
                                         </div>
                                         <div id="edit-work-container" style="display: none; margin-top: 8px;">
-                                            <input type="text" id="edit-work-input" class="form-input" placeholder="Enter work address" style="margin-bottom: 8px;">
+                                            <div style="position: relative;">
+                                                <input type="text" id="edit-work-input" class="form-input" placeholder="Enter work address" style="margin-bottom: 8px;" autocomplete="off">
+                                                <div id="edit-work-suggestions" class="autocomplete-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#1e293b;border:1px solid #334155;border-radius:8px;max-height:200px;overflow-y:auto;z-index:100;"></div>
+                                            </div>
                                             <div style="display: flex; gap: 8px;">
                                                 <button onclick="saveFieldEdit('work')" class="btn btn-success" style="padding: 6px 12px; font-size: 12px;"><svg class="icon-sm"><use href="#icon-check-circle"/></svg> Save</button>
                                                 <button onclick="cancelFieldEdit('work')" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">[X] Cancel</button>
@@ -6873,58 +6882,96 @@
         }
 
         // Save field edit
-        function saveFieldEdit(field) {
+        async function saveFieldEdit(field) {
             const input = document.getElementById(`edit-${field}-input`);
             const value = input?.value?.trim();
-            
+
             if (!value && field !== 'cafe') {
                 showInlineEditMessage('Value cannot be empty', 'warning');
                 return;
             }
-            
-            // Get current config
-            const config = JSON.parse(localStorage.getItem('cc-config') || '{}');
-            if (!config.addresses) config.addresses = {};
-            
-            // Update the specific field
-            if (field === 'home') {
-                config.addresses.home = value;
-                document.getElementById('summary-home').textContent = value || 'Not configured';
-            } else if (field === 'cafe') {
-                config.addresses.cafe = value;
-                document.getElementById('summary-cafe').textContent = value || 'Not configured';
-            } else if (field === 'work') {
-                config.addresses.work = value;
-                document.getElementById('summary-work').textContent = value || 'Not configured';
+
+            // Update display immediately
+            if (['home', 'cafe', 'work'].includes(field)) {
+                document.getElementById('summary-' + field).textContent = value || 'Not configured';
             } else if (field === 'arrival') {
-                config.arrivalTime = value;
-                // Convert 24h to 12h display
-                const [h, m] = value.split(':').map(Number);
-                const ampm = h >= 12 ? 'pm' : 'am';
-                const h12 = h % 12 || 12;
-                document.getElementById('summary-arrival').textContent = `${h12}:${m.toString().padStart(2, '0')}${ampm}`;
+                var parts = value.split(':').map(Number);
+                var ampm = parts[0] >= 12 ? 'pm' : 'am';
+                var h12 = parts[0] % 12 || 12;
+                document.getElementById('summary-arrival').textContent = h12 + ':' + String(parts[1]).padStart(2, '0') + ampm;
             } else if (field === 'state') {
-                config.state = value;
                 document.getElementById('summary-state').textContent = value;
             }
-            
-            // Save to localStorage
+
+            // Save to localStorage as cache
+            var config = JSON.parse(localStorage.getItem('cc-config') || '{}');
+            if (!config.addresses) config.addresses = {};
+            if (field === 'home' || field === 'cafe' || field === 'work') config.addresses[field] = value;
+            else if (field === 'arrival') { if (!config.journey) config.journey = {}; config.journey.arrivalTime = value; }
+            else if (field === 'state') config.state = value;
             localStorage.setItem('cc-config', JSON.stringify(config));
-            localStorage.setItem('cc-configured', 'true');
-            
-            // Close edit mode
+
             cancelFieldEdit(field);
-            
-            // Show success
-            showInlineEditMessage('Saved! Refresh preview to see changes.', 'success');
-            
-            // Optionally refresh routes and preview
+
+            // Persist to KV via API (geocodes addresses using pre-configured keys)
+            try {
+                showInlineEditMessage('Saving to server...', 'info');
+                var resp = await fetch(BASE_URL + '/api/admin/preferences', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field: field, value: value })
+                });
+                var data = await resp.json();
+                if (data.success) {
+                    var msg = 'Saved to server.';
+                    if (data.suburb) msg += ' Suburb: ' + sanitize(data.suburb);
+                    showInlineEditMessage(msg, 'success');
+                } else {
+                    showInlineEditMessage('Server save failed: ' + sanitize(data.error || 'unknown') + '. Saved locally.', 'warning');
+                }
+            } catch (err) {
+                showInlineEditMessage('Server unreachable. Saved locally only.', 'warning');
+            }
+
             if (['home', 'work', 'cafe'].includes(field)) {
-                setTimeout(() => {
-                    refreshRouteAlternatives();
-                }, 500);
+                setTimeout(function() { refreshRouteAlternatives(); }, 500);
             }
         }
+
+        // Address autocomplete for admin inline edits
+        var _acDebounce = null;
+        function setupAdminAutocomplete(field) {
+            var input = document.getElementById('edit-' + field + '-input');
+            var dropdown = document.getElementById('edit-' + field + '-suggestions');
+            if (!input || !dropdown) return;
+
+            input.addEventListener('input', function() {
+                clearTimeout(_acDebounce);
+                var q = input.value.trim();
+                if (q.length < 3) { dropdown.style.display = 'none'; return; }
+                _acDebounce = setTimeout(async function() {
+                    try {
+                        var resp = await fetch(BASE_URL + '/api/address-search?q=' + encodeURIComponent(q));
+                        var data = await resp.json();
+                        if (data.results && data.results.length > 0) {
+                            dropdown.innerHTML = data.results.map(function(r) {
+                                var safe = sanitize(r.display_name || '');
+                                return '<div style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.05);color:#e2e8f0;" onmouseover="this.style.background=\'rgba(102,126,234,0.2)\'" onmouseout="this.style.background=\'none\'" onclick="document.getElementById(\'edit-' + field + '-input\').value=this.textContent;document.getElementById(\'edit-' + field + '-suggestions\').style.display=\'none\'">' + safe + '</div>';
+                            }).join('');
+                            var src = data.source === 'google' ? 'Google Places' : 'OpenStreetMap';
+                            dropdown.innerHTML += '<div style="padding:4px 14px;font-size:10px;opacity:0.4;text-align:right;">' + sanitize(src) + '</div>';
+                            dropdown.style.display = 'block';
+                        } else { dropdown.style.display = 'none'; }
+                    } catch (e) { dropdown.style.display = 'none'; }
+                }, 400);
+            });
+
+            // Hide dropdown on blur (with delay for click)
+            input.addEventListener('blur', function() { setTimeout(function() { dropdown.style.display = 'none'; }, 200); });
+        }
+
+        // Initialize autocomplete on address fields
+        ['home', 'cafe', 'work'].forEach(function(f) { setupAdminAutocomplete(f); });
 
         // Toggle coffee enabled
         function toggleCoffeeEnabled() {
