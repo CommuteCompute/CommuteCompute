@@ -102,6 +102,10 @@ class LifestyleContext {
    * Main calculation method. Evaluates all lifestyle suggestion categories
    * and returns a structured result with active suggestions sorted by priority.
    *
+   * Uses full-day forecast when available: equipment you carry when leaving home
+   * (umbrella, jacket) considers ALL remaining hours of the day, not just current
+   * conditions. If it rains at 5pm, you still need an umbrella when leaving at 8am.
+   *
    * @param {Object} params
    * @param {Object} params.weather - Weather data object
    * @param {number} params.weather.temp - Temperature in Celsius
@@ -110,6 +114,7 @@ class LifestyleContext {
    * @param {number} params.weather.windSpeed - Wind speed in km/h
    * @param {number} params.weather.humidity - Humidity percentage (0-100)
    * @param {number} params.weather.uvIndex - UV index (0-15+)
+   * @param {Array} [params.weather.dayForecast] - Hourly forecast for remaining day
    * @param {Date} params.currentTime - Current local time
    * @param {string} params.state - User's Australian state (VIC, NSW, QLD, SA, WA, TAS, NT, ACT)
    * @returns {Object} Lifestyle context with suggestions, display line, and metadata
@@ -124,14 +129,15 @@ class LifestyleContext {
 
     const time = currentTime instanceof Date ? currentTime : new Date();
     const resolvedState = VALID_STATES.includes(state) ? state : null;
+    const forecast = Array.isArray(weather.dayForecast) ? weather.dayForecast : [];
 
-    // Evaluate each suggestion category
-    const umbrella = this._checkUmbrella(weather);
-    const jacket = this._checkJacket(weather);
+    // Evaluate each suggestion category (full-day awareness for carry-all-day items)
+    const umbrella = this._checkUmbrella(weather, forecast);
+    const jacket = this._checkJacket(weather, forecast);
     const sunglasses = this._checkSunglasses(weather, time);
     const sunscreen = this._checkSunscreen(weather, time, resolvedState);
-    const hydration = this._checkHydration(weather);
-    const layers = this._checkLayers(weather, time);
+    const hydration = this._checkHydration(weather, forecast);
+    const layers = this._checkLayers(weather, time, forecast);
 
     const suggestions = [umbrella, jacket, sunglasses, sunscreen, hydration, layers];
 
@@ -223,17 +229,21 @@ class LifestyleContext {
   /**
    * Check umbrella suggestion.
    * Priority 1 when active.
-   * Active when weather.umbrella is true OR condition indicates rain/storm.
+   * Active when weather.umbrella is true, current condition indicates rain/storm,
+   * OR any remaining hour of the day has rain forecast. You carry an umbrella
+   * all day — if it rains on the way home, you still need it when leaving.
    *
    * @param {Object} weather - Weather data
+   * @param {Array} forecast - Hourly forecast for remaining day
    * @returns {Object} Umbrella suggestion object
    */
-  _checkUmbrella(weather) {
+  _checkUmbrella(weather, forecast) {
     const condition = (weather.condition || '').toLowerCase();
     const umbrellaFlag = weather.umbrella === true;
     const rainyCondition = RAIN_CONDITIONS.some(rc => condition.includes(rc));
+    const rainLaterToday = forecast.some(h => h.isRainy);
 
-    const active = umbrellaFlag || rainyCondition;
+    const active = umbrellaFlag || rainyCondition || rainLaterToday;
 
     return {
       type: 'umbrella',
@@ -246,23 +256,31 @@ class LifestyleContext {
   /**
    * Check jacket suggestion.
    * Priority 2 when active.
-   * Active when temp < 15, or when windSpeed > 25 AND temp < 20 (wind chill).
-   * Text varies: 'WARM JACKET' if temp < 10, otherwise 'GRAB A JACKET'.
+   * Active when current or any forecast hour temp < 15, or wind chill.
+   * You carry a jacket all day — if evening drops cold, bring it when leaving.
+   * Text varies: 'WARM JACKET' if coldest temp < 10, otherwise 'GRAB A JACKET'.
    *
    * @param {Object} weather - Weather data
+   * @param {Array} forecast - Hourly forecast for remaining day
    * @returns {Object} Jacket suggestion object
    */
-  _checkJacket(weather) {
+  _checkJacket(weather, forecast) {
     const temp = weather.temp;
     const windSpeed = typeof weather.windSpeed === 'number' ? weather.windSpeed : 0;
 
     const coldEnough = temp < 15;
     const windChillFactor = windSpeed > 25 && temp < 20;
-    const active = coldEnough || windChillFactor;
+    const coldLaterToday = forecast.some(h => h.temp < 15 || h.apparentTemp < 13);
+    const active = coldEnough || windChillFactor || coldLaterToday;
+
+    // Use coldest forecast temp to determine jacket severity
+    const coldestTemp = forecast.length > 0
+      ? Math.min(temp, ...forecast.map(h => h.apparentTemp ?? h.temp))
+      : temp;
 
     let text = null;
     if (active) {
-      text = temp < 10 ? 'WARM JACKET' : 'GRAB A JACKET';
+      text = coldestTemp < 10 ? 'WARM JACKET' : 'GRAB A JACKET';
     }
 
     return {
@@ -337,18 +355,21 @@ class LifestyleContext {
   /**
    * Check hydration suggestion.
    * Priority 4 when active.
-   * Active when temp > 30, or when temp > 28 AND humidity > 70.
+   * Active when current or any forecast hour temp > 30.
+   * Bring a water bottle if it gets hot at any point during the day.
    *
    * @param {Object} weather - Weather data
+   * @param {Array} forecast - Hourly forecast for remaining day
    * @returns {Object} Hydration suggestion object
    */
-  _checkHydration(weather) {
+  _checkHydration(weather, forecast) {
     const temp = weather.temp;
     const humidity = typeof weather.humidity === 'number' ? weather.humidity : 0;
 
     const veryHot = temp > 30;
     const hotAndHumid = temp > 28 && humidity > 70;
-    const active = veryHot || hotAndHumid;
+    const hotLaterToday = forecast.some(h => h.temp > 30);
+    const active = veryHot || hotAndHumid || hotLaterToday;
 
     return {
       type: 'hydration',
@@ -361,14 +382,15 @@ class LifestyleContext {
   /**
    * Check layers suggestion.
    * Priority 5 when active.
-   * Heuristic: if temp < 15 AND time is before 9am AND condition is not rainy,
-   * suggest layers (morning cool may give way to warmer afternoon).
+   * Active when morning is cool but afternoon warms up significantly (8+ degree swing),
+   * or original heuristic: cool morning before 9am with no rain.
    *
    * @param {Object} weather - Weather data
    * @param {Date} time - Current local time
+   * @param {Array} forecast - Hourly forecast for remaining day
    * @returns {Object} Layers suggestion object
    */
-  _checkLayers(weather, time) {
+  _checkLayers(weather, time, forecast) {
     const temp = weather.temp;
     const hour = time.getHours();
     const condition = (weather.condition || '').toLowerCase();
@@ -377,7 +399,14 @@ class LifestyleContext {
     const isCool = temp < 15;
     const isNotRainy = !RAIN_CONDITIONS.some(rc => condition.includes(rc));
 
-    const active = isMorning && isCool && isNotRainy;
+    // Check forecast for big temperature swing (cool now, warm later)
+    const afternoonHours = forecast.filter(h => h.hour >= 12 && h.hour <= 17);
+    const maxAfternoonTemp = afternoonHours.length > 0
+      ? Math.max(...afternoonHours.map(h => h.temp))
+      : temp;
+    const bigSwing = isCool && (maxAfternoonTemp - temp) >= 8;
+
+    const active = (isMorning && isCool && isNotRainy) || bigSwing;
 
     return {
       type: 'layers',
