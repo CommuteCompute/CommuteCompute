@@ -4,10 +4,10 @@
 
 # Commute Compute System(TM) Architecture
 
-**Version:** 6.0
-**Last Updated:** 2026-02-07
+**Version:** 7.0
+**Last Updated:** 2026-02-13
 **Status:** Active
-**Specification:** CCDash(TM) V15.0 (LOCKED)
+**Specification:** CCDash(TM) V15.0 (UNLOCKED)
 **Development Rules:** v1.28
 **Metro Tunnel Compliance:** Effective 2026-02-01
 **Copyright:** (c) 2026 Angus Bergman -- AGPL-3.0 Dual License
@@ -58,14 +58,14 @@ Complete mapping of each trademark to its constituent files in the codebase.
 
 | File | Type | Purpose |
 |------|------|---------|
-| `src/services/ccdash-renderer.js` | Core | Consolidated renderer (v2.0) -- single source of truth |
+| `src/services/ccdash-renderer.js` | Core | Consolidated renderer (v2.1) -- single source of truth |
 | `api/zones.js` | API | Zone-based partial refresh endpoint |
 | `api/zones-tiered.js` | API | Tiered refresh intervals (1/2/5 min) |
 | `api/zone/[id].js` | API | Individual zone BMP endpoint |
 | `api/zonedata.js` | API | All zones with metadata |
 | `api/screen.js` | API | Full 800x480 PNG endpoint |
 | `api/fullscreen.js` | API | Fullscreen render endpoint |
-| `specs/CCDashDesignV15.md` | Spec | Dashboard specification V15.0 (LOCKED) |
+| `specs/CCDashDesignV15.md` | Spec | Dashboard specification V15.0 (UNLOCKED) |
 
 ### CC LiveDash(TM) -- Multi-Device Preview Renderer
 
@@ -78,7 +78,7 @@ Complete mapping of each trademark to its constituent files in the codebase.
 
 | File | Type | Purpose |
 |------|------|---------|
-| `firmware/src/main.cpp` | Core | Primary CCFirmTRMNL firmware (CC-FW-7.5.0) |
+| `firmware/src/main.cpp` | Core | Primary CCFirmTRMNL firmware (CC-FW-7.6.0) |
 | `firmware/kindle/` | Variant | CCFirmKindle for jailbroken Kindles |
 | `firmware/include/config.h` | Config | Build configuration |
 | `firmware/include/prerendered-screens.h` | Asset | Prerendered screens (boot, error) |
@@ -510,9 +510,9 @@ commute-compute/
 │   ├── Inter-Bold.ttf
 │   └── Inter-Regular.ttf
 ├── specs/
-│   └── CCDashDesignV15.md        # Dashboard spec V15.0 (LOCKED)
+│   └── CCDashDesignV15.md        # Dashboard spec V15.0 (UNLOCKED)
 ├── docs/                         # Documentation
-└── DEVELOPMENT-RULES.md          # Development rules (v1.26)
+└── DEVELOPMENT-RULES.md          # Development rules (v1.28)
 ```
 
 ### 3.2 Layer Architecture (by Trademark Family)
@@ -2069,7 +2069,7 @@ grep -rn "Clara\|Toorak\|Norman" src/ api/ --include="*.js" \
 ## References
 
 - [DEVELOPMENT-RULES.md](../DEVELOPMENT-RULES.md) -- All development rules (v1.28)
-- [specs/CCDashDesignV15.md](../specs/CCDashDesignV15.md) -- Dashboard specification V15.0 (LOCKED)
+- [specs/CCDashDesignV15.md](../specs/CCDashDesignV15.md) -- Dashboard specification V15.0 (UNLOCKED)
 - [firmware/ANTI-BRICK-REQUIREMENTS.md](../firmware/ANTI-BRICK-REQUIREMENTS.md) -- Firmware safety rules
 - [firmware/BOOT-SEQUENCE.md](../firmware/BOOT-SEQUENCE.md) -- Boot sequence documentation
 - [firmware/PAIRING-SPEC.md](../firmware/PAIRING-SPEC.md) -- Device pairing specification
@@ -2082,7 +2082,7 @@ grep -rn "Clara\|Toorak\|Norman" src/ api/ --include="*.js" \
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 6.0 | 2026-02-07 | **Engine Rename and V15.0 Spec**: Renamed SmartCommute to CommuteCompute throughout. Updated to CCDash V15.0 (LOCKED) with new dashboard layout: Sleep mode, Alt Transit cost panel, Mindset status bar, enhanced glanceability. Added sub-engines (DepartureConfidence, LifestyleContext, SleepOptimizer, AltTransit). FRIDAY TREAT for CoffeeDecision. Alternate routes shown only when primary confidence < 40%. Metro Tunnel Compliance promoted to standalone section. All references updated to GitLab. Development Rules v1.26. |
+| 6.0 | 2026-02-07 | **Engine Rename and V15.0 Spec**: Renamed SmartCommute to CommuteCompute throughout. Updated to CCDash V15.0 (UNLOCKED) with new dashboard layout: Sleep mode, Alt Transit cost panel, Mindset status bar, enhanced glanceability. Added sub-engines (DepartureConfidence, LifestyleContext, SleepOptimizer, AltTransit). FRIDAY TREAT for CoffeeDecision. Alternate routes shown only when primary confidence < 40%. Metro Tunnel Compliance promoted to standalone section. All references updated to GitLab. Development Rules v1.26. |
 | 5.4 | 2026-02-01 | **Hybrid BLE + Pairing Provisioning**: Major update to Device Pairing and Firmware Architecture. Documents two-phase provisioning: Phase 1 (BLE WiFi only) and Phase 2 (Pairing code for server config). |
 | 5.2 | 2026-01-31 | **Simplified System Architecture Diagrams**: Added high-level trademark-based architecture diagram. Updated all diagrams to use trademark family names consistently. |
 | 5.1 | 2026-01-31 | **Trademark Family File Registry**: Added comprehensive mapping of all trademarked components to their constituent files. |

@@ -1,32 +1,32 @@
 {
   "system": {
-    "version": "4.1.0",
+    "version": "4.2.0",
     "name": "Commute Compute System",
-    "releaseDate": "2026-02-12",
-    "codename": "Metro Tunnel"
+    "releaseDate": "2026-02-13",
+    "codename": "Intelligence Pipeline"
   },
   "components": {
     "commutecompute": {
       "version": "3.1",
       "name": "CommuteCompute Engine",
-      "description": "Real-time multi-modal journey planning with Metro Tunnel citybound detection, direction-based train filtering, tram route-level future-departure heuristic, all-day weather forecast equipment, Departure Confidence, Sleep Optimizer, Alt Transit, Lifestyle Context, Mindset analysis",
+      "description": "Real-time multi-modal journey planning with Metro Tunnel citybound detection, direction-based train filtering, route-aware transit filtering, transit-to-walk conversion, suburb extraction, strictly live GTFS-RT, Departure Confidence, Sleep Optimizer, Alt Transit, Lifestyle Context, Mindset analysis",
       "locked": false,
-      "lastUpdated": "2026-02-12"
+      "lastUpdated": "2026-02-13"
     },
     "renderer": {
       "version": "2.1",
       "name": "CCDash Renderer",
       "spec": "CCDashDesignV15.0",
-      "description": "V15.0 spec-compliant box sizing and font sizes, unified cafe closed/skipped rendering, confidence labels, sleep mode, mindset status, lifestyle context display",
+      "description": "V15.0 spec-compliant rendering with lifestyle obligation styling, transit-to-walk display, suburb locations, unified cafe closed/skipped rendering, confidence labels, sleep mode, mindset status, lifestyle context display",
       "locked": false,
-      "lastUpdated": "2026-02-12"
+      "lastUpdated": "2026-02-13"
     },
     "adminPanel": {
       "version": "5.0.0",
       "file": "admin.html",
-      "description": "Admin Panel with dynamic version loading, alt transit data, fixed configuration tab, TRMNL-free branding",
+      "description": "Admin Panel with KV-persisting address edits, geocoding, Places API autocomplete, dynamic version loading, alt transit data, TRMNL-free branding",
       "locked": false,
-      "lastUpdated": "2026-02-12"
+      "lastUpdated": "2026-02-13"
     },
     "setupWizard": {
       "version": "2.0.0",
@@ -86,6 +86,23 @@
     }
   },
   "changelog": [
+    {
+      "version": "4.2.0",
+      "date": "2026-02-13",
+      "changes": [
+        "Suburb extraction: home/work display suburb from Places API addressComponents or Nominatim fallback",
+        "Transit-to-walk conversion: removed transit legs become estimated walks (train 4x, tram 2.5x, bus 3x speed ratios)",
+        "Consecutive walk merging handles chains of adjacent walks with last segment title",
+        "Lifestyle obligation styling: black-filled box for positive obligations only, plain text for passive notices",
+        "Admin panel edits persist to Vercel KV via POST /api/admin/preferences with geocoding",
+        "Address autocomplete uses KV-stored Google Places API key",
+        "Setup wizard extracts suburb from Places API addressComponents (locality/sublocality)",
+        "Ghost train fix: inline Metro Tunnel destination detection in filterUnavailableTransitLegs",
+        "Security hardening: auth deny-by-default, CORS restriction, KV-first config",
+        "CCDashDesignV15 spec upgraded to match all real implementation changes",
+        "System v4.2.0, Engine v3.1, Renderer v2.1, Spec CCDashDesignV15.0 UNLOCKED"
+      ]
+    },
     {
       "version": "4.1.0",
       "date": "2026-02-12",
