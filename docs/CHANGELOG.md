@@ -11,6 +11,48 @@ All notable changes to this project are documented here.
 
 ---
 
+## [2026-02-13] -- System v4.2.0
+
+### Added
+- **Suburb extraction** -- home/work display suburb from Google Places API `addressComponents` (locality/sublocality) or Nominatim fallback
+- **Transit-to-walk conversion** -- removed transit legs become estimated walks using speed ratios (train 4x, tram 2.5x, bus 3x)
+- **Lifestyle obligation styling** -- black-filled box only for positive obligations (BRING UMBRELLA, JACKET), plain text for passive notices (NO UMBRELLA)
+- **Admin KV persistence** -- address edits geocoded via Places API and saved to Vercel KV through POST `/api/admin/preferences`
+- **Address autocomplete** -- admin panel and address search use KV-stored Google Places API key
+- **Ghost train fix** -- inline Metro Tunnel destination detection in `filterUnavailableTransitLegs()`
+
+### Changed
+- System version upgraded from v4.1.0 to **v4.2.0**
+- CCDashDesignV15 spec upgraded to match all real implementation changes (UNLOCKED)
+- `extractSuburb()` now detects municipalities via "City of [candidate]" matching
+- Consecutive walk merging handles chains of adjacent walks with last segment title
+
+### Security
+- Auth deny-by-default on all admin endpoints
+- CORS restriction to configured origins
+- KV-first config loading (no fallback to local preferences on Vercel)
+
+---
+
+## [2026-02-12] -- System v4.1.0
+
+### Added
+- **Metro Tunnel citybound detection** via trip sequence analysis (Town Hall, State Library, Parkville, Arden, Anzac)
+- **Direction-based train filtering** for citybound trains
+- **Route-aware transit filtering** by specific route number
+- **V/Line support** as 4th transit mode with named lines
+- **Ferry canvas-drawn icon** for water transit legs
+- **All-mode disruptions** fetched in parallel (metro + tram + bus)
+- **Catchable departures only** in "Next:" subtitles
+- **Strictly live GTFS-RT** data -- no timetable fallbacks
+
+### Changed
+- CommuteCompute(TM) Engine upgraded from v2.4 to **v3.1** (Metro Tunnel compliant)
+- CCDash(TM) Renderer upgraded from v1.81 to **v2.1** (V15.0 spec-compliant)
+- All document versions UNLOCKED for active development
+
+---
+
 ## [2026-02-09] -- System v3.5.0
 
 ### Added
