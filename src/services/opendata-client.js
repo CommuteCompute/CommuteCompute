@@ -267,6 +267,18 @@ export async function getDepartures(stopId, routeType, options = {}) {
       }
     }
 
+    // V15.0: Broad tram fallback — GTFS-RT tram stop IDs differ from static GTFS.
+    // When stop-level AND route-level both fail for trams and no route number is
+    // configured, collect approximate timing from all routes in the feed.
+    // This ensures tram legs are preserved in the display with live timing.
+    if (departures.length === 0 && feedEntityCount > 0 && routeType === 1 && !options.routeNumber) {
+      const broadDepartures = processAnyRouteDepartures(feed);
+      if (broadDepartures.length > 0) {
+        console.log(`[OpenData] Tram broad fallback: ${broadDepartures.length} departures from mixed routes (stopId=${stopId}, no route number configured)`);
+        broadDepartures.forEach(d => departures.push(d));
+      }
+    }
+
     departures._feedInfo = {
       entityCount: feedEntityCount,
       sampleStopIds: [...sampleIds],
@@ -275,7 +287,8 @@ export async function getDepartures(stopId, routeType, options = {}) {
       queriedRouteNumber: options.routeNumber || null,
       mode,
       matchMethod: departures.length > 0 && departures[0]?.source === 'gtfs-rt-route'
-        ? 'route-level' : departures.length > 0 ? 'stop-level' : 'none'
+        ? 'route-level' : departures.length > 0 && departures[0]?.source === 'gtfs-rt-broad'
+        ? 'broad-fallback' : departures.length > 0 ? 'stop-level' : 'none'
     };
 
     if (departures.length === 0) {
@@ -365,6 +378,61 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType) {
   }
 
   // Sort by departure time and limit
+  departures.sort((a, b) => a.minutes - b.minutes);
+  return departures.slice(0, 5);
+}
+
+/**
+ * V15.0: Broad tram fallback — extract departures from ALL routes in the feed.
+ * Used when stop-level matching fails AND no specific route number is available.
+ * GTFS-RT tram stop IDs differ from static GTFS, so this provides approximate
+ * live timing data from any tram route in the feed (midpoint of each trip).
+ * This is a last resort to ensure tram legs are preserved in the display.
+ *
+ * @param {Object} feed - Decoded GTFS-RT FeedMessage
+ * @returns {Array} - Departure objects from mixed routes
+ */
+function processAnyRouteDepartures(feed) {
+  const nowMs = getNowMs();
+  const departures = [];
+  if (!feed?.entity) return departures;
+
+  for (const entity of feed.entity) {
+    const tripUpdate = entity.tripUpdate;
+    if (!tripUpdate?.stopTimeUpdate?.length) continue;
+
+    const routeId = tripUpdate.trip?.routeId;
+    const extractedRoute = getRouteNumber(routeId);
+    const lineName = getLineName(routeId);
+    const stus = tripUpdate.stopTimeUpdate;
+    const midIdx = Math.floor(stus.length / 2);
+
+    for (const idx of [midIdx, 0, stus.length - 1]) {
+      const stu = stus[idx];
+      const depTime = stu.departure?.time || stu.arrival?.time;
+      if (!depTime) continue;
+
+      const depMs = (depTime.low || depTime) * 1000;
+      const minutes = Math.round((depMs - nowMs) / 60000);
+
+      if (minutes >= -2 && minutes <= 120) {
+        departures.push({
+          minutes: Math.max(0, minutes),
+          departureTimeMs: depMs,
+          destination: lineName,
+          lineName,
+          routeNumber: extractedRoute,
+          routeId,
+          tripId: tripUpdate.trip?.tripId,
+          isCitybound: false,
+          isLive: true,
+          source: 'gtfs-rt-broad'
+        });
+        break;
+      }
+    }
+  }
+
   departures.sort((a, b) => a.minutes - b.minutes);
   return departures.slice(0, 5);
 }
