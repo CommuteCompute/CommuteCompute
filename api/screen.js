@@ -336,6 +336,13 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
                          null;
 
       leg.originStation = actualName;
+
+      // Determine direction: citybound if destination is a central Melbourne station
+      // This enables correct train filtering (any line going the right direction)
+      const destName = (leg.destination?.name || '').toLowerCase();
+      const cityStations = ['flinders', 'parliament', 'melbourne central', 'flagstaff',
+        'southern cross', 'town hall', 'state library', 'parkville', 'arden', 'anzac', 'city'];
+      leg.isCitybound = cityStations.some(s => destName.includes(s));
     }
     if (leg.type === 'bus') {
       const fromCafe = prevLeg?.type === 'walk' && (prevLeg?.from === 'cafe' || currentOrigin === 'cafe');
@@ -772,17 +779,29 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
 
   if (!departures?.length) return null;
 
-  // Find by route number if available — do NOT fall back to all departures
-  // Showing wrong-route data is worse than showing no data
   let matchedDepartures = departures;
-  if (leg.routeNumber) {
+
+  if (leg.type === 'train' || leg.type === 'vline') {
+    // For trains: filter by DIRECTION, not route number.
+    // Multiple lines serve the same station — user catches the next one going their way.
+    // isCitybound is set by processGtfsRtDepartures from the trip's final stop.
+    if (leg.isCitybound !== undefined) {
+      const dirMatches = departures.filter(d => d.isCitybound === leg.isCitybound);
+      if (dirMatches.length > 0) {
+        matchedDepartures = dirMatches;
+      } else {
+        return null;
+      }
+    }
+    // No route number filtering for trains — any line in the right direction
+  } else if (leg.routeNumber) {
+    // For trams/buses: filter by route number (specific routes serve specific corridors)
     const routeMatches = departures.filter(d =>
       d.routeNumber?.toString() === leg.routeNumber.toString()
     );
     if (routeMatches.length > 0) {
       matchedDepartures = routeMatches;
     } else {
-      // No route match — return null rather than showing wrong-route data
       return null;
     }
   }
@@ -895,18 +914,22 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
                          leg.type === 'tram' ? transitData.trams :
                          leg.type === 'bus' ? transitData.buses : [];
 
-      // V15.0: Check for route-specific departures first — consistent with findMatchingDeparture().
-      // When leg has a route number, ONLY route-matching departures count.
-      // Wrong-route data is treated as no data (leg removed).
+      // V15.0: Filter departures consistent with findMatchingDeparture().
       let routeDepartures = departures;
-      if (leg.routeNumber && departures && departures.length > 0) {
+      if (leg.type === 'train' || leg.type === 'vline') {
+        // For trains: filter by direction, not route number — any line in the right direction
+        if (leg.isCitybound !== undefined && departures && departures.length > 0) {
+          const dirMatches = departures.filter(d => d.isCitybound === leg.isCitybound);
+          routeDepartures = dirMatches.length > 0 ? dirMatches : [];
+        }
+      } else if (leg.routeNumber && departures && departures.length > 0) {
+        // For trams/buses: filter by route number
         const routeMatches = departures.filter(d =>
           d.routeNumber?.toString() === leg.routeNumber.toString()
         );
         if (routeMatches.length > 0) {
           routeDepartures = routeMatches;
         } else {
-          // No route match — treat as no departures (consistent with findMatchingDeparture)
           routeDepartures = [];
         }
       }

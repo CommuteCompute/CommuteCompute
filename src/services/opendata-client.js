@@ -47,19 +47,52 @@ const VLINE_LINE_NAMES = {
 };
 
 /**
- * Check if a stop ID is in the Melbourne City Loop area
- * City Loop stations: Parliament, Melbourne Central, Flagstaff, Southern Cross, Flinders Street
- * These stops are typically 26xxx or 12204 (Flinders Street)
+ * Inner-city station stop IDs for direction detection.
+ * Includes City Loop, Flinders Street, Richmond, and Metro Tunnel stations.
+ * Metro Tunnel (opened 2025): Pakenham/Cranbourne/Sunbury lines now run through
+ * Arden, Parkville, State Library, Town Hall, Anzac — no longer via City Loop.
+ * Richmond is included as the gateway between suburban and inner-city stops.
  */
-// City Loop and Flinders Street stop IDs — exact set for precision
 const CITY_LOOP_STOP_IDS = new Set([
   '26001', '26002', '26003', '26004', // Parliament, Melbourne Central, Flagstaff, Southern Cross
   '12204', '12205'                     // Flinders Street platforms
 ]);
 
+const INNER_CITY_STOP_IDS = new Set([
+  ...CITY_LOOP_STOP_IDS,
+  '12173',                              // Richmond — gateway to city for SE lines
+  '19843', '19842',                     // Town Hall (Metro Tunnel)
+  '19841', '19840',                     // State Library (Metro Tunnel)
+  '19839', '19838',                     // Parkville (Metro Tunnel)
+  '19837', '19836',                     // Arden (Metro Tunnel)
+  '19845', '19844'                      // Anzac (Metro Tunnel)
+]);
+
 function isCityLoopStop(stopId) {
   if (!stopId) return false;
   return CITY_LOOP_STOP_IDS.has(String(stopId));
+}
+
+/**
+ * Determine if a train is citybound relative to the user's stop position.
+ * Checks if any inner-city stop appears AFTER the user's stop in the trip sequence.
+ * Handles both City Loop and Metro Tunnel through-running services.
+ *
+ * @param {Array} stops - Trip's stopTimeUpdate array (ordered by sequence)
+ * @param {number} userStopIndex - Index of user's stop in the sequence
+ * @returns {boolean} - True if train is heading towards the city
+ */
+function isTrainCitybound(stops, userStopIndex) {
+  if (userStopIndex < 0 || !stops?.length) {
+    // Fallback: check final stop against City Loop
+    const finalStop = stops?.[stops.length - 1]?.stopId || '';
+    return isCityLoopStop(finalStop);
+  }
+  // City stop appears after user's stop = train is heading towards the city
+  for (let i = userStopIndex + 1; i < stops.length; i++) {
+    if (INNER_CITY_STOP_IDS.has(String(stops[i].stopId))) return true;
+  }
+  return false;
 }
 
 /**
@@ -308,13 +341,41 @@ export async function getDepartures(stopId, routeType, options = {}) {
 }
 
 /**
+ * Flexible stop ID matching for GTFS-RT feeds.
+ * Handles different ID formats: bare ("12179"), prefixed ("aus:vic:metro:12179"),
+ * delimited ("tram-2505"), or numeric trailing ("stop2505").
+ *
+ * @param {string} gtfsStopId - Stop ID from the GTFS-RT feed
+ * @param {string} queriedStopId - The stop ID we're looking for
+ * @returns {boolean} - Whether the IDs match
+ */
+function matchesStopId(gtfsStopId, queriedStopId) {
+  if (!gtfsStopId || !queriedStopId) return false;
+  const gtfsStr = String(gtfsStopId);
+  const stopIdStr = String(queriedStopId);
+
+  if (gtfsStr === stopIdStr) return true;
+  if (gtfsStr.endsWith(`:${stopIdStr}`)) return true;
+  if (gtfsStr.endsWith(`-${stopIdStr}`)) return true;
+  if (gtfsStr.endsWith(`_${stopIdStr}`)) return true;
+  if (gtfsStr.endsWith(`/${stopIdStr}`)) return true;
+
+  if (/^\d+$/.test(stopIdStr)) {
+    const numMatch = gtfsStr.match(/(\d+)$/);
+    if (numMatch && numMatch[1] === stopIdStr) return true;
+  }
+
+  return false;
+}
+
+/**
  * V15.0: Route-level departure extraction when stop-level matching fails.
  * Searches the GTFS-RT feed for trips matching a route number and extracts
- * departure estimates from ANY stop on that trip. This handles cases where
- * the GTFS-RT feed uses different stop IDs than our static GTFS data.
+ * departure times. First tries to find the queried stop within the trip's
+ * stop sequence. If not found, estimates departure using future stop times.
  *
  * @param {Object} feed - Decoded GTFS-RT FeedMessage
- * @param {string|number} stopId - Original stop ID (for logging)
+ * @param {string|number} stopId - Original stop ID (for stop matching within trips)
  * @param {string} routeNumber - Expected route number (e.g., "58" for tram)
  * @param {number} routeType - 0=metro, 1=tram, 2=bus
  * @returns {Array} - Departure objects from route-level matching
@@ -325,6 +386,7 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType) {
   if (!feed?.entity || !routeNumber) return departures;
 
   const targetRoute = String(routeNumber);
+  const stopIdStr = String(stopId);
 
   for (const entity of feed.entity) {
     const tripUpdate = entity.tripUpdate;
@@ -336,44 +398,68 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType) {
     // Match by route number
     if (extractedRoute !== targetRoute) continue;
 
-    // Found a trip on this route — extract timing from the first available stop time update
-    // Use the middle stop (approximate midpoint) for better estimates
     const stus = tripUpdate.stopTimeUpdate;
-    const midIdx = Math.floor(stus.length / 2);
 
-    // Try stops in order of preference: middle, first, last
-    for (const idx of [midIdx, 0, stus.length - 1]) {
-      const stu = stus[idx];
-      const depTime = stu.departure?.time || stu.arrival?.time;
-      if (!depTime) continue;
-
-      const depMs = (depTime.low || depTime) * 1000;
-      const minutes = Math.round((depMs - nowMs) / 60000);
-
-      if (minutes >= -2 && minutes <= 120) {
-        const delay = stu.departure?.delay || stu.arrival?.delay || 0;
-        const isDelayed = delay > 60;
-        const lineName = getLineName(routeId);
-        const stops = tripUpdate.stopTimeUpdate;
-        const finalStop = stops[stops.length - 1]?.stopId || '';
-
-        departures.push({
-          minutes: Math.max(0, minutes),
-          departureTimeMs: depMs,
-          destination: lineName,
-          lineName,
-          routeNumber: extractedRoute,
-          routeId,
-          tripId: tripUpdate.trip?.tripId,
-          finalStop,
-          isCitybound: false,
-          delay: Math.round(delay / 60),
-          isDelayed,
-          isLive: true,
-          source: 'gtfs-rt-route' // Distinguish from stop-level match
-        });
-        break; // One departure per trip
+    // Strategy 1: Try to find queried stop ID within the trip's stop sequence
+    let pickedStu = null;
+    for (const stu of stus) {
+      if (matchesStopId(stu.stopId, stopIdStr)) {
+        pickedStu = stu;
+        break;
       }
+    }
+
+    // Strategy 2: Estimate from future departure times
+    // Collect all stops with future departures (>= 2 min from now)
+    if (!pickedStu) {
+      const futureDeps = [];
+      for (const stu of stus) {
+        const depTime = stu.departure?.time || stu.arrival?.time;
+        if (!depTime) continue;
+        const depMs = (depTime.low || depTime) * 1000;
+        const minutes = Math.round((depMs - nowMs) / 60000);
+        if (minutes >= 2 && minutes <= 120) {
+          futureDeps.push({ stu, depMs, minutes });
+        }
+      }
+      if (futureDeps.length > 0) {
+        futureDeps.sort((a, b) => a.depMs - b.depMs);
+        // Use stop ~1/3 through future sequence — better estimate for stops
+        // that are a moderate distance ahead of the vehicle's current position
+        const pickIdx = Math.min(Math.floor(futureDeps.length / 3), futureDeps.length - 1);
+        pickedStu = futureDeps[pickIdx].stu;
+      }
+    }
+
+    if (!pickedStu) continue;
+
+    const depTime = pickedStu.departure?.time || pickedStu.arrival?.time;
+    if (!depTime) continue;
+
+    const depMs = (depTime.low || depTime) * 1000;
+    const minutes = Math.round((depMs - nowMs) / 60000);
+
+    if (minutes >= -2 && minutes <= 120) {
+      const delay = pickedStu.departure?.delay || pickedStu.arrival?.delay || 0;
+      const isDelayed = delay > 60;
+      const lineName = getLineName(routeId);
+      const finalStop = stus[stus.length - 1]?.stopId || '';
+
+      departures.push({
+        minutes: Math.max(0, minutes),
+        departureTimeMs: depMs,
+        destination: lineName,
+        lineName,
+        routeNumber: extractedRoute,
+        routeId,
+        tripId: tripUpdate.trip?.tripId,
+        finalStop,
+        isCitybound: false,
+        delay: Math.round(delay / 60),
+        isDelayed,
+        isLive: true,
+        source: 'gtfs-rt-route'
+      });
     }
   }
 
@@ -405,32 +491,36 @@ function processAnyRouteDepartures(feed) {
     const extractedRoute = getRouteNumber(routeId);
     const lineName = getLineName(routeId);
     const stus = tripUpdate.stopTimeUpdate;
-    const midIdx = Math.floor(stus.length / 2);
 
-    for (const idx of [midIdx, 0, stus.length - 1]) {
-      const stu = stus[idx];
+    // Use future departure heuristic (same as route-level matching)
+    const futureDeps = [];
+    for (const stu of stus) {
       const depTime = stu.departure?.time || stu.arrival?.time;
       if (!depTime) continue;
-
       const depMs = (depTime.low || depTime) * 1000;
       const minutes = Math.round((depMs - nowMs) / 60000);
-
-      if (minutes >= -2 && minutes <= 120) {
-        departures.push({
-          minutes: Math.max(0, minutes),
-          departureTimeMs: depMs,
-          destination: lineName,
-          lineName,
-          routeNumber: extractedRoute,
-          routeId,
-          tripId: tripUpdate.trip?.tripId,
-          isCitybound: false,
-          isLive: true,
-          source: 'gtfs-rt-broad'
-        });
-        break;
+      if (minutes >= 2 && minutes <= 120) {
+        futureDeps.push({ stu, depMs, minutes });
       }
     }
+
+    if (futureDeps.length === 0) continue;
+    futureDeps.sort((a, b) => a.depMs - b.depMs);
+    const pickIdx = Math.min(Math.floor(futureDeps.length / 3), futureDeps.length - 1);
+    const picked = futureDeps[pickIdx];
+
+    departures.push({
+      minutes: Math.max(0, picked.minutes),
+      departureTimeMs: picked.depMs,
+      destination: lineName,
+      lineName,
+      routeNumber: extractedRoute,
+      routeId,
+      tripId: tripUpdate.trip?.tripId,
+      isCitybound: false,
+      isLive: true,
+      source: 'gtfs-rt-broad'
+    });
   }
 
   departures.sort((a, b) => a.minutes - b.minutes);
@@ -468,32 +558,7 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0) {
   }
   console.log(`[OpenData] Looking for stopId=${stopIdStr} (routeType=${routeType}). Sample stop IDs in feed: [${[...sampleStopIds].join(', ')}]`);
 
-  // Stop ID matching - flexible for all modes to handle GTFS-RT ID formats
-  // GTFS-RT may use bare IDs ("12179") or prefixed IDs ("aus:vic:metro:12179")
-  // V15.0: Enhanced matching for tram feeds which may use different ID schemes
-  const matchesStopId = (gtfsStopId) => {
-    if (!gtfsStopId) return false;
-    const gtfsStr = String(gtfsStopId);
-
-    // Exact match - works for all modes
-    if (gtfsStr === stopIdStr) return true;
-
-    // Delimited suffix match - handles prefixed GTFS-RT stop IDs
-    // e.g., "aus:vic:metro:12179" matches "12179", "tram-2505" matches "2505"
-    if (gtfsStr.endsWith(`:${stopIdStr}`)) return true;
-    if (gtfsStr.endsWith(`-${stopIdStr}`)) return true;
-    if (gtfsStr.endsWith(`_${stopIdStr}`)) return true;
-    if (gtfsStr.endsWith(`/${stopIdStr}`)) return true;
-
-    // Numeric trailing match - handles non-delimited prefixes like "tram2505" or "stop2505"
-    // Only if our stop ID is fully numeric and the feed ID ends with our exact digits
-    if (/^\d+$/.test(stopIdStr)) {
-      const numMatch = gtfsStr.match(/(\d+)$/);
-      if (numMatch && numMatch[1] === stopIdStr) return true;
-    }
-
-    return false;
-  };
+  // V15.0: Uses shared matchesStopId() for flexible stop ID matching across all modes
 
   for (const entity of feed.entity) {
     const tripUpdate = entity.tripUpdate;
@@ -501,7 +566,7 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0) {
 
     for (const stu of tripUpdate.stopTimeUpdate) {
       // Match stop ID (GTFS uses string IDs) - V13.6: Flexible matching
-      if (!matchesStopId(stu.stopId)) continue;
+      if (!matchesStopId(stu.stopId, stopIdStr)) continue;
       
       // Get departure or arrival time
       const depTime = stu.departure?.time || stu.arrival?.time;
@@ -518,13 +583,14 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0) {
         const delay = stu.departure?.delay || stu.arrival?.delay || 0;
         const isDelayed = delay > 60; // More than 1 minute delay
 
-        // Determine destination - mode-aware logic
+        // Determine destination and direction — handles both City Loop and Metro Tunnel
         const stops = tripUpdate.stopTimeUpdate;
         const finalStop = stops[stops.length - 1]?.stopId || '';
-        const isCitybound = isCityLoopStop(finalStop);
+        const userStopIndex = stops.findIndex(s => matchesStopId(s.stopId, stopIdStr));
+        const isCitybound = isTrainCitybound(stops, userStopIndex);
         const routeId = tripUpdate.trip?.routeId;
         const lineName = getLineName(routeId);
-        const destination = isCitybound ? 'City Loop' : lineName;
+        const destination = isCitybound ? 'City' : lineName;
 
         departures.push({
           minutes,

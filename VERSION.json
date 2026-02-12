@@ -1,49 +1,52 @@
 {
   "system": {
-    "version": "4.0.0",
+    "version": "4.1.0",
     "name": "Commute Compute System",
-    "releaseDate": "2026-02-09",
-    "codename": "Multi-Modal"
+    "releaseDate": "2026-02-12",
+    "codename": "Metro Tunnel"
   },
   "components": {
     "commutecompute": {
-      "version": "3.0",
+      "version": "3.1",
       "name": "CommuteCompute Engine",
-      "description": "Real-time multi-modal journey planning with shared GTFS stop names, Departure Confidence scoring, disruption-triggered Alt Transit, Lifestyle Context, Sleep Optimizer, Mindset analysis, admin analytics integration",
+      "description": "Real-time multi-modal journey planning with Metro Tunnel citybound detection, direction-based train filtering, tram route-level future-departure heuristic, all-day weather forecast equipment, Departure Confidence, Sleep Optimizer, Alt Transit, Lifestyle Context, Mindset analysis",
       "locked": false,
-      "lastUpdated": "2026-02-09"
+      "lastUpdated": "2026-02-12"
     },
     "renderer": {
-      "version": "2.0",
+      "version": "2.1",
       "name": "CCDash Renderer",
       "spec": "CCDashDesignV15.0",
-      "description": "Unified confidence labels (ON TIME/AT RISK/UNLIKELY), AM/PM fix, disruption-triggered alt transit panel, sleep mode, mindset status, enhanced glanceability, lifestyle suggestions",
+      "description": "V15.0 spec-compliant box sizing and font sizes, unified cafe closed/skipped rendering, confidence labels, sleep mode, mindset status, lifestyle context display",
       "locked": false,
-      "lastUpdated": "2026-02-09"
+      "lastUpdated": "2026-02-12"
     },
     "adminPanel": {
       "version": "5.0.0",
       "file": "admin.html",
       "description": "Admin Panel with dynamic version loading, alt transit data, fixed configuration tab, TRMNL-free branding",
-      "lastUpdated": "2026-02-09"
+      "locked": false,
+      "lastUpdated": "2026-02-12"
     },
     "setupWizard": {
       "version": "2.0.0",
       "file": "setup-wizard.html",
       "description": "Initial Setup Wizard with BLE Provisioning",
-      "lastUpdated": "2026-02-06"
+      "locked": false,
+      "lastUpdated": "2026-02-12"
     },
     "journeyDisplay": {
       "version": "1.2.0",
       "file": "journey-display.html",
       "description": "Journey Visualization Interface",
-      "lastUpdated": "2026-02-06"
+      "locked": false,
+      "lastUpdated": "2026-02-12"
     },
     "livedash": {
       "version": "3.0",
-      "description": "CC LiveDash Multi-Device Endpoint",
-      "locked": true,
-      "lastUpdated": "2026-02-06"
+      "description": "CC LiveDash™ Multi-Device Endpoint",
+      "locked": false,
+      "lastUpdated": "2026-02-12"
     }
   },
   "backend": {
@@ -70,7 +73,7 @@
     "dashboard": {
       "version": "CCDashDesignV15.0",
       "status": "UNLOCKED",
-      "lockedDate": "2026-02-06"
+      "lockedDate": null
     }
   },
   "versioningScheme": {
@@ -83,6 +86,20 @@
     }
   },
   "changelog": [
+    {
+      "version": "4.1.0",
+      "date": "2026-02-12",
+      "changes": [
+        "CommuteCompute Engine v3.1: Metro Tunnel citybound detection via trip sequence analysis",
+        "Direction-based train filtering (any citybound train, not route-locked)",
+        "Tram route-level future-departure heuristic for accurate countdown timing",
+        "LifestyleContext v1.2: all-day hourly forecast for weather equipment decisions",
+        "CCDash Renderer v2.1: V15.0 spec-compliant box sizing, fonts, status indicators",
+        "Unified cafe closed/skipped rendering path in renderer",
+        "Inner-city stop IDs expanded for Metro Tunnel stations (Town Hall, State Library, Parkville, Arden, Anzac)",
+        "All document versions UNLOCKED for active development"
+      ]
+    },
     {
       "version": "4.0.0",
       "date": "2026-02-09",
