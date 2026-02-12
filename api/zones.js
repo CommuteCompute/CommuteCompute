@@ -457,11 +457,9 @@ export default async function handler(req, res) {
       return res.status(200).json(zonesResult);
     }
     
-    // Check if user has completed setup
-    const prefs = new PreferencesManager();
-    await prefs.load();
-    
-    if (!prefs.isConfigured()) {
+    // KV-first config check — consistent with screen.js (Section 26.5)
+    const transitApiKey = await getTransitApiKey();
+    if (!transitApiKey) {
       const host = req.headers.host || req.headers['x-forwarded-host'] || 'your-server';
       const protocol = req.headers['x-forwarded-proto'] || 'https';
       res.setHeader('Content-Type', 'application/json');
@@ -472,31 +470,26 @@ export default async function handler(req, res) {
         timestamp: new Date().toISOString()
       });
     }
-    
+
+    // Load preferences for engine config
+    const prefs = new PreferencesManager();
+    await prefs.load();
+
     // Get current time
     const now = getMelbourneTime();
     const currentTime = formatTime12h(now);
     const amPm = getAmPm(now);
     const { day, date } = formatDateParts(now);
-    
+
     // Initialize engine and get route
     const engine = await getEngine(prefs.get());
     const route = engine.getSelectedRoute();
     const locations = engine.getLocations();
     const config = engine.journeyConfig;
-    
-    // Fetch live data
-    // GTFS-RT stop IDs - direction-specific (different platforms = different IDs)
-    // Per DEVELOPMENT-RULES.md Section 17.4: No hardcoded personal data
-    // Stop IDs must be configured via Setup Wizard or environment variables
-    // 
-    // If not configured, API will return fallback/scheduled data
-    // Per Section 3.1: Zero-Config - preferences from KV only, no process.env
+
+    // GTFS-RT stop IDs from preferences
     const trainStopId = prefs.get()?.trainStopId || null;
     const tramStopId = prefs.get()?.tramStopId || null;
-    
-    // Per Section 11.8: Zero-Config compliant - load API key from KV storage
-    const transitApiKey = await getTransitApiKey();
     const apiOptions = transitApiKey ? { apiKey: transitApiKey } : {};
     
     // Per Section 17.4: No hardcoded stops - skip API calls if not configured

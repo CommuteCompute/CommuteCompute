@@ -185,11 +185,9 @@ export default async function handler(req, res) {
       });
     }
     
-    // Check setup
-    const prefs = new PreferencesManager();
-    await prefs.load();
-    
-    if (!prefs.isConfigured()) {
+    // KV-first config check — consistent with screen.js (Section 26.5)
+    const transitApiKey = await getTransitApiKey();
+    if (!transitApiKey) {
       const host = req.headers.host || 'your-server';
       const protocol = req.headers['x-forwarded-proto'] || 'https';
       return res.status(200).json({
@@ -197,25 +195,25 @@ export default async function handler(req, res) {
         message: `Please complete setup at ${protocol}://${host}/setup-wizard.html`
       });
     }
-    
+
+    // Load preferences for engine config
+    const prefs = new PreferencesManager();
+    await prefs.load();
+
     // Get current time
     const now = getMelbourneTime();
     const currentTime = formatTime(now);
     const { day, date } = formatDateParts(now);
-    
+
     // Get journey data
     const engine = await getEngine();
     const route = engine.getSelectedRoute();
     const locations = engine.getLocations();
     const config = engine.journeyConfig;
-    
-    // Fetch live data
-    // Per Section 3.1: Zero-Config - get stop IDs from preferences (KV), no process.env
+
+    // GTFS-RT stop IDs from preferences
     const trainStopId = prefs.get()?.trainStopId || null;
     const tramStopId = prefs.get()?.tramStopId || null;
-    
-    // Per Section 11.8: Zero-Config compliant - load API key from KV storage
-    const transitApiKey = await getTransitApiKey();
     const apiOptions = transitApiKey ? { apiKey: transitApiKey } : {};
     
     const [trains, trams, weather, disruptions] = await Promise.all([
