@@ -81,7 +81,7 @@ async function geocodeAddress(address, googleKey = null) {
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': googleKey,
-          'X-Goog-FieldMask': 'places.location,places.displayName,places.formattedAddress'
+          'X-Goog-FieldMask': 'places.location,places.displayName,places.formattedAddress,places.addressComponents'
         },
         body: JSON.stringify({
           textQuery: address,
@@ -99,11 +99,20 @@ async function geocodeAddress(address, googleKey = null) {
 
       if (data.places && data.places.length > 0) {
         const place = data.places[0];
+        // Extract suburb from addressComponents (locality or sublocality)
+        let suburb = null;
+        if (place.addressComponents) {
+          const localityComp = place.addressComponents.find(c =>
+            c.types?.includes('locality') || c.types?.includes('sublocality_level_1')
+          );
+          if (localityComp) suburb = localityComp.longText || localityComp.shortText;
+        }
         return {
           address: place.formattedAddress || address,
           name: place.displayName?.text || address.split(',')[0],
           lat: place.location.latitude,
           lon: place.location.longitude,
+          suburb,
           source: 'google'
         };
       }
