@@ -939,13 +939,26 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
       // V15.0: Filter departures consistent with findMatchingDeparture().
       let routeDepartures = departures;
       if (leg.type === 'train' || leg.type === 'vline') {
+        // Determine direction and Metro Tunnel/City Loop from destination name.
+        // These flags may not be set yet (buildJourneyLegs sets them later),
+        // so derive them here to ensure correct filtering before leg construction.
+        const destName = (leg.destination?.name || '').toLowerCase();
+        const cityStations = ['flinders', 'parliament', 'melbourne central', 'flagstaff',
+          'southern cross', 'town hall', 'state library', 'parkville', 'arden', 'anzac', 'city'];
+        const isCitybound = leg.isCitybound !== undefined ? leg.isCitybound :
+          cityStations.some(s => destName.includes(s));
+        const cityLoopStations = ['flinders', 'parliament', 'melbourne central', 'flagstaff', 'southern cross'];
+        const metroTunnelStations = ['town hall', 'state library', 'parkville', 'arden', 'anzac'];
+        const requiresCityLoop = leg.requiresCityLoop || cityLoopStations.some(s => destName.includes(s));
+        const requiresMetroTunnel = leg.requiresMetroTunnel || metroTunnelStations.some(s => destName.includes(s));
+
         // For trains: filter by direction, not route number — any line in the right direction
-        if (leg.isCitybound !== undefined && departures && departures.length > 0) {
-          let dirMatches = departures.filter(d => d.isCitybound === leg.isCitybound);
+        if (isCitybound && departures && departures.length > 0) {
+          let dirMatches = departures.filter(d => d.isCitybound === isCitybound);
           // Metro Tunnel vs City Loop: exclude wrong tunnel/loop trains
-          if (leg.requiresCityLoop) {
+          if (requiresCityLoop) {
             dirMatches = dirMatches.filter(d => !d.isMetroTunnel);
-          } else if (leg.requiresMetroTunnel) {
+          } else if (requiresMetroTunnel) {
             dirMatches = dirMatches.filter(d => d.isMetroTunnel);
           }
           routeDepartures = dirMatches.length > 0 ? dirMatches : [];

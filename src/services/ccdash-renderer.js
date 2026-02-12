@@ -2335,19 +2335,13 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   const displayText = lifestyleDisplay || (needsUmbrella ? 'BRING UMBRELLA' : 'NO UMBRELLA');
   const isAlert = needsUmbrella || (lifestyleDisplay && /UMBRELLA|JACKET|HYDRAT/i.test(lifestyleDisplay));
 
-  if (isAlert) {
-    // V15.0: Black background with white text — action needed
-    ctx.font = 'bold 11px Inter, sans-serif';
-    ctx.fillStyle = '#000';
-    ctx.fillRect(weatherBoxX + 4, umbrellaY, weatherBoxW - 8, 14);
-    ctx.fillStyle = '#FFF';
-    ctx.fillText(displayText, weatherBoxX + weatherBoxW / 2, umbrellaY + 7);
-  } else {
-    // V15.0: Subtle text only — no action needed (no box, no border)
-    ctx.font = '10px Inter, sans-serif';
-    ctx.fillStyle = '#000';
-    ctx.fillText(displayText, weatherBoxX + weatherBoxW / 2, umbrellaY + 7);
-  }
+  // V15.0: Always render as black-filled box with white text.
+  // Positive lifestyle obligation (e.g. "NO UMBRELLA") or alert (e.g. "BRING UMBRELLA").
+  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.fillStyle = '#000';
+  ctx.fillRect(weatherBoxX + 4, umbrellaY, weatherBoxW - 8, 14);
+  ctx.fillStyle = '#FFF';
+  ctx.fillText(displayText, weatherBoxX + weatherBoxW / 2, umbrellaY + 7);
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
