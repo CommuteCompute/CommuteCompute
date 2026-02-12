@@ -14,7 +14,7 @@
  */
 
 import { getGoogleApiKey } from '../../src/data/kv-preferences.js';
-import { requireAuth } from '../../src/utils/auth-middleware.js';
+import { requireAuth, isFirstTimeSetup, setAdminCorsHeaders } from '../../src/utils/auth-middleware.js';
 
 /**
  * Melbourne suburb to GTFS stop ID mapping (citybound platform IDs)
@@ -137,18 +137,15 @@ async function geocodeAddress(address, googleKey = null) {
 }
 
 export default async function handler(req, res) {
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', process.env.CC_ALLOWED_ORIGIN || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
+  setAdminCorsHeaders(res);
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  if (req.method !== 'GET') {
+  // Allow unauthenticated access during first-time setup only (Section 26.3)
+  if (!(await isFirstTimeSetup())) {
     const authError = requireAuth(req);
     if (authError) return res.status(401).json(authError);
   }

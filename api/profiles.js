@@ -10,25 +10,21 @@
  */
 
 import { kv } from '@vercel/kv';
-import { requireAuth } from '../src/utils/auth-middleware.js';
+import { requireAuth, setAdminCorsHeaders } from '../src/utils/auth-middleware.js';
 
 const KV_PROFILES_KEY = 'cc-profiles';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', process.env.CC_ALLOWED_ORIGIN || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
+  setAdminCorsHeaders(res);
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  if (req.method !== 'GET') {
-    const authError = requireAuth(req);
-    if (authError) return res.status(401).json(authError);
-  }
+  // Profiles contain personal data — auth required on all methods (Section 26.1)
+  const authError = requireAuth(req);
+  if (authError) return res.status(401).json(authError);
 
   try {
     // GET - List all profiles
