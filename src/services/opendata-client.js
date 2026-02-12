@@ -49,8 +49,9 @@ const VLINE_LINE_NAMES = {
 /**
  * Inner-city station stop IDs for direction detection.
  * Includes City Loop, Flinders Street, Richmond, and Metro Tunnel stations.
- * Metro Tunnel (opened 2025): Pakenham/Cranbourne/Sunbury lines now run through
- * Arden, Parkville, State Library, Town Hall, Anzac — no longer via City Loop.
+ * Metro Tunnel (opened 2025): Pakenham/Cranbourne/Sunbury/Craigieburn/Upfield
+ * lines now run through Arden, Parkville, State Library, Town Hall, Anzac —
+ * no longer via City Loop.
  * Richmond is included as the gateway between suburban and inner-city stops.
  */
 const CITY_LOOP_STOP_IDS = new Set([
@@ -58,14 +59,32 @@ const CITY_LOOP_STOP_IDS = new Set([
   '12204', '12205'                     // Flinders Street platforms
 ]);
 
+// Metro Tunnel station stop IDs (per api/admin/resolve-stops.js)
+const METRO_TUNNEL_STOP_IDS = new Set([
+  '26010',                              // Arden
+  '26011',                              // Parkville
+  '26012',                              // State Library
+  '26013',                              // Town Hall
+  '26014'                               // Anzac
+]);
+
 const INNER_CITY_STOP_IDS = new Set([
   ...CITY_LOOP_STOP_IDS,
-  '12173',                              // Richmond — gateway to city for SE lines
-  '19843', '19842',                     // Town Hall (Metro Tunnel)
-  '19841', '19840',                     // State Library (Metro Tunnel)
-  '19839', '19838',                     // Parkville (Metro Tunnel)
-  '19837', '19836',                     // Arden (Metro Tunnel)
-  '19845', '19844'                      // Anzac (Metro Tunnel)
+  ...METRO_TUNNEL_STOP_IDS,
+  '12173'                               // Richmond — gateway to city for SE lines
+]);
+
+/**
+ * Metro Tunnel line codes (GTFS route ID suffixes).
+ * These lines run through Metro Tunnel, NOT City Loop.
+ * Per ARCHITECTURE.md Section 12.2 and specs/CCDashDesignV15.md Section 8.2.
+ */
+const METRO_TUNNEL_LINE_CODES = new Set([
+  'PKM',  // Pakenham
+  'CBE',  // Cranbourne
+  'SUY',  // Sunbury
+  'CGB',  // Craigieburn
+  'UFD'   // Upfield
 ]);
 
 function isCityLoopStop(stopId) {
@@ -409,8 +428,9 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType) {
       }
     }
 
-    // Strategy 2: Estimate from future departure times
-    // Collect all stops with future departures (>= 2 min from now)
+    // Strategy 2: Estimate from future departure times using median.
+    // The queried stop is typically mid-route (not near the start or end).
+    // Using the median of future stops gives a better estimate than 1/3.
     if (!pickedStu) {
       const futureDeps = [];
       for (const stu of stus) {
@@ -424,9 +444,8 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType) {
       }
       if (futureDeps.length > 0) {
         futureDeps.sort((a, b) => a.depMs - b.depMs);
-        // Use stop ~1/3 through future sequence — better estimate for stops
-        // that are a moderate distance ahead of the vehicle's current position
-        const pickIdx = Math.min(Math.floor(futureDeps.length / 3), futureDeps.length - 1);
+        // Use median of future stops — best estimate for a mid-route stop
+        const pickIdx = Math.floor(futureDeps.length / 2);
         pickedStu = futureDeps[pickIdx].stu;
       }
     }
@@ -506,7 +525,8 @@ function processAnyRouteDepartures(feed) {
 
     if (futureDeps.length === 0) continue;
     futureDeps.sort((a, b) => a.depMs - b.depMs);
-    const pickIdx = Math.min(Math.floor(futureDeps.length / 3), futureDeps.length - 1);
+    // Use median of future stops — best estimate for a mid-route stop
+    const pickIdx = Math.floor(futureDeps.length / 2);
     const picked = futureDeps[pickIdx];
 
     departures.push({
@@ -592,6 +612,10 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0) {
         const lineName = getLineName(routeId);
         const destination = isCitybound ? 'City' : lineName;
 
+        // Detect Metro Tunnel vs City Loop line from route ID
+        const lineCode = routeId?.match(/-([A-Z]{3}):?$/)?.[1] || '';
+        const isMetroTunnel = METRO_TUNNEL_LINE_CODES.has(lineCode);
+
         departures.push({
           minutes,
           departureTimeMs: depMs, // Absolute departure time for live countdown
@@ -603,6 +627,7 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0) {
           tripId: tripUpdate.trip?.tripId,
           finalStop,
           isCitybound,
+          isMetroTunnel,         // true = Metro Tunnel line, false = City Loop line
           delay: Math.round(delay / 60), // Convert to minutes
           isDelayed,
           isLive: true,
