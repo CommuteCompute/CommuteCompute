@@ -4863,9 +4863,56 @@ curl -s ... | head -c 1  # Should be "{" not "<"
 
 ---
 
-**Document Version:** 1.12  
-**Maintained By:** Angus Bergman  
-**Last Updated:** 2026-01-31
+## Section 25: Melbourne Metro Tunnel Compliance (MANDATORY)
+
+### 25.1 Overview
+The Melbourne Metro Tunnel opened in 2025, fundamentally changing how train lines route through the CBD. Five new underground stations (Arden, Parkville, State Library, Town Hall, Anzac) replaced City Loop routing for certain lines. ALL Commute Compute code that handles train routing, departure matching, or direction detection MUST account for this change.
+
+### 25.2 Metro Tunnel Lines (NO LONGER use City Loop)
+These five lines now run through the Metro Tunnel instead of the City Loop:
+
+| Line | GTFS Code | Old Route | New Route |
+|------|-----------|-----------|-----------|
+| Pakenham | PKM | City Loop | Metro Tunnel (Anzac, Town Hall, State Library, Parkville, Arden) |
+| Cranbourne | CBE | City Loop | Metro Tunnel |
+| Sunbury | SUY | City Loop | Metro Tunnel (Arden, Parkville, State Library, Town Hall, Anzac) |
+| Craigieburn | CGB | City Loop | Metro Tunnel |
+| Upfield | UFD | City Loop | Metro Tunnel |
+
+### 25.3 City Loop Lines (unchanged)
+All other lines continue to use the City Loop: Sandringham, Frankston, Glen Waverley, Alamein, Belgrave, Lilydale, Hurstbridge, Mernda, Werribee, Williamstown.
+
+### 25.4 Station Groups (CRITICAL)
+**City Loop stations** (served by City Loop lines ONLY):
+Flinders Street, Parliament, Melbourne Central, Flagstaff, Southern Cross
+
+**Metro Tunnel stations** (served by Metro Tunnel lines ONLY):
+Arden (26010), Parkville (26011), State Library (26012), Town Hall (26013), Anzac (26014)
+
+### 25.5 GTFS-RT Departure Filtering Rules
+When matching live GTFS-RT train departures to a journey leg:
+1. Each departure MUST include `isMetroTunnel` flag based on the line's GTFS code
+2. If the destination station is a **City Loop station** (e.g., Flinders Street), Metro Tunnel line departures MUST be excluded
+3. If the destination station is a **Metro Tunnel station** (e.g., Town Hall), City Loop line departures MUST be excluded
+4. If the destination is generic "city", either tunnel/loop trains are acceptable
+
+### 25.6 Required Constants
+The following constants MUST exist in `opendata-client.js`:
+- `METRO_TUNNEL_LINE_CODES`: Set containing PKM, CBE, SUY, CGB, UFD
+- `METRO_TUNNEL_STOP_IDS`: Set containing 26010, 26011, 26012, 26013, 26014
+
+The following MUST exist in `commute-compute.js`:
+- `METRO_TUNNEL_LINES`: Array of line names
+- `METRO_TUNNEL_STATIONS`: Object mapping station names to metadata
+
+### 25.7 Never Assume All Citybound Trains Are Equivalent
+"Citybound" does NOT mean "goes to any city station". A Pakenham train is citybound but does NOT stop at Flinders Street. Direction-based filtering MUST be combined with tunnel/loop classification.
+
+---
+
+**Document Version:** 1.13
+**Maintained By:** Angus Bergman
+**Last Updated:** 2026-02-13
 
 ---
 
