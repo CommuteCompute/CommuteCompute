@@ -612,12 +612,12 @@ export async function getDisruptions(routeType, options = {}) {
  */
 export async function getWeather(lat = MELBOURNE_LAT, lon = MELBOURNE_LON) {
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,precipitation&timezone=Australia%2FMelbourne`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,precipitation&hourly=weather_code,precipitation,temperature_2m,apparent_temperature&forecast_days=1&timezone=Australia%2FMelbourne`;
     const res = await fetch(url);
-    
+
     if (!res.ok) throw new Error('Weather API error');
     const data = await res.json();
-    
+
     // Weather code mapping
     const codes = {
       0: 'Clear', 1: 'Mostly Clear', 2: 'Partly Cloudy', 3: 'Cloudy',
@@ -628,29 +628,55 @@ export async function getWeather(lat = MELBOURNE_LAT, lon = MELBOURNE_LON) {
       80: 'Showers', 81: 'Showers', 82: 'Heavy Showers',
       95: 'Storm', 96: 'Storm', 99: 'Storm'
     };
-    
+
     const weatherCode = data.current?.weather_code;
     const condition = codes[weatherCode] || 'Unknown';
     const precipitation = data.current?.precipitation || 0;
-    
-    // Determine if umbrella needed
+
+    // Determine if umbrella needed (current conditions)
     const rainyConditions = ['Rain', 'Heavy Rain', 'Drizzle', 'Showers', 'Heavy Showers', 'Storm'];
     const umbrella = rainyConditions.includes(condition) || precipitation > 0;
-    
+
+    // Build hourly forecast for the rest of the day (equipment planning)
+    const dayForecast = [];
+    const hourlyTimes = data.hourly?.time || [];
+    const hourlyWeatherCodes = data.hourly?.weather_code || [];
+    const hourlyPrecip = data.hourly?.precipitation || [];
+    const hourlyTemp = data.hourly?.temperature_2m || [];
+    const hourlyApparent = data.hourly?.apparent_temperature || [];
+    const nowHour = new Date().getHours();
+
+    for (let i = 0; i < hourlyTimes.length; i++) {
+      const forecastHour = new Date(hourlyTimes[i]).getHours();
+      if (forecastHour >= nowHour) {
+        const hCondition = codes[hourlyWeatherCodes[i]] || 'Unknown';
+        dayForecast.push({
+          hour: forecastHour,
+          temp: Math.round(hourlyTemp[i] ?? 0),
+          apparentTemp: Math.round(hourlyApparent[i] ?? hourlyTemp[i] ?? 0),
+          condition: hCondition,
+          precipitation: hourlyPrecip[i] || 0,
+          isRainy: rainyConditions.includes(hCondition) || (hourlyPrecip[i] || 0) > 0
+        });
+      }
+    }
+
     return {
       temp: Math.round(data.current?.temperature_2m ?? 20),
       condition,
       umbrella,
       precipitation,
       weatherCode,
+      dayForecast,
       source: 'open-meteo'
     };
-    
+
   } catch (e) {
     return {
       temp: 20,
       condition: 'Unknown',
       umbrella: false,
+      dayForecast: [],
       source: 'fallback',
       error: true
     };
