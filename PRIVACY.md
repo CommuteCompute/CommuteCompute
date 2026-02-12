@@ -62,7 +62,7 @@ Commute Compute™ communicates with the following external services to provide 
 |:--------|:--------------------|:--------|:----------|:--------------------|
 | [Transport Victoria OpenData API](https://opendata.transport.vic.gov.au) | API key in request header only — **no personal data** | Real-time train and tram departures, service alerts | Yes (VIC users) | [Transport Victoria Privacy](https://www.ptv.vic.gov.au/footer/legal-and-policies/privacy-policy/) |
 | [Google Places API (New)](https://developers.google.com/maps/documentation/places/web-service) | Address search queries, Melbourne location bias | Geocoding and place autocomplete | Optional — free OpenStreetMap fallback available | [Google Privacy Policy](https://policies.google.com/privacy) |
-| [Bureau of Meteorology](http://www.bom.gov.au) | None (unauthenticated public GET request) | Weather observations (temperature, conditions, wind) | Yes | [BOM Privacy](http://www.bom.gov.au/other/privacy.shtml) |
+| [Bureau of Meteorology](https://www.bom.gov.au) | None (unauthenticated public GET request) | Weather observations (temperature, conditions, wind) | Yes | [BOM Privacy](https://www.bom.gov.au/other/privacy.shtml) |
 | [OpenStreetMap Nominatim](https://nominatim.openstreetmap.org) | Address search queries | Geocoding fallback when Google Places is not configured | Fallback only | [OSM Privacy Policy](https://wiki.osmfoundation.org/wiki/Privacy_Policy) |
 | [Vercel](https://vercel.com) | All stored data (hosting and KV storage) | Application hosting, serverless functions, KV database | Yes | [Vercel Privacy Policy](https://vercel.com/legal/privacy-policy) |
 

@@ -261,7 +261,7 @@ Comprehensive troubleshooting guide for all monitored endpoints, pages, and data
 
 ### Bureau of Meteorology (BOM)
 
-**Endpoint:** `http://www.bom.gov.au/fwo/IDV60901/IDV60901.94868.json`
+**Endpoint:** `https://www.bom.gov.au/fwo/IDV60901/IDV60901.94868.json`
 
 **Failure symptoms:**
 - 404 Not Found
@@ -446,7 +446,7 @@ If all external APIs fail:
 3. **System remains functional but with static data**
 4. **Monitor external service status pages:**
    - PTV: Check Twitter @ptaborig
-   - BOM: http://www.bom.gov.au
+   - BOM: https://www.bom.gov.au
    - OSM: https://status.openstreetmap.org
 
 ---

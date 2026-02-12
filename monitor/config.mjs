@@ -530,7 +530,7 @@ export default {
 
     // Bureau of Meteorology
     bomMelbourne: {
-      url: 'http://www.bom.gov.au/fwo/IDV60901/IDV60901.94868.json',
+      url: 'https://www.bom.gov.au/fwo/IDV60901/IDV60901.94868.json',
       method: 'GET',
       requiresApiKey: false,
       description: 'BOM Melbourne Weather (Olympic Park)',

@@ -46,7 +46,7 @@ Commute Compute(TM) uses data and services from the following providers:
 ### Bureau of Meteorology
 - **Data**: Weather observations and forecasts
 - **License**: Creative Commons Attribution (CC BY 4.0)
-- **Source**: http://www.bom.gov.au/
+- **Source**: https://www.bom.gov.au/
 
 ## Icons & Fonts
 
