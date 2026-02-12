@@ -26,42 +26,42 @@ export default async function handler(req, res) {
     : '2026-01-31';
 
   res.json({
-    version: 'v4.0.0',
+    version: 'v4.1.0',
     date: buildDate,
     system: {
-      version: '4.0.0',
+      version: '4.1.0',
       name: 'Commute Compute System',
       copyright: '© 2026 Angus Bergman',
       license: 'AGPL-3.0'
     },
     components: {
-      // CommuteCompute journey calculation engine (V3.0)
+      // CommuteCompute journey calculation engine (V3.1)
       commutecompute: {
-        version: 'v3.0',
+        version: 'v3.1',
         name: 'CommuteCompute Engine',
-        description: 'Real-time multi-modal journey planning with GTFS stop names, Departure Confidence, Sleep Optimizer, Alt Transit (disruption-triggered), Lifestyle Context, Mindset analysis',
+        description: 'Real-time multi-modal journey planning with GTFS stop names, Metro Tunnel citybound detection, direction-based train filtering, Departure Confidence, Sleep Optimizer, Alt Transit (disruption-triggered), Lifestyle Context with all-day forecast, Mindset analysis',
         metroTunnelCompliant: true,
-        effectiveDate: '2026-02-09',
+        effectiveDate: '2026-02-12',
         locked: false,
-        lockedDate: '2026-02-09'
+        lockedDate: null
       },
       // CCDash renderer (implements CCDashDesignV15.0 spec)
       renderer: {
-        version: 'v2.0',
+        version: 'v2.1',
         name: 'CCDash Renderer',
         spec: 'CCDashDesignV15.0',
         specLocked: false,
-        lockedDate: '2026-02-09',
-        modifiedDate: '2026-02-09',
-        description: 'Unified confidence labels, AM/PM fix, alt transit disruption panel, sleep mode, mindset status, enhanced glanceability, lifestyle context display'
+        lockedDate: null,
+        modifiedDate: '2026-02-12',
+        description: 'V15.0 spec-compliant box sizing, font sizes, status indicators, unified cafe closed/skipped rendering, confidence labels, sleep mode, mindset status, lifestyle context display'
       },
       // Setup wizard
-      setupWizard: { version: 'v2.0', locked: true },
+      setupWizard: { version: 'v2.0', locked: false },
       // LiveDash multi-device endpoint
-      livedash: { version: 'v3.0', locked: true },
+      livedash: { version: 'v3.0', locked: false },
       // Admin panel
       admin: { version: 'v5.0', locked: false },
-      // Firmware (LOCKED)
+      // Firmware (LOCKED — runtime factory reset + BLE provisioning)
       firmware: {
         version: 'CC-FW-7.5.0',
         locked: true,
@@ -73,28 +73,28 @@ export default async function handler(req, res) {
       dashboard: {
         version: 'CCDashDesignV15.0',
         status: 'UNLOCKED',
-        lockedDate: '2026-02-09',
-        modifiedDate: '2026-02-09',
+        lockedDate: null,
+        modifiedDate: '2026-02-12',
         changes: [
+          'Metro Tunnel citybound detection (Town Hall, State Library, Parkville, Arden, Anzac)',
+          'Direction-based train filtering (any citybound train, not route-locked)',
+          'Tram route-level future-departure heuristic for accurate timing',
+          'All-day weather forecast for equipment decisions (umbrella, jacket, hydration, layers)',
+          'V15.0 spec-compliant status/data box sizing (16px)',
+          'V15.0 spec-compliant font sizes (8px status, 36px temp, 13px status bar)',
+          'Unified cafe closed/skipped rendering path',
           'Closed cafe completely removed from journey (not just skipped)',
           'Consecutive walk legs merged automatically',
           'Live departure times factor in time to reach stop',
-          'Larger transit time boxes (72px → 88px)',
-          'Bigger countdown numbers (30px → 38px)',
-          'More spacing between number and MIN label',
+          'Larger transit time boxes (72px to 88px)',
+          'Bigger countdown numbers (30px to 38px)',
           'Actual disruption text shown (not generic DISRUPTION)',
-          'Updated CC logo in footer matching boot screen',
           'Smart coffee skip - cafe leg visible but excluded from timing when late',
-          'Skipped cafe/walk legs show dashed borders and outline icons',
-          'Journey timing recalculates excluding skipped cafe detour',
           'Variable leg heights',
           'Live departures with proper timing',
-          'Coffee busyness display (outside ±2hr shows busyness only)',
+          'Coffee busyness display (outside +/-2hr shows busyness only)',
           'Departure countdown times (live calculated)',
-          'Larger text for e-ink visibility',
           'Walk legs show duration in text (no box)',
-          'Transit icons double height',
-          'Walk legs thinner borders',
           'ARRIVE + time on same line in footer',
           'Specific stop/station names in legs',
           'CommuteCompute engine with live departTime and nextDepartures'
