@@ -229,9 +229,16 @@ function mergeConsecutiveWalkLegs(legs) {
       current.to = next.to || current.to;
       current.stopName = next.stopName || current.stopName;
       current.stationName = next.stationName || current.stationName;
+      current.workName = next.workName || current.workName;
       // Use the last walk's formatted title (from buildLegTitle) when available
       current.title = next.title || current.title || `Walk to ${next.to || current.to || 'destination'}`;
+      // Keep subtitle consistent with merged minutes
+      current.subtitle = `${current.minutes} min walk`;
       i++;
+    }
+    // Sync durationMinutes with accumulated minutes
+    if (current.durationMinutes === 0 && current.minutes > 0) {
+      current.durationMinutes = current.minutes;
     }
     merged.push(current);
   }
@@ -479,6 +486,19 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       journeyContribution = waitMinutes + transitDuration;
     }
 
+    // V15.0: Populate route/line info from live data BEFORE title/subtitle generation
+    // Engine templates may have empty routeNumber (e.g. tram) — fill from GTFS-RT match
+    if (isTransitLeg && liveData) {
+      if (!leg.routeNumber && liveData.routeNumber) leg.routeNumber = liveData.routeNumber;
+      if (!leg.lineName && liveData.lineName) leg.lineName = liveData.lineName;
+    }
+
+    // V15.0: Apply walk buffer to leg.minutes before subtitle generation
+    // so subtitle shows the same duration as the minutes time box
+    if (isWalkLeg) {
+      leg.minutes = legDuration;
+    }
+
     const baseLeg = {
       number: legNumber++,
       type: leg.type,
@@ -677,7 +697,7 @@ function buildLegTitle(leg) {
       if (leg.destinationName) return `Walk to ${leg.destinationName}`;
       if (dest === 'cafe' && leg.cafeName) return `Walk to ${leg.cafeName}`;
       if (dest === 'cafe') return 'Walk to Cafe';
-      if (dest === 'work') return 'Walk to Office';
+      if (dest === 'work') return `Walk to ${leg.workName || 'Office'}`;
       if (dest === 'tram stop' && leg.stopName) return `Walk to ${leg.stopName}`;
       if ((dest === 'train platform' || dest === 'station') && leg.stationName) return `Walk to ${leg.stationName}`;
       if (dest === 'tram stop') return 'Walk to Tram Stop';
@@ -814,18 +834,24 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
     // isCitybound is set by processGtfsRtDepartures from the trip's final stop.
     if (leg.isCitybound !== undefined) {
       let dirMatches = departures.filter(d => d.isCitybound === leg.isCitybound);
-      // Metro Tunnel vs City Loop filtering:
-      // If destination is a City Loop station (e.g., Flinders Street), exclude Metro Tunnel trains.
-      // If destination is a Metro Tunnel station (e.g., Town Hall), exclude City Loop trains.
-      if (leg.requiresCityLoop) {
+      // Metro Tunnel vs City Loop: prefer matching tunnel/loop trains
+      if (leg.requiresCityLoop && dirMatches.some(d => !d.isMetroTunnel)) {
         dirMatches = dirMatches.filter(d => !d.isMetroTunnel);
-      } else if (leg.requiresMetroTunnel) {
+      } else if (leg.requiresMetroTunnel && dirMatches.some(d => d.isMetroTunnel)) {
         dirMatches = dirMatches.filter(d => d.isMetroTunnel);
       }
+      // Fallback: if tunnel/loop filtering removed all, accept any in right direction
       if (dirMatches.length > 0) {
         matchedDepartures = dirMatches;
       } else {
-        return null;
+        // Accept any citybound train rather than returning null —
+        // trains are running through different tunnel, not "not running"
+        const allDir = departures.filter(d => d.isCitybound === leg.isCitybound);
+        if (allDir.length > 0) {
+          matchedDepartures = allDir;
+        } else {
+          return null;
+        }
       }
     }
     // No route number filtering for trains — any line in the right direction
@@ -968,13 +994,15 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
         // For trains: filter by direction, not route number — any line in the right direction
         if (isCitybound && departures && departures.length > 0) {
           let dirMatches = departures.filter(d => d.isCitybound === isCitybound);
-          // Metro Tunnel vs City Loop: exclude wrong tunnel/loop trains
-          if (requiresCityLoop) {
+          // Metro Tunnel vs City Loop: prefer matching tunnel/loop trains
+          if (requiresCityLoop && dirMatches.some(d => !d.isMetroTunnel)) {
             dirMatches = dirMatches.filter(d => !d.isMetroTunnel);
-          } else if (requiresMetroTunnel) {
+          } else if (requiresMetroTunnel && dirMatches.some(d => d.isMetroTunnel)) {
             dirMatches = dirMatches.filter(d => d.isMetroTunnel);
           }
-          routeDepartures = dirMatches.length > 0 ? dirMatches : [];
+          // Fallback: if tunnel/loop filtering removed all trains, accept any citybound.
+          // Trains ARE running (just through different tunnel) — not "NOT RUNNING".
+          routeDepartures = dirMatches.length > 0 ? dirMatches : departures.filter(d => d.isCitybound === isCitybound);
         }
       } else if (leg.routeNumber && departures && departures.length > 0) {
         // For trams/buses: filter by route number
@@ -1730,8 +1758,16 @@ export default async function handler(req, res) {
     // Build display values (use simulated overrides if provided)
     // Per Section 3.1: Zero-Config - no process.env for user addresses
     // Use stored suburb from Places API first, fall back to extractSuburb()
-    const displayHome = simOverrides.home || locations.home?.suburb || extractSuburb(locations.home?.address) || 'Home';
-    const displayWork = simOverrides.work || locations.work?.suburb || extractSuburb(locations.work?.address) || 'Work';
+    // Filter out broad city-level names (e.g. "Melbourne") — prefer actual suburbs
+    const isUsefulSuburb = (name) => {
+      if (!name) return false;
+      const broad = ['melbourne', 'sydney', 'brisbane', 'perth', 'adelaide', 'hobart', 'darwin', 'canberra'];
+      return !broad.includes(name.toLowerCase().trim());
+    };
+    const homeSuburb = isUsefulSuburb(locations.home?.suburb) ? locations.home.suburb : extractSuburb(locations.home?.address);
+    const workSuburb = isUsefulSuburb(locations.work?.suburb) ? locations.work.suburb : extractSuburb(locations.work?.address);
+    const displayHome = simOverrides.home || homeSuburb || 'Home';
+    const displayWork = simOverrides.work || workSuburb || 'Work';
     const displayArrival = simOverrides.arrivalTime || config?.journey?.arrivalTime || '09:00';
 
     // Calculate timing using display arrival (respects simulator override)
@@ -1784,7 +1820,9 @@ export default async function handler(req, res) {
     const lifestyle = lifestyleEngine.calculate({
       weather: weatherData,
       currentTime: now,
-      state: userState
+      state: userState,
+      localHour: melbourneTime.hour,
+      localMinute: melbourneTime.minute
     });
     // V15.0: Sleep Optimizer - evening mode bedtime/alarm calculation
     const sleepEngine = new SleepOptimizer();
@@ -1922,6 +1960,8 @@ export default async function handler(req, res) {
             departureTimeMs: t.departureTimeMs,
             destination: t.destination,
             lineName: t.lineName,
+            isCitybound: t.isCitybound,
+            isMetroTunnel: t.isMetroTunnel,
             isLive: !!t.departureTimeMs
           })),
           trams: transitData.trams?.slice(0, 3)?.map(t => ({

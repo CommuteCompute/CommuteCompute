@@ -482,9 +482,18 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType) {
     }
   }
 
-  // Sort by departure time and limit
-  departures.sort((a, b) => a.minutes - b.minutes);
-  return departures.slice(0, 5);
+  // V15.0 FIX: Deduplicate by departureTimeMs — route-level matching produces
+  // duplicates when multiple GTFS-RT trip entities estimate similar departure times
+  // (median-stop heuristic for two trips on the same route can produce times within
+  // seconds of each other). Use 60s window to collapse near-identical departures.
+  departures.sort((a, b) => a.departureTimeMs - b.departureTimeMs);
+  const deduped = [];
+  for (const d of departures) {
+    if (deduped.length === 0 || d.departureTimeMs - deduped[deduped.length - 1].departureTimeMs > 60000) {
+      deduped.push(d);
+    }
+  }
+  return deduped.slice(0, 5);
 }
 
 /**
@@ -543,8 +552,14 @@ function processAnyRouteDepartures(feed) {
     });
   }
 
-  departures.sort((a, b) => a.minutes - b.minutes);
-  return departures.slice(0, 5);
+  departures.sort((a, b) => a.departureTimeMs - b.departureTimeMs);
+  const dedupedBroad = [];
+  for (const d of departures) {
+    if (dedupedBroad.length === 0 || d.departureTimeMs - dedupedBroad[dedupedBroad.length - 1].departureTimeMs > 60000) {
+      dedupedBroad.push(d);
+    }
+  }
+  return dedupedBroad.slice(0, 5);
 }
 
 /**
