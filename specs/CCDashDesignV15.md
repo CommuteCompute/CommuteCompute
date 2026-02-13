@@ -618,6 +618,18 @@ When user will be late based on arrival time:
 - **Border:** Normal (no extra styling on legs)
 - **Status Bar:** Shows "LATE → Arrive Xam (+Y min)"
 - **Badge:** White "LATE +X min" badge
+- **Applicability:** Only within actionable departure window (`leave_in_minutes <= 120`)
+
+### 9.3.1 User Intent Timing Window (V15.1)
+
+For far-future departures, status MUST prioritize immediate context over target-arrival compliance.
+
+- **Threshold:** `ACTIONABLE_DEPARTURE_WINDOW_MINS = 120`
+- **If `leave_in_minutes > 120`:**
+  - Ignore late/on-time target checks for status messaging
+  - Render status as-if user leaves now: `LEAVE NOW → Arrive X`
+- **If `leave_in_minutes <= 120`:**
+  - Apply late/on-time semantics against target arrival
 
 ### 9.4 Delay Badge
 
@@ -677,6 +689,7 @@ This section documents what each display element means to the user, ensuring the
 | Condition | Status Message | Badge | Meaning |
 |-----------|---------------|-------|---------|
 | On time | "LEAVE NOW → Arrive 8:19am ✓" | (none) | Leave now to arrive on time |
+| Far from departure (>120 min) | "LEAVE NOW → Arrive X" | (none) | Context preview if leaving now; no late/on-time judgment |
 | Service alert | "⚠ DISRUPTION → Arrive X" | "DISRUPTION" | Transit service has issues |
 | Late arrival | "LATE → Arrive X (+Y min)" | "LATE +Y min" | Will miss arrival target |
 | Both issues | "⚠ DISRUPTION → Arrive X (+Y min)" | "DISRUPTION +Y" | Service issue AND late |

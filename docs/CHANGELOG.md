@@ -26,6 +26,7 @@ All notable changes to this project are documented here.
 - CCDashDesignV15 spec upgraded to match all real implementation changes (UNLOCKED)
 - `extractSuburb()` now detects municipalities via "City of [candidate]" matching
 - Consecutive walk merging handles chains of adjacent walks with last segment title
+- **Status intent logic (V15.1 semantics)** -- target-arrival late/on-time evaluation now applies only in actionable window (`<=120 min`). For far-future departures, status shows immediate "if left now" context.
 
 ### Security
 - Auth deny-by-default on all admin endpoints

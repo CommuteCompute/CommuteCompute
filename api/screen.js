@@ -196,6 +196,12 @@ function extractSuburb(address) {
             if (!municipalityFallback) municipalityFallback = candidate;
             continue;
           }
+          // Skip broad capital city names — prefer actual suburb (e.g. "South Yarra" over "Melbourne")
+          const broadCities = ['melbourne', 'sydney', 'brisbane', 'perth', 'adelaide', 'hobart', 'darwin', 'canberra'];
+          if (broadCities.includes(candidate.toLowerCase())) {
+            if (!municipalityFallback) municipalityFallback = candidate;
+            continue;
+          }
           return candidate;
         }
       }
@@ -241,6 +247,17 @@ function mergeConsecutiveWalkLegs(legs) {
       current.durationMinutes = current.minutes;
     }
     merged.push(current);
+  }
+  // Post-merge: ensure walk-before-transit has proper title from the next transit stop
+  for (let i = 0; i < merged.length - 1; i++) {
+    const walk = merged[i];
+    const next = merged[i + 1];
+    if (walk.type === 'walk' && ['train', 'tram', 'bus', 'vline'].includes(next.type)) {
+      const transitName = next.stationName || next.stopName || next.departure?.stopName;
+      if (transitName && (!walk.title || walk.title.includes('destination') || walk.title === 'Walk to Station')) {
+        walk.title = `Walk to ${transitName}`;
+      }
+    }
   }
   return merged;
 }
@@ -646,11 +663,12 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         .filter(m => m >= 0)
         .slice(0, 3)
         .join(', ');
+      const liveSuffix = baseLeg.isLive ? ' LIVE' : '';
 
       if (times) {
         baseLeg.subtitle = stopName
-          ? `${stopName} • Next: ${times} min LIVE`
-          : `Next: ${times} min LIVE`;
+          ? `${stopName} • Next: ${times} min${liveSuffix}`
+          : `Next: ${times} min${liveSuffix}`;
       }
     }
 
@@ -1764,8 +1782,11 @@ export default async function handler(req, res) {
       const broad = ['melbourne', 'sydney', 'brisbane', 'perth', 'adelaide', 'hobart', 'darwin', 'canberra'];
       return !broad.includes(name.toLowerCase().trim());
     };
-    const homeSuburb = isUsefulSuburb(locations.home?.suburb) ? locations.home.suburb : extractSuburb(locations.home?.address);
-    const workSuburb = isUsefulSuburb(locations.work?.suburb) ? locations.work.suburb : extractSuburb(locations.work?.address);
+    const rawHomeSuburb = isUsefulSuburb(locations.home?.suburb) ? locations.home.suburb : extractSuburb(locations.home?.address);
+    const rawWorkSuburb = isUsefulSuburb(locations.work?.suburb) ? locations.work.suburb : extractSuburb(locations.work?.address);
+    // Safety net: extractSuburb may still return broad city names from certain address formats
+    const homeSuburb = isUsefulSuburb(rawHomeSuburb) ? rawHomeSuburb : null;
+    const workSuburb = isUsefulSuburb(rawWorkSuburb) ? rawWorkSuburb : null;
     const displayHome = simOverrides.home || homeSuburb || 'Home';
     const displayWork = simOverrides.work || workSuburb || 'Work';
     const displayArrival = simOverrides.arrivalTime || config?.journey?.arrivalTime || '09:00';
