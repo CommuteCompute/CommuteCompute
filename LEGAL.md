@@ -4,8 +4,8 @@
 
 # Commute Compute System™ — Legal & Intellectual Property
 
-**Document Version:** 1.2
-**Last Updated:** 2026-02-07
+**Document Version:** 1.3
+**Last Updated:** 2026-02-14
 **Owner:** Angus Bergman
 
 ---
@@ -146,7 +146,84 @@ The following components are dual-licensed under **AGPL-3.0** and a **commercial
 
 ### Commercial License Option
 
-For use cases incompatible with AGPL-3.0 (closed-source products, proprietary SaaS, embedded systems without source disclosure), contact commutecompute.licensing@gmail.com for a commercial license.  
+For use cases incompatible with AGPL-3.0 (closed-source products, proprietary SaaS, embedded systems without source disclosure), contact commutecompute.licensing@gmail.com for a commercial licence.
+
+---
+
+## Governing Law & Jurisdiction
+
+### Applicable Law
+
+This project, including all licensing terms, intellectual property rights, and associated documentation, is governed by and shall be construed in accordance with the **laws of the State of Victoria, Australia**.
+
+### Statutory Basis for Intellectual Property Rights
+
+All intellectual property rights in the Commute Compute System™, including copyright in the source code, documentation, and design assets, are established and enforceable under the ***Copyright Act 1968* (Cth)** (Commonwealth of Australia).
+
+As the author and sole copyright holder, Angus Bergman asserts moral rights under **Part IX of the *Copyright Act 1968* (Cth)**, including:
+- The right of attribution of authorship (s 193)
+- The right of integrity of authorship (s 195AI)
+
+### Jurisdiction for Disputes
+
+Any dispute arising out of or in connection with the use, licensing, or distribution of the Commute Compute System™ shall be subject to the **exclusive jurisdiction of the courts of the State of Victoria, Australia**.
+
+---
+
+## Commercial Licence Framework
+
+### Overview
+
+For use cases that are incompatible with the AGPL-3.0 licence obligations (including but not limited to closed-source products, proprietary SaaS deployments without source disclosure, or embedding in proprietary systems), a separate commercial licence is available.
+
+### Terms Structure
+
+Commercial licence terms are:
+
+1. **Bespoke:** Each commercial licence is individually negotiated and tailored to the specific use case of the licensee
+2. **Per-licensee:** No standard template or published pricing exists — terms are confirmed on a per-user basis at the sole discretion of Angus Bergman
+3. **At sole discretion:** The grant of any commercial licence is at the **sole and absolute discretion** of Angus Bergman. Angus Bergman reserves the right to decline any commercial licensing enquiry without obligation to provide reasons
+4. **Written agreement required:** Commercial licence terms are only effective when confirmed in a **written agreement signed by Angus Bergman**. No verbal representations, email correspondence, or other communications create binding licence terms
+
+No representations, warranties, or commitments regarding commercial licence availability, pricing, or terms should be inferred from any source other than a signed written agreement.
+
+### Contact
+
+To enquire about commercial licensing:
+
+**Email:** commutecompute.licensing@gmail.com
+
+### What a Commercial Licence May Include
+
+Subject to individual negotiation, a commercial licence may address:
+
+- Right to use the software in closed-source or proprietary products
+- Right to distribute without AGPL-3.0 source disclosure obligations
+- Right to create derivative works without AGPL-3.0 copyleft requirements
+- SaaS deployment rights without network copyleft obligations (AGPL-3.0 s 13)
+- Custom support and maintenance terms
+- Trademark usage permissions (subject to separate trademark licence)
+
+The inclusion or exclusion of any of the above is determined solely by the terms of the individual written agreement.
+
+---
+
+## Limitation of Liability & Warranty Disclaimer
+
+### Open Source (AGPL-3.0) Users
+
+To the maximum extent permitted by applicable law, including the *Competition and Consumer Act 2010* (Cth) and the **Australian Consumer Law** (Schedule 2), the Commute Compute System™ is provided **"AS IS"** without warranty of any kind, either express or implied.
+
+**Nothing in this disclaimer excludes, restricts, or modifies any consumer guarantee under the Australian Consumer Law that cannot be excluded, restricted, or modified by agreement.** Where the Australian Consumer Law applies and cannot be excluded, the liability of Angus Bergman for breach of any non-excludable condition or warranty is limited, at Angus Bergman's option, to:
+
+- (a) in the case of goods: replacement of the goods, repair of the goods, or payment of the cost of replacing or repairing the goods (per s 64A of the ACL); or
+- (b) in the case of services: re-supply of the services, or payment of the cost of having the services re-supplied.
+
+Subject to the above, to the maximum extent permitted by law, Angus Bergman shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits, revenue, data, use, goodwill, or other intangible losses, arising from your use of or inability to use the software.
+
+### Commercial Licence Users
+
+Liability, warranty, and indemnification terms for commercial licensees will be specified in the individual commercial licence agreement.
 
 ---
 
@@ -247,6 +324,7 @@ GitLab: [@angusbergman](https://gitlab.com/angusbergman)
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.3 | 2026-02-14 | Added Governing Law & Jurisdiction (Victoria, Australia), Copyright Act 1968 (Cth) references, moral rights assertion, Commercial Licence Framework (bespoke per-licensee terms), Limitation of Liability with ACL compliance |
 | 1.2 | 2026-02-07 | Updated to AGPL-3.0 Dual License model (open source + commercial) |
 | 1.1 | 2026-01-31 | Added File Attribution Audit section, Trademark Family File Registry, third-party exclusions documentation |
 | 1.0 | 2026-01-30 | Initial IP documentation |
