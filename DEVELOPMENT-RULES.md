@@ -3173,11 +3173,24 @@ grep -r "oldValue" public/    # Find UI references
 
 ## Section 20: Licensing & Intellectual Property
 
-**CRITICAL**: All original work MUST use AGPL-3.0 (Dual License).
+**[CRITICAL — MANDATORY]**: The Commute Compute System™ is dual-licensed under **AGPL-3.0** (open source) and a separate **commercial licence**. This dual licensing structure is MANDATORY and must be maintained across all original source files, documentation, and distribution.
+
+**Governing Law:** This project and all licensing terms are governed by the **laws of the State of Victoria, Australia**. Intellectual property rights are established under the *Copyright Act 1968* (Cth).
 
 ### 20.1 Intellectual Property
 
 All intellectual property rights are owned by **Angus Bergman**.
+
+#### AGPL-3.0 Obligations (Open Source Users)
+
+The AGPL-3.0 licence imposes the following mandatory obligations on anyone who uses, modifies, or distributes this software:
+
+1. **Network Copyleft (Section 13):** If you modify the Program and make it available to users over a network, you MUST provide those users access to the corresponding source code of your modified version
+2. **Source Disclosure:** All modifications and derivative works MUST be released under AGPL-3.0
+3. **Copyright Preservation:** All copyright notices, SPDX identifiers, and licence headers MUST be preserved in all copies and derivative works
+4. **Attribution:** The dual licence notice, trademark attributions, and third-party data attributions MUST remain intact
+
+Non-compliance with these obligations constitutes copyright infringement under the *Copyright Act 1968* (Cth) and applicable international copyright treaties.
 
 ### 20.2 Trademarks
 
@@ -3238,7 +3251,36 @@ https://www.gnu.org/licenses/agpl-3.0.html
 
 ### 20.6 Full Legal Documentation
 
-See **LEGAL.md** for complete intellectual property documentation.
+See **LEGAL.md** for complete intellectual property documentation, including governing law, commercial licence framework, and limitation of liability.
+
+### 20.7 Governing Law & Jurisdiction
+
+All licensing terms, intellectual property rights, and disputes arising from use of the Commute Compute System™ are governed by the **laws of the State of Victoria, Australia**. The parties submit to the exclusive jurisdiction of the **courts of Victoria, Australia**.
+
+Intellectual property rights in the Commute Compute System™ are established and enforceable under the *Copyright Act 1968* (Cth). Moral rights are asserted under Part IX of the *Copyright Act 1968* (Cth).
+
+### 20.8 Commercial Licence Framework
+
+A commercial licence is available for use cases incompatible with AGPL-3.0 (closed-source products, proprietary SaaS, embedded systems without source disclosure).
+
+**Key terms:**
+- Commercial licence terms are **bespoke** and negotiated on a **per-licensee basis** at the **sole and absolute discretion** of Angus Bergman
+- No standard commercial licence template or published pricing exists — all terms are confirmed individually
+- A commercial licence is only effective when confirmed in a **written agreement signed by Angus Bergman**
+- Contact: **commutecompute.licensing@gmail.com**
+
+See **LEGAL.md** for the full commercial licence framework.
+
+### 20.9 Audit Enforcement
+
+All licensing checks in the compliance audit (`./scripts/comprehensive-compliance-audit.sh`) are **blocking violations** (FAIL, not WARN). A commit MUST NOT proceed if any licensing check fails.
+
+Required checks (all must pass):
+- LICENSE file references AGPL-3.0 and dual licensing / commercial terms
+- All source files have `SPDX-License-Identifier: AGPL-3.0-or-later` headers
+- All source files reference dual licensing in headers
+- All copyright headers use correct year (2026)
+- LEGAL.md exists with AGPL-3.0 reference, third-party content exclusion, governing law clause, commercial licence framework, and Copyright Act 1968 reference
 
 ---
 
