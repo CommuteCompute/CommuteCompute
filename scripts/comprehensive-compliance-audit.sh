@@ -282,7 +282,7 @@ if [ -f "LICENSE" ]; then
     if [ "$DUAL_CHECK" -gt 0 ]; then
         pass "LICENSE file references dual licensing / commercial terms"
     else
-        warn "LICENSE file may not mention dual licence (AGPL-3.0 + commercial)"
+        fail "LICENSE file does not mention dual licence (AGPL-3.0 + commercial)"
     fi
 else
     fail "LICENSE file missing"
@@ -315,7 +315,7 @@ if [ -f "LEGAL.md" ]; then
     if [ "$LEGAL_3P" -gt 0 ]; then
         pass "LEGAL.md has third-party content section"
     else
-        warn "LEGAL.md may be missing third-party content exclusion"
+        fail "LEGAL.md missing third-party content exclusion (Section 20.6)"
     fi
 else
     fail "LEGAL.md missing (required by Section 20.6)"
@@ -438,7 +438,7 @@ if [ "$SPDX_TOTAL" -gt 0 ]; then
     if [ "$SPDX_FOUND" -eq "$SPDX_TOTAL" ]; then
         pass "All source files have SPDX-License-Identifier ($SPDX_FOUND/$SPDX_TOTAL)"
     else
-        warn "SPDX-License-Identifier missing from some files ($SPDX_FOUND/$SPDX_TOTAL):"
+        fail "SPDX-License-Identifier missing from source files ($SPDX_FOUND/$SPDX_TOTAL):"
         echo -e "$SPDX_MISSING" | head -10
     fi
 fi
@@ -455,10 +455,10 @@ for f in src/engines/*.js src/services/*.js src/data/*.js api/*.js api/admin/*.j
     fi
 done
 if [ "$DUAL_TOTAL" -gt 0 ]; then
-    if [ "$DUAL_FOUND" -ge "$((DUAL_TOTAL * 7 / 10))" ]; then
-        pass "Dual licence text found in file headers ($DUAL_FOUND/$DUAL_TOTAL)"
+    if [ "$DUAL_FOUND" -eq "$DUAL_TOTAL" ]; then
+        pass "Dual licence text found in all file headers ($DUAL_FOUND/$DUAL_TOTAL)"
     else
-        warn "Dual licence text missing from many files ($DUAL_FOUND/$DUAL_TOTAL) — should reference AGPL-3.0 + commercial"
+        fail "Dual licence text missing from source files ($DUAL_FOUND/$DUAL_TOTAL) — all files must reference AGPL-3.0 + commercial"
     fi
 fi
 
@@ -466,10 +466,34 @@ subsection "20.4 Copyright year consistency"
 # All headers should say "Copyright (c) 2026 Angus Bergman"
 WRONG_YEAR=$(grep -rn "Copyright.*Angus Bergman" src/ api/ 2>/dev/null | grep -v "2026\|node_modules" | head -5 || true)
 if [ -n "$WRONG_YEAR" ]; then
-    warn "Copyright headers with incorrect year (should be 2026):"
+    fail "Copyright headers with incorrect year (should be 2026):"
     echo "$WRONG_YEAR" | head -3
 else
     pass "All copyright headers use correct year (2026)"
+fi
+
+subsection "20.7 LEGAL.md governing law clause (Australian jurisdiction)"
+GOVERNING_LAW=$(grep -ci "governing law\|Laws of Victoria\|courts of Victoria" LEGAL.md 2>/dev/null || echo "0")
+if [ "$GOVERNING_LAW" -gt 0 ]; then
+    pass "LEGAL.md has governing law clause (Australian jurisdiction)"
+else
+    fail "LEGAL.md missing governing law clause — must specify Australian jurisdiction (Section 20.7)"
+fi
+
+subsection "20.8 LEGAL.md commercial licence framework"
+COMMERCIAL_FRAMEWORK=$(grep -ci "commercial licen\|bespoke\|sole discretion\|commutecompute.licensing" LEGAL.md 2>/dev/null || echo "0")
+if [ "$COMMERCIAL_FRAMEWORK" -gt 0 ]; then
+    pass "LEGAL.md has commercial licence framework"
+else
+    fail "LEGAL.md missing commercial licence framework (Section 20.8)"
+fi
+
+subsection "20.9 LEGAL.md Copyright Act 1968 reference"
+COPYRIGHT_ACT=$(grep -ci "Copyright Act 1968" LEGAL.md 2>/dev/null || echo "0")
+if [ "$COPYRIGHT_ACT" -gt 0 ]; then
+    pass "LEGAL.md references Copyright Act 1968 (Cth)"
+else
+    fail "LEGAL.md missing Copyright Act 1968 (Cth) reference (Section 20.9)"
 fi
 
 # ============================================================================
