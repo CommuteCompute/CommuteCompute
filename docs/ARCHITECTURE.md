@@ -929,6 +929,19 @@ ctx.font = '800 17px Inter';
 | 4 | coffee-sleep | 432-448 | 16px | Coffee/sleep zone |
 | 5 | footer | 448-480 | 32px | Destination, arrival |
 
+### 8.1.1 Status Intent Window (User-Intent Logic)
+
+The status zone is designed for "walking out the door" decisions, not long-horizon planning.
+
+- **Actionable window:** 120 minutes before departure
+- **Outside window (`leave_in_minutes > 120`):**
+  - Show immediate context if leaving now (`LEAVE NOW -> Arrive X`)
+  - Suppress late/on-time target-arrival judgments in status text
+- **Inside window (`leave_in_minutes <= 120`):**
+  - Apply target-arrival logic (on-time, late badges, leave-in messaging)
+
+This prevents misleading "late/on-time" framing when the commute is still hours away and keeps the display glanceable for real-world departure decisions.
+
 ### 8.2 Zone Size Reference
 
 | Zone | Approximate Size | Notes |

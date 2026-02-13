@@ -1,0 +1,37 @@
+{
+    "items": [
+        {
+            "name": "Commute Compute",
+            "priority": 1,
+            "items": [
+                {
+                    "name": "Start Dashboard",
+                    "priority": 1,
+                    "action": "./commute-compute-launcher.sh start",
+                    "exitmenu": true
+                },
+                {
+                    "name": "Stop Dashboard",
+                    "priority": 2,
+                    "action": "./commute-compute-launcher.sh stop"
+                },
+                {
+                    "name": "Refresh Now",
+                    "priority": 3,
+                    "action": "./commute-compute-launcher.sh once",
+                    "exitmenu": true
+                },
+                {
+                    "name": "Status",
+                    "priority": 4,
+                    "action": "./commute-compute-launcher.sh status"
+                },
+                {
+                    "name": "Configure",
+                    "priority": 5,
+                    "action": "./commute-compute-launcher.sh configure"
+                }
+            ]
+        }
+    ]
+}

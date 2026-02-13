@@ -4,147 +4,318 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Commute Compute Web Flasher</title>
+  <title>CommuteCompute&#8482; Device Installer</title>
   <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
-    .container { max-width: 600px; width: 100%; }
-    h1 { font-size: 2.5rem; margin-bottom: 10px; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .subtitle { color: #888; margin-bottom: 40px; }
-    .card { background: #16213e; border-radius: 16px; padding: 30px; margin-bottom: 20px; }
-    .card h2 { font-size: 1.3rem; margin-bottom: 15px; color: #667eea; }
-    .card p { color: #aaa; line-height: 1.6; margin-bottom: 15px; }
-    .steps { list-style: none; counter-reset: step; }
-    .steps li { counter-increment: step; padding: 12px 0; padding-left: 45px; position: relative; border-bottom: 1px solid #1a1a2e; }
-    .steps li:last-child { border-bottom: none; }
-    .steps li::before { content: counter(step); position: absolute; left: 0; top: 12px; width: 30px; height: 30px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
-    .flash-section { text-align: center; padding: 40px; }
-    esp-web-install-button { --inst-button-color: #667eea; }
-    esp-web-install-button::part(button) { font-size: 1.2rem; padding: 15px 40px; border-radius: 30px; cursor: pointer; }
-    .warning { background: #2d1f1f; border: 1px solid #5a3333; border-radius: 8px; padding: 15px; margin-top: 20px; }
-    .warning h3 { color: #ff6b6b; margin-bottom: 10px; }
-    .devices { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px; }
-    .device { background: #1a1a2e; padding: 15px; border-radius: 8px; flex: 1; min-width: 150px; text-align: center; }
-    .device.supported { border: 2px solid #4ade80; }
-    .device.coming { border: 2px solid #fbbf24; opacity: 0.7; }
-    .device span { display: block; font-size: 2rem; margin-bottom: 10px; }
-    a { color: #667eea; }
-    footer { margin-top: 40px; color: #666; font-size: 0.9rem; }
+    :root {
+      --bg-0: #f4f7fb;
+      --bg-1: #ffffff;
+      --ink-0: #0f1a2a;
+      --ink-1: #344158;
+      --line: #d7e0eb;
+      --brand: #1f6feb;
+      --brand-strong: #1454b8;
+      --ok: #1a7f37;
+      --warn: #b35900;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, "Segoe UI", "Avenir Next", "Helvetica Neue", sans-serif;
+      color: var(--ink-0);
+      background:
+        radial-gradient(circle at 0 0, #dce8fb 0%, transparent 40%),
+        radial-gradient(circle at 100% 100%, #e9f6ef 0%, transparent 35%),
+        var(--bg-0);
+    }
+
+    .wrap {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+
+    h1 { margin: 0 0 8px; font-size: 2rem; }
+    p { margin: 0; color: var(--ink-1); line-height: 1.5; }
+
+    .card {
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 20px;
+      margin-top: 16px;
+      box-shadow: 0 8px 30px rgba(12, 27, 48, 0.06);
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      margin-top: 12px;
+    }
+
+    label { display: block; font-size: 0.9rem; margin-bottom: 6px; color: var(--ink-1); }
+
+    select, button {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #bfd0e6;
+      font-size: 0.96rem;
+      background: #fff;
+      color: var(--ink-0);
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      background: var(--brand);
+      color: #fff;
+      border: 1px solid var(--brand);
+    }
+
+    button:hover { background: var(--brand-strong); }
+    button.secondary { background: #fff; color: var(--brand-strong); }
+
+    .hint { font-size: 0.86rem; color: var(--ink-1); margin-top: 8px; }
+
+    .status {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #f7faff;
+    }
+
+    .status.ok { border-color: #cfead5; background: #effaf1; color: var(--ok); }
+    .status.warn { border-color: #f6dfc1; background: #fff7ea; color: var(--warn); }
+
+    .hidden { display: none; }
+
+    .steps { margin: 10px 0 0; padding-left: 20px; color: var(--ink-1); }
+    .steps li { margin: 6px 0; }
+
+    footer {
+      margin-top: 18px;
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+      color: #5b6676;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 640px) {
+      h1 { font-size: 1.7rem; }
+      .wrap { padding: 20px 14px 36px; }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Commute Compute</h1>
-    <p class="subtitle">Smart Transit Display - Web Flasher</p>
-    
-    <div class="card">
-      <h2>Supported Devices</h2>
-      <div class="devices">
-        <div class="device supported">
-          <span>[CC E-Ink]</span>
-          <strong>CC E-Ink OG</strong>
-          <small>800x480 e-ink</small>
+  <main class="wrap">
+    <h1>CommuteCompute&#8482; Device Installer</h1>
+    <p>Plug in your device, pick the target model, then install firmware ready for pairing.</p>
+    <p style="margin-top: 8px; font-size: 0.92rem;">Other apps show delays. CommuteCompute&#8482; reacts to them. Live data flows into every decision- coffee, timing, connections. 1 glance. No app switching. Open Source.</p>
+
+    <section class="card">
+      <div class="grid">
+        <div>
+          <label for="device-family">Device Family</label>
+          <select id="device-family">
+            <option value="esp32-c3">CC E-Ink / ESP32-C3</option>
+            <option value="kindle">Kindle (jailbroken + KUAL)</option>
+          </select>
         </div>
-        <div class="device supported">
-          <span>[ESP32]</span>
-          <strong>ESP32-C3</strong>
-          <small>DevKit</small>
+
+        <div>
+          <label for="kindle-model">Kindle Model</label>
+          <select id="kindle-model" disabled>
+            <option value="kindle-pw5">Paperwhite 5 (11th gen)</option>
+            <option value="kindle-pw4">Paperwhite 4 (10th gen)</option>
+            <option value="kindle-pw3">Paperwhite 3 (7th gen)</option>
+            <option value="kindle-11">Kindle 11th gen</option>
+            <option value="kindle-basic-10">Kindle Basic 10th gen</option>
+          </select>
         </div>
-        <div class="device coming">
-          <span>[Kindle]</span>
-          <strong>Kindle</strong>
-          <small>Coming Soon</small>
+
+        <div>
+          <label>&nbsp;</label>
+          <button id="detect-btn" class="secondary" type="button">Detect Connected Device</button>
         </div>
       </div>
-    </div>
-    
-    <div class="card flash-section">
-      <h2>Flash Your Device</h2>
-      <p>Connect your device via USB and click the button below.</p>
-      <p style="margin-bottom: 25px;"><small>Works in Chrome, Edge, and Opera browsers.</small></p>
-      
-      <esp-web-install-button manifest="/flasher/manifest.json">
-        <button slot="activate">Install Commute Compute Firmware</button>
-        <span slot="unsupported">Your browser doesn't support Web Serial. Try Chrome or Edge.</span>
-        <span slot="not-allowed">Serial access not allowed. Check browser permissions.</span>
-      </esp-web-install-button>
-      
-      <div class="warning">
-        <h3>WARNING: Before Flashing</h3>
-        <p>Make sure your device is in bootloader mode. For CC E-Ink, hold the BOOT button while connecting USB.</p>
+
+      <div id="detect-status" class="status">Detection has not run yet.</div>
+    </section>
+
+    <section id="esp-panel" class="card">
+      <h2>Flash CommuteCompute&#8482; Firmware (CC E-Ink / ESP32-C3)</h2>
+      <p>Use Chrome, Edge, or Opera. Put the board in bootloader mode if needed, then install.</p>
+      <div style="margin-top: 14px;">
+        <esp-web-install-button manifest="/flasher/manifest.json">
+          <button slot="activate">Flash ESP32 Firmware</button>
+          <span slot="unsupported">Web Serial is unavailable in this browser.</span>
+          <span slot="not-allowed">Serial permission denied. Retry and allow serial access.</span>
+        </esp-web-install-button>
       </div>
-    </div>
-    
-    <div class="card">
-      <h2>After Flashing</h2>
       <ol class="steps">
-        <li>Device shows welcome screen with setup instructions</li>
-        <li>Connect to WiFi network: <strong>CommuteCompute-Setup</strong></li>
-        <li>Open browser: <strong>192.168.4.1</strong></li>
-        <li>Enter your WiFi credentials and server URL</li>
-        <li>Visit your server's <strong>/setup</strong> page to configure stops</li>
+        <li>After flash, connect to WiFi network <strong>CommuteCompute-Setup</strong>.</li>
+        <li>Open <strong>192.168.4.1</strong> and complete setup.</li>
+        <li>Pair the device in your Commute Compute server setup flow.</li>
       </ol>
-    </div>
-    
-    <div class="card">
-      <h2>Need a Server?</h2>
-      <p>Deploy your own Commute Compute server in one click:</p>
-      <p style="margin-top: 15px;">
-        <a href="https://vercel.com/new/clone?repository-url=https://gitlab.com/angusbergman/commute-compute-system" target="_blank">
-          <img src="https://vercel.com/button" alt="Deploy with Vercel" />
-        </a>
-      </p>
-    </div>
-    
-    <!-- Global System Footer -->
-    <div class="cc-system-footer" style="margin-top: 30px; padding: 20px; text-align: center; font-size: 13px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); width: 100%;">
-      <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; font-size: 11px;">
-        <span>CCFirm&#8482; <span id="cc-footer-firmware-version">CC-FW-7.6.0</span></span>
-        <span>System <span id="cc-footer-system-version">v4.2.0</span></span>
-        <span>Build <span id="cc-footer-build-date">--</span></span>
+    </section>
+
+    <section id="kindle-panel" class="card hidden">
+      <h2>Install CommuteCompute&#8482; Kindle Package</h2>
+      <p>This writes Commute Compute files to your mounted Kindle at <code>extensions/commute-compute</code>.</p>
+      <div style="margin-top: 12px;">
+        <button id="install-kindle" type="button">Install To Mounted Kindle</button>
       </div>
-      <div style="margin-bottom: 12px;">
-        <a href="https://opendata.transport.vic.gov.au" target="_blank" rel="noopener" style="color: #94a3b8;">Transport Victoria OpenData</a> (CC BY 4.0) •
-        <a href="/attribution.html" style="color: #94a3b8;">All Sources</a>
-      </div>
-      <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
-        <a href="https://buymeacoffee.com/angusbergman" target="_blank" rel="noopener"
-           style="padding: 6px 12px; background: #FFDD00; color: #000; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 12px;">
-          Buy me a coffee
-        </a>
-        <a href="https://gitlab.com/angusbergman/commute-compute-system" target="_blank" rel="noopener"
-           style="padding: 6px 12px; background: #db61a2; color: #fff; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 12px;">
-          Sponsor
-        </a>
-        <a href="https://gitlab.com/angusbergman/commute-compute-system/issues/new" target="_blank" rel="noopener"
-           style="padding: 6px 12px; background: #6366f1; color: #fff; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 12px;">
-          Feedback
-        </a>
-      </div>
-      <div style="font-size: 11px;">
-        © 2026 <a href="https://gitlab.com/angusbergman" target="_blank" rel="noopener" style="color: #94a3b8;">Angus Bergman</a> •
-        <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener" style="color: #94a3b8;">AGPL-3.0</a>
-      </div>
-    </div>
-  </div>
+      <div id="kindle-status" class="status">Awaiting install.</div>
+      <ol class="steps">
+        <li>Eject Kindle safely when install completes.</li>
+        <li>Open KUAL, then run Commute Compute start/configure actions.</li>
+        <li>Use your generated BYOS setup URL to pair the device.</li>
+      </ol>
+    </section>
+
+    <footer class="cc-system-footer">
+      <div>CCFirm&#8482; <span id="cc-footer-firmware-version">CC-FW-7.6.0</span> | System <span id="cc-footer-system-version">v4.2.0</span> | Build <span id="cc-footer-build-date">--</span></div>
+      <div style="margin-top: 6px;">Data: <a href="https://opendata.transport.vic.gov.au" target="_blank" rel="noopener">Transport Victoria OpenData</a> (CC BY 4.0)</div>
+      <div style="margin-top: 6px;">&#169; 2026 Angus Bergman | CommuteCompute&#8482; IP | <a href="/attribution.html" style="color: inherit;">Licensing</a></div>
+    </footer>
+  </main>
+
   <script>
-    // XSS sanitize (Section 17.1)
     function sanitize(str) {
       if (str === null || str === undefined) return '';
       if (typeof str !== 'string') str = String(str);
       const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'};
       return str.replace(/[&<>"'`=/]/g, c => map[c]);
     }
-    // Dynamic version loading from /api/version
+
+    const fileNames = ['cc-logo.bmp', 'commute-compute-launcher.sh', 'configure.sh', 'menu.json', 'device-config.sh'];
+    const usbVendors = {
+      0x303A: 'Espressif',
+      0x10C4: 'Silicon Labs',
+      0x1A86: 'QinHeng',
+      0x1949: 'Amazon'
+    };
+
+    const familySelect = document.getElementById('device-family');
+    const kindleModelSelect = document.getElementById('kindle-model');
+    const detectStatus = document.getElementById('detect-status');
+    const kindleStatus = document.getElementById('kindle-status');
+    const espPanel = document.getElementById('esp-panel');
+    const kindlePanel = document.getElementById('kindle-panel');
+
+    function setStatus(el, text, level) {
+      el.className = 'status' + (level ? ' ' + level : '');
+      el.textContent = sanitize(text);
+    }
+
+    function renderPanels() {
+      const kindle = familySelect.value === 'kindle';
+      kindleModelSelect.disabled = !kindle;
+      espPanel.classList.toggle('hidden', kindle);
+      kindlePanel.classList.toggle('hidden', !kindle);
+    }
+
+    familySelect.addEventListener('change', renderPanels);
+
+    async function detectDevice() {
+      setStatus(detectStatus, 'Detecting device access...', '');
+
+      if (familySelect.value === 'esp32-c3') {
+        if (!('serial' in navigator)) {
+          setStatus(detectStatus, 'Web Serial is not supported in this browser.', 'warn');
+          return;
+        }
+        try {
+          const port = await navigator.serial.requestPort({
+            filters: [
+              { usbVendorId: 0x303A },
+              { usbVendorId: 0x10C4 },
+              { usbVendorId: 0x1A86 }
+            ]
+          });
+          const info = port.getInfo();
+          const vendor = usbVendors[info.usbVendorId] || ('Vendor 0x' + (info.usbVendorId || 0).toString(16));
+          setStatus(detectStatus, 'Detected ESP-class serial adapter: ' + vendor + '. Ready to flash.', 'ok');
+        } catch (err) {
+          setStatus(detectStatus, 'Serial detection canceled or failed. You can still flash manually.', 'warn');
+        }
+        return;
+      }
+
+      if (!('usb' in navigator)) {
+        setStatus(detectStatus, 'WebUSB is unavailable. Select Kindle model manually and install.', 'warn');
+        return;
+      }
+
+      try {
+        await navigator.usb.requestDevice({ filters: [{ vendorId: 0x1949 }] });
+        setStatus(detectStatus, 'Detected Amazon USB device. Confirm model selection, then install.', 'ok');
+      } catch (err) {
+        setStatus(detectStatus, 'Kindle USB detection canceled. Continue with manual model selection.', 'warn');
+      }
+    }
+
+    async function ensureDirectory(root, path) {
+      const segments = path.split('/').filter(Boolean);
+      let current = root;
+      for (const segment of segments) {
+        current = await current.getDirectoryHandle(segment, { create: true });
+      }
+      return current;
+    }
+
+    async function writeFile(dir, name, bytes) {
+      const handle = await dir.getFileHandle(name, { create: true });
+      const writable = await handle.createWritable();
+      await writable.write(bytes);
+      await writable.close();
+    }
+
+    async function installKindlePackage() {
+      if (!window.showDirectoryPicker) {
+        setStatus(kindleStatus, 'Directory write access is unavailable in this browser.', 'warn');
+        return;
+      }
+
+      try {
+        setStatus(kindleStatus, 'Choose your Kindle root folder to continue...', '');
+        const model = kindleModelSelect.value;
+        const root = await window.showDirectoryPicker({ mode: 'readwrite' });
+        const target = await ensureDirectory(root, 'extensions/commute-compute');
+
+        for (const name of fileNames) {
+          const path = '/flasher/kindle/' + model + '/' + name;
+          const response = await fetch(path);
+          if (!response.ok) throw new Error('Missing package file: ' + path);
+          const data = new Uint8Array(await response.arrayBuffer());
+          await writeFile(target, name, data);
+        }
+
+        setStatus(kindleStatus, 'Kindle package installed to extensions/commute-compute. Eject Kindle and launch via KUAL.', 'ok');
+      } catch (err) {
+        setStatus(kindleStatus, 'Install stopped: ' + (err && err.message ? err.message : 'unknown error'), 'warn');
+      }
+    }
+
+    document.getElementById('detect-btn').addEventListener('click', detectDevice);
+    document.getElementById('install-kindle').addEventListener('click', installKindlePackage);
+
     fetch('/api/version').then(r => r.json()).then(v => {
       const fw = document.getElementById('cc-footer-firmware-version');
       const sys = document.getElementById('cc-footer-system-version');
       const build = document.getElementById('cc-footer-build-date');
       if (fw) fw.textContent = v.components?.firmware?.version || 'CC-FW-7.6.0';
-      if (sys) sys.textContent = 'v' + (v.system?.version || '4.0.0');
+      if (sys) sys.textContent = 'v' + (v.system?.version || '4.2.0');
       if (build) build.textContent = v.date || new Date().toISOString().split('T')[0];
     }).catch(() => {});
+
+    renderPanels();
   </script>
 </body>
 </html>
