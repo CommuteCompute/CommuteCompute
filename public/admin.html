@@ -5236,9 +5236,18 @@
                     const hasActualLiveBuses = (rawTransit.buses || []).some(t => t.source === 'live' || t.source === 'opendata');
                     const hasActualLiveData = hasActualLiveTrains || hasActualLiveTrams || hasActualLiveBuses;
                     const isLive = hasActualLiveData && !scData.fallbackMode;
+                    // Single source of truth for live/fallback status across the admin page.
+                    window.ccLiveStatus = {
+                        isLive,
+                        hasActualLiveData,
+                        hasTransitKey,
+                        transitValidated,
+                        fallbackMode: !!scData.fallbackMode
+                    };
                     const dataMode = document.getElementById('data-mode');
                     if (dataMode) dataMode.textContent = isLive ? 'Live Data' : (hasTransitKey ? 'No Live Data' : 'Timetable');
                     updateLiveDataBanner(isLive, hasTransitKey, transitValidated);
+                    updateCommuteComputeStatus(config, window.ccLiveStatus);
                     
                     // Update departures from nextDeparture
                     updateCommuteComputeDepartures(scData);
@@ -6395,7 +6404,7 @@
         }
         
         // Update CommuteCompute status banner
-        function updateCommuteComputeStatus(prefs) {
+        function updateCommuteComputeStatus(prefs, liveStatus) {
             const banner = document.getElementById('commutecompute-status-banner');
             const iconContainer = document.getElementById('commutecompute-status-icon');
             const title = document.getElementById('commutecompute-status-title');
@@ -6403,16 +6412,29 @@
             
             if (!banner) return;
             
-            const transitValidated = localStorage.getItem('cc-transit-api-validated') === 'true';
-            const hasTransitKey = !!localStorage.getItem('cc-transit-api-key');
+            const status = liveStatus || window.ccLiveStatus || {};
+            const transitValidated = typeof status.transitValidated === 'boolean'
+                ? status.transitValidated
+                : localStorage.getItem('cc-transit-api-validated') === 'true';
+            const hasTransitKey = typeof status.hasTransitKey === 'boolean'
+                ? status.hasTransitKey
+                : !!localStorage.getItem('cc-transit-api-key');
+            const hasActualLiveData = !!status.hasActualLiveData;
             
-            if (hasTransitKey && transitValidated) {
+            if (hasActualLiveData) {
                 banner.style.background = 'linear-gradient(135deg, rgba(79, 178, 142, 0.15) 0%, rgba(34, 197, 94, 0.15) 100%)';
                 banner.style.borderLeftColor = '#4fb28e';
                 iconContainer.style.background = '#22c55e';
                 iconContainer.innerHTML = '<svg width="18" height="18" style="color: white;"><use href="#icon-check"/></svg>';
                 title.textContent = 'CommuteCompute Active';
                 subtitle.textContent = 'Real-time journey calculation enabled';
+            } else if (hasTransitKey && transitValidated) {
+                banner.style.background = 'linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%)';
+                banner.style.borderLeftColor = '#fbbf24';
+                iconContainer.style.background = '#fbbf24';
+                iconContainer.innerHTML = '<svg width="18" height="18" style="color: white;"><use href="#icon-warning"/></svg>';
+                title.textContent = 'No Live Data';
+                subtitle.textContent = 'Using fallback timetable data until GTFS-RT resumes';
             } else if (hasTransitKey) {
                 banner.style.background = 'linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%)';
                 banner.style.borderLeftColor = '#fbbf24';

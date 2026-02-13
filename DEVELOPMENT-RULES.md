@@ -1285,6 +1285,7 @@ Before any renderer PR is merged, verify:
 - [ ] All icons from spec Section 5.3 are implemented
 - [ ] All leg states from spec Section 5.1 are styled correctly
 - [ ] All status bar variants from spec Section 4.1 are supported
+- [ ] Status bar applies Section 12.5 timing window (`<=120 min` target logic, `>120 min` leave-now context)
 - [ ] Umbrella indicator renders for both rain/no-rain states
 - [ ] Leg numbers appear on every leg
 - [ ] Transit subtitles include real-time departure info when available
@@ -1783,6 +1784,28 @@ Test all edge cases in journey calculations:
 - Services starting/ending for the day
 - Delays and cancellations
 - Multi-leg journeys
+
+### 12.5 User Intent Timing Window (Status Bar)
+The status bar MUST prioritize immediate "walk out the door" context when departure is far away.
+
+**Rule:**
+- If `leave_in_minutes > 120`, do NOT evaluate or display late/on-time against target arrival.
+- In that far-future state, show context as-if leaving now (`LEAVE NOW -> Arrive X`) so users can quickly assess trip conditions.
+- Only apply target-arrival judgments (`LATE`, on-time window logic, leave-in guidance) inside the actionable departure window (`<= 120 minutes`).
+
+**Implementation requirement:**
+```javascript
+const ACTIONABLE_DEPARTURE_WINDOW_MINS = 120;
+const farFromDeparture = leaveInMinutes > ACTIONABLE_DEPARTURE_WINDOW_MINS;
+
+if (farFromDeparture) {
+  // User intent: immediate context if leaving now
+  statusText = `LEAVE NOW -> Arrive ${calculatedArrival}`;
+} else {
+  // Target-arrival semantics apply in actionable window
+  evaluateLateOnTimeAgainstTarget();
+}
+```
 
 ---
 

@@ -72,6 +72,8 @@ You set your home address, work address, and target arrival time. The system doe
 
 Every 60 seconds, the system pulls live data from three sources, runs it through five intelligence engines, and renders a fresh dashboard image to your e-ink display.
 
+Status timing follows user-intent logic: when departure is still far away (>120 minutes), the dashboard shows "if left now" context rather than judging on-time/late against the target arrival; target-arrival judgment activates in the actionable departure window.
+
 ```
  YOU CONFIGURE                    DATA SOURCES                    INTELLIGENCE ENGINES
 +------------------+       +------------------------+       +---------------------------+
@@ -350,6 +352,25 @@ Open `https://your-project.vercel.app/setup-wizard.html` and follow the guided c
 
 ```bash
 cd firmware && pio run -e trmnl -t upload
+```
+
+Or use the browser installer (Windows/macOS, Chrome/Edge):
+
+- Hosted flasher: `/flasher/`
+- It supports:
+  - CC E-Ink / ESP32-C3 firmware flashing via Web Serial
+  - Kindle package install (jailbroken + KUAL) to `extensions/commute-compute`
+
+Embed snippet for docs pages that support iframes:
+
+```html
+<iframe
+  src="https://your-project.vercel.app/flasher/"
+  title="Commute Compute Device Flasher"
+  width="100%"
+  height="900"
+  style="border:1px solid #d7e0eb;border-radius:12px;"
+></iframe>
 ```
 
 ### 5. Pair and Go
