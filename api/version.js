@@ -20,9 +20,9 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Build date from deployment or current date
-  const buildDate = process.env.VERCEL_GIT_COMMIT_SHA 
-    ? new Date().toISOString().split('T')[0]
+  // Build date from deployment — use Melbourne timezone (Vercel runs in UTC)
+  const buildDate = process.env.VERCEL_GIT_COMMIT_SHA
+    ? new Date().toLocaleDateString('en-CA', { timeZone: 'Australia/Melbourne' })
     : '2026-01-31';
 
   res.json({

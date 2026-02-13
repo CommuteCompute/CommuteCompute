@@ -1641,7 +1641,14 @@ function renderStatus(data, prefs) {
   const ampm = arrH >= 12 ? 'pm' : 'am';
   const arrH12 = arrH % 12 || 12;
   const arriveBy = totalMinutes > 0 ? `${arrH12}:${arrM}${ampm}` : (data.arrive_by || '--:--');
-  const leaveIn = data.leave_in || data.leaveIn;
+  const leaveIn = data.leave_in_minutes ?? data.leave_in ?? data.leaveIn;
+  const formatLeaveIn = (minutes) => {
+    const safe = Math.max(0, Math.floor(minutes || 0));
+    const hours = Math.floor(safe / 60);
+    const mins = safe % 60;
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins} min`;
+  };
   
   // Determine status type and message (V10 Spec Section 4.1)
   let statusText = '';
@@ -2224,8 +2231,8 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     ctx.textAlign = 'left';
     ctx.fillText(data.sleep_display, coffeeBoxX + 62, coffeeBoxY + 28);
 
-    // Secondary line (ALARM time or sleep adequacy)
-    ctx.font = '14px Inter, sans-serif';
+    // Secondary line (ALARM time or sleep adequacy) — 16px for 1-bit e-ink legibility
+    ctx.font = 'bold 16px Inter, sans-serif';
     const sleepSecondary = data.sleep_secondary || '';
     ctx.fillText(sleepSecondary, coffeeBoxX + 62, coffeeBoxY + 50);
 
@@ -2411,11 +2418,17 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   // Parse target arrival time
   const [targetH, targetM] = targetArrival.split(':').map(Number);
   const targetMins = (targetH || 9) * 60 + (targetM || 0);
+  const targetArrivalDisplay = Number.isFinite(targetH) && Number.isFinite(targetM)
+    ? `${(targetH % 12) || 12}:${String(targetM).padStart(2, '0')}${targetH >= 12 ? 'pm' : 'am'}`
+    : targetArrival;
   
-  // V13.2: Only consider late/early relative to arrive-by time if one is set
-  // Outside this context, simply display route as if leaving now
+  // V15.1: Only consider target-arrival timing inside an actionable departure window.
+  // If the user is looking far ahead, show "if you left now" context only.
+  const ACTIONABLE_DEPARTURE_WINDOW_MINS = 120;
+  const isObscenelyFarFromDeparture = Number.isFinite(leaveIn) && leaveIn > ACTIONABLE_DEPARTURE_WINDOW_MINS;
+  // V13.2: Only consider late/early relative to arrive-by time when target timing is actionable.
   const diffMins = arrivalMins - targetMins;
-  const hasArriveByTarget = data.arrive_by && targetArrival !== '09:00';  // User explicitly set target
+  const hasArriveByTarget = data.arrive_by && targetArrival !== '09:00' && !isObscenelyFarFromDeparture;
   const isLate = hasArriveByTarget && diffMins > 5;
   const isEarly = hasArriveByTarget && diffMins < -5;
   const isOnTime = hasArriveByTarget && !isLate && !isEarly;
@@ -2482,8 +2495,11 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     const lateMinutes = Math.abs(diffMins);
     disruptionText = `LATE +${lateMinutes} min`;
     statusText = `LATE → Arrive ${calculatedArrival} (+${lateMinutes} min)`;
+  } else if (hasArriveByTarget && Number.isFinite(leaveIn) && leaveIn > 1) {
+    // Respect configured arrival target when user still has buffer time.
+    statusText = `LEAVE IN ${formatLeaveIn(leaveIn)} → Arrive ${targetArrivalDisplay}`;
   } else {
-    // Normal - just show route as if leaving now
+    // Normal - leave now when no explicit target window remains.
     statusText = `LEAVE NOW → Arrive ${calculatedArrival}`;
   }
 
@@ -3221,9 +3237,14 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   // V13.6: Footer text raised 6px for better e-ink visibility (within 50px footer)
   const footerTextY = footerY + footerH / 2 - 6;
 
-  // v1.38: Show destination with address (e.g., "WORK — 80 COLLINS ST")
+  // v1.38: Show destination with address (e.g., "SOUTH YARRA — 80 COLLINS ST")
   let footerDest = (data.destination || 'WORK').toUpperCase();
-  const destAddress = data.destination_address || data.workAddress || data.address || '';
+  let destAddress = data.destination_address || data.workAddress || data.address || '';
+  // Strip building/complex name prefix before street number (e.g. "Nauru House, 80 Collins St" → "80 Collins St")
+  const streetNumIdx = destAddress.search(/\d+\s+[A-Za-z]/);
+  if (streetNumIdx > 0) {
+    destAddress = destAddress.substring(streetNumIdx);
+  }
   const isHomeDestination = data.destinationType === 'home' ||
                             data.isReverseCommute ||
                             data.destination?.toLowerCase().includes('home') ||
