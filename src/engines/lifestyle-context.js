@@ -120,7 +120,7 @@ class LifestyleContext {
    * @returns {Object} Lifestyle context with suggestions, display line, and metadata
    */
   calculate(params) {
-    const { weather, currentTime, state } = params || {};
+    const { weather, currentTime, state, localHour, localMinute } = params || {};
 
     // No mock data fallbacks - if weather is missing, return the no-data response
     if (!weather || typeof weather.temp !== 'number') {
@@ -131,13 +131,18 @@ class LifestyleContext {
     const resolvedState = VALID_STATES.includes(state) ? state : null;
     const forecast = Array.isArray(weather.dayForecast) ? weather.dayForecast : [];
 
+    // V15.0 FIX: Use timezone-aware local hour (not UTC time.getHours())
+    // On Vercel (UTC), time.getHours() returns UTC hour — at 8:53 PM Melbourne (UTC+11),
+    // UTC hour = 9 AM which incorrectly activates daytime-only suggestions like SUNGLASSES.
+    const hour = typeof localHour === 'number' ? localHour : time.getHours();
+
     // Evaluate each suggestion category (full-day awareness for carry-all-day items)
     const umbrella = this._checkUmbrella(weather, forecast);
     const jacket = this._checkJacket(weather, forecast);
-    const sunglasses = this._checkSunglasses(weather, time);
-    const sunscreen = this._checkSunscreen(weather, time, resolvedState);
+    const sunglasses = this._checkSunglasses(weather, hour);
+    const sunscreen = this._checkSunscreen(weather, hour, resolvedState);
     const hydration = this._checkHydration(weather, forecast);
-    const layers = this._checkLayers(weather, time, forecast);
+    const layers = this._checkLayers(weather, hour, forecast);
 
     const suggestions = [umbrella, jacket, sunglasses, sunscreen, hydration, layers];
 
@@ -298,12 +303,11 @@ class LifestyleContext {
    * or when UV index > 5.
    *
    * @param {Object} weather - Weather data
-   * @param {Date} time - Current local time
+   * @param {number} hour - Current local hour (0-23, timezone-aware)
    * @returns {Object} Sunglasses suggestion object
    */
-  _checkSunglasses(weather, time) {
+  _checkSunglasses(weather, hour) {
     const condition = (weather.condition || '').toLowerCase();
-    const hour = time.getHours();
     const uvIndex = typeof weather.uvIndex === 'number' ? weather.uvIndex : 0;
 
     const sunnyCondition = ['clear', 'sunny', 'fine'].some(sc => condition.includes(sc));
@@ -327,13 +331,12 @@ class LifestyleContext {
    * is QLD/WA/NT AND time is 9am-3pm.
    *
    * @param {Object} weather - Weather data
-   * @param {Date} time - Current local time
+   * @param {number} hour - Current local hour (0-23, timezone-aware)
    * @param {string|null} state - User's Australian state code
    * @returns {Object} Sunscreen suggestion object
    */
-  _checkSunscreen(weather, time, state) {
+  _checkSunscreen(weather, hour, state) {
     const condition = (weather.condition || '').toLowerCase();
-    const hour = time.getHours();
     const uvIndex = typeof weather.uvIndex === 'number' ? weather.uvIndex : 0;
 
     const highUv = uvIndex > 6;
@@ -386,13 +389,12 @@ class LifestyleContext {
    * or original heuristic: cool morning before 9am with no rain.
    *
    * @param {Object} weather - Weather data
-   * @param {Date} time - Current local time
+   * @param {number} hour - Current local hour (0-23, timezone-aware)
    * @param {Array} forecast - Hourly forecast for remaining day
    * @returns {Object} Layers suggestion object
    */
-  _checkLayers(weather, time, forecast) {
+  _checkLayers(weather, hour, forecast) {
     const temp = weather.temp;
-    const hour = time.getHours();
     const condition = (weather.condition || '').toLowerCase();
 
     const isMorning = hour < 9;

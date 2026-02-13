@@ -2077,13 +2077,25 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     if (timeMatch) {
       let h = parseInt(timeMatch[1]);
       const m = parseInt(timeMatch[2]);
+      // V15.0 FIX: Handle embedded am/pm in current_time string
       if (data.current_time.toLowerCase().includes('pm') && h < 12) h += 12;
       if (data.current_time.toLowerCase().includes('am') && h === 12) h = 0;
+      // V15.0 FIX: Use data.am_pm when current_time has no am/pm suffix (e.g. "8:53")
+      // Without this, "8:53" at PM is interpreted as 8:53 AM (533 min) — falls within
+      // ±2hr of 9:00 AM target, blocking sleep mode display at night
+      if (!data.current_time.toLowerCase().includes('am') && !data.current_time.toLowerCase().includes('pm')) {
+        if (data.am_pm === 'PM' && h < 12) h += 12;
+        if (data.am_pm === 'AM' && h === 12) h = 0;
+      }
       currentMins = h * 60 + m;
     }
   } else {
-    const now = new Date();
-    currentMins = now.getHours() * 60 + now.getMinutes();
+    // Timezone-aware fallback (not UTC — Vercel runs in UTC)
+    const state = data.state || 'VIC';
+    const tzMap = { VIC:'Australia/Melbourne', NSW:'Australia/Sydney', QLD:'Australia/Brisbane',
+      SA:'Australia/Adelaide', WA:'Australia/Perth', TAS:'Australia/Hobart', NT:'Australia/Darwin', ACT:'Australia/Sydney' };
+    const localNow = new Date(new Date().toLocaleString('en-US', { timeZone: tzMap[state] || 'Australia/Melbourne' }));
+    currentMins = localNow.getHours() * 60 + localNow.getMinutes();
   }
 
   // Check if within ±2 hours of arrive-by time
