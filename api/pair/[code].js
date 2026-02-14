@@ -5,57 +5,61 @@
  * GET /api/pair/[code] - Device polls to check if config is ready
  * POST /api/pair/[code] - Setup wizard sends config for device
  *
- * Uses Vercel KV for persistent storage across serverless invocations.
- * Fallback to in-memory for local development.
+ * Uses Redis (via Vercel Marketplace) for persistent storage
+ * across serverless invocations. Fallback to in-memory for local development.
  *
  * Copyright (c) 2026 Angus Bergman
  * SPDX-License-Identifier: AGPL-3.0-or-later
  * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  */
 
-import { kv } from '@vercel/kv';
-
-// Pairing codes expire after 10 minutes
-const CODE_EXPIRY_MS = 10 * 60 * 1000;
+import { getClient } from '../../src/data/kv-preferences.js';
 
 // In-memory fallback for local development
 const localStore = global.pairingStore || (global.pairingStore = new Map());
 
 /**
- * Get pairing data from KV or local store
+ * Get pairing data from Redis or local store
  */
 async function getPairingData(code) {
   try {
-    // Try Vercel KV first
-    const data = await kv.get(`cc:pair:${code}`);
-    if (data) return data;
+    const client = await getClient();
+    if (client) {
+      const data = await client.get(`cc:pair:${code}`);
+      if (data) return data;
+    }
   } catch (e) {
-    // KV not available, use local store
+    // Redis not available, use local store
   }
   return localStore.get(code) || null;
 }
 
 /**
- * Set pairing data in KV and local store
+ * Set pairing data in Redis and local store
  */
 async function setPairingData(code, data) {
   try {
-    // Store in Vercel KV with TTL (10 minutes)
-    await kv.set(`cc:pair:${code}`, data, { ex: 600 });
+    const client = await getClient();
+    if (client) {
+      await client.set(`cc:pair:${code}`, data, { ex: 600 });
+    }
   } catch (e) {
-    // KV not available, use local store only
+    // Redis not available, use local store only
   }
   localStore.set(code, data);
 }
 
 /**
- * Delete pairing data from KV and local store
+ * Delete pairing data from Redis and local store
  */
 async function deletePairingData(code) {
   try {
-    await kv.del(`cc:pair:${code}`);
+    const client = await getClient();
+    if (client) {
+      await client.del(`cc:pair:${code}`);
+    }
   } catch (e) {
-    // KV not available
+    // Redis not available
   }
   localStore.delete(code);
 }

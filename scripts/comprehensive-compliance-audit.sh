@@ -222,13 +222,13 @@ else
     pass "No common API key patterns detected"
 fi
 
-subsection "3.6 Vercel KV storage pattern"
+subsection "3.6 Redis storage pattern"
 if [ -d "src/data" ]; then
-    KV_USAGE=$(grep -rn "@vercel/kv\|kv\.get\|kv\.set" src/ api/ 2>/dev/null | head -3 || true)
+    KV_USAGE=$(grep -rn "kv-preferences\|getClient\|getTransitApiKey\|@upstash/redis" src/ api/ 2>/dev/null | head -3 || true)
     if [ -n "$KV_USAGE" ]; then
-        pass "Vercel KV storage pattern in use"
+        pass "Redis storage pattern in use (via kv-preferences.js)"
     else
-        warn "No Vercel KV usage found - verify KV storage is implemented"
+        warn "No Redis storage usage found - verify kv-preferences.js is implemented"
     fi
 else
     skip "src/data directory not found"

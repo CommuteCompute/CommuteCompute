@@ -78,7 +78,7 @@ export default async function handler(req, res) {
       savedToKv: true,
       instructions: [
         '1. Your device will fetch from /api/screen',
-        '2. Config is stored in Vercel KV',
+        '2. Config is stored in Redis',
         '3. Device output will match the PNG preview exactly'
       ]
     });

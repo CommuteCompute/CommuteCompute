@@ -2,7 +2,7 @@
  * /api/sync-config - Sync configuration to KV storage
  * 
  * Per DEVELOPMENT-RULES Section 3.6 & 11.8:
- * Ensures Setup Wizard data is persisted to Vercel KV.
+ * Ensures Setup Wizard data is persisted to Redis.
  * Called after setup completion to guarantee data is saved.
  * 
  * POST: Saves provided config to KV

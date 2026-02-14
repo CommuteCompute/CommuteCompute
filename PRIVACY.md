@@ -6,7 +6,7 @@
 
 **Effective Date:** 9 February 2026
 **Last Updated:** 9 February 2026
-**System Version:** v3.5.0
+**System Version:** v4.2.0
 
 ---
 
@@ -26,14 +26,14 @@ The following data is collected when you configure and use Commute Compute™:
 
 | Category | Data | Purpose | Storage |
 |:---------|:-----|:--------|:--------|
-| **Addresses** | Home, work, and cafe addresses (text) | Journey calculation, geocoding to coordinates | Vercel KV (`cc:preferences`) |
-| **Coordinates** | Latitude and longitude (from geocoding) | Distance and walking time calculations | Vercel KV (`cc:preferences`) |
-| **API Keys** | Transport Victoria OpenData key, Google Places key | Authenticate with transit and geocoding providers | Vercel KV (`cc:api:transit_key`, `cc:api:google_key`) |
-| **Preferences** | Target arrival time, coffee preference, transit mode preferences, walking time estimates, Australian state/territory | Dashboard personalisation and journey calculation | Vercel KV (`cc:preferences`) |
-| **Device Status** | Battery percentage, battery voltage, device ID, last-seen timestamp | Device health monitoring in admin panel | Vercel KV (`cc:device:status`) |
-| **Journey Profiles** | Named route configurations (addresses, arrival time, preferences) | Quick switching between saved commute routes | Vercel KV (`cc-profiles`) |
+| **Addresses** | Home, work, and cafe addresses (text) | Journey calculation, geocoding to coordinates | Redis (`cc:preferences`) |
+| **Coordinates** | Latitude and longitude (from geocoding) | Distance and walking time calculations | Redis (`cc:preferences`) |
+| **API Keys** | Transport Victoria OpenData key, Google Places key | Authenticate with transit and geocoding providers | Redis (`cc:api:transit_key`, `cc:api:google_key`) |
+| **Preferences** | Target arrival time, coffee preference, transit mode preferences, walking time estimates, Australian state/territory | Dashboard personalisation and journey calculation | Redis (`cc:preferences`) |
+| **Device Status** | Battery percentage, battery voltage, device ID, last-seen timestamp | Device health monitoring in admin panel | Redis (`cc:device:status`) |
+| **Journey Profiles** | Named route configurations (addresses, arrival time, preferences) | Quick switching between saved commute routes | Redis (`cc-profiles`) |
 
-All data listed above is stored exclusively in your own Vercel KV (Redis) instance, encrypted at rest by Vercel/Upstash (AES-256).
+All data listed above is stored exclusively in your own Redis instance, encrypted at rest by Upstash (AES-256).
 
 ---
 
@@ -74,8 +74,8 @@ Commute Compute™ communicates with the following external services to provide 
 
 ### Storage
 
-- All persistent data is stored in your Vercel KV (Redis) instance
-- Vercel KV data is encrypted at rest (AES-256) by Vercel/Upstash
+- All persistent data is stored in your Redis instance
+- Redis data is encrypted at rest (AES-256) by Upstash
 - No data is written to the filesystem — Vercel serverless functions are stateless
 - In-memory caches (transit data, weather) are discarded when the serverless function completes
 
@@ -119,7 +119,7 @@ Commute Compute™ is architected so that each user deploys and controls their o
 - There is no central Commute Compute™ server collecting or aggregating data
 - There is no user profiling, behavioural analytics, or telemetry
 - The full source code is available and auditable under AGPL-3.0
-- Compliance is verified by 63+ automated audit checks (see [DEVELOPMENT-RULES.md](DEVELOPMENT-RULES.md))
+- Compliance is verified by 214 automated audit checks (see [DEVELOPMENT-RULES.md](DEVELOPMENT-RULES.md))
 
 ---
 
@@ -127,7 +127,7 @@ Commute Compute™ is architected so that each user deploys and controls their o
 
 Core Commute Compute™ functionality requires zero paid services:
 
-- **Vercel** — Free tier includes hosting and KV storage
+- **Vercel** — Free tier includes hosting; Redis (via Marketplace) for storage
 - **Transport Victoria OpenData** — Free registration, no usage fees
 - **Bureau of Meteorology** — Public data, no API key required
 - **OpenStreetMap Nominatim** — Free geocoding (used as default/fallback)
@@ -141,7 +141,7 @@ Google Places API is optional. If not configured, the system uses free OpenStree
 - Licensed under AGPL-3.0 (dual license available — see [LEGAL.md](LEGAL.md))
 - All data flows are visible and auditable in the source code
 - No hidden telemetry, phone-home, or data exfiltration code
-- Repository includes automated compliance auditing with 63+ checks across 24 rule sections
+- Repository includes automated compliance auditing with 214 checks across 25 rule sections
 - All third-party data source attributions listed in [ATTRIBUTION.md](ATTRIBUTION.md)
 
 ---
