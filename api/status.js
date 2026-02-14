@@ -3,7 +3,7 @@
  * Returns current system status for dashboard display.
  * 
  * Per DEVELOPMENT-RULES Section 3.6 & 11.8:
- * Checks Vercel KV for API key configuration status.
+ * Checks Redis for API key configuration status.
  * 
  * Copyright (c) 2026 Angus Bergman
  * SPDX-License-Identifier: AGPL-3.0-or-later

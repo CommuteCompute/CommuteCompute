@@ -1,11 +1,17 @@
 /**
  * KV-Based Preferences Storage
  *
- * Zero-Config compliant storage using Vercel KV (Redis).
+ * Zero-Config compliant storage using Redis (via Vercel Marketplace).
  * Per DEVELOPMENT-RULES Section 3.1: Users must NEVER configure server-side env vars.
  * Per Section 11.8: Direct endpoints must load API key from persistent storage.
  *
- * Vercel KV provides persistent key-value storage across serverless invocations.
+ * Supports multiple Redis connection methods:
+ *   1. Vercel KV env vars (KV_REST_API_URL / KV_REST_API_TOKEN) — legacy
+ *   2. Upstash Marketplace env vars (UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN)
+ *   3. Native Redis via ioredis (REDIS_URL)
+ *   4. In-memory fallback for local development
+ *
+ * Redis provides persistent key-value storage across serverless invocations.
  * Falls back to in-memory storage for local development.
  *
  * Copyright (c) 2026 Angus Bergman
@@ -48,8 +54,8 @@ async function getVercelKv() {
 }
 
 /**
- * Simple REST client for Upstash Redis (no external dependencies)
- * Vercel KV uses Upstash under the hood with REST API
+ * Simple REST client for Redis (no external dependencies)
+ * Works with both Vercel KV (legacy) and Upstash Marketplace env vars
  */
 function createRestClient(baseUrl, token) {
   return {
@@ -60,18 +66,34 @@ function createRestClient(baseUrl, token) {
       const data = await response.json();
       return data.result;
     },
-    async set(key, value) {
-      const response = await fetch(`${baseUrl}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(value))}`, {
+    async set(key, value, options) {
+      let url = `${baseUrl}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(value))}`;
+      if (options?.ex) url += `/EX/${options.ex}`;
+      const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
       return data.result === 'OK';
+    },
+    async del(key) {
+      const response = await fetch(`${baseUrl}/del/${encodeURIComponent(key)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      return data.result;
+    },
+    async keys(pattern) {
+      const response = await fetch(`${baseUrl}/keys/${encodeURIComponent(pattern)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      return data.result || [];
     }
   };
 }
 
 /**
- * Get Upstash Redis client (uses REST API directly - no hanging imports)
+ * Get Redis client (uses REST API directly - no hanging imports)
  */
 async function getUpstashClient() {
   if (upstashClient) return upstashClient;
@@ -114,17 +136,29 @@ async function getUpstashClient() {
         lazyConnect: true
       });
 
-      // Create wrapper with get/set interface
+      // Create wrapper with get/set/del/keys interface
       upstashClient = {
         async get(key) {
           await client.connect().catch(() => {});
           const value = await client.get(key);
           return value ? JSON.parse(value) : null;
         },
-        async set(key, value) {
+        async set(key, value, options) {
           await client.connect().catch(() => {});
-          await client.set(key, JSON.stringify(value));
+          if (options?.ex) {
+            await client.set(key, JSON.stringify(value), 'EX', options.ex);
+          } else {
+            await client.set(key, JSON.stringify(value));
+          }
           return true;
+        },
+        async del(key) {
+          await client.connect().catch(() => {});
+          return await client.del(key);
+        },
+        async keys(pattern) {
+          await client.connect().catch(() => {});
+          return await client.keys(pattern);
         }
       };
 
@@ -137,8 +171,8 @@ async function getUpstashClient() {
 }
 
 /**
- * Check if KV storage is available
- * Supports: Vercel KV (Upstash REST), Upstash direct, Redis Cloud (native)
+ * Check if Redis storage is available
+ * Supports: Vercel KV (legacy), Upstash Marketplace, Redis Cloud (native)
  */
 function isKvAvailable() {
   // Check Vercel KV standard vars (auto-set when you link KV in Vercel dashboard)
@@ -169,10 +203,11 @@ export function getKvEnvStatus() {
 }
 
 /**
- * Get the active KV client (Vercel KV or Upstash)
- * Returns null quickly if no KV env vars are configured
+ * Get the active Redis client (Upstash Marketplace, legacy Vercel KV, or native Redis)
+ * Returns null quickly if no Redis env vars are configured.
+ * Returned client supports: get(key), set(key, value, options?), del(key), keys(pattern)
  */
-async function getClient() {
+export async function getClient() {
   // Fast path: if no KV env vars are set, use memory fallback immediately
   if (!isKvAvailable()) {
     return null;
@@ -357,6 +392,7 @@ export async function getStorageStatus() {
 }
 
 export default {
+  getClient,
   getTransitApiKey,
   setTransitApiKey,
   getGoogleApiKey,

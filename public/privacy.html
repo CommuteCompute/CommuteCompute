@@ -511,41 +511,41 @@
                                 <td><strong>Addresses</strong></td>
                                 <td>Home, work, and cafe addresses (text)</td>
                                 <td>Journey calculation, geocoding</td>
-                                <td>Vercel KV <code>cc:preferences</code></td>
+                                <td>Redis <code>cc:preferences</code></td>
                             </tr>
                             <tr>
                                 <td><strong>Coordinates</strong></td>
                                 <td>Latitude/longitude from geocoding</td>
                                 <td>Distance and walking time calculations</td>
-                                <td>Vercel KV <code>cc:preferences</code></td>
+                                <td>Redis <code>cc:preferences</code></td>
                             </tr>
                             <tr>
                                 <td><strong>API Keys</strong></td>
                                 <td>Transport Victoria key, Google Places key</td>
                                 <td>Authenticate with data providers</td>
-                                <td>Vercel KV <code>cc:api:transit_key</code>, <code>cc:api:google_key</code></td>
+                                <td>Redis <code>cc:api:transit_key</code>, <code>cc:api:google_key</code></td>
                             </tr>
                             <tr>
                                 <td><strong>Preferences</strong></td>
                                 <td>Arrival time, coffee preference, transit modes, walking times, state</td>
                                 <td>Dashboard personalisation</td>
-                                <td>Vercel KV <code>cc:preferences</code></td>
+                                <td>Redis <code>cc:preferences</code></td>
                             </tr>
                             <tr>
                                 <td><strong>Device Status</strong></td>
                                 <td>Battery %, voltage, device ID, last-seen timestamp</td>
                                 <td>Admin device monitoring</td>
-                                <td>Vercel KV <code>cc:device:status</code></td>
+                                <td>Redis <code>cc:device:status</code></td>
                             </tr>
                             <tr>
                                 <td><strong>Journey Profiles</strong></td>
                                 <td>Named route configurations</td>
                                 <td>Quick route switching</td>
-                                <td>Vercel KV <code>cc-profiles</code></td>
+                                <td>Redis <code>cc-profiles</code></td>
                             </tr>
                         </tbody>
                     </table>
-                    <p>All data listed above is stored exclusively in your own Vercel KV (Redis) instance, encrypted at rest by Vercel/Upstash (AES-256).</p>
+                    <p>All data listed above is stored exclusively in your own Redis instance, encrypted at rest by Upstash (AES-256).</p>
                 </div>
             </section>
 
@@ -634,8 +634,8 @@
                 <div class="section-content">
                     <p><strong>Storage:</strong></p>
                     <ul>
-                        <li>All persistent data is stored in your Vercel KV (Redis) instance</li>
-                        <li>Vercel KV data is encrypted at rest (AES-256) by Vercel/Upstash</li>
+                        <li>All persistent data is stored in your Redis instance</li>
+                        <li>Redis data is encrypted at rest (AES-256) by Upstash</li>
                         <li>No data is written to the filesystem &mdash; serverless functions are stateless</li>
                         <li>In-memory caches (transit data, weather) are discarded when the serverless function completes</li>
                     </ul>

@@ -108,7 +108,7 @@ function formatDateParts(date, state) {
 
 /**
  * Initialize the Smart Journey Engine with KV preferences
- * Per Zero-Config: preferences come from Vercel KV (synced from Setup Wizard)
+ * Per Zero-Config: preferences come from Redis (synced from Setup Wizard)
  */
 async function getEngine() {
   // Load preferences from KV storage

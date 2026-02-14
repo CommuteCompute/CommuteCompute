@@ -1,18 +1,41 @@
 /**
  * /api/profiles - Journey Profile Management
- * 
+ *
  * Manages saved journey profiles for different routes/schedules.
- * Profiles are stored in Vercel KV.
- * 
+ * Profiles are stored in Redis (via Vercel Marketplace).
+ *
  * Copyright (c) 2026 Angus Bergman
  * SPDX-License-Identifier: AGPL-3.0-or-later
  * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  */
 
-import { kv } from '@vercel/kv';
+import { getClient } from '../src/data/kv-preferences.js';
 import { requireAuth, setAdminCorsHeaders } from '../src/utils/auth-middleware.js';
 
 const KV_PROFILES_KEY = 'cc-profiles';
+
+// In-memory fallback for local development
+const localProfileStore = global.profileStore || (global.profileStore = new Map());
+
+async function kvGet(key) {
+  try {
+    const client = await getClient();
+    if (client) return await client.get(key);
+  } catch (e) { /* Redis not available */ }
+  return localProfileStore.get(key) || null;
+}
+
+async function kvSet(key, value) {
+  try {
+    const client = await getClient();
+    if (client) {
+      await client.set(key, value);
+      return true;
+    }
+  } catch (e) { /* Redis not available */ }
+  localProfileStore.set(key, value);
+  return true;
+}
 
 export default async function handler(req, res) {
   setAdminCorsHeaders(res);
@@ -29,14 +52,8 @@ export default async function handler(req, res) {
   try {
     // GET - List all profiles
     if (req.method === 'GET') {
-      let profiles = [];
-      
-      try {
-        profiles = await kv.get(KV_PROFILES_KEY) || [];
-      } catch (e) {
-        profiles = [];
-      }
-      
+      const profiles = await kvGet(KV_PROFILES_KEY) || [];
+
       return res.json({
         success: true,
         profiles,
@@ -47,20 +64,15 @@ export default async function handler(req, res) {
     // POST - Create new profile
     if (req.method === 'POST') {
       const { name, home, work, cafe, arrivalTime, coffeeEnabled, state } = req.body || {};
-      
+
       if (!name) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Profile name is required' 
+        return res.status(400).json({
+          success: false,
+          error: 'Profile name is required'
         });
       }
 
-      let profiles = [];
-      try {
-        profiles = await kv.get(KV_PROFILES_KEY) || [];
-      } catch (e) {
-        profiles = [];
-      }
+      const profiles = await kvGet(KV_PROFILES_KEY) || [];
 
       const newProfile = {
         id: `profile-${Date.now()}`,
@@ -76,10 +88,9 @@ export default async function handler(req, res) {
       };
 
       profiles.push(newProfile);
-      
-      try {
-        await kv.set(KV_PROFILES_KEY, profiles);
-      } catch (e) {
+
+      const saved = await kvSet(KV_PROFILES_KEY, profiles);
+      if (!saved) {
         return res.status(500).json({ success: false, error: 'Failed to save profile' });
       }
 
@@ -93,17 +104,12 @@ export default async function handler(req, res) {
     // DELETE - Remove profile
     if (req.method === 'DELETE') {
       const { id } = req.query;
-      
+
       if (!id) {
         return res.status(400).json({ success: false, error: 'Profile ID required' });
       }
 
-      let profiles = [];
-      try {
-        profiles = await kv.get(KV_PROFILES_KEY) || [];
-      } catch (e) {
-        profiles = [];
-      }
+      let profiles = await kvGet(KV_PROFILES_KEY) || [];
 
       const originalLength = profiles.length;
       profiles = profiles.filter(p => p.id !== id);
@@ -112,9 +118,8 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, error: 'Profile not found' });
       }
 
-      try {
-        await kv.set(KV_PROFILES_KEY, profiles);
-      } catch (e) {
+      const saved = await kvSet(KV_PROFILES_KEY, profiles);
+      if (!saved) {
         return res.status(500).json({ success: false, error: 'Failed to delete profile' });
       }
 

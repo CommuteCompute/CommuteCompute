@@ -2694,9 +2694,9 @@ app.get('/admin/export-config', async (req, res) => {
     
     res.json({
       success: true,
-      message: 'Configuration is stored in Vercel KV (Zero-Config)',
+      message: 'Configuration is stored in Redis (Zero-Config)',
       instructions: [
-        'Your configuration is automatically saved to Vercel KV storage.',
+        'Your configuration is automatically saved to Redis storage.',
         'No environment variables needed - this is Zero-Config compliant.',
         'Use the Setup Wizard or Admin Panel to update settings.'
       ],

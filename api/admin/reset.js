@@ -1,69 +1,27 @@
 /**
  * /api/admin/reset - Factory Reset API
- * 
+ *
  * Wipes all configuration and preferences to test setup flow.
  * Requires confirmation parameter for safety.
- * 
+ *
  * POST /api/admin/reset?confirm=yes
- * 
+ *
  * Copyright (c) 2026 Angus Bergman
  * SPDX-License-Identifier: AGPL-3.0-or-later
  * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  */
 
-import { kv } from '@vercel/kv';
-import { Redis } from '@upstash/redis';
+import { getClient } from '../../src/data/kv-preferences.js';
 import { requireAuth, setAdminCorsHeaders } from '../../src/utils/auth-middleware.js';
 
-// All KV keys used by the system
+// All Redis keys used by the system
 const ALL_KEYS = [
   'cc:api:transit_key',
-  'cc:api:google_key', 
+  'cc:api:google_key',
   'cc:preferences',
   'cc:state',
   'cc-profiles'
 ];
-
-/**
- * Get Upstash client if available
- */
-function getUpstashClient() {
-  // Try direct Upstash env vars first
-  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    return new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN
-    });
-  }
-  
-  // Try to parse REST URL from REDIS_URL (Upstash format: rediss://default:TOKEN@HOST:PORT)
-  if (process.env.REDIS_URL) {
-    try {
-      const url = new URL(process.env.REDIS_URL);
-      // Upstash REDIS_URL format: rediss://default:TOKEN@region.upstash.io:PORT
-      const restUrl = `https://${url.hostname}`;
-      const token = url.password;
-      if (token && url.hostname.includes('upstash')) {
-        return new Redis({ url: restUrl, token });
-      }
-    } catch (e) {
-    }
-  }
-  
-  return null;
-}
-
-/**
- * Get active KV client
- */
-function getClient() {
-  // Check Vercel KV standard vars first
-  if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-    return kv;
-  }
-  // Fall back to Upstash
-  return getUpstashClient();
-}
 
 export default async function handler(req, res) {
   setAdminCorsHeaders(res);
@@ -78,9 +36,9 @@ export default async function handler(req, res) {
   if (authError) return res.status(401).json(authError);
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ 
-      success: false, 
-      error: 'Method not allowed. Use POST with ?confirm=yes' 
+    return res.status(405).json({
+      success: false,
+      error: 'Method not allowed. Use POST with ?confirm=yes'
     });
   }
 
@@ -95,27 +53,21 @@ export default async function handler(req, res) {
   }
 
   try {
-    const client = getClient();
+    const client = await getClient();
     const deleted = [];
     const errors = [];
 
     if (!client) {
       return res.status(500).json({
         success: false,
-        error: 'No KV storage configured',
-        message: 'Cannot reset - no Vercel KV or Upstash connection available'
+        error: 'No Redis storage configured',
+        message: 'Cannot reset - no Redis connection available'
       });
     }
 
     // Delete each key
     for (const key of ALL_KEYS) {
       try {
-        if (key.includes('*')) {
-          // Handle wildcard patterns - scan and delete
-          // For now just log - Vercel KV doesn't support SCAN easily
-          continue;
-        }
-        
         await client.del(key);
         deleted.push(key);
       } catch (e) {
@@ -124,10 +76,8 @@ export default async function handler(req, res) {
     }
 
     // Also try to delete any device-specific keys
-    // These follow pattern cc:device:TOKEN
     try {
-      // Try to list and delete device keys if we have scan capability
-      const scanResult = await client.keys?.('cc:device:*');
+      const scanResult = await client.keys('cc:device:*');
       if (scanResult && Array.isArray(scanResult)) {
         for (const deviceKey of scanResult) {
           await client.del(deviceKey);
@@ -135,6 +85,7 @@ export default async function handler(req, res) {
         }
       }
     } catch (e) {
+      // keys() may not be supported on all backends
     }
 
     return res.json({
