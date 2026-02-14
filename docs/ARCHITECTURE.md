@@ -248,7 +248,7 @@ return_journey() -> IF confidence < 40% THEN show_alt_transit()
 ### Infrastructure Stack
 
 ```
-Vercel Serverless (free tier) -> Vercel KV (caching) -> GitLab CI/CD -> Multi-device deployment
+Vercel Serverless (free tier) -> Redis (storage) -> GitLab CI/CD -> Multi-device deployment
 ```
 
 ### Trademark Family Relationships
@@ -321,7 +321,7 @@ External APIs -> CommuteCompute(TM) -> CCDash(TM)/CC LiveDash(TM) -> CCFirm(TM) 
 19. [Device Pairing System](#19-device-pairing-system)
 20. [Health Monitoring](#20-health-monitoring)
 21. [Firmware Architecture (CCFirm(TM))](#21-firmware-architecture-ccfirmtm)
-22. [Vercel KV Storage](#22-vercel-kv-storage)
+22. [Redis Storage](#22-upstash-redis-storage)
 23. [GTFS-RT Data Flow](#23-gtfs-rt-data-flow)
 24. [Turnkey Compliance](#24-turnkey-compliance)
 
@@ -1620,21 +1620,23 @@ This architecture avoids WiFiManager/captive portal which crashes ESP32-C3 with 
 
 **Note:** Server URL is NOT sent via BLE -- it comes via pairing code in Phase 2.
 
-### 19.5 Vercel KV Integration (Phase 2)
+### 19.5 Redis Integration (Phase 2)
 
-**Critical for Serverless:** Vercel serverless functions are stateless. Each invocation may run on a different instance. Pairing data MUST be persisted in Vercel KV to survive across function invocations.
+**Critical for Serverless:** Vercel serverless functions are stateless. Each invocation may run on a different instance. Pairing data MUST be persisted in Redis to survive across function invocations.
 
 ```javascript
-import { kv } from '@vercel/kv';
+import { getClient } from '../src/data/kv-preferences.js';
+
+const client = await getClient();
 
 // Store pairing data with 10-minute TTL
-await kv.set(`pair:${code}`, { webhookUrl, createdAt }, { ex: 600 });
+await client.set(`cc:pair:${code}`, { webhookUrl, createdAt }, { ex: 600 });
 
 // Retrieve pairing data (device polling)
-const data = await kv.get(`pair:${code}`);
+const data = await client.get(`cc:pair:${code}`);
 ```
 
-**Fallback:** In-memory store for local development when KV is unavailable.
+**Fallback:** In-memory store for local development when Redis is unavailable.
 
 ### 19.6 API Endpoints
 
@@ -1870,11 +1872,11 @@ CCFirm(TM) is the custom firmware family for Commute Compute devices. All device
 
 ---
 
-## 22. Vercel KV Storage
+## 22. Redis Storage
 
 ### 22.1 Overview
 
-Vercel KV provides persistent, serverless key-value storage for API keys and user preferences. This replaces environment variables for Zero-Config compliance.
+Redis (via Vercel Marketplace) provides persistent, serverless key-value storage for API keys and user preferences. This replaces environment variables for Zero-Config compliance.
 
 ### 22.2 What Is Stored
 
@@ -1917,7 +1919,7 @@ Vercel KV provides persistent, serverless key-value storage for API keys and use
 │  └──────────────────────┘     └──────────────────────┘                 │
 │                                                                         │
 │  [+] Zero-Config: No environment variables needed                      │
-│  [+] Secure: Keys stored in Vercel's encrypted KV                     │
+│  [+] Secure: Keys stored in Redis (AES-256 encrypted)         │
 │  [+] Portable: Config moves with Vercel project                        │
 │  [+] Serverless: No persistent storage required                        │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -1926,17 +1928,13 @@ Vercel KV provides persistent, serverless key-value storage for API keys and use
 ### 22.4 Access Pattern
 
 ```javascript
-import { kv } from '@vercel/kv';
+import { getTransitApiKey } from '../src/data/kv-preferences.js';
 
-// Read API key from KV (Zero-Config compliant)
-async function getTransitApiKey() {
-  const key = await kv.get('transit-api-key');
-  if (!key) {
-    console.log('[KV] No transit API key configured');
-    return null;
-  }
-  return key;
-}
+// Read API key from Redis (Zero-Config compliant)
+const apiKey = await getTransitApiKey();
+
+// PROHIBITED: Direct @vercel/kv import (deprecated)
+// import { kv } from '@vercel/kv';
 
 // PROHIBITED: Environment variables
 // const apiKey = process.env.TRANSIT_API_KEY;
@@ -2053,8 +2051,8 @@ The repository MUST be completely **turnkey** -- any user can fork/clone and dep
 
 | Prohibited | Reason | Correct Approach |
 |------------|--------|------------------|
-| Home/work/cafe addresses | Personal location data | Setup Wizard -> Vercel KV |
-| API keys | Security risk | Setup Wizard -> Vercel KV |
+| Home/work/cafe addresses | Personal location data | Setup Wizard -> Redis |
+| API keys | Security risk | Setup Wizard -> Redis |
 | WiFi credentials | Device-specific | User configures before flash |
 | Stop IDs for specific locations | Location-specific | Auto-detect or user preference |
 | Lat/lon coordinates | Personal location | Geocode from user addresses |

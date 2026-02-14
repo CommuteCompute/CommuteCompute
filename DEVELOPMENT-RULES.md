@@ -120,7 +120,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 - 3.3 Config Token Structure
 - 3.4 Implementation
 - 3.5 Benefits
-- 3.6 Vercel KV Setup (Required)
+- 3.6 Redis Setup (Required)
 - 3.7 Admin Panel localStorage Architecture (v1.9)
 </details>
 
@@ -354,7 +354,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 - 24.3 Layer Architecture
 - 24.4 Data Flow Requirements
 - 24.5 Caching Strategy
-- 24.6 Vercel KV Storage Architecture
+- 24.6 Redis Storage Architecture
 - 24.7 Security Model
 - 24.8 Free-Tier Architecture
 - 24.9 Multi-Device Support (CC LiveDash™)
@@ -615,13 +615,13 @@ const apiKey = process.env.ODATA_API_KEY;  // User must configure server
 - Self-contained devices (config travels with request)
 - Privacy (API keys stay with device owner)
 
-### 3.6 Vercel KV Setup (Required)
+### 3.6 Redis Setup (Required)
 
-**Vercel KV provides persistent storage for API keys.**
+**Redis (via Vercel Marketplace) provides persistent storage for API keys.**
 
-**Zero-Config Compliance:** Vercel KV is compliant because:
-- [YES] User clicks "Create KV" and "Connect to Project" in Vercel UI
-- [YES] Vercel **auto-injects** `KV_REST_API_URL` and `KV_REST_API_TOKEN`
+**Zero-Config Compliance:** Redis is compliant because:
+- [YES] User installs Redis via Vercel Marketplace and connects to project
+- [YES] Vercel **auto-injects** `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
 - [YES] User never types, copies, or sees these credentials
 - [YES] Similar to how Vercel auto-injects `VERCEL_URL`, `VERCEL_ENV`, etc.
 
@@ -630,23 +630,28 @@ const apiKey = process.env.ODATA_API_KEY;  // User must configure server
 - [NO] User editing `.env` files
 - [NO] User running CLI commands to set secrets
 
-The KV connection is a **one-click UI action**, not manual env var configuration.
+The Marketplace installation is a **UI-guided action**, not manual env var configuration.
+
+**Note:** Legacy Vercel KV env vars (`KV_REST_API_URL`, `KV_REST_API_TOKEN`) are also supported for backward compatibility with existing installations.
 
 #### 3.6.1 Setup Steps
 
-1. **Create KV Database:**
-   - Vercel Dashboard → Your Project → **Storage** tab
-   - Click **Create Database** → Select **KV** (Redis)
-   
-2. **Configure Database:**
-   - Region: **Sydney, Australia (Southeast)** (recommended for AU latency)
-   - Plan: **Redis/30 MB** (free tier)
-   - Name: `CCKV` or `commute-compute-kv`
-   
+1. **Install Redis Integration:**
+   - Vercel Dashboard → **Integrations** tab → **Browse Marketplace**
+   - Search for **Redis** → Select Upstash provider → Click **Install**
+
+2. **Create Redis Database:**
+   - Select the **Redis** product
+   - Region: **Sydney, Australia** (recommended for AU latency)
+   - Plan: **Free** (256MB storage, 500K commands/month)
+   - Name: `commute-compute-redis`
+
 3. **Connect to Project:**
-   - Click **Create** — Vercel auto-connects to your project
-   - Injects `KV_REST_API_URL` and `KV_REST_API_TOKEN` automatically
-   
+   - Go to **Projects** tab → **Connect Project**
+   - Select your Commute Compute project
+   - Vercel auto-injects `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
+   - After connecting, the integration appears as **Redis** in the Integrations tab
+
 4. **Redeploy:**
    - Deployments → ⋮ → **Redeploy**
    - Or push any commit to trigger rebuild
@@ -655,13 +660,13 @@ The KV connection is a **one-click UI action**, not manual env var configuration
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Admin Panel   │────▶│   /api/save-    │────▶│   Vercel KV     │
+│   Admin Panel   │────▶│   /api/save-    │────▶│  Redis  │
 │   Enter API Key │     │   transit-key   │     │   (Persistent)  │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
                                                         │
                                                         ▼
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   /api/zones    │────▶│ getTransitApi   │────▶│   Load from KV  │
+│   /api/zones    │────▶│ getTransitApi   │────▶│  Load from Redis│
 │   (Direct call) │     │ Key()           │     │   (No env vars) │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
 ```
@@ -1706,9 +1711,9 @@ const [trains, trams] = await Promise.all([
 **Why This Matters:**
 Without the API key, `opendata-client.js` returns `getMockDepartures()` — static fake data instead of live Transport Victoria GTFS-RT feeds.
 
-### 11.8 Zero-Config: Vercel KV Storage for API Keys
+### 11.8 Zero-Config: Redis Storage for API Keys
 
-**[YES] RESOLVED in v1.8** — Direct endpoints now use Vercel KV for persistent API key storage.
+**[YES] RESOLVED in v1.8** — Direct endpoints now use Redis for persistent API key storage.
 
 **Implementation:**
 ```javascript
@@ -1721,21 +1726,22 @@ const apiOptions = transitApiKey ? { apiKey: transitApiKey } : {};
 
 **How It Works:**
 1. User enters API key in Admin Panel / Setup Wizard
-2. `/api/save-transit-key` validates and saves to Vercel KV
-3. Direct endpoints (`/api/zones`, `/api/zonedata`, `/api/screen`) load key from KV
+2. `/api/save-transit-key` validates and saves to Redis
+3. Direct endpoints (`/api/zones`, `/api/zonedata`, `/api/screen`) load key from Redis
 4. No environment variable configuration required
 
 **Storage Module:** `src/data/kv-preferences.js`
 
 | Function | Description |
 |----------|-------------|
-| `getTransitApiKey()` | Load Transport Victoria API key from KV |
-| `setTransitApiKey(key)` | Save API key to KV (called by save endpoint) |
-| `getStorageStatus()` | Debug: check KV availability and stored keys |
+| `getTransitApiKey()` | Load Transport Victoria API key from Redis |
+| `setTransitApiKey(key)` | Save API key to Redis (called by save endpoint) |
+| `getClient()` | Get active Redis client for direct operations |
+| `getStorageStatus()` | Debug: check Redis availability and stored keys |
 
-**Vercel KV Setup Required:**
-1. In Vercel Dashboard → Storage → Create KV Database
-2. Connect to project (auto-injects `KV_REST_API_URL` and `KV_REST_API_TOKEN`)
+**Redis Setup Required:**
+1. Vercel Dashboard → Integrations → Browse Marketplace → Search **Redis** → Install Upstash → Create database
+2. Connect to project (auto-injects `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`)
 3. Keys saved via Admin Panel will persist across deployments
 
 **Fallback Behavior:**
@@ -3026,7 +3032,7 @@ npm outdated --long
 | Layer | Encryption | Provider |
 |-------|------------|----------|
 | In transit | TLS 1.3 | Vercel Edge |
-| At rest (KV) | AES-256 | Vercel KV (Upstash) |
+| At rest (Redis) | AES-256 | Redis |
 | Config tokens | Base64URL | Not encrypted (public data only) |
 
 **Note**: Config tokens are NOT encrypted because they contain no secrets — only display addresses and preferences. API keys are stored separately in KV (encrypted at rest).
@@ -3359,7 +3365,7 @@ Both support zero-config deployment from forked repo. Free tier sufficient for p
 
 ### 21.6 Device Pairing System (v1.19)
 
-**[CRITICAL]**: Device pairing MUST use Vercel KV for persistent storage. In-memory stores do NOT work across serverless invocations.
+**[CRITICAL]**: Device pairing MUST use Redis for persistent storage. In-memory stores do NOT work across serverless invocations.
 
 #### 21.6.1 Pairing Flow
 
@@ -3371,7 +3377,7 @@ Both support zero-config deployment from forked repo. Free tier sufficient for p
          │                                              │
          ▼                                              ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Device polls   │◀───│  Vercel KV      │◀───│  User enters    │
+│  Device polls   │◀───│  Redis  │◀───│  User enters    │
 │  GET /api/pair  │    │  (persistent)   │    │  code in wizard │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
@@ -3386,22 +3392,24 @@ Both support zero-config deployment from forked repo. Free tier sufficient for p
 | Combinations | 36^6 = 2.1 billion |
 | TTL | 10 minutes (auto-expires) |
 
-#### 21.6.3 Vercel KV Storage (MANDATORY)
+#### 21.6.3 Redis Storage (MANDATORY)
 
 ```javascript
-import { kv } from '@vercel/kv';
+import { getClient } from '../src/data/kv-preferences.js';
+
+const client = await getClient();
 
 // Store pairing data with 10-minute TTL
-await kv.set(`pair:${code}`, { webhookUrl, createdAt }, { ex: 600 });
+await client.set(`cc:pair:${code}`, { webhookUrl, createdAt }, { ex: 600 });
 
 // Retrieve pairing data (device polling)
-const data = await kv.get(`pair:${code}`);
+const data = await client.get(`cc:pair:${code}`);
 
 // Delete after successful retrieval
-await kv.del(`pair:${code}`);
+await client.del(`cc:pair:${code}`);
 ```
 
-**Why KV is Required:**
+**Why Redis is Required:**
 - Vercel serverless functions are stateless
 - Each invocation may run on a different instance
 - In-memory stores (Map, global variables) do NOT persist
@@ -4378,7 +4386,7 @@ for (const route of alternatives) {
 | Principle | Implementation | Violation = Reject PR |
 |-----------|----------------|----------------------|
 | **Self-Hosted** | User owns server, device, and API keys | [NO] No central servers |
-| **Zero-Config** | No environment variables — config via Setup Wizard + Vercel KV | [NO] No `.env` files |
+| **Zero-Config** | No environment variables — config via Setup Wizard + Redis | [NO] No `.env` files |
 | **No TRMNL Cloud** | Custom firmware only — never contacts usetrmnl.com | [NO] No stock firmware |
 | **Server-Side Rendering** | All computation on server — device receives images | [NO] No client-side logic |
 | **Privacy-First** | Commute data stays on user's server | [NO] No analytics/tracking |
@@ -4409,7 +4417,7 @@ for (const route of alternatives) {
 │   └───────────────────────────────────────────────────────────────────┘ │
 │                                                                          │
 │   [YES] Complete data isolation -- no shared infrastructure              │
-│   [YES] User owns API keys -- stored in Vercel KV                       │
+│   [YES] User owns API keys -- stored in Redis                   │
 │   [YES] No central server -- each deployment is independent              │
 │   [NO] NO usetrmnl.com dependency -- custom firmware required            │
 └──────────────────────────────────────────────────────────────────────────┘
@@ -4432,7 +4440,7 @@ for (const route of alternatives) {
 │  CoffeeDecision │ Route Planner │ Journey Engine │ Decision Logger      │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                            DATA LAYER                                    │
-│  OpenData Client │ GTFS Static │ Vercel KV │ Fallback Timetables        │
+│  OpenData Client │ GTFS Static │ Redis     │ Fallback Timetables        │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -4481,9 +4489,9 @@ for (const route of alternatives) {
 | Geocoding results | Permanent (in KV) | Cached at setup time |
 | Cafe business hours | Permanent (in KV) | Cached at setup time |
 
-### 24.6 Vercel KV Storage Architecture
+### 24.6 Redis Storage Architecture
 
-**[CRITICAL]**: All persistent data MUST use Vercel KV storage. No environment variables for API keys.
+**[CRITICAL]**: All persistent data MUST use Redis storage. No environment variables for API keys.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -4529,23 +4537,19 @@ for (const route of alternatives) {
 | `device-config` | JSON | Device configuration |
 | `last-validated` | timestamp | Last API key validation time |
 
-#### 24.6.2 KV Access Pattern
+#### 24.6.2 Redis Access Pattern
 
 ```javascript
-// CORRECT: Read API key from Vercel KV
-import { kv } from '@vercel/kv';
+// CORRECT: Read API key from Redis via kv-preferences
+import { getTransitApiKey } from '../src/data/kv-preferences.js';
 
-async function getTransitApiKey() {
-  const key = await kv.get('transit-api-key');
-  if (!key) {
-    console.log('[KV] No transit API key configured');
-    return null;
-  }
-  return key;
-}
+const apiKey = await getTransitApiKey();
 
 // WRONG: Environment variables
 // [NO] const apiKey = process.env.TRANSIT_API_KEY;
+
+// WRONG: Direct @vercel/kv import (deprecated)
+// [NO] import { kv } from '@vercel/kv';
 ```
 
 ### 24.7 Security Model
@@ -4554,7 +4558,7 @@ async function getTransitApiKey() {
 
 | Principle | Implementation |
 |-----------|----------------|
-| No server-side secrets | API keys in Vercel KV (user's project) |
+| No server-side secrets | API keys in Redis (user's project) |
 | Token in URL | Device webhook URL contains config token |
 | User owns keys | Keys never stored on central server |
 | Self-contained | Each deployment is fully isolated |
@@ -4597,12 +4601,12 @@ function sanitize(str) {
 ```
 SETUP (one-time API calls)          RUNTIME (zero API calls in Free Mode)
 ──────────────────────────          ─────────────────────────────────────
-1. User enters addresses     →      Vercel KV contains:
+1. User enters addresses     →      Redis contains:
 2. Geocode via OSM/Google    →      • Home/work/cafe lat/lon (cached)
 3. Cache cafe business hours →      • Cafe business hours (cached)
-4. Store in Vercel KV        →      • All user preferences
-                             
-                                    Dashboard reads from KV only.
+4. Store in Redis    →      • All user preferences
+
+                                    Dashboard reads from Redis only.
                                     NO external geocoding at runtime.
 ```
 
@@ -4639,7 +4643,7 @@ SETUP (one-time API calls)          RUNTIME (zero API calls in Free Mode)
 | **Server** | Node.js 20.x, Express, Vercel Serverless | [NO] No Deno, Bun |
 | **Rendering** | @napi-rs/canvas, 1-bit BMP | [NO] No node-canvas |
 | **Data** | Transport Victoria OpenData (GTFS-RT) | [NO] No scraping |
-| **Storage** | Vercel KV | [NO] No environment variables |
+| **Storage** | Redis | [NO] No environment variables |
 | **Firmware** | ESP32-C3, PlatformIO, C++ | [NO] No Arduino IDE |
 | **Fonts** | Inter (bundled TTF) | [NO] No system fonts |
 

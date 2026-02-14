@@ -6,8 +6,8 @@
 
 **Detailed technical installation instructions for Commute Compute System.**
 
-**Version:** 2.0  
-**Last Updated:** 2026-02-04  
+**Version:** 3.0
+**Last Updated:** 2026-02-14
 **License:** AGPL-3.0 Dual License (see [LICENSE](LICENSE))
 
 ---
@@ -16,7 +16,7 @@
 
 1. [System Requirements](#system-requirements)
 2. [Server Deployment](#server-deployment)
-3. [Vercel KV Setup](#vercel-kv-setup)
+3. [Redis Setup](#upstash-redis-setup)
 4. [Firmware Installation](#firmware-installation)
 5. [Device Provisioning](#device-provisioning)
 6. [API Key Setup](#api-key-setup)
@@ -34,7 +34,7 @@
 |-----------|-------------|
 | Node.js | v18+ (v22 recommended) |
 | Platform | Vercel (recommended), Docker, or Node.js host |
-| Storage | Vercel KV (Redis-compatible) |
+| Storage | Redis (via Vercel Marketplace) |
 | Memory | 512MB minimum |
 
 ### TRMNL Device
@@ -44,7 +44,7 @@
 | Hardware | TRMNL OG or TRMNL Mini |
 | MCU | ESP32-C3 |
 | Display | 7.5" e-ink (800×480) or 4.2" (400×300) |
-| Firmware | CC-FW-7.4.3 (custom) |
+| Firmware | CC-FW-7.6.0 (custom) |
 
 ### Development
 
@@ -114,28 +114,34 @@ npm run dev
 
 ---
 
-## Vercel KV Setup
+## Redis Setup
 
-Vercel KV is **required** for persistent storage. The system stores:
+Redis (via Vercel Marketplace) is **required** for persistent storage. The system stores:
 
 - API keys
 - User preferences
 - Device pairing codes
 
-### Create KV Database
+### Install Redis
 
 1. **Open Vercel Dashboard**
    - Navigate to your project
-   - Click **Storage** tab
+   - Click **Integrations** tab
+   - Click **Browse Marketplace**
 
-**Important**: Free tier services sleep after 15 minutes of inactivity.
+2. **Install Redis**
+   - Search for **Redis** and select the Upstash provider
+   - Click **Install**
+   - Select the **Redis** product
+   - Configure: Name `commute-compute-redis`, Region **Sydney**, Plan **Free** (256MB, 500K commands/month)
+   - Click **Create**
 
-- **Cold Start**: Takes ~15 seconds to wake up on first request
-- **Memory Limit**: 512 MB (Commute Compute uses ~200 MB)
-- **Auto-Sleep**: After 15 minutes without requests
-- **Best For**: Personal use, hobby projects
+3. **Connect to Project**
+   - Go to the **Projects** tab for your Redis database
+   - Click **Connect Project** and select your Commute Compute project
+   - After connecting, the integration appears as **Redis** in your Integrations tab
 
-**Tip**: Keep the admin panel open in a browser tab to prevent sleep.
+4. **Redeploy** your project for environment variables to take effect
 
 ---
 
@@ -350,17 +356,17 @@ Data Sources:
 
 | Method | Security | Persistence | Priority | Recommendation |
 |--------|----------|-------------|----------|----------------|
-| **Render Environment** | High | Yes | Checked first | **RECOMMENDED** |
-| **Admin Panel** | Medium | Yes (in JSON file) | Checked second | Development/Testing |
+| **Environment Variables** | High | Yes | Checked first | **Production** |
+| **Admin Panel / Setup Wizard** | High | Yes (in Redis) | Checked second | **Recommended** |
 
 **Best Practice**:
-- **Production**: Add API keys to Render environment variables
-- **Local Development**: Use `.env` file
-- **Admin Panel**: Use only for testing or temporary changes
+- **Vercel**: Use Setup Wizard or Admin Panel (stored in Redis)
+- **Render/VPS**: Add API keys to environment variables
+- **Admin Panel**: Use for all API key management (zero-config)
 
 **Click Save Changes** to restart with new variables.
 
-**Note**: The system works completely WITHOUT environment variables using fallback data (free geocoding + GTFS timetables).
+**Note**: The system requires Redis for persistent configuration storage. API keys can be added via the Admin Panel or Setup Wizard.
 
 ---
 
@@ -451,17 +457,10 @@ Replace `your-service` with your actual Render service name.
    ```bash
    curl https://your-project.vercel.app/api/kv-status
    ```
-   
-   Expected response:
-   ```json
-   {
-     "KV_REST_API_URL": "set",
-     "KV_REST_API_TOKEN": "set",
-     "connected": true
-   }
-   ```
 
-### KV Storage Keys
+   Expected response includes `"connected": true` with either `UPSTASH_REDIS_REST_URL` or `KV_REST_API_URL` showing as `"set"`.
+
+### Redis Storage Keys
 
 | Key Pattern | Description | TTL |
 |-------------|-------------|-----|
@@ -532,15 +531,7 @@ pio run -e trmnl -t upload --upload-port COM3
 
 ### Verify Flash
 
-```bash
-# Monitor serial output
-pio device monitor -b 115200
-
-# Expected output:
-# === Commute Compute v7.2.1 ===
-# BLE Provisioning Firmware
-# [Display] Initialization complete
-```
+After flashing, the device should display the Commute Compute boot logo followed by the BLE setup screen. If the device does not start, hold the BOOT button while pressing RESET to enter flash mode and retry.
 
 ---
 
@@ -750,7 +741,7 @@ After installation, verify each component:
 | Issue | Solution |
 |-------|----------|
 | 500 errors | Check Vercel function logs |
-| KV not connected | Verify KV database is linked |
+| Redis not connected | Verify Redis is connected to project |
 | Slow responses | Check API rate limits |
 
 ### Firmware Issues

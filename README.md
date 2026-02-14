@@ -88,7 +88,7 @@ Status timing follows user-intent logic: when departure is still far away (>120 
       STORAGE                       OUTPUT                              |
 +------------------+       +------------------------+                   |
 |                  |       |                        |                   |
-|  Vercel KV       | <---> |  800 x 480 1-bit BMP  | <-----------------+
+|  Redis       | <---> |  800 x 480 1-bit BMP  | <-----------------+
 |  (config, cache) |       |  Rendered by CCDash™   |
 |                  |       |                        |
 +------------------+       +------------------------+
@@ -306,13 +306,13 @@ This makes Commute Compute&#8482; one of the first commuter tools to fully suppo
 |  DepartureConfidence | LifestyleContext | SleepOptimizer | AltTransit    |
 +--------------------------------------------------------------------------+
 |                           DATA LAYER                                      |
-|  OpenData Client (GTFS-RT) | BOM API | Google Places | Vercel KV         |
+|  OpenData Client (GTFS-RT) | BOM API | Google Places | Redis         |
 +--------------------------------------------------------------------------+
 ```
 
 ### Data Flow
 
-1. **User Configuration** is stored in Vercel KV via the Setup Wizard (addresses, preferences, API keys).
+1. **User Configuration** is stored in Redis via the Setup Wizard (addresses, preferences, API keys).
 2. **Data Sources** are polled on each request: GTFS-RT for live transit (30s cache), BOM for weather (5min cache), Google Places for cafe status.
 3. **Five Intelligence Engines** process the combined data into a unified journey model.
 4. **CCDash&#8482; Renderer** converts the data model into an 800x480 1-bit BMP image optimized for e-ink.
@@ -340,9 +340,9 @@ This makes Commute Compute&#8482; one of the first commuter tools to fully suppo
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://gitlab.com/angusbergman/commute-compute-system)
 
-### 2. Create KV Database
+### 2. Add Redis
 
-Vercel Dashboard > Storage > Create Database > **KV** > Select the Sydney region.
+Vercel Dashboard > Integrations > Browse Marketplace > **Redis** (Upstash) > Install > **Free** plan > Sydney region > Connect to project.
 
 ### 3. Run Setup Wizard
 
@@ -395,7 +395,7 @@ See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed step-by-step instructions 
 | **Transit Data** | Transport Victoria OpenData API (GTFS-RT) |
 | **Weather Data** | Bureau of Meteorology (BOM) API |
 | **Place Data** | Google Places API (cafe status, busyness -- optional) |
-| **Storage** | Vercel KV (Redis-compatible, encrypted at rest) |
+| **Storage** | Redis (via Vercel Marketplace, encrypted at rest) |
 | **Firmware** | ESP32-C3 via PlatformIO / Arduino framework |
 | **Frontend** | Vanilla HTML / CSS / JS -- zero framework dependency |
 | **Provisioning** | Web Bluetooth (BLE) for zero-config device setup |
@@ -432,7 +432,7 @@ See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed step-by-step instructions 
 | Lines of Code | 112,000+ |
 | Intelligence Engines | 5 |
 | Development Rules Sections | 24 |
-| Automated Compliance Checks | 63+ |
+| Automated Compliance Checks | 214 |
 | Australian States Supported | 8 (VIC, NSW, QLD, SA, WA, TAS, NT, ACT) |
 
 <br>
@@ -536,9 +536,9 @@ See [LEGAL.md](LEGAL.md) for complete trademark and intellectual property detail
 </p>
 
 <p align="center">
-  <strong>Commute Compute&#8482; System v4.0.0</strong><br>
+  <strong>Commute Compute&#8482; System v4.2.0</strong><br>
   V15.0 Complete Journey Intelligence<br>
-  CommuteCompute&#8482; Engine v3.0 | CCDash&#8482; Renderer v2.0 | CC LiveDash&#8482; v3.0 | Admin Panel v5.0 | CCFirm&#8482; CC-FW-7.6.0<br>
+  CommuteCompute&#8482; Engine v3.1 | CCDash&#8482; Renderer v2.1 | CC LiveDash&#8482; v3.0 | Admin Panel v5.0 | CCFirm&#8482; CC-FW-7.6.0<br>
   <br>
   Copyright (c) 2026 Angus Bergman. All rights reserved.<br>
   <em>Built in Melbourne, Australia.</em>
