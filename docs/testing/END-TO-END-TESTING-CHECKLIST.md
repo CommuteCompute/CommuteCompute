@@ -27,7 +27,7 @@ Before ANY testing, read and understand:
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  Setup Wizard   │────▶│   Vercel KV     │────▶│  Device Webhook │
+│  Setup Wizard   │────▶│  Redis  │────▶│  Device Webhook │
 │  (Browser)      │     │  (API Keys)     │     │  (/api/screen)  │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
         │                       │                       │
@@ -41,7 +41,7 @@ Before ANY testing, read and understand:
 **Key Principles**:
 - [YES] Zero-Config: Users NEVER edit .env files or server environment variables
 - [YES] Self-Hosted: NO usetrmnl.com or TRMNL cloud services
-- [YES] KV Storage: API keys stored in Vercel KV (encrypted at rest)
+- [YES] KV Storage: API keys stored in Redis (encrypted at rest)
 - [YES] Config Tokens: User preferences embedded in webhook URL
 
 ---
@@ -62,14 +62,14 @@ Before ANY testing, read and understand:
 - [ ] Output directory: `public`
 - [ ] Install command: `npm install`
 
-**Vercel KV Setup** (MANDATORY):
-- [ ] Navigate to: Vercel Dashboard → Project → **Storage** tab
-- [ ] Click **Create Database** → Select **KV** (Redis)
-- [ ] Region: **Sydney, Australia (Southeast)**
-- [ ] Plan: **Redis/30 MB** (free tier)
-- [ ] Name: `CCKV` or `commute-compute-kv`
-- [ ] Click **Create** — Vercel auto-connects to project
-- [ ] Verify `KV_REST_API_URL` and `KV_REST_API_TOKEN` auto-injected
+**Redis Setup** (MANDATORY):
+- [ ] Navigate to: Vercel Dashboard → **Integrations** → **Browse Marketplace**
+- [ ] Search for **Redis** → Select Upstash provider → Click **Install**
+- [ ] Create Redis database — Region: **Sydney, Australia**
+- [ ] Plan: **Free** (256MB, 500K commands/month)
+- [ ] Name: `commute-compute-redis`
+- [ ] Connect to your Commute Compute project
+- [ ] Verify `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` auto-injected
 
 **Deployment Verification**:
 - [ ] Push to GitLab triggers Vercel deploy (if enabled)
@@ -139,7 +139,7 @@ Before ANY testing, read and understand:
 - [ ] Transit API key field (Victoria: UUID format)
 - [ ] Google Places API key field (optional)
 - [ ] Skip button available (Zero-Config compliant)
-- [ ] Keys saved to Vercel KV on submit
+- [ ] Keys saved to Redis on submit
 
 **Step 5 — Device Pairing**:
 - [ ] 6-character pairing code displayed
@@ -174,7 +174,7 @@ Before ANY testing, read and understand:
 **Zero-Config Verification**:
 - [ ] NO .env file created
 - [ ] NO manual environment variable setup
-- [ ] All keys stored in Vercel KV
+- [ ] All keys stored in Redis
 - [ ] Keys retrievable via `/api/admin/preferences`
 
 ---
@@ -297,7 +297,7 @@ WiFiManager/captive portal is FORBIDDEN (causes ESP32-C3 crash 0xbaad5678).
 - [ ] User sees "Pair Device" step
 - [ ] User enters 6-character pairing code
 - [ ] Wizard posts config to `/api/pair/{code}`
-- [ ] Code stored in Vercel KV with 10-minute TTL
+- [ ] Code stored in Redis with 10-minute TTL
 
 **On Device (Polling)**:
 - [ ] Device polls `/api/pair/{code}` every 5 seconds
@@ -435,7 +435,7 @@ Per DEVELOPMENT-RULES.md Section 1.4:
 
 **Verification**:
 - [ ] Keys never logged to console (check server logs)
-- [ ] Keys stored in Vercel KV (encrypted at rest)
+- [ ] Keys stored in Redis (encrypted at rest)
 - [ ] Keys masked in admin UI (first 8 chars only)
 - [ ] Keys not visible in browser network tab (except on save)
 - [ ] NO .env files in repository
@@ -534,7 +534,7 @@ Vercel serverless cold start:
 **Steps**:
 1. [ ] User forks GitLab repository
 2. [ ] User imports to Vercel
-3. [ ] User creates Vercel KV database
+3. [ ] User creates Redis database
 4. [ ] User deploys (auto or manual)
 5. [ ] User flashes device with CC-FW-7.4.3 (if not pre-flashed)
 6. [ ] **Phase 1 (BLE)**: User provisions device WiFi via Bluetooth
@@ -585,7 +585,7 @@ Vercel serverless cold start:
 **Expected Behavior (Not Bugs)**:
 - [CAUTION] Vercel serverless cold starts (< 5s)
 - [CAUTION] 60-second minimum refresh interval (firmware locked)
-- [CAUTION] Vercel KV required for API key storage
+- [CAUTION] Redis required for API key storage
 - [CAUTION] Device requires reflash with custom firmware
 
 **Architecture Constraints**:

@@ -3117,13 +3117,13 @@
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Commute Compute&#8482; System Architecture</h2>
                 </div>
                 <p style="margin-bottom: 20px; color: #cbd5e1; line-height: 1.7; font-size: 14px;">
-                    A fully self-hosted smart transit display system for Australian public transport. Each user deploys their own complete stack with zero external dependencies. Features device pairing via Vercel KV for persistent configuration across serverless invocations.
+                    A fully self-hosted smart transit display system for Australian public transport. Each user deploys their own complete stack with zero external dependencies. Features device pairing via Redis for persistent configuration across serverless invocations.
                 </p>
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                     <span id="cc-badge-system-version" style="padding: 6px 14px; background: rgba(79, 178, 142, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #4fb28e;">v4.2.0</span>
                     <span id="cc-badge-renderer-version" style="padding: 6px 14px; background: rgba(102, 126, 234, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #667eea;">CCDash&#8482; v2.0</span>
                     <span id="cc-badge-firmware-version" style="padding: 6px 14px; background: rgba(251, 191, 36, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #fbbf24;">CCFirm&#8482; CC-FW-7.6.0</span>
-                    <span style="padding: 6px 14px; background: rgba(168, 85, 247, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #a855f7;">Vercel KV</span>
+                    <span style="padding: 6px 14px; background: rgba(168, 85, 247, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #a855f7;">Redis</span>
                 </div>
             </div>
 
@@ -3245,7 +3245,7 @@
                         </div>
                         <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
                             <div style="font-size: 11px; color: #a855f7; font-weight: 600; margin-bottom: 4px;">PAIRING</div>
-                            <div style="font-size: 12px; color: #94a3b8;">6-char code via Vercel KV</div>
+                            <div style="font-size: 12px; color: #94a3b8;">6-char code via Redis</div>
                         </div>
                         <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
                             <div style="font-size: 11px; color: #a855f7; font-weight: 600; margin-bottom: 4px;">MEMORY</div>
@@ -3306,7 +3306,7 @@
                     </div>
                     <div style="padding: 12px; background: rgba(168, 85, 247, 0.1); border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.2);">
                         <div style="font-size: 11px; color: #a855f7; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Storage</div>
-                        <div style="font-size: 14px; font-weight: 500;">Vercel KV (Redis-compatible)</div>
+                        <div style="font-size: 14px; font-weight: 500;">Redis</div>
                     </div>
                     <div style="padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
                         <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Rendering</div>
@@ -3371,7 +3371,7 @@
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Data Flow & Device Pairing</h2>
                 </div>
                 <p style="margin: 15px 0; font-size: 14px; color: #94a3b8; line-height: 1.6;">
-                    Complete flow from device pairing through real-time transit data to your e-ink display. Vercel KV provides persistent storage for pairing codes and user preferences across serverless invocations.
+                    Complete flow from device pairing through real-time transit data to your e-ink display. Redis provides persistent storage for pairing codes and user preferences across serverless invocations.
                 </p>
 
                 <!-- Device Pairing Flow -->
@@ -3420,7 +3420,7 @@
                             <div style="font-weight: 600; font-size: 14px;">Device Pairing</div>
                             <div style="font-size: 12px; color: #94a3b8;">CCFirm&#8482; displays code, polls KV, receives webhook URL</div>
                         </div>
-                        <div style="font-size: 11px; color: #a855f7; padding: 4px 8px; background: rgba(168, 85, 247, 0.1); border-radius: 4px;">Vercel KV</div>
+                        <div style="font-size: 11px; color: #a855f7; padding: 4px 8px; background: rgba(168, 85, 247, 0.1); border-radius: 4px;">Redis</div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
                         <div style="width: 32px; height: 32px; background: #4fb28e; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;">2</div>
@@ -3552,7 +3552,7 @@
                 </div>
 
                 <!-- Device Pairing Endpoints -->
-                <div style="margin-top: 20px; margin-bottom: 12px; font-size: 12px; font-weight: 600; color: #a855f7;">Device Pairing (Vercel KV)</div>
+                <div style="margin-top: 20px; margin-bottom: 12px; font-size: 12px; font-weight: 600; color: #a855f7;">Device Pairing (Redis)</div>
                 <div style="display: grid; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
                     <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: rgba(168, 85, 247, 0.08); border-radius: 6px; border: 1px solid rgba(168, 85, 247, 0.2);">
                         <span style="padding: 2px 8px; background: #3b82f6; border-radius: 4px; font-size: 10px; font-weight: 700;">POST</span>
@@ -3577,7 +3577,7 @@
                     <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: rgba(255,255,255,0.03); border-radius: 6px;">
                         <span style="padding: 2px 8px; background: #3b82f6; border-radius: 4px; font-size: 10px; font-weight: 700;">POST</span>
                         <span style="color: #fbbf24;">/api/sync-config</span>
-                        <span style="color: #94a3b8; margin-left: auto;">Sync preferences to Vercel KV</span>
+                        <span style="color: #94a3b8; margin-left: auto;">Sync preferences to Redis</span>
                     </div>
                 </div>
 
@@ -6542,7 +6542,7 @@
             'kindle-pw5': { name: 'Kindle Paperwhite 5', width: 1236, height: 1648, orientation: 'portrait' }
         };
 
-        // Sync localStorage config to Vercel KV storage
+        // Sync localStorage config to Redis storage
         // Ensures server has latest config for rendering
         async function syncConfigToKV() {
             const config = JSON.parse(localStorage.getItem('cc-config') || '{}');
@@ -6781,7 +6781,7 @@
             config.commutecompute = settings;
             localStorage.setItem('cc-config', JSON.stringify(config));
 
-            // Sync to Vercel KV for server-side access
+            // Sync to Redis for server-side access
             const msg = document.getElementById('sc-settings-message');
             try {
                 fetch(BASE_URL + '/api/sync-config', {

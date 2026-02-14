@@ -6,9 +6,9 @@
 
 **Complete setup instructions for your Commute Compute smart transit display.**
 
-**Version:** 3.0
-**Last Updated:** 2026-02-06
-**System Version:** v3.5.0 (CCDashDesignV15.0)
+**Version:** 4.0
+**Last Updated:** 2026-02-14
+**System Version:** v4.2.0 (CCDashDesignV15.0)
 **License:** AGPL-3.0 Dual License (see [LICENSE](LICENSE))
 
 ---
@@ -17,10 +17,10 @@
 
 Setting up Commute Compute involves four steps:
 
-1. **Deploy** — Host the server on Vercel
-2. **Configure** — Set up your addresses and preferences
-3. **Connect** — Create Vercel KV database
-4. **Pair** — Flash and pair your device
+1. **Deploy** -- Host the server on Vercel (one click)
+2. **Storage** -- Add Redis via Vercel Marketplace
+3. **Configure** -- Run the Setup Wizard (addresses, API keys, preferences)
+4. **Pair** -- Flash and pair your CC E-Ink device
 
 **Time required:** ~15 minutes
 
@@ -31,130 +31,74 @@ Setting up Commute Compute involves four steps:
 | Requirement | Description |
 |-------------|-------------|
 | Vercel account | Free tier works perfectly |
-| TRMNL device | Or jailbroken Kindle |
-| Transport Victoria API key | Optional — system works without it |
-| Google Places API key | Optional — for address autocomplete |
+| CC E-Ink device | Or jailbroken Kindle |
+| Transport Victoria API key | Recommended -- register at [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/) |
+| Google Places API key | Optional -- for address autocomplete |
 
 ---
 
 ## Step 1: Deploy to Vercel
 
-### Option A: One-Click Deploy (Recommended)
+### 1.1 One-Click Deploy (Recommended)
 
-1. Click the deploy button in the repository
-2. Connect your GitLab account
+1. Click the **Deploy with Vercel** button in the repository README
+2. Connect your GitLab account when prompted
 3. Click **Deploy**
 4. Wait for deployment to complete (~2 minutes)
 
-### 2. Deploy to Render
+Your server URL will be: `https://your-project-name.vercel.app`
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+### 1.2 Verify Deployment
 
-Or manually:
-1. Go to [render.com/dashboard](https://dashboard.render.com/)
-2. Click "New +" → "Web Service"
-3. Connect your GitLab account
-4. Select your forked `commute-compute` repository
-5. Configure:
-   - **Name**: `commute-compute` (or your choice)
-   - **Environment**: `Node`
-   - **Build Command**: `npm install --no-audit --no-fund`
-   - **Start Command**: `node src/server.js`
-   - **Plan**: Free
-6. Click "Create Web Service" (no environment variables needed for Zero-Config)
+Open: `https://your-project-name.vercel.app/api/status`
 
-**Wait 3-5 minutes for deployment to complete.**
-
-Your server URL will be: `https://your-server-name.vercel.app`
-
-### 3. Flash Device
-
-#### Option A: Pre-Built Firmware (Easiest)
-
-```bash
-# Download the latest firmware
-curl -L https://gitlab.com/YOUR-USERNAME/commute-compute/releases/latest/download/firmware.bin -o firmware.bin
-
-# Install Vercel CLI
-npm install -g vercel
-
-# Deploy
-vercel --prod
-```
-
-#### Option B: Build From Source
-
-```bash
-# Install PlatformIO
-pip install platformio
-
-# Clone your fork
-git clone https://gitlab.com/YOUR-USERNAME/commute-compute.git
-cd commute-compute/firmware
-
-# Update server URL in include/config.h
-# Change SERVER_URL to your Render URL
-
-# Build and upload
-pio run --target upload
-```
-
-### 4. Configure Your Device
-
-1. **Power on your TRMNL device**
-2. **Connect to WiFi hotspot**: `Commute Compute-Setup` (password: `transport123`)
-3. **Browser opens automatically** (or go to `192.168.4.1`)
-4. **Select your WiFi network** and enter password
-5. **Device reboots** and connects to your network
-
-### 5. Set Up Your Dashboard
-
-1. Open your Render URL in a browser: `https://your-server-name.vercel.app/admin`
-2. Enter your **home address** (e.g., "123 Example Street, Melbourne VIC 3000")
-3. Enter your **work address**
-4. Set your **arrival time** at work (e.g., "9:00 AM")
-5. Enable **coffee decision** if you want coffee recommendations
-6. Click **"Build Smart Journey"**
-
-**Done!** Your dashboard should now display your personalized transit information.
+You should see a JSON response confirming the server is running.
 
 ---
 
-## Step 2: Create Vercel KV Database
+## Step 2: Add Redis (Persistent Storage)
 
-Vercel KV provides persistent storage for your configuration.
+Redis provides persistent storage for your configuration, API keys, and device pairing codes. This is required for Commute Compute to function across serverless invocations.
 
-### 2.1 Open Storage Tab
+### 2.1 Install Redis Integration
 
-1. Go to [vercel.com/dashboard](https://vercel.com/dashboard)
-2. Select your project
-3. Click **Storage** tab
+1. In your [Vercel dashboard](https://vercel.com/dashboard), click the **Integrations** tab
+2. Click **Browse Marketplace**
+3. Search for **Redis** and select the Upstash provider
+4. Click **Install**
+5. Review the products and click **Install**
 
-### 2.2 Create Database
+### 2.2 Create Redis Database
 
-1. Click **Create Database**
-2. Select **KV** (Redis-compatible)
-3. Configure:
-   - **Name:** `commute-compute-kv`
-   - **Region:** Sydney, Australia (syd1)
-   - **Plan:** Hobby (free)
-4. Click **Create**
+1. Select the **Redis** product
+2. Configure:
+   - **Name:** `commute-compute-redis`
+   - **Region:** Sydney, Australia (for best Australian latency)
+   - **Plan:** Free (256MB storage, 500K commands/month -- more than sufficient)
+3. Click **Create**
 
 ### 2.3 Connect to Project
 
-1. In the KV database view, click **Connect to Project**
-2. Select your Commute Compute project
-3. Click **Connect**
+1. Go to the **Projects** tab for your new Redis database
+2. Click **Connect Project**
+3. Select your Commute Compute project
+4. Click **Connect**
+
+This automatically injects the required environment variables (`UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`) into your Vercel project. After connecting, the integration appears as **Redis** in your Integrations tab with a green status indicator.
 
 ### 2.4 Redeploy
 
-The KV connection requires a redeploy:
+The Redis connection requires a redeploy to take effect:
 
-1. Go to **Deployments** tab
-2. Click the **⋮** menu on the latest deployment
+1. Go to your project's **Deployments** tab
+2. Click the **...** menu on the latest deployment
 3. Click **Redeploy**
 
-**Verification:** Open `https://your-project.vercel.app/api/kv-status` — should show `"connected": true`
+### 2.5 Verify Connection
+
+Open: `https://your-project-name.vercel.app/api/kv-status`
+
+Expected: `"connected": true`
 
 ---
 
@@ -162,77 +106,68 @@ The KV connection requires a redeploy:
 
 ### 3.1 Open Setup Wizard
 
-Navigate to: `https://your-project.vercel.app/setup-wizard.html`
+Navigate to: `https://your-project-name.vercel.app/setup-wizard.html`
 
-### 3.2 Step 1: Home Address
+### 3.2 Device Selection
 
-Enter your home address:
+Choose your display device:
+- **CC E-Ink OG** -- 800x480 e-ink (primary)
+- **CC E-Ink Mini** -- 400x300 e-ink
+- **Kindle** -- Various models (requires jailbreak)
+
+### 3.3 Google Places API Key (Optional)
+
+If you have a Google Places API key, enter it first for better address autocomplete:
+- Get a key from [Google Cloud Console](https://console.cloud.google.com/)
+- Enable **Places API (New)**
+
+### 3.4 Home and Work Addresses
+
+Enter your home and work addresses:
 - Type the full address including suburb and state
 - Select from the autocomplete suggestions
-- The map will show your location
 
 **Example:** `123 Example Street, Suburb VIC 3000`
 
-### 3.3 Step 2: Work Address
+### 3.5 Transport Victoria API Key (Recommended)
 
-Enter your work/destination address using the same process.
-
-### 3.4 Step 3: Cafe (Optional)
-
-Add a cafe stop if you want coffee recommendations:
-- Enter cafe name and address
-- Or skip this step
-
-### 3.5 Step 4: API Keys (Optional)
-
-**Transport Victoria API Key:**
+For live real-time departure data:
 1. Go to [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/)
-2. Create an account
-3. Request an API key
-4. Enter the key in the wizard
+2. Create an account and request an API key
+3. Enter the key in the wizard
 
-*Note: The system works without an API key using timetable fallback data.*
+### 3.6 Journey Settings
 
-**Google Places API Key (Optional):**
-- Enables address autocomplete
-- Get a key from [Google Cloud Console](https://console.cloud.google.com/)
-- Enable "Places API (New)"
+- Set your **target arrival time** at work (e.g., 9:00 AM)
+- Enable **CoffeeDecision™** if you want coffee stop recommendations
 
-### 3.6 Step 5: Select Device
-
-Choose your display device:
-- **TRMNL OG** — 800×480 e-ink
-- **TRMNL Mini** — 400×300 e-ink
-- **Kindle** — Various models
-
-### 3.7 Step 6: Complete Setup
+### 3.7 Complete Setup
 
 1. Review your configuration
 2. Click **Complete Setup**
-3. Note your pairing code (6 characters)
+3. Note your pairing code (6 characters) for device pairing
 
 ---
 
 ## Step 4: Device Setup
 
-### For TRMNL Devices
+### For CC E-Ink Devices
 
 #### 4.1 Flash Firmware
 
 **Requirements:**
 - PlatformIO installed
 - USB cable
-- TRMNL device
+- CC E-Ink device
 
 ```bash
-# Navigate to firmware directory
 cd firmware
-
-# Build and flash
 pio run -e trmnl -t upload --upload-port /dev/cu.usbmodem*
 ```
 
 **Windows:** Use `COM3` or similar instead of `/dev/cu.usbmodem*`
+
+Or use the browser-based flasher at `/flasher/` (Chrome/Edge, Web Serial).
 
 #### 4.2 WiFi Provisioning (Phase 1)
 
@@ -259,32 +194,19 @@ See [firmware/kindle/README.md](firmware/kindle/README.md) for Kindle-specific s
 
 ## Verification
 
-### Check Server Status
-
-Open: `https://your-project.vercel.app/api/status`
-
-Expected response:
-```json
-{
-  "status": "ok",
-  "dataMode": "Live",
-  "version": "3.5.0"
-}
-```
-
 ### Check Dashboard Preview
 
-Open: `https://your-project.vercel.app/preview.html`
+Open: `https://your-project-name.vercel.app/api/screen`
 
-You should see your personalized dashboard.
+You should see your personalized dashboard image.
 
 ### Check Device
 
-Your device should display:
-- Current time
-- Journey information
-- Weather
-- Coffee recommendation
+Your CC E-Ink device should display:
+- Current time and journey legs
+- Live departure countdowns
+- Weather and lifestyle suggestions
+- CoffeeDecision™ recommendation
 
 ---
 
@@ -292,7 +214,7 @@ Your device should display:
 
 ### Admin Panel
 
-Access the admin panel at: `https://your-project.vercel.app/admin.html`
+Access the admin panel at: `https://your-project-name.vercel.app/admin.html`
 
 | Tab | Purpose |
 |-----|---------|
@@ -321,21 +243,21 @@ Access the admin panel at: `https://your-project.vercel.app/admin.html`
 
 ### No departure data
 
-1. Verify API key is entered correctly
-2. Check `/api/kv-status` shows connected
-3. System falls back to timetable data if API unavailable
+1. Verify your Transport Victoria API key is entered correctly
+2. Check `/api/kv-status` shows `"connected": true`
+3. Ensure you have selected the correct state in Setup Wizard
 
 ### Pairing code not working
 
 1. Codes expire after 10 minutes
 2. Generate a new code from Setup Wizard
-3. Ensure device and server are on same network
+3. Ensure device and server are on the same network
 
 ### Display shows error
 
-1. Check serial monitor for firmware errors
-2. Verify server URL is correct
-3. Check network connectivity
+1. Verify server URL is correct in firmware config
+2. Check network connectivity
+3. Review Vercel function logs for errors
 
 ---
 
@@ -358,7 +280,20 @@ Access the admin panel at: `https://your-project.vercel.app/admin.html`
 1. Open Admin Panel
 2. Go to API Settings
 3. Enter new keys
-4. Device auto-refreshes
+4. Device auto-refreshes on next cycle
+
+---
+
+## Alternative Hosting
+
+While Vercel is the recommended platform (turnkey setup, free tier), Commute Compute can also run on:
+
+- **Render.com** -- Free tier with Redis addon
+- **Railway** -- With Redis plugin
+- **Docker** -- Self-hosted with Redis instance
+- **VPS** -- Any Node.js host with Redis
+
+See [INSTALL.md](INSTALL.md) for detailed instructions on alternative hosting options.
 
 ---
 
@@ -374,10 +309,10 @@ Access the admin panel at: `https://your-project.vercel.app/admin.html`
 
 ## Next Steps
 
-- [INSTALL.md](INSTALL.md) — Detailed installation guide
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — System architecture
-- [firmware/README.md](firmware/README.md) — Firmware documentation
+- [INSTALL.md](INSTALL.md) -- Detailed installation guide
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) -- System architecture
+- [firmware/README.md](firmware/README.md) -- Firmware documentation
 
 ---
 
-© 2026 Commute Compute System by Angus Bergman — AGPL-3.0 Dual License
+Copyright (c) 2026 Angus Bergman -- AGPL-3.0 Dual License

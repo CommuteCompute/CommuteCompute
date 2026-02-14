@@ -791,21 +791,21 @@ Vercel automatically maps files in `/api/` to endpoints:
 | `/api/admin/generate-webhook.js` | `POST /api/admin/generate-webhook` |
 | `/api/device/[token].js` | `GET /api/device/{token}` |
 
-### Persistent Storage via Vercel KV
+### Persistent Storage via Redis
 
-**As of v1.8, Commute Compute uses Vercel KV for persistent API key storage.**
+**As of v1.8, Commute Compute uses Redis for persistent API key storage.**
 
 | Storage Type | Usage |
 |--------------|-------|
-| Vercel KV (Redis) | API keys, preferences — persists across deployments |
+| Redis | API keys, preferences — persists across deployments |
 | URL Config Token | Journey config, addresses — embedded in device webhook |
 
-#### KV Setup Required
+#### Redis Setup Required
 
-1. Vercel Dashboard → Project → **Storage** → Create **KV** Database
-2. Region: **Sydney, Australia (Southeast)**
-3. Plan: **Redis/30 MB** (free tier)
-4. Name: `CCKV`
+1. Vercel Dashboard → **Integrations** → **Browse Marketplace** → Search **Redis** → Select Upstash → Install
+2. Create Redis database — Region: **Sydney, Australia**
+3. Plan: **Free** (256MB, 500K commands/month)
+4. Connect to your Commute Compute project
 5. **Redeploy** after creation
 
 See [DEVELOPMENT-RULES.md Section 3.6](../../DEVELOPMENT-RULES.md#36-vercel-kv-setup-required) for full details.
