@@ -350,16 +350,18 @@ Open `https://your-project.vercel.app/setup-wizard.html` and follow the guided c
 
 ### 4. Flash Device (CC E-Ink)
 
+**Option A: Browser Flasher (Recommended)**
+
+Use the hosted browser flasher at `https://your-project.vercel.app/flasher/` (Chrome/Edge desktop required):
+
+- CC E-Ink / ESP32-C3 firmware flashing via Web Serial
+- Kindle package install (jailbroken + KUAL) to `extensions/commute-compute`
+
+**Option B: PlatformIO CLI**
+
 ```bash
 cd firmware && pio run -e trmnl -t upload
 ```
-
-Or use the browser installer (Windows/macOS, Chrome/Edge):
-
-- Hosted flasher: `/flasher/`
-- It supports:
-  - CC E-Ink / ESP32-C3 firmware flashing via Web Serial
-  - Kindle package install (jailbroken + KUAL) to `extensions/commute-compute`
 
 Embed snippet for docs pages that support iframes:
 
@@ -372,6 +374,7 @@ Embed snippet for docs pages that support iframes:
   style="border:1px solid #d7e0eb;border-radius:12px;"
 ></iframe>
 ```
+
 
 ### 5. Pair and Go
 
