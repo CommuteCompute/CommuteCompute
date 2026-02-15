@@ -8,7 +8,7 @@
 
 **Version:** 3.0
 **Last Updated:** 2026-02-06
-**System Version:** v3.5.0 (CCDashDesignV15.0)
+**System Version:** v4.2.0 (CCDashDesignV15.0)
 **License:** AGPL-3.0 Dual License
 
 ---
@@ -33,7 +33,7 @@ The display updates automatically every 60 seconds with real-time information.
 
 | Item | Description | Cost |
 |------|-------------|------|
-| **TRMNL Display** | E-ink display device | ~$150 AUD |
+| **CC E-Ink Display** | E-ink display device | ~$150 AUD |
 | **Computer** | For initial setup | — |
 | **WiFi Network** | 2.4GHz (not 5GHz) | — |
 | **Vercel Account** | Free hosting service | Free |
@@ -72,20 +72,21 @@ Your Commute Compute server runs in the cloud for free on Vercel.
 Your server needs a database to remember your settings.
 
 1. In Vercel, click your project name
-2. Click the **Storage** tab at the top
-3. Click **Create Database**
-4. Select **KV** (the first option)
-5. Enter name: `commute-compute-kv`
-6. Select region: **Sydney, Australia**
+2. Click the **Integrations** tab
+3. Click **Browse Marketplace**
+4. Search for **Redis** and select the Upstash provider
+5. Click **Install** and select the **Free** plan
+6. Name: `commute-compute-redis`, Region: **Sydney, Australia**
 7. Click **Create**
 
-### Step 1.4: Connect Database
+### Step 1.4: Verify Database Connection
 
-1. After creation, click **Connect to Project**
-2. Select your Commute Compute project
-3. Click **Connect**
-4. Go to **Deployments** tab
-5. Click the **⋮** menu → **Redeploy**
+Redis installed via the Marketplace is automatically connected to your project.
+
+1. Go to your project **Settings** → **Environment Variables**
+2. Confirm `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are listed
+3. Go to **Deployments** tab
+4. Click the **⋮** menu → **Redeploy** to pick up the new environment variables
 
 ---
 
@@ -140,7 +141,7 @@ Click **Next** to continue.
 
 ### Step 2.6: Select Your Device
 
-Choose **TRMNL Display (OG)** for the standard TRMNL device.
+Choose **CC E-Ink OG** for the standard CC E-Ink display.
 
 Click **Complete Setup**
 
@@ -154,9 +155,9 @@ The wizard shows a **6-character code** (like `ABC123`).
 
 ## Part 3: Set Up Your Device (10 minutes)
 
-### Step 3.1: Unbox Your TRMNL
+### Step 3.1: Unbox Your CC E-Ink Display
 
-1. Remove TRMNL from packaging
+1. Remove display from packaging
 2. Connect USB-C cable to computer
 3. Device screen may be blank — that's normal
 
@@ -204,7 +205,7 @@ Wait for "SUCCESS" message (about 30 seconds).
 
 ### Step 3.5: Connect Device to WiFi
 
-1. Your TRMNL shows a Bluetooth setup screen
+1. Your CC E-Ink display shows a Bluetooth setup screen
 2. On your phone, open Bluetooth settings
 3. Look for device named `CC-XXXXXX`
 4. Connect to it
@@ -331,7 +332,7 @@ If you're stuck:
 
 1. **Check the logs:** Open `/api/status` on your server
 2. **Admin Panel:** Go to `/admin.html` to check settings
-3. **Serial monitor:** Run `pio device monitor` to see device output
+3. **Community:** Open an issue on GitLab for help
 
 ---
 
@@ -349,7 +350,7 @@ If you're stuck:
 | Term | Meaning |
 |------|---------|
 | **Vercel** | Free cloud hosting service |
-| **KV Database** | Storage for your settings |
+| **Redis** | Storage for your settings (via Vercel Marketplace) |
 | **PlatformIO** | Software to program devices |
 | **Firmware** | Software that runs on your device |
 | **GTFS-RT** | Real-time transit data format |

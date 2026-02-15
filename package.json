@@ -1,6 +1,6 @@
 {
   "name": "commute-compute",
-  "version": "3.1.0",
+  "version": "4.2.0",
   "description": "Commute Compute System - Smart Transit Dashboard for e-ink displays",
   "type": "module",
   "main": "src/server.js",
@@ -37,13 +37,13 @@
     "nodemailer": "^7.0.12"
   },
   "keywords": [
-    "trmnl",
+    "commute-compute",
     "melbourne",
     "transport",
-    "ptv",
+    "transit-dashboard",
     "e-ink"
   ],
-  "author": "Angus",
+  "author": "Angus Bergman",
   "license": "AGPL-3.0-or-later",
   "licenseNote": "Dual-licensed: AGPL-3.0 for open source, commercial license available — see LICENSE",
   "devDependencies": {
