@@ -1,10 +1,10 @@
 /**
- * CCFirm™ v7.1 — Hybrid BLE + Pairing Code Firmware
+ * CCFirm™ v7.6 — Hybrid BLE + Pairing Code Firmware
  * Part of the Commute Compute System™
  *
- * HYBRID PROVISIONING (see DEVELOPMENT-RULES.md Section 21.7):
- *   Phase 1 (BLE): WiFi credentials only (SSID + password)
- *   Phase 2 (Pairing Code): Server config via 6-character code
+ * BLE PROVISIONING (see DEVELOPMENT-RULES.md Section 21.7):
+ *   WiFi credentials (SSID + password) + webhook URL from Setup Wizard
+ *   No hardcoded server URLs — all config via BLE from user's instance
  *
  * This avoids WiFiManager/captive portal which crashes ESP32-C3.
  *
@@ -76,11 +76,11 @@
 #define LOG_INFO(fmt, ...)  do { if (LOG_LEVEL >= 3) Serial.printf("[INFO] " fmt "\n", ##__VA_ARGS__); } while(0)
 #define LOG_DEBUG(fmt, ...) do { if (LOG_LEVEL >= 4) Serial.printf("[DEBUG] " fmt "\n", ##__VA_ARGS__); } while(0)
 
-// BLE UUIDs (Hybrid: WiFi credentials ONLY - URL comes via pairing code)
+// BLE UUIDs (WiFi credentials + webhook URL from Setup Wizard)
 #define BLE_SERVICE_UUID        "CC000001-0000-1000-8000-00805F9B34FB"
 #define BLE_CHAR_SSID_UUID      "CC000002-0000-1000-8000-00805F9B34FB"
 #define BLE_CHAR_PASSWORD_UUID  "CC000003-0000-1000-8000-00805F9B34FB"
-// NOTE: BLE_CHAR_URL_UUID removed in v7.1 - URL now comes via pairing code only
+#define BLE_CHAR_URL_UUID       "CC000004-0000-1000-8000-00805F9B34FB"
 #define BLE_CHAR_STATUS_UUID    "CC000005-0000-1000-8000-00805F9B34FB"
 #define BLE_CHAR_WIFI_LIST_UUID "CC000006-0000-1000-8000-00805F9B34FB"
 
@@ -275,26 +275,28 @@ class CredentialCallbacks : public BLECharacteristicCallbacks {
                 Serial.printf("[BLE] SSID: %s\n", wifiSSID);
             }
             else if (uuid.indexOf("0003") > 0) {
-                // Password received - check if we have both credentials
+                // Password received
                 strncpy(wifiPassword, value.c_str(), sizeof(wifiPassword) - 1);
                 Serial.println("[BLE] Password received");
-
-                // HYBRID: BLE only provides WiFi credentials
-                // Server URL comes via pairing code in Phase 2
-                if (strlen(wifiSSID) > 0 && strlen(wifiPassword) > 0) {
-                    bleCredentialsReceived = true;
-                    // NOTE: devicePaired stays false - must complete pairing code flow
-                    saveSettings();
-
-                    if (pCharStatus) {
-                        pCharStatus->setValue("wifi_saved");
-                        pCharStatus->notify();
-                    }
-                    Serial.println("[BLE] WiFi credentials saved - pairing code required for server config");
-                }
             }
-            // NOTE: URL characteristic (0004) removed in v7.1
-            // URL now comes via pairing code only
+            else if (uuid.indexOf("0004") > 0) {
+                // Webhook URL received from Setup Wizard
+                strncpy(webhookUrl, value.c_str(), sizeof(webhookUrl) - 1);
+                Serial.printf("[BLE] Webhook URL: %s\n", webhookUrl);
+            }
+
+            // Check if all credentials received (SSID + Password + URL)
+            if (strlen(wifiSSID) > 0 && strlen(wifiPassword) > 0 && strlen(webhookUrl) > 0) {
+                bleCredentialsReceived = true;
+                devicePaired = true;
+                saveSettings();
+
+                if (pCharStatus) {
+                    pCharStatus->setValue("configured");
+                    pCharStatus->notify();
+                }
+                Serial.println("[BLE] Fully configured - WiFi + webhook URL saved");
+            }
         }
     }
 };
@@ -561,21 +563,15 @@ void loop() {
                 Serial.printf("[OK] Connected: %s\n", WiFi.localIP().toString().c_str());
                 consecutiveErrors = 0;
 
-                // HYBRID FLOW: Check if we have a valid webhook URL
-                // If already paired with URL, go straight to dashboard
-                // Otherwise, use DEFAULT_SERVER automatically (zero-config)
+                // Check if we have a valid webhook URL (provided via BLE)
                 if (devicePaired && strlen(webhookUrl) > 0) {
                     Serial.println("[OK] Already paired with URL - fetching dashboard");
+                    Serial.printf("[OK] Webhook: %s\n", webhookUrl);
                     currentState = STATE_FETCH_DASHBOARD;
                 } else {
-                    // AUTO-PAIR: Use DEFAULT_SERVER when no custom URL configured
-                    // This enables zero-config operation without requiring manual pairing
-                    Serial.println("[AUTO] No custom URL - using DEFAULT_SERVER");
-                    snprintf(webhookUrl, sizeof(webhookUrl), "%s/api/screen", DEFAULT_SERVER);
-                    devicePaired = true;
-                    saveSettings();
-                    Serial.printf("[AUTO] Webhook URL set to: %s\n", webhookUrl);
-                    currentState = STATE_FETCH_DASHBOARD;
+                    // No webhook URL configured - device needs BLE provisioning
+                    LOG_WARN("No webhook URL configured - returning to BLE setup");
+                    currentState = STATE_BLE_SETUP;
                 }
             } else {
                 LOG_ERROR("WiFi connection failed after retries");
@@ -698,9 +694,12 @@ void loop() {
         }
 
         // ==== IDLE ====
-        // Button handling: Long press (3s) triggers VCOM discharge for safe power-off
+        // Button handling:
+        //   3s hold + release → VCOM discharge (safe power-off)
+        //   10s continuous hold → Factory reset + BLE config wipe
         static unsigned long buttonPressStart = 0;
         static bool buttonWasPressed = false;
+        static bool resetWarningShown = false;
         case STATE_IDLE: {
             if (now - lastRefresh >= 60000) {
                 currentState = STATE_FETCH_DASHBOARD;
@@ -711,20 +710,45 @@ void loop() {
                 currentState = STATE_WIFI_CONNECT;
             }
 
-            // Check button for VCOM discharge (long press)
+            // Check button for VCOM discharge (3s) or factory reset (10s)
             if (digitalRead(PIN_INTERRUPT) == LOW) {
                 if (!buttonWasPressed) {
                     buttonPressStart = now;
                     buttonWasPressed = true;
+                    resetWarningShown = false;
                     Serial.println("[Button] Press detected");
-                } else if (now - buttonPressStart >= 3000) {
-                    Serial.println("[Button] Long press - triggering VCOM discharge");
-                    doVcomDischarge();
-                    buttonWasPressed = false;
-                    Serial.println("[Button] Safe to power off now");
+                } else {
+                    unsigned long held = now - buttonPressStart;
+                    if (held >= 10000) {
+                        // 10-second hold: FACTORY RESET
+                        Serial.println("[Button] 10s hold — FACTORY RESET triggered");
+                        doFactoryReset();
+                        // doFactoryReset calls ESP.restart(), won't reach here
+                    } else if (held >= 5000 && !resetWarningShown) {
+                        Serial.println("[Button] 5s hold — keep holding for FACTORY RESET (10s total)");
+                        // Show warning on e-ink display
+                        bbep->fillScreen(BBEP_WHITE);
+                        drawTextCentered(bbep, "KEEP HOLDING FOR", SCREEN_W, 200);
+                        drawTextCentered(bbep, "FACTORY RESET", SCREEN_W, 230);
+                        drawTextCentered(bbep, "Release now for safe power-off", SCREEN_W, 270);
+                        bbep->refresh(REFRESH_FULL, true);
+                        resetWarningShown = true;
+                    }
                 }
             } else {
+                if (buttonWasPressed) {
+                    unsigned long held = now - buttonPressStart;
+                    if (held >= 3000) {
+                        // Released after 3s+ but before 10s: VCOM discharge
+                        Serial.println("[Button] Released after 3s+ — VCOM discharge");
+                        doVcomDischarge();
+                        Serial.println("[Button] Safe to power off now");
+                    } else {
+                        Serial.println("[Button] Short press — ignored");
+                    }
+                }
                 buttonWasPressed = false;
+                resetWarningShown = false;
             }
             delay(1000);
             break;
@@ -758,15 +782,15 @@ void initBLE() {
 
     BLEService* pService = pServer->createService(BLE_SERVICE_UUID);
 
-    // HYBRID: BLE only handles WiFi credentials (SSID + Password)
-    // Server URL comes via pairing code (Phase 2)
+    // BLE provides WiFi credentials + webhook URL from Setup Wizard
     BLECharacteristic* pCharSSID = pService->createCharacteristic(BLE_CHAR_SSID_UUID, BLECharacteristic::PROPERTY_WRITE);
     pCharSSID->setCallbacks(new CredentialCallbacks());
 
     BLECharacteristic* pCharPass = pService->createCharacteristic(BLE_CHAR_PASSWORD_UUID, BLECharacteristic::PROPERTY_WRITE);
     pCharPass->setCallbacks(new CredentialCallbacks());
 
-    // NOTE: URL characteristic removed in v7.1 - URL comes via pairing code only
+    BLECharacteristic* pCharURL = pService->createCharacteristic(BLE_CHAR_URL_UUID, BLECharacteristic::PROPERTY_WRITE);
+    pCharURL->setCallbacks(new CredentialCallbacks());
 
     pCharStatus = pService->createCharacteristic(BLE_CHAR_STATUS_UUID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
     pCharStatus->addDescriptor(new BLE2902());
@@ -831,7 +855,11 @@ bool pollPairingServer() {
     client.setInsecure();
     HTTPClient http;
 
-    String url = String(DEFAULT_SERVER) + "/api/pair/" + String(pairingCode);
+    // Extract base server URL from webhookUrl (strip /api/screen suffix)
+    String baseUrl = String(webhookUrl);
+    int apiIdx = baseUrl.indexOf("/api/");
+    if (apiIdx > 0) baseUrl = baseUrl.substring(0, apiIdx);
+    String url = baseUrl + "/api/pair/" + String(pairingCode);
     Serial.printf("[PAIR] Polling: %s\n", url.c_str());
 
     http.setTimeout(10000);
@@ -906,15 +934,8 @@ void showSetupScreen() {
     drawTextCentered(bbep, "=== WIFI SETUP ===", SCREEN_W, 160);
 
     // Instructions
-    drawTextCentered(bbep, "1. Open Setup Wizard in Chrome or Edge:", SCREEN_W, 195);
-
-    // URL line - dynamically constructed from DEFAULT_SERVER (TURNKEY)
-    char wizardUrl[128];
-    const char* serverHost = DEFAULT_SERVER;
-    if (strncmp(serverHost, "https://", 8) == 0) serverHost += 8;
-    if (strncmp(serverHost, "http://", 7) == 0) serverHost += 7;
-    snprintf(wizardUrl, sizeof(wizardUrl), "   %s/setup-wizard.html", serverHost);
-    drawTextCentered(bbep, wizardUrl, SCREEN_W, 215);
+    drawTextCentered(bbep, "1. Open your Setup Wizard in Chrome/Edge", SCREEN_W, 195);
+    drawTextCentered(bbep, "   (your-server/setup-wizard.html)", SCREEN_W, 215);
 
     drawTextCentered(bbep, "2. Click 'Connect via Bluetooth'", SCREEN_W, 250);
     drawTextCentered(bbep, "3. Select this device:", SCREEN_W, 285);

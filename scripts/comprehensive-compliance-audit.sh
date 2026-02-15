@@ -1290,6 +1290,20 @@ else
     pass "BOM URLs use HTTPS (or not present)"
 fi
 
+subsection "17.14 No hardcoded Vercel deployment URLs in source"
+# Check all source directories for real Vercel deployment URLs (excluding placeholder and docs)
+HARDCODED_VERCEL_ALL=$(grep -rn "[a-zA-Z0-9_-]*\.vercel\.app" src/ api/ public/ firmware/ 2>/dev/null \
+    | grep -v "your-project\.vercel\.app\|your-deployment\.vercel\.app\|your-vercel-url\.vercel\.app\|commute-compute-abc123\.vercel\.app" \
+    | grep -v "node_modules\|archive/\|\.md:\|\.bin" \
+    | grep -v "//.*example\|//.*placeholder\|//.*template\|#.*example\|#.*placeholder\|#.*Usage" \
+    | head -10 || true)
+if [ -n "$HARDCODED_VERCEL_ALL" ]; then
+    fail "Hardcoded Vercel deployment URLs found in source (security risk — use BLE provisioning or config):"
+    echo "$HARDCODED_VERCEL_ALL"
+else
+    pass "No hardcoded Vercel deployment URLs in source (excluding placeholder)"
+fi
+
 subsection "17.13 Input validation patterns"
 VALIDATION_CHECK=$(grep -rn "parseInt\|Number\(\|isNaN\|typeof.*===\|\.trim()" api/ 2>/dev/null | head -3 || true)
 if [ -n "$VALIDATION_CHECK" ]; then
@@ -1299,9 +1313,9 @@ else
 fi
 
 # ============================================================================
-# GROUP 8: ARCHITECTURE & DESIGN (Sections 4-5, 7-10, 11-13, 16, 22-24)
+# GROUP 8: ARCHITECTURE & DESIGN (Sections 4-5, 7-10, 11-13, 16, 21-24)
 # ============================================================================
-group_header "GROUP 8: ARCHITECTURE & DESIGN (Sections 4-5, 7-13, 16, 22-24)"
+group_header "GROUP 8: ARCHITECTURE & DESIGN (Sections 4-5, 7-13, 16, 21-24)"
 
 # ---------- Section 4: Required Endpoints ----------
 section "SECTION 4: SYSTEM ARCHITECTURE RULES"
@@ -1381,6 +1395,55 @@ if [ -f "firmware/src/main.cpp" ]; then
     else
         warn "No brownout handling found (recommended for ESP32-C3)"
     fi
+fi
+
+subsection "5.5 BLE provisioning: CC000004 URL characteristic"
+if [ -f "firmware/src/main.cpp" ]; then
+    BLE_URL_CHAR=$(grep -n "BLE_CHAR_URL_UUID" firmware/src/main.cpp 2>/dev/null | head -1 || true)
+    if [ -n "$BLE_URL_CHAR" ]; then
+        pass "BLE_CHAR_URL_UUID (CC000004) defined in firmware"
+    else
+        fail "BLE_CHAR_URL_UUID not defined in firmware/src/main.cpp (CC000004 characteristic required for BLE provisioning)"
+    fi
+else
+    skip "firmware/src/main.cpp not found"
+fi
+
+subsection "5.5 No hardcoded Vercel deployment URLs in firmware"
+if [ -f "firmware/src/main.cpp" ]; then
+    # Check for real deployment URLs in firmware (allow placeholder URLs)
+    HARDCODED_VERCEL_FW=$(grep -rn "[a-zA-Z0-9_-]*\.vercel\.app" firmware/src/ 2>/dev/null | grep -v "your-project\.vercel\.app\|your-deployment\.vercel\.app\|//.*placeholder\|//.*example" | head -5 || true)
+    if [ -n "$HARDCODED_VERCEL_FW" ]; then
+        fail "Hardcoded Vercel deployment URLs found in firmware source (must use BLE provisioning):"
+        echo "$HARDCODED_VERCEL_FW"
+    else
+        pass "No hardcoded Vercel deployment URLs in firmware source"
+    fi
+else
+    skip "firmware/src/main.cpp not found"
+fi
+
+subsection "5.5 DEFAULT_SERVER uses placeholder URL only"
+if [ -f "firmware/src/main.cpp" ]; then
+    DEFAULT_SERVER_LINE=$(grep -n "DEFAULT_SERVER" firmware/src/main.cpp 2>/dev/null | head -3 || true)
+    if [ -n "$DEFAULT_SERVER_LINE" ]; then
+        # Verify it contains the placeholder, not a real deployment URL
+        DEFAULT_SERVER_PLACEHOLDER=$(echo "$DEFAULT_SERVER_LINE" | grep "your-project\.vercel\.app" || true)
+        DEFAULT_SERVER_REAL=$(echo "$DEFAULT_SERVER_LINE" | grep -v "your-project\.vercel\.app\|//\|#define" | grep "\.vercel\.app" || true)
+        if [ -n "$DEFAULT_SERVER_REAL" ]; then
+            fail "DEFAULT_SERVER contains a real deployment URL (should be your-project.vercel.app placeholder):"
+            echo "$DEFAULT_SERVER_REAL"
+        elif [ -n "$DEFAULT_SERVER_PLACEHOLDER" ]; then
+            pass "DEFAULT_SERVER uses placeholder URL (your-project.vercel.app)"
+        else
+            warn "DEFAULT_SERVER defined but could not verify placeholder URL — review manually:"
+            echo "$DEFAULT_SERVER_LINE" | head -2
+        fi
+    else
+        warn "DEFAULT_SERVER not defined in firmware/src/main.cpp"
+    fi
+else
+    skip "firmware/src/main.cpp not found"
 fi
 
 # ---------- Section 7: Spec Integrity ----------
@@ -1481,6 +1544,48 @@ if [ -f "README.md" ]; then
     fi
 else
     fail "README.md not found"
+fi
+
+# ---------- Section 21: Device Setup & BLE Provisioning ----------
+section "SECTION 21: DEVICE SETUP & BLE PROVISIONING"
+
+subsection "21.1 Setup Wizard defines BLE_CHAR_URL_UUID"
+if [ -f "public/setup-wizard.html" ]; then
+    WIZARD_BLE_UUID=$(grep -n "BLE_CHAR_URL_UUID" public/setup-wizard.html 2>/dev/null | head -1 || true)
+    if [ -n "$WIZARD_BLE_UUID" ]; then
+        pass "Setup Wizard defines BLE_CHAR_URL_UUID"
+    else
+        fail "Setup Wizard (setup-wizard.html) does not define BLE_CHAR_URL_UUID (required for BLE provisioning)"
+    fi
+else
+    skip "public/setup-wizard.html not found"
+fi
+
+subsection "21.1 Setup Wizard sends webhook URL via BLE"
+if [ -f "public/setup-wizard.html" ]; then
+    # Check that the wizard uses window.location.origin to derive the URL sent via BLE
+    WIZARD_ORIGIN=$(grep -n "window\.location\.origin" public/setup-wizard.html 2>/dev/null | head -1 || true)
+    if [ -n "$WIZARD_ORIGIN" ]; then
+        pass "Setup Wizard uses window.location.origin for BLE URL provisioning"
+    else
+        warn "Setup Wizard does not reference window.location.origin — verify BLE URL provisioning method"
+    fi
+else
+    skip "public/setup-wizard.html not found"
+fi
+
+subsection "21.2 Firmware must NOT auto-pair with DEFAULT_SERVER"
+if [ -f "firmware/src/main.cpp" ]; then
+    # Check that AUTO-PAIR / auto-pair does not appear as active code (comments are OK)
+    AUTOPAIR_ACTIVE=$(grep -n -i "auto.pair" firmware/src/main.cpp 2>/dev/null | grep -v "^\s*//" | grep -v "^\s*\*" | grep -v "//.*auto.pair" | head -5 || true)
+    if [ -n "$AUTOPAIR_ACTIVE" ]; then
+        fail "AUTO-PAIR logic found as active code in firmware (device must require BLE provisioning):"
+        echo "$AUTOPAIR_ACTIVE"
+    else
+        pass "No active AUTO-PAIR logic in firmware (BLE provisioning required)"
+    fi
+else
+    skip "firmware/src/main.cpp not found"
 fi
 
 # ---------- Section 22: Admin Panel UI/UX ----------

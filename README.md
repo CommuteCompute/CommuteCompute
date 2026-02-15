@@ -375,7 +375,6 @@ Embed snippet for docs pages that support iframes:
 ></iframe>
 ```
 
-
 ### 5. Pair and Go
 
 The device connects via BLE, receives your server URL, and begins displaying your commute dashboard.
@@ -425,7 +424,8 @@ See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed step-by-step instructions 
 
 | Device | Source | Notes |
 |:-------|:-------|:------|
-| **CC E-Ink OG (ESP32-C3)** | [TRMNL Shop](https://usetrmnl.com/shop) | Primary supported hardware. Approximately AU$120-150 shipped to Australia. |
+| **CC E-Ink OG (ESP32-C3)** | [TRMNL Shop](https://shop.trmnl.com) | Primary supported hardware. Approximately AU$120-150 shipped to Australia. |
+| **ESP32-C3 + E-Ink DIY Kit** | [Seeed Studio](https://www.seeedstudio.com) | Build your own CC E-Ink display from components. Requires soldering and case assembly. |
 | **Kindle Paperwhite / Basic** | Amazon or second-hand | Requires jailbreak. Older models (PW3/PW4) recommended for jailbreak compatibility. |
 | **Inkplate 6 / 10** | [Soldered Electronics](https://soldered.com) | Open-hardware ESP32 e-ink boards. |
 

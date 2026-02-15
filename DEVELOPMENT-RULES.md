@@ -142,7 +142,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 - 5.3 Flashing Procedure
 - 5.4 Critical bb_epaper ESP32-C3 Findings (2026-01-29)
 - 5.5 ESP32-C3 Troubleshooting Guide (2026-01-30)
-- 5.6 **Production Firmware: CC-FW-7.4.3** [LOCKED]
+- 5.6 **Production Firmware: CC-FW-7.5.0** [LOCKED]
 </details>
 
 <details>
@@ -368,6 +368,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.29 | 2026-02-09 | Angus Bergman | **BLE PROVISIONING ARCHITECTURE (CC-FW-7.5.0)**: Updated Section 5.6 — CC-FW-7.5.0 locked. BLE now sends WiFi credentials AND webhook URL (3 characteristics: SSID CC000002, Password CC000003, URL CC000004 re-added). No hardcoded server URLs; `DEFAULT_SERVER` is placeholder only. Rewrote Section 21.7 — single-phase BLE provisioning replaces hybrid BLE + pairing code as primary flow. Updated state machine: `STATE_BLE_SETUP` -> `STATE_WIFI_CONNECT` -> `STATE_FETCH_DASHBOARD`. Rewrote Section 21.7.9 — no DEFAULT_SERVER auto-pairing; firmware returns to BLE setup if no webhook URL in NVS. Added Section 17.4.3.1 — firmware webhook URL rule (URLs provisioned via BLE from Setup Wizard's `window.location.origin`). |
 | 1.28 | 2026-02-07 | Angus Bergman | **V15.0 COMPLIANCE UPDATE**: Updated all stale V10/V13 spec references to V15.0. Naming table, legacy references, data flow diagram, spec integrity section, layout structure, renderer references, footer version example all updated to match VERSION.json (System v3.4.0, CommuteCompute v2.3, CCDash Renderer v1.80, CCDashDesignV15.0). Fixed duplicated Section 22 TOC entries. Updated SmartCommute to CommuteCompute in v1.24 tagline. |
 | 1.27 | 2026-02-06 | Angus Bergman | **FIRMWARE LOGGING SYSTEM**: Updated Section 5.6 — CC-FW-7.4.3 adds structured logging with LOG_LEVEL (0-4), LOG_ERROR/WARN/INFO/DEBUG macros, state transition logging. Production recommended: LOG_LEVEL 2 (WARN). |
 | 1.26 | 2026-02-06 | Angus Bergman | **TIME FORMAT CLARIFICATION**: Updated Section 12.2 — 24-hour time permissible in internal code (calculations, logging, API internals). 12-hour format required only for user-facing content: dashboard displays, e-ink screens, admin panel UI, firmware displays. Reduces false positives in compliance audits. |
@@ -1099,25 +1100,37 @@ The renderer creates a minimal 1-bit BMP in RAM (62-byte header + pixel data), r
 | Display shows garbage | allocBuffer() called | Remove allocBuffer() calls |
 | Text rotated 90° | FONT_12x16 bug | Use FONT_8x8 only |
 
-### 5.6 Production Firmware: CC-FW-7.4.3 (2026-02-06)
+### 5.6 Production Firmware: CC-FW-7.6.0 (2026-02-09)
 
 **[LOCKED] — Production Release**
 
-**Official Name:** `CC-FW-7.4.3`
-**Version:** 7.4.3
+**Official Name:** `CC-FW-7.6.0`
+**Version:** 7.6.0
 **Commit:** (pending)
-**Previous:** `CC-FW-7.4.2`, `22f92ac` (CC-FW-7.4.3)
+**Previous:** `CC-FW-7.5.0`
 **Verified On:** TRMNL OG hardware
-**Status:** [LOCKED] (2026-02-06) — Production Release
+**Status:** [LOCKED] (2026-02-09) — Production Release
 
-**Changes from 7.4.2:**
+**Changes from 7.5.0:**
+- **Runtime Factory Reset:** 10-second button hold during normal operation triggers full factory reset (NVS erase, WiFi clear, preferences wipe, BLE re-pair). No unplugging or power cycling required.
+- **Visual Reset Warning:** At 5-second hold, e-ink display shows "KEEP HOLDING FOR FACTORY RESET" with "Release now for safe power-off" option.
+- **VCOM Discharge on Release:** Releasing button after 3-10 seconds triggers VCOM discharge (safe power-off). Only continuous 10s+ hold triggers reset.
+- **Dual Reset Paths:** Boot-time reset (hold button during power-on) retained as secondary method. Runtime reset is now primary.
+
+**Changes from 7.4.3 (inherited via 7.5.0):**
+- **BLE Provisioning with Webhook URL:** BLE now sends WiFi credentials AND webhook URL (3 characteristics: SSID CC000002, Password CC000003, URL CC000004)
+- **No Hardcoded Server URLs:** `DEFAULT_SERVER` in source is a placeholder only — never used for auto-pairing. Actual webhook URL sent from Setup Wizard's `window.location.origin + '/api/screen'`
+- **CC000004 Re-Added:** Webhook URL characteristic restored for BLE provisioning
+- **Device Status:** Notifies "configured" when all 3 values (SSID, password, URL) received
+- **No Pairing Code Required:** Primary flow is fully BLE-based; pairing code retained as secondary/optional path
+
+**Changes from 7.4.2 (inherited):**
 - **Structured Logging System:** LOG_LEVEL config (0=OFF, 1=ERROR, 2=WARN, 3=INFO, 4=DEBUG)
 - **Log Macros:** LOG_ERROR, LOG_WARN, LOG_INFO, LOG_DEBUG for consistent output
 - **State Transition Logging:** stateName() helper for readable state machine logs
 - **Production Mode:** LOG_LEVEL 3 (INFO) - set to 2 (WARN) for quieter production
 
-**Changes from 7.2.1:**
-- **Zero-Config Auto-Pairing:** Device auto-pairs with DEFAULT_SERVER after WiFi connects (no manual pairing code required)
+**Changes from 7.2.1 (inherited):**
 - **Full Turnkey Compliance:** All hardcoded URLs removed; DEFAULT_SERVER uses placeholder `https://your-project.vercel.app`
 - **Dynamic Setup Screen:** URL displayed on setup screen dynamically extracted from DEFAULT_SERVER constant
 - **Improved Setup Screen:** FONT_8x8 only (fixes rotation bug), centered text, boxed device name, simplified BLE instructions
@@ -1127,23 +1140,30 @@ The renderer creates a minimal 1-bit BMP in RAM (62-byte header + pixel data), r
 - **VCOM Stabilization:** `setLightSleep(true)` after EVERY refresh (partial and full)
 - **E-ink Protection:** Display always in safe state for sudden power-off/unplug
 - **MAX_PARTIAL_BEFORE_FULL:** Reduced 30→10 (more frequent full refreshes)
-- **Button Handler:** Long-press (3s) triggers full VCOM discharge sequence
+- **Button Handler:** 3s hold+release = VCOM discharge; 10s hold = factory reset
 
 #### 5.6.1 Key Characteristics
 
 | Attribute | Value |
 |-----------|-------|
-| WiFi Mode | BLE Provisioning (WiFi only) + Auto-Pair to DEFAULT_SERVER |
-| Server URL | Auto-configured from DEFAULT_SERVER constant (turnkey placeholder) |
+| WiFi Mode | BLE Provisioning with Webhook URL (SSID + Password + URL via BLE) |
+| Server URL | Provisioned via BLE from Setup Wizard (`window.location.origin + '/api/screen'`) |
 | Refresh Interval | 60 seconds (HARDCODED per Section 19) |
 | BMP Rendering | Direct render via bb_epaper (no allocBuffer) |
 | Refresh Strategy | Full screen BMP fetch → Full/Partial refresh → VCOM stabilize |
 | SPI Mode | Bit-bang (speed=0) for ESP32-C3 compatibility |
 | VCOM Protection | `setLightSleep(true)` after every refresh cycle |
 
-#### 5.6.2 VCOM Discharge Sequence
+#### 5.6.2 Button Actions (Runtime)
 
-Triggered by 3-second button press for safe power-off:
+| Hold Duration | Action | Visual Feedback |
+|---------------|--------|-----------------|
+| < 3 seconds | Ignored (debounce) | None |
+| 3-10 seconds + release | VCOM discharge (safe power-off) | Serial log only |
+| 5 seconds (still holding) | Warning displayed | E-ink shows "KEEP HOLDING FOR FACTORY RESET" |
+| 10+ seconds | **Factory reset** | E-ink shows "FACTORY RESET" → device restarts in BLE setup mode |
+
+**VCOM Discharge Sequence** (triggered on release after 3s+):
 
 1. Clear display to WHITE (full refresh)
 2. Flash to BLACK briefly (100ms)
@@ -1151,11 +1171,20 @@ Triggered by 3-second button press for safe power-off:
 4. Enter light sleep mode
 5. Serial output: `[VCOM] Discharge complete - safe to power off`
 
+**Factory Reset Sequence** (triggered on 10s continuous hold):
+
+1. E-ink displays "FACTORY RESET / Clearing all data..."
+2. WiFi credentials cleared (`WiFi.disconnect(true, true)`)
+3. NVS preferences cleared (`preferences.clear()`)
+4. Full NVS partition erased (`nvs_flash_erase()`)
+5. E-ink displays "RESET COMPLETE / Restarting device..."
+6. Device restarts → boots into BLE setup screen
+
 #### 5.6.3 Why WiFiManager/ArduinoJson Disabled
 
 | Library | Issue | Solution |
 |---------|-------|----------|
-| WiFiManager | Causes ESP32-C3 crash (0xbaad5678) due to static NVS init | BLE + Pairing Code hybrid provisioning |
+| WiFiManager | Causes ESP32-C3 crash (0xbaad5678) due to static NVS init | BLE provisioning (SSID + Password + Webhook URL) |
 | ArduinoJson | Causes stack corruption on ESP32-C3 | Manual JSON string parsing |
 
 #### 5.6.4 Exact Flashing Procedure (Verified Working)
@@ -2403,6 +2432,7 @@ Users MUST be able to choose between:
 | Lat/lon coordinates | Personal location data | Geocode from user-entered addresses |
 | Personal names or identifiers | Privacy | Never store; use generic labels |
 | Webhook URLs with personal tokens | Security + personal | Generated dynamically per device |
+| Server/webhook URLs in firmware | Couples firmware to specific deployment | Provisioned via BLE from Setup Wizard (CC000004) |
 
 #### 17.4.2 Turnkey Requirement
 
@@ -2434,6 +2464,16 @@ grep -rn "SSID\|PASS\|password\|Optus\|Telstra" firmware/ --include="*.cpp" --in
 | Default API endpoints | `api.opendata.transport.vic.gov.au` | Public infrastructure |
 | Stop ID ranges | "12xxx = Pakenham line citybound" | Technical documentation |
 | Sample journey in test files | `tests/sample-journey.json` | Clearly marked test data |
+| `DEFAULT_SERVER` placeholder in firmware | `https://your-project.vercel.app` | Documentation/turnkey display only — never used for auto-pairing |
+
+#### 17.4.3.1 Firmware Webhook URL Rule (MANDATORY)
+
+Server/webhook URLs MUST NOT be hardcoded in firmware source. The `DEFAULT_SERVER` constant is a placeholder for documentation/turnkey display only. Actual webhook URLs are provisioned via BLE from the user's Setup Wizard instance.
+
+- Setup Wizard constructs the URL: `window.location.origin + '/api/screen'`
+- URL is sent via BLE characteristic CC000004
+- Firmware stores URL in NVS exactly as received
+- If no URL in NVS, firmware returns to BLE setup — it does NOT fall back to `DEFAULT_SERVER`
 
 #### 17.4.4 Configuration Flow
 
@@ -3440,124 +3480,107 @@ The Setup Wizard MUST:
 3. Include generated `webhookUrl` in POST body
 4. Display "Directing you to your dashboard now..." on completion
 
-### 21.7 Hybrid Provisioning Flow: BLE + Pairing Code (v1.20)
+### 21.7 BLE Provisioning Flow: WiFi + Webhook URL (v7.5.0)
 
-**[CRITICAL]**: This is the MANDATORY provisioning architecture. It separates WiFi provisioning (BLE) from server configuration (pairing code) to avoid WiFiManager/captive portal crashes.
+**[CRITICAL]**: This is the MANDATORY provisioning architecture. BLE sends WiFi credentials AND webhook URL in a single phase. Pairing code is retained as a secondary/optional path only.
 
-#### 21.7.1 Why Hybrid?
+#### 21.7.1 Why BLE Provisioning?
 
 | Approach | Problem |
 |----------|---------|
 | WiFiManager / Captive Portal | **CRASHES** ESP32-C3 with 0xbaad5678 Guru Meditation |
-| BLE sends everything | Works, but couples WiFi and server config |
-| **Hybrid (BLE + Pairing)** | [YES] Clean separation, no crashes, re-configurable |
+| BLE WiFi only + Pairing Code | Works, but requires two-phase setup with polling |
+| **BLE sends WiFi + Webhook URL** | **[YES]** Single-phase, no crashes, no hardcoded URLs, no polling |
 
 **Benefits:**
 - **No captive portal** — avoids crash
-- **Minimal BLE payload** — only WiFi SSID + password
-- **Rich server config** — all preferences via pairing code
-- **Re-configurable** — change server config without re-pairing BLE
-- **Existing infrastructure** — uses existing `/api/pair/[code]` endpoint
+- **Single-phase provisioning** — SSID + password + webhook URL all via BLE
+- **No hardcoded server URLs** — webhook URL comes from Setup Wizard's `window.location.origin`
+- **No pairing code needed** — device proceeds directly to dashboard after WiFi connects
+- **Re-configurable** — factory reset returns to BLE setup for reprovisioning
 
-#### 21.7.2 Two-Phase Provisioning Flow
+#### 21.7.2 BLE Provisioning Flow (Primary)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                                                                         │
-│  PHASE 1: BLE WiFi Provisioning                                        │
+│  BLE Provisioning: WiFi + Webhook URL (Single Phase)                    │
 │                                                                         │
 │  ┌─────────────┐         BLE          ┌─────────────┐                  │
 │  │   Phone     │ ───────────────────► │   Device    │                  │
-│  │   Browser   │   SSID + Password    │   ESP32     │                  │
-│  │  (Chrome)   │      ONLY            │  (CCFirm)   │                  │
+│  │   Browser   │   SSID (CC000002)    │   ESP32     │                  │
+│  │  (Chrome)   │   Password (CC0003)  │  (CCFirm)   │                  │
+│  │             │   URL (CC000004)     │             │                  │
 │  └─────────────┘                      └─────────────┘                  │
-│                                              │                          │
-│                                              ▼                          │
-│                                        Saves WiFi creds                 │
-│                                        Connects to WiFi                 │
-│                                              │                          │
-├──────────────────────────────────────────────┼──────────────────────────┤
-│                                              │                          │
-│  PHASE 2: Pairing Code Server Config         ▼                          │
-│                                     ┌─────────────────┐                 │
-│                                     │  Device shows:  │                 │
-│                                     │  Code: A7X9K2   │                 │
-│  ┌─────────────┐                    └────────┬────────┘                 │
-│  │   Phone     │                             │                          │
-│  │   Browser   │                             │ Polls GET /api/pair/CODE │
-│  │  (any)      │                             │ every 5 seconds          │
-│  └──────┬──────┘                             │                          │
-│         │                                    ▼                          │
-│         │ User enters code    ┌─────────────────────────┐               │
-│         │ in Setup Wizard     │   Vercel Server         │               │
-│         │                     │   (stores config in KV) │               │
-│         │ POST config         └─────────────────────────┘               │
-│         └─────────────────────────────────►│                            │
-│           to /api/pair/CODE                │                            │
-│           (webhookUrl, prefs)              │ Device polls, receives     │
-│                                            │ webhookUrl                 │
-│                                            ▼                            │
-│                                    ┌─────────────┐                      │
-│                                    │   Device    │                      │
-│                                    │   Ready!    │                      │
-│                                    └─────────────┘                      │
+│        │                                     │                          │
+│        │ Setup Wizard constructs URL:        ▼                          │
+│        │ window.location.origin         Saves all 3 to NVS             │
+│        │   + '/api/screen'              Status → "configured"          │
+│        │                                     │                          │
+│        │                                     ▼                          │
+│        │                               Connects to WiFi                 │
+│        │                                     │                          │
+│        │                                     ▼                          │
+│        │                              ┌─────────────┐                   │
+│        │                              │   Device    │                   │
+│        │                              │  Fetches    │                   │
+│        │                              │  Dashboard  │                   │
+│        │                              └─────────────┘                   │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-#### 21.7.3 Firmware State Machine (Hybrid)
+**Note:** Pairing code flow (Section 21.6) is retained as a secondary/optional path for advanced re-configuration without factory reset.
+
+#### 21.7.3 Firmware State Machine (BLE Provisioning)
 
 ```
 STATE_INIT
     │
     ▼
-STATE_CHECK_CREDENTIALS ──── Has WiFi? ──── Yes ───► STATE_WIFI_CONNECT
-    │                                                      │
-    No                                                     │
-    ▼                                                      │
-STATE_BLE_PROVISION                                        │
-    │                                                      │
-    │ Receives SSID + Password via BLE (NO URL)            │
-    │ Saves to Preferences                                 │
-    ▼                                                      │
-STATE_WIFI_CONNECT ◄───────────────────────────────────────┘
+STATE_CHECK_CREDENTIALS ──── Has WiFi + URL? ──── Yes ───► STATE_WIFI_CONNECT
+    │                                                            │
+    No (missing any of: SSID, password, URL)                     │
+    ▼                                                            │
+STATE_BLE_SETUP                                                  │
+    │                                                            │
+    │ Receives SSID + Password + Webhook URL via BLE             │
+    │ (CC000002, CC000003, CC000004)                             │
+    │ Saves all 3 to NVS                                         │
+    │ Status notifies "configured"                               │
+    ▼                                                            │
+STATE_WIFI_CONNECT ◄─────────────────────────────────────────────┘
     │
     │ Connected to WiFi
     ▼
-STATE_CHECK_SERVER_URL ──── Has URL? ──── Yes ───► STATE_FETCH_ZONES
-    │
-    No
-    ▼
-STATE_PAIRING_MODE
-    │
-    │ Generate 6-char code
-    │ Display code on screen
-    │ Poll GET /api/pair/[code] every 5 seconds
-    │ Timeout after 10 minutes
-    │
-    │ Receives webhookUrl
-    │ Saves to Preferences
-    ▼
-STATE_FETCH_ZONES
+STATE_FETCH_DASHBOARD
     │
     ▼
 STATE_RENDER ◄──► STATE_IDLE
 ```
 
-#### 21.7.4 BLE Characteristics (Phase 1 Only)
+**Primary flow:** `STATE_BLE_SETUP` -> (receives SSID + Password + URL) -> `STATE_WIFI_CONNECT` -> `STATE_FETCH_DASHBOARD`
+
+No `STATE_PAIRING_MODE` needed for the primary flow. If no webhook URL exists in NVS, device returns to `STATE_BLE_SETUP`.
+
+#### 21.7.4 BLE Characteristics
 
 | UUID | Name | Direction | Purpose |
 |------|------|-----------|---------|
+| `CC000001-...` | Service | — | Service UUID |
 | `CC000002-...` | SSID | Write | WiFi network name |
 | `CC000003-...` | Password | Write | WiFi password |
-| `CC000005-...` | Status | Read/Notify | Connection status |
+| `CC000004-...` | Webhook URL | Write | **RE-ADDED in v7.5.0** — Server webhook URL |
+| `CC000005-...` | Status | Read/Notify | Connection status (notifies "configured" when all 3 received) |
 | `CC000006-...` | WiFiList | Read | Available networks |
 
-**[REMOVED]**: `CHAR_URL_UUID` -- Server URL is NO LONGER sent via BLE
+**[RE-ADDED in v7.5.0]**: `CC000004` (Webhook URL) — Setup Wizard sends `window.location.origin + '/api/screen'` via this characteristic. This is the primary mechanism for server URL provisioning; no hardcoded server URLs are used.
 
-#### 21.7.5 Pairing Screen Display
+#### 21.7.5 Pairing Screen Display (Secondary/Optional)
 
-When device enters `STATE_PAIRING_MODE`, display:
+**Note:** This screen is only shown if using the optional pairing code flow. The primary BLE provisioning flow (v7.5.0+) does not require a pairing code — the device proceeds directly to dashboard after BLE provisioning.
+
+When device enters `STATE_PAIRING_MODE` (secondary flow only), display:
 
 ```
 ┌─────────────────────────────────────────┐
@@ -3580,74 +3603,75 @@ When device enters `STATE_PAIRING_MODE`, display:
 └─────────────────────────────────────────┘
 ```
 
-#### 21.7.6 Setup Wizard Flow (Hybrid)
+#### 21.7.6 Setup Wizard Flow (BLE Provisioning)
 
-**Step 1: WiFi Provisioning (BLE)**
+**Single-Phase BLE Provisioning (Primary):**
 1. User clicks "Connect Device" in Setup Wizard
 2. Browser requests Bluetooth permission
 3. User selects "CommuteCompute-XXXX" device
-4. Wizard scans for WiFi networks via BLE characteristic
+4. Wizard scans for WiFi networks via BLE characteristic (CC000006)
 5. User selects network and enters password
-6. Wizard sends SSID + password via BLE
-7. Device connects to WiFi
+6. User completes journey configuration (addresses, preferences)
+7. Wizard sends via BLE: SSID (CC000002) + Password (CC000003) + Webhook URL (CC000004)
+8. Webhook URL constructed as: `window.location.origin + '/api/screen'`
+9. Device stores all 3 in NVS, connects to WiFi, proceeds to dashboard
 
-**Step 2: Server Configuration (Pairing Code)**
-1. Device displays pairing code on e-ink screen
-2. User enters 6-character code in Setup Wizard
-3. User completes journey configuration (addresses, preferences)
-4. Wizard POSTs config to `/api/pair/{CODE}`
-5. Device polls and receives webhookUrl
-6. Device transitions to dashboard mode
+**Secondary Flow (Pairing Code — Optional):**
+1. If device already has WiFi but needs server re-configuration
+2. Device can enter `STATE_PAIRING_MODE` to display pairing code
+3. User enters code in Setup Wizard, which POSTs config to `/api/pair/{CODE}`
+4. Device polls and receives updated webhookUrl
 
 #### 21.7.7 Re-Configuration Scenarios
 
 | Scenario | Action |
 |----------|--------|
-| Change WiFi network | Factory reset → Re-provision via BLE |
-| Change server/preferences | New pairing code (no BLE needed) |
-| Move to new home | Factory reset → Full re-provision |
+| Change WiFi network | Factory reset → Re-provision via BLE (sends WiFi + URL) |
+| Change server/preferences | Factory reset → Re-provision via BLE, or use optional pairing code flow |
+| Move to new home | Factory reset → Full re-provision via BLE |
 
 #### 21.7.8 Factory Reset Behavior
 
 Factory reset clears:
 - WiFi SSID
 - WiFi password
-- Server URL
+- Webhook URL
 - All preferences
 
-Device returns to `STATE_BLE_PROVISION` and displays BLE setup screen.
+Device returns to `STATE_BLE_SETUP` and displays BLE setup screen for reprovisioning.
 
-#### 21.7.9 Zero-Config Auto-Pairing (v7.4.0+)
+#### 21.7.9 BLE Webhook URL Provisioning (v7.5.0+)
 
-**[CRITICAL] MANDATORY**: Firmware MUST auto-pair with DEFAULT_SERVER when no custom URL is configured.
+**[CRITICAL] MANDATORY**: Firmware MUST receive webhook URL via BLE from Setup Wizard. No hardcoded server URLs. If no webhook URL in NVS, device returns to BLE setup.
 
-When WiFi connects successfully and no `webhookUrl` is stored in NVS, the firmware SHALL:
-1. Automatically construct webhook URL: `{DEFAULT_SERVER}/api/screen`
+When WiFi connects successfully and a `webhookUrl` is stored in NVS (received via BLE characteristic CC000004), the firmware SHALL:
+1. Use the webhook URL exactly as received from Setup Wizard
 2. Set `devicePaired = true`
-3. Save settings to NVS
-4. Proceed directly to `STATE_FETCH_DASHBOARD`
+3. Proceed directly to `STATE_FETCH_DASHBOARD`
 
-This enables **true zero-config operation**:
-- User only needs to provide WiFi credentials via BLE
-- No manual pairing code entry required for default server
-- Device works immediately after WiFi provisioning
+If no `webhookUrl` is stored in NVS, the firmware SHALL:
+1. Return to `STATE_BLE_SETUP`
+2. Display BLE setup screen
+3. Wait for reprovisioning via Setup Wizard
+
+**No DEFAULT_SERVER auto-pairing.** The `DEFAULT_SERVER` constant in source is a placeholder for documentation/turnkey display only. It is NEVER used to construct a webhook URL automatically.
 
 ```cpp
-// AUTO-PAIR: Use DEFAULT_SERVER when no custom URL configured
-if (!devicePaired || strlen(webhookUrl) == 0) {
-    snprintf(webhookUrl, sizeof(webhookUrl), "%s/api/screen", DEFAULT_SERVER);
-    devicePaired = true;
-    saveSettings();
+// v7.5.0: Webhook URL MUST come from BLE, not DEFAULT_SERVER
+if (strlen(webhookUrl) == 0) {
+    // No webhook URL — return to BLE setup for reprovisioning
+    currentState = STATE_BLE_SETUP;
+    return;
 }
+// URL was provisioned via BLE from Setup Wizard
+devicePaired = true;
 ```
-
-**Custom Server Override**: Users who want a different server can still use the pairing code flow via the Setup Wizard's "Connect Device" option, which POSTs to `/api/pair/{code}` with a custom `webhookUrl`.
 
 | Scenario | Behavior |
 |----------|----------|
-| Fresh device + BLE WiFi | Auto-pairs to DEFAULT_SERVER |
-| Factory reset | Clears URL, re-auto-pairs on next boot |
-| Custom server needed | Use Setup Wizard pairing code flow |
+| Fresh device + BLE WiFi | Receives webhook URL via BLE → Dashboard |
+| Factory reset | Clears all NVS → Returns to BLE setup for reprovisioning |
+| No webhook URL in NVS | Returns to `STATE_BLE_SETUP` (no DEFAULT_SERVER auto-pair) |
 
 ---
 
