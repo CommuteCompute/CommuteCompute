@@ -49,7 +49,7 @@ Thank you for considering supporting Commute Compute(TM)! This project is develo
 
 ## Transparency
 
-This is a **non-commercial, open-source project**. All donations go directly toward:
+Commute Compute™ is an **open-source project** dual-licensed under AGPL-3.0 (with commercial licensing available). All donations go directly toward:
 
 1. Development time and tools
 2. Testing hardware (displays, devices)

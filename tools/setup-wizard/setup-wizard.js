@@ -352,7 +352,7 @@ class SetupWizard {
     this.log(`   - Display Resolution: ${device.resolution.width}×${device.resolution.height}`, 'cyan');
     this.log(`   - Orientation: ${device.orientation}\n`, 'cyan');
 
-    const firmwarePath = path.join(__dirname, 'firmware', 'trmnl-byos.ino');
+    const firmwarePath = path.join(__dirname, 'firmware', 'cc-eink-byos.ino');
     const firmwareExists = await fs.access(firmwarePath).then(() => true).catch(() => false);
 
     if (firmwareExists) {
