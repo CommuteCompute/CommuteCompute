@@ -10,7 +10,7 @@
  * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  */
 
-import { getTransitApiKey, getGoogleApiKey, getStorageStatus } from '../src/data/kv-preferences.js';
+import { getTransitApiKey, getGoogleApiKey, getStorageStatus, getClient } from '../src/data/kv-preferences.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -29,6 +29,18 @@ export default async function handler(req, res) {
     const transitKey = await getTransitApiKey();
     const googleKey = await getGoogleApiKey();
     const kvStatus = await getStorageStatus();
+
+    // Test actual Redis connectivity
+    let redisConnected = false;
+    try {
+      const client = await getClient();
+      if (client) {
+        await client.get('cc:health:ping');
+        redisConnected = true;
+      }
+    } catch {
+      redisConnected = false;
+    }
     
     // Determine if system is configured (has transit API key)
     const isConfigured = !!transitKey;
@@ -56,6 +68,9 @@ export default async function handler(req, res) {
         available: kvStatus.kvAvailable,
         hasTransitKey: kvStatus.hasTransitKey,
         hasGoogleKey: kvStatus.hasGoogleKey
+      },
+      redis: {
+        connected: redisConnected
       },
       environment: 'vercel-serverless'
     });

@@ -4,8 +4,8 @@
 
 # Commute Compute System™ — Legal & Intellectual Property
 
-**Document Version:** 1.4
-**Last Updated:** 2026-02-15
+**Document Version:** 1.5
+**Last Updated:** 2026-02-16
 **Owner:** Angus Bergman
 
 ---
@@ -32,7 +32,15 @@ The following are **trademarks (™)** owned by **Angus Bergman** (registration 
 
 ### Trademark Applications (IP Australia)
 
-Trademark applications for COMMUTE COMPUTE (word mark) and the CC Logo (figurative mark) have been filed with IP Australia covering Classes 9, 39, and 42.
+The following trademark applications have been filed with IP Australia:
+
+| Application No. | Mark | Type | Classes | Status | Filed |
+|-----------------|------|------|---------|--------|-------|
+| TM 2627709 | COMMUTE COMPUTE | Word Mark | 9, 39, 42 | Headstart Part 1 | 14 February 2026 |
+| TM 2627710 | CC Logo | Figurative Mark | 9, 39, 42 | Headstart Part 1 | 14 February 2026 |
+
+Filing references: AMCZ-2615437674, AMCZ-2615438195
+ABN: 59 402 869 395
 
 ### Ownership Statement
 
@@ -317,10 +325,13 @@ CCFirm™ firmware files include explicit third-party attribution in headers:
 
 ## Contact
 
-For licensing inquiries, trademark permissions, or legal questions:
+For licensing enquiries, trademark permissions, or legal questions:
 
-**Angus Bergman**  
+**Angus Bergman**
+**Email:** commutecompute.licensing@gmail.com
 GitLab: [@angusbergman](https://gitlab.com/angusbergman)
+
+For security vulnerability reporting, see our [Responsible Disclosure Policy](SECURITY.md).
 
 ---
 
@@ -328,7 +339,8 @@ GitLab: [@angusbergman](https://gitlab.com/angusbergman)
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.4 | 2026-02-15 | Added IP Australia trademark application details, updated trademark heading for registration-pending status |
+| 1.5 | 2026-02-16 | Added SECURITY.md cross-reference for responsible disclosure, added email to Contact section, corrected "inquiries" to "enquiries" (Australian English) |
+| 1.4 | 2026-02-15 | Added IP Australia TM 2627709/2627710 applications, updated trademark heading for registration-pending status |
 | 1.3 | 2026-02-14 | Added Governing Law & Jurisdiction (Victoria, Australia), Copyright Act 1968 (Cth) references, moral rights assertion, Commercial Licence Framework (bespoke per-licensee terms), Limitation of Liability with ACL compliance |
 | 1.2 | 2026-02-07 | Updated to AGPL-3.0 Dual Licence model (open source + commercial) |
 | 1.1 | 2026-01-31 | Added File Attribution Audit section, Trademark Family File Registry, third-party exclusions documentation |

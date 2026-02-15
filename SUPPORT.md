@@ -2,9 +2,11 @@
   <img src="assets/brand/cc-logo-apple-touch.png" alt="Commute Compute™" width="120">
 </p>
 
-# Supporting Commute Compute(TM)
+# Supporting Commute Compute™
 
-Thank you for considering supporting Commute Compute(TM)! This project is developed and maintained by **Angus Bergman** as a passion project to make Australian public transport more accessible.
+**System Version:** v4.2.0
+
+Thank you for considering supporting Commute Compute™! This project is developed and maintained by **Angus Bergman** as a passion project to make Australian public transport more accessible.
 
 ---
 
@@ -31,7 +33,7 @@ Thank you for considering supporting Commute Compute(TM)! This project is develo
 
 ### Development
 - **More transit authorities** -- expanding beyond Victoria to all Australian states
-- **New device support** -- TRMNL X, more Kindle models, custom hardware
+- **New device support** -- more CC E-Ink variants, more Kindle models, custom hardware
 - **International expansion** -- potential support for transit systems worldwide
 - **Performance improvements** -- faster refresh, better reliability
 
@@ -60,9 +62,9 @@ Commute Compute™ is an **open-source project** dual-licensed under AGPL-3.0 (w
 
 ## Thank You
 
-Every contribution, whether financial or otherwise, helps make Commute Compute(TM) better for everyone.
+Every contribution, whether financial or otherwise, helps make Commute Compute™ better for everyone.
 
-If you're using Commute Compute(TM) for your daily commute and finding it useful, even a small token of appreciation means the world.
+If you're using Commute Compute™ for your daily commute and finding it useful, even a small token of appreciation means the world.
 
 **Built in Melbourne, Australia**
 
@@ -71,7 +73,7 @@ If you're using Commute Compute(TM) for your daily commute and finding it useful
 ## Contact
 
 - **Issues/Bugs**: [GitLab Issues](https://gitlab.com/angusbergman/commute-compute-system/issues)
-- **Email**: Via the feedback form in the app
+- **Email**: commutecompute.licensing@gmail.com
 - **GitLab**: [@angusbergman](https://gitlab.com/angusbergman)
 
 ---
@@ -88,4 +90,4 @@ If you're using Commute Compute(TM) for your daily commute and finding it useful
 
 ---
 
-(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual License
+Copyright (c) 2026 Angus Bergman -- AGPL-3.0 Dual Licence
