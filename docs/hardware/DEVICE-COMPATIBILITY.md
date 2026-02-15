@@ -801,7 +801,8 @@ A: Open a GitLab Issue with your device specs. Community may have already tested
 - **Kindle Development**: https://www.mobileread.com/forums/forumdisplay.php?f=150
 
 ### Where to Buy
-- **TRMNL Displays**: Official TRMNL hardware store (new)
+- **TRMNL Displays**: [TRMNL Shop](https://shop.trmnl.com) (new, purpose-built e-ink hardware)
+- **ESP32-C3 + E-Ink DIY Kit**: [Seeed Studio](https://www.seeedstudio.com) (build your own from components)
 - **Used Kindles**: eBay, Facebook Marketplace, Craigslist
 - **Amazon Renewed**: Refurbished Kindles with warranty
 

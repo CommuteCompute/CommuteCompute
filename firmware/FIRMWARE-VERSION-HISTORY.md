@@ -14,7 +14,46 @@ This document tracks all firmware releases for the Commute Compute System.
 
 ## [LOCKED] Production Versions
 
-### CC-FW-7.4.3 (Current)
+### CC-FW-7.5.0 (Current)
+
+| Attribute | Value |
+|-----------|-------|
+| **Version** | 7.5.0 |
+| **Official Name** | CC-FW-7.5.0 |
+| **Release Date** | 2026-02-09 |
+| **Git Commit** | (pending) |
+| **Previous** | CC-FW-7.4.3 |
+| **Status** | [DONE] PRODUCTION - LOCKED |
+| **Hardware Verified** | TRMNL OG (ESP32-C3, 7.5" 800x480 e-ink) |
+
+**Description:**
+BLE provisioning with webhook URL. Setup Wizard sends WiFi credentials AND webhook URL via BLE — no hardcoded server URLs in firmware. Eliminates DEFAULT_SERVER auto-pairing.
+
+**Key Changes from 7.4.3:**
+- **BLE Webhook URL Provisioning:** Re-added BLE URL characteristic (CC000004). Setup Wizard sends `window.location.origin + '/api/screen'` as webhook URL during BLE provisioning.
+- **No Hardcoded Server URLs:** Removed DEFAULT_SERVER auto-pairing. Device requires BLE provisioning for webhook URL. `DEFAULT_SERVER` constant retained as documentation placeholder only.
+- **BLE Status:** Device notifies `configured` (not `wifi_saved`) when all 3 credentials received (SSID + Password + URL).
+- **Setup Screen:** Generic instructions shown instead of DEFAULT_SERVER-derived URL.
+- **Pairing Code Flow:** Still available as secondary reconfiguration method, extracts base URL from stored webhook URL.
+
+**Provisioning Flow:**
+```
+BLE Setup Screen → WiFi Credentials + Webhook URL via BLE → Connect to WiFi → Fetch Dashboard
+```
+
+**Flashing Command:**
+```bash
+cd firmware
+pio run -e trmnl -t upload
+pio device monitor -b 115200
+```
+
+**Modification Policy:**
+[CRITICAL] DO NOT MODIFY without explicit approval. Changes require new version number and hardware verification.
+
+---
+
+### CC-FW-7.4.3 (Superseded by 7.5.0)
 
 | Attribute | Value |
 |-----------|-------|
@@ -168,8 +207,9 @@ pio device monitor -b 115200
 
 | Version | Date | Commit | Status | Notes |
 |---------|------|--------|--------|-------|
-| **CC-FW-7.4.3** | 2026-02-01 | (pending) | [LOCKED] LOCKED | Current production release. |
-| **CC-FW-7.4.3** | 2026-02-01 | (pending) | Superseded | Hybrid BLE + Pairing Code provisioning. |
+| **CC-FW-7.5.0** | 2026-02-09 | (pending) | [LOCKED] LOCKED | Current production release. BLE webhook URL provisioning. |
+| **CC-FW-7.4.3** | 2026-02-07 | (pending) | Superseded | Hybrid BLE + Pairing Code provisioning. |
+| **CC-FW-7.4.3-HYBRID** | 2026-02-01 | (pending) | Superseded | Hybrid BLE + Pairing Code provisioning. |
 | **CC-FW-6.1-60s** | 2026-01-31 | `7336929` | Superseded | 60s refresh interval, consolidated version define. |
 | **CC-FW-6.0-STABLE** | 2026-01-31 | `2f8d6cf` | Superseded | First production release. Hardware verified. |
 | 6.0-dev | 2026-01-30 | Various | Deprecated | Development iterations leading to stable |
@@ -203,6 +243,7 @@ Examples:
 
 | Firmware | TRMNL OG | TRMNL Mini | Kindle |
 |----------|----------|------------|--------|
+| CC-FW-7.5.0 | [YES] Verified | [?] Untested | N/A |
 | CC-FW-6.1-60s | [YES] Verified | [?] Untested | N/A |
 | CC-FW-6.0-STABLE | [YES] Verified | [?] Untested | N/A |
 

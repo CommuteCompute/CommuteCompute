@@ -51,7 +51,8 @@ Your CC E-Ink device has been flashed with custom firmware and is ready to conne
 ### After WiFi Setup:
 - Device connects to your WiFi
 - Fetches data from admin panel
-- Displays your personalized Commute Compute(TM) dashboard
+- **Allow 2--3 minutes** for the device to connect and fetch its first dashboard image. The first load takes longer than subsequent refreshes.
+- Displays your personalised Commute Compute(TM) dashboard
 
 ### Normal Operation:
 - **Partial refresh** every 1 minute (departure times update)
@@ -115,6 +116,10 @@ Dashboard updated successfully
 ## Troubleshooting
 
 ### Display Not Updating
+
+- After flashing, allow **2--3 minutes** for the device to connect to WiFi and fetch its first dashboard image. Do not power off or reset during this time.
+- If the display remains blank after 5 minutes, check serial output for errors:
+
 ```bash
 # Check serial output (do NOT use pio device monitor)
 screen /dev/cu.usbmodem* 115200  # macOS
@@ -126,10 +131,11 @@ screen /dev/cu.usbmodem* 115200  # macOS
 ```
 
 ### WiFi Won't Connect
-```bash
-# Reset WiFi credentials by holding button for 5 seconds
-# Or reflash firmware to reset WiFi credentials
-```
+
+- The ESP32-C3 only supports **2.4 GHz** WiFi. 5 GHz networks are not supported.
+- If WiFi scanning does not show your network, ensure your router's 2.4 GHz band is enabled. Some dual-band routers disable 2.4 GHz when 5 GHz is active.
+- If selecting a scanned network does not populate the SSID field, try typing the network name manually.
+- To reset WiFi credentials: hold the button for 5 seconds, or reflash firmware.
 
 ### Admin Panel Not Responding
 ```bash

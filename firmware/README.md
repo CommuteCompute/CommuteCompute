@@ -221,6 +221,9 @@ Press and hold button for 3 seconds to trigger safe shutdown:
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | No serial output | USB CDC flags missing | Add `-D ARDUINO_USB_MODE=1 -D ARDUINO_USB_CDC_ON_BOOT=1` |
+| Display blank after flash | First load in progress | Allow 2--3 minutes for initial WiFi connection and first dashboard fetch |
+| WiFi network not found | 5 GHz only | ESP32-C3 supports 2.4 GHz only. Ensure router broadcasts on 2.4 GHz. |
+| WiFi scan selection fails | BLE provisioning issue | Try typing the network name manually instead of selecting from scan |
 | Display shows garbage | `allocBuffer()` called | Remove all `allocBuffer()` calls |
 | Text rotated 90° | FONT_12x16 bug | Use FONT_8x8 only |
 | `SPI does not have default pins` | Hardware SPI on C3 | Use bit-bang mode (speed=0) |
