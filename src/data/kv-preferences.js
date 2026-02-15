@@ -121,7 +121,7 @@ async function getUpstashClient() {
         return upstashClient;
       }
     } catch (e) {
-      console.error('[KV] REDIS_URL parse failed:', 'REDIS_URL', e.message);
+      console.error('[KV]', { operation: 'parseRedisUrl', error: e.message, timestamp: new Date().toISOString() });
     }
   }
 
@@ -165,7 +165,7 @@ async function getUpstashClient() {
 
       return upstashClient;
     } catch (e) {
-      console.error('[KV] ioredis client init failed:', 'REDIS_URL', e.message);
+      console.error('[KV]', { operation: 'ioredisClientInit', error: e.message, timestamp: new Date().toISOString() });
     }
   }
 
@@ -230,7 +230,7 @@ export async function getClient() {
     const client = await withTimeout(clientPromise, 3000, null);
     return client;
   } catch (e) {
-    console.error('[KV] Client init failed:', e.message);
+    console.error('[KV]', { operation: 'getClient', error: e.message, timestamp: new Date().toISOString() });
     return null;
   }
 }
@@ -245,7 +245,7 @@ function withTimeout(promise, ms, fallback) {
       setTimeout(() => reject(new Error(`KV operation timeout after ${ms}ms`)), ms)
     )
   ]).catch(err => {
-    console.error('[KV] Operation timeout:', err.message);
+    console.error('[KV]', { operation: 'withTimeout', error: err.message, timestamp: new Date().toISOString() });
     return fallback;
   });
 }
@@ -265,7 +265,7 @@ async function get(key) {
     }
     return memoryStore.get(key) || null;
   } catch (error) {
-    console.error('[KV] GET failed:', key, error.message);
+    console.error('[KV]', { operation: 'get', key, error: error.message, timestamp: new Date().toISOString() });
     return memoryStore.get(key) || null;
   }
 }
@@ -287,7 +287,7 @@ async function set(key, value) {
     memoryStore.set(key, value);
     return true;
   } catch (error) {
-    console.error('[KV] SET failed:', key, error.message);
+    console.error('[KV]', { operation: 'set', key, error: error.message, timestamp: new Date().toISOString() });
     memoryStore.set(key, value);
     return false;
   }

@@ -6,10 +6,12 @@
 
 **Complete setup instructions for your Commute Compute smart transit display.**
 
-**Version:** 4.0
-**Last Updated:** 2026-02-14
+**Version:** 4.1
+**Last Updated:** 2026-02-16
 **System Version:** v4.2.0 (CCDashDesignV15.0)
 **License:** AGPL-3.0 Dual License (see [LICENSE](LICENSE))
+
+> New to Commute Compute? Start with our [Complete Beginner Guide](docs/guides/COMPLETE-BEGINNER-GUIDE.md) for a friendlier walkthrough with no technical background required.
 
 ---
 
@@ -20,7 +22,7 @@ Setting up Commute Compute involves four steps:
 1. **Deploy** -- Host the server on Vercel (one click)
 2. **Storage** -- Add Redis via Vercel Marketplace
 3. **Configure** -- Run the Setup Wizard (addresses, API keys, preferences)
-4. **Pair** -- Flash and pair your CC E-Ink device
+4. **Pair** -- Flash and pair your CC E-Ink display
 
 **Time required:** ~60-90 minutes (first-time setup; includes API key registration and approval wait times)
 
@@ -31,9 +33,10 @@ Setting up Commute Compute involves four steps:
 | Requirement | Description |
 |-------------|-------------|
 | Vercel account | Free tier works perfectly |
-| CC E-Ink device | Or jailbroken Kindle |
+| CC E-Ink display | Or jailbroken Kindle |
 | Transport Victoria API key | Required for live departure data -- register at [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/) |
 | Google Places API key | Optional -- for address autocomplete |
+| Modern web browser | The Admin Panel, Setup Wizard, and browser-based flasher require a modern web browser (Chrome, Firefox, Safari, or Edge). Internet Explorer is not supported. The browser-based flasher requires Chrome or Edge (Web Serial API). |
 
 ---
 
@@ -151,14 +154,14 @@ This key is essential for live real-time departure countdowns -- the core featur
 
 ## Step 4: Device Setup
 
-### For CC E-Ink Devices
+### For CC E-Ink Displays
 
 #### 4.1 Flash Firmware
 
 **Requirements:**
 - PlatformIO installed
 - USB cable
-- CC E-Ink device
+- CC E-Ink display
 
 ```bash
 cd firmware
@@ -198,11 +201,11 @@ See [firmware/kindle/README.md](firmware/kindle/README.md) for Kindle-specific s
 
 Open: `https://your-project-name.vercel.app/api/screen`
 
-You should see your personalized dashboard image.
+You should see your personalised dashboard image.
 
 ### Check Device
 
-Your CC E-Ink device should display:
+Your CC E-Ink display should show:
 - Current time and journey legs
 - Live departure countdowns
 - Weather and lifestyle suggestions

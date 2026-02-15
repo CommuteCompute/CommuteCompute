@@ -5,7 +5,7 @@
 # Known Issues & Hardware Quirks
 
 **System Version:** v4.2.0 (CCDashDesignV15.0)
-**Last Updated:** 2026-02-06
+**Last Updated:** 2026-02-16
 
 ---
 
@@ -16,26 +16,33 @@
 **Status:** Workaround applied
 
 ### Problem
-When using `bbep.begin(EPD_TRMNL_OG)` preset with `FONT_12x16`, all text renders rotated 90 degrees counter-clockwise, making the display unreadable.
+
+When using the `bbep.begin(EPD_TRMNL_OG)` preset with the `FONT_12x16` font size, all text renders rotated 90 degrees counter-clockwise, making the e-ink display unreadable.
+
+**What this means for you:** If you are building or modifying the firmware yourself, using a larger font size on your CC E-Ink display can cause all the text to appear sideways. The standard firmware already avoids this problem — you only need to worry about it if you are customising the firmware code.
 
 ### Affected Configuration
-- Hardware: TRMNL OG (ESP32-C3 + 7.5" Waveshare e-ink)
+
+- Hardware: CC E-Ink OG (TRMNL OG hardware — ESP32-C3 chip + 7.5" Waveshare e-ink panel)
 - Library: bb_epaper v2.0.3+
 - Preset: `EPD_TRMNL_OG`
 - Font: `FONT_12x16` (and possibly other larger fonts)
 
 ### Working Configuration
+
 - Font: `FONT_8x8` renders correctly
-- Test pattern with grid and labels confirmed coordinate system is correct
-- Issue is isolated to font rendering, not display orientation
+- Test pattern with grid and labels confirmed the coordinate system is correct
+- The issue is isolated to font rendering, not display orientation
 
 ### Diagnosis Method
-1. Flash test pattern with grid lines and coordinate labels using FONT_8x8
-2. Observe: All text horizontal, TL/TR/BL/BR corners correct
-3. Flash dashboard with FONT_12x16 headers
-4. Observe: FONT_12x16 text rotated 90 degrees CCW, FONT_8x8 text correct
+
+1. Flash a test pattern with grid lines and coordinate labels using `FONT_8x8`
+2. Observe: all text is horizontal, TL/TR/BL/BR corners are correct
+3. Flash the dashboard with `FONT_12x16` headers
+4. Observe: `FONT_12x16` text is rotated 90 degrees counter-clockwise, while `FONT_8x8` text remains correct
 
 ### Fix Applied
+
 ```cpp
 // In initDisplay():
 bbep.begin(EPD_TRMNL_OG);  // Use TRMNL preset
@@ -46,8 +53,11 @@ bbep.setFont(FONT_8x8);     // ONLY use 8x8 font
 // DO NOT use FONT_12x16 - it will rotate!
 ```
 
-### Golden Rule Addition
-**Rule:** On TRMNL hardware, use ONLY `FONT_8x8`. Larger fonts have rendering bugs that cause 90 degree rotation.
+### Golden Rule
+
+**Rule:** On CC E-Ink hardware (TRMNL OG), use ONLY `FONT_8x8`. Larger fonts have rendering bugs that cause 90-degree rotation.
+
+**What this means for you:** The standard CCFirm™ firmware already uses the correct font. If you ever modify the firmware code, stick to `FONT_8x8` — do not switch to larger font sizes, or text will appear rotated on screen.
 
 ---
 
@@ -58,7 +68,10 @@ bbep.setFont(FONT_8x8);     // ONLY use 8x8 font
 **Status:** Monitoring
 
 ### Note
-V15.0 introduces larger fonts for improved glanceability in the CCDash(TM) Renderer (v1.81). The enhanced font sizes are rendered server-side in the 1-bit BMP output, so they are not affected by the FONT_12x16 firmware rotation bug above. The firmware continues to use server-rendered images. No firmware font changes are required.
+
+V15.0 introduces larger fonts for improved readability in the CCDash™ Renderer (v1.81). These enhanced font sizes are rendered on the server (in the cloud) and sent to your display as a pre-built image. Because of this, they are **not** affected by the FONT_12x16 firmware rotation bug described above. The firmware continues to display server-rendered images. No firmware font changes are required.
+
+**What this means for you:** Your dashboard text is now larger and easier to read from across the room. This change happens automatically on the server — you do not need to update your device or firmware to benefit from it.
 
 ---
 
@@ -68,23 +81,31 @@ V15.0 introduces larger fonts for improved glanceability in the CCDash(TM) Rende
 
 **Status:** Intentional (Security by Design)
 
-The `/api/geocode` endpoint returns 404 by design. Geocoding functionality is:
-- Handled server-side only via `/admin/geocode` POST endpoint
+The `/api/geocode` endpoint (the address lookup service) returns a "404 not found" response by design. Geocoding functionality — the process of converting a street address into map coordinates — is:
+
+- Handled on the server only, via the `/admin/geocode` POST endpoint
 - Protected to prevent API key abuse from public access
 - Used internally by the admin panel forms
 
-**Workaround:** Use the admin panel UI for address lookups, which calls the protected endpoint with proper authentication context.
+**Workaround:** Use the admin panel interface for address lookups. The admin panel calls the protected endpoint with proper authentication.
+
+**What this means for you:** If you try to access `/api/geocode` directly in your browser, you will see a "not found" error. This is expected behaviour. All address lookups work correctly through the Setup Wizard and Admin Panel — there is nothing for you to fix.
 
 ---
 
 ## Other Notes
 
 ### Display Coordinate System
-- Origin (0,0) at top-left
-- X: 0-800 (left to right)
-- Y: 0-480 (top to bottom)
+
+These details are relevant for firmware developers only:
+
+- Origin (0,0) is at the top-left corner
+- X axis: 0–800 pixels (left to right)
+- Y axis: 0–480 pixels (top to bottom)
 - Standard landscape orientation when using `EPD_TRMNL_OG` + `setRotation(0)`
+
+**What this means for you:** The display is oriented in landscape mode (wider than it is tall). If your dashboard appears upside down or sideways, there may be a firmware configuration issue — refer to the firmware documentation or raise a support request.
 
 ---
 
-(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual License
+(c) 2026 Commute Compute™ System by Angus Bergman -- AGPL-3.0 Dual License

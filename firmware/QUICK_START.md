@@ -6,15 +6,15 @@
 
 ## Your Device is Ready!
 
-Your CC E-Ink device has been flashed with custom firmware and is ready to connect to your Commute Compute(TM) admin panel.
+Your CC E-Ink display has been flashed with CCFirm™ firmware and is ready to connect to your Commute Compute™ admin panel.
 
 ---
 
 ## Step 1: First Power-On
 
 1. **Disconnect USB** (if connected)
-2. **Power on device** (battery or USB)
-3. Device will boot and start BLE (Bluetooth) advertising
+2. **Power on the display** (battery or USB)
+3. The display will boot and start BLE (Bluetooth) advertising
 
 ---
 
@@ -22,10 +22,10 @@ Your CC E-Ink device has been flashed with custom firmware and is ready to conne
 
 1. **On your computer**, open Chrome or Edge (not Safari/Firefox)
 2. **Navigate to** your Commute Compute admin panel or Setup Wizard
-3. **Click "Pair Device"** — your browser will scan for BLE devices
-4. **Select** your device (appears as `CC-XXXXXX`)
+3. **Click "Pair Device"** — your browser will scan for BLE displays
+4. **Select** your display (appears as `CC-XXXXXX`)
 5. **Enter your WiFi** network name and password when prompted
-6. Device will **reboot** and connect to your WiFi network
+6. The display will **reboot** and connect to your WiFi network
 
 ---
 
@@ -34,7 +34,7 @@ Your CC E-Ink device has been flashed with custom firmware and is ready to conne
 1. Open your admin panel at: `https://your-server-name.vercel.app`
 2. Go to **Settings** or **Device Configuration**
 3. Enter your **home** and **work** addresses
-4. Device will automatically fetch and display:
+4. The display will automatically fetch and show:
    - Next trams to work
    - Next trains to work
    - When to leave (based on current time)
@@ -45,14 +45,14 @@ Your CC E-Ink device has been flashed with custom firmware and is ready to conne
 ## What You Should See
 
 ### On First Boot:
-- Device starts BLE advertising as `CC-XXXXXX`
-- Display shows BLE pairing instructions
+- The display starts BLE advertising as `CC-XXXXXX`
+- Screen shows BLE pairing instructions
 
 ### After WiFi Setup:
-- Device connects to your WiFi
-- Fetches data from admin panel
-- **Allow 2--3 minutes** for the device to connect and fetch its first dashboard image. The first load takes longer than subsequent refreshes.
-- Displays your personalised Commute Compute(TM) dashboard
+- The display connects to your WiFi
+- Fetches data from the admin panel
+- **Allow 2–3 minutes** for the display to connect and fetch its first dashboard image. The first load takes longer than subsequent refreshes.
+- Shows your personalised Commute Compute™ dashboard
 
 ### Normal Operation:
 - **Partial refresh** every 1 minute (departure times update)
@@ -98,7 +98,7 @@ Dashboard updated successfully
    - Verify they're saved
 
 2. **Calculations**
-   - Device fetches current time
+   - The display fetches current time
    - Server calculates:
      - Travel time to work
      - When you need to leave
@@ -117,7 +117,7 @@ Dashboard updated successfully
 
 ### Display Not Updating
 
-- After flashing, allow **2--3 minutes** for the device to connect to WiFi and fetch its first dashboard image. Do not power off or reset during this time.
+- After flashing, allow **2–3 minutes** for the display to connect to WiFi and fetch its first dashboard image. Do not power off or reset during this time.
 - If the display remains blank after 5 minutes, check serial output for errors:
 
 ```bash
@@ -169,7 +169,7 @@ Battery:     ~2-3 days (with 1-min updates)
 ## Important Notes
 
 ### USB CDC Configuration
-Your device has been configured with:
+Your CC E-Ink display has been configured with:
 - `ARDUINO_USB_MODE=1` - USB enabled
 - `ARDUINO_USB_CDC_ON_BOOT=1` - Serial on boot
 
@@ -181,7 +181,7 @@ This is **required** for ESP32-C3. Do not change these settings.
 - Adjust in `config.h` if needed
 
 ### Server URL
-Your device connects to:
+Your CC E-Ink display connects to:
 ```
 https://your-server-name.vercel.app
 ```
@@ -209,7 +209,7 @@ To change, edit `include/config.h` and reflash.
 
 ---
 
-**Enjoy your personalized Commute Compute(TM) dashboard!**
+**Enjoy your personalised Commute Compute™ dashboard!**
 
 ---
 

@@ -197,7 +197,18 @@ These decisions are made entirely on your own server — no personal data is sen
 
 ---
 
-## 14. Contact and Complaints
+## 14. Statutory Tort — Serious Invasion of Privacy
+
+The *Privacy Act 1988* (Cth), as amended by the *Privacy and Other Legislation Amendment (Data Breaches) Act 2022* and subsequent reforms, provides individuals with a statutory cause of action for serious invasions of privacy. Commute Compute™ is committed to handling all personal information in accordance with the Australian Privacy Principles to minimise the risk of such invasions.
+
+If you believe your privacy has been seriously invaded through the use of this service, you may:
+1. Contact us at commutecompute.licensing@gmail.com
+2. Lodge a complaint with the Office of the Australian Information Commissioner (OAIC) at [oaic.gov.au](https://www.oaic.gov.au/)
+3. Seek legal advice regarding your rights under the statutory tort provisions
+
+---
+
+## 15. Contact and Complaints
 
 For privacy-related enquiries:
 
