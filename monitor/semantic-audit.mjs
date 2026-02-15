@@ -3,7 +3,7 @@
  * Reviews actual content, UI/UX, and documentation against spec
  *
  * Tests against:
- * - DEVELOPMENT-RULES.md v1.17 (Section 22: Admin Panel UI/UX)
+ * - DEVELOPMENT-RULES.md v1.28 (Section 22: Admin Panel UI/UX)
  * - CCDashDesignV10.md (LOCKED specification)
  * - Project vision and naming conventions
  *
@@ -848,7 +848,7 @@ async function runSemanticAudit(verbose = true) {
   console.log(`${colors.info}COMMUTE COMPUTE SYSTEM - SEMANTIC AUDIT${colors.reset}`);
   console.log(`Target: ${config.BASE_URL}`);
   console.log(`Scope: UI/UX Branding, Documentation, Project Vision`);
-  console.log(`Spec: DEVELOPMENT-RULES v1.17 + CCDashDesignV10`);
+  console.log(`Spec: DEVELOPMENT-RULES v1.28 + CCDashDesignV10`);
   console.log(`Time: ${new Date().toISOString()}`);
   console.log('═'.repeat(70) + '\n');
 
