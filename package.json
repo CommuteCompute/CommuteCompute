@@ -26,7 +26,6 @@
   },
   "dependencies": {
     "@napi-rs/canvas": "^0.1.88",
-    "@upstash/redis": "^1.36.1",
     "adm-zip": "^0.5.10",
     "csv-parse": "^5.5.3",
     "dayjs": "^1.11.10",
