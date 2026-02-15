@@ -7,7 +7,7 @@
 **Purpose**: Enhance address autocomplete with Google Places API for better cafe and business search results
 
 **Date**: 2026-02-06
-**System Version:** v3.5.0 (CCDashDesignV15.0)
+**System Version:** v4.2.0 (CCDashDesignV15.0)
 **Optional**: Yes (system works without it, but with limited cafe search)
 
 ---
