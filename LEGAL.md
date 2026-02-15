@@ -32,45 +32,37 @@ The following are **trademarks (™)** owned by **Angus Bergman** (registration 
 
 ### Trademark Applications (IP Australia)
 
-The following trademark applications have been filed with IP Australia:
-
-| Application No. | Mark | Type | Classes | Status | Filed |
-|-----------------|------|------|---------|--------|-------|
-| TM 2627709 | COMMUTE COMPUTE | Word Mark | 9, 39, 42 | Headstart Part 1 | 14 February 2026 |
-| TM 2627710 | CC Logo | Figurative Mark | 9, 39, 42 | Headstart Part 1 | 14 February 2026 |
-
-Filing references: AMCZ-2615437674, AMCZ-2615438195
-ABN: 59 402 869 395
+Trademark applications for COMMUTE COMPUTE (word mark) and the CC Logo (figurative mark) have been filed with IP Australia covering Classes 9, 39, and 42.
 
 ### Ownership Statement
 
 All trademarks, service marks, trade names, logos, and designs listed above are the exclusive intellectual property of **Angus Bergman**. All associated copyrights, including but not limited to source code, documentation, specifications, and brand assets relating to each trademark, are owned by Angus Bergman.
 
-### Dual License
+### Dual Licence
 
 This project is **dual-licensed** under the following terms:
 
 **1. Open Source -- AGPL-3.0**
 The Commute Compute System is available under the GNU Affero General Public License v3.0. You may use, modify, and distribute this software provided that all modifications and derivative works are also released under AGPL-3.0, and that users interacting with the software over a network are given access to the corresponding source code.
 
-**2. Commercial License**
-For commercial or proprietary use without AGPL-3.0 obligations (e.g., closed-source products, SaaS deployments without source disclosure, or embedding in proprietary systems), a separate commercial license is available. Contact **commutecompute.licensing@gmail.com** for terms.
+**2. Commercial Licence**
+For commercial or proprietary use without AGPL-3.0 obligations (e.g., closed-source products, SaaS deployments without source disclosure, or embedding in proprietary systems), a separate commercial licence is available. Contact **commutecompute.licensing@gmail.com** for terms.
 
-By using, copying, modifying, or distributing any part of this system under the open-source license, you acknowledge and agree that:
+By using, copying, modifying, or distributing any part of this system under the open-source licence, you acknowledge and agree that:
 
-1. Your use is subject to and governed by the AGPL-3.0 license terms
+1. Your use is subject to and governed by the AGPL-3.0 licence terms
 2. No ownership or proprietary rights are transferred to you
-3. Proprietary or closed-source use requires a commercial license
+3. Proprietary or closed-source use requires a commercial licence
 4. All trademark rights remain exclusively with Angus Bergman
 5. Attribution must be maintained in all copies and derivative works
 
-**No implied license** is granted under any trademark, patent, or other intellectual property right of Angus Bergman, except as expressly set forth in the applicable license.
+**No implied licence** is granted under any trademark, patent, or other intellectual property right of Angus Bergman, except as expressly set forth in the applicable licence.
 
 ### Third-Party Content Exclusion
 
 **IMPORTANT:** The copyright claims of Angus Bergman apply exclusively to original work created for the Commute Compute System™. The following third-party content is expressly **excluded** from these copyright claims and remains the intellectual property of their respective owners:
 
-| Source | Copyright Owner | License |
+| Source | Copyright Owner | Licence |
 |--------|-----------------|---------|
 | Transit Data | Transport Victoria / State of Victoria | CC BY 4.0 |
 | Weather Data | Bureau of Meteorology / Commonwealth of Australia | CC BY 3.0 AU |
@@ -79,7 +71,7 @@ By using, copying, modifying, or distributing any part of this system under the 
 | ESP-IDF / Arduino | Espressif Systems | Apache 2.0 |
 | PlatformIO Libraries | Various Authors | As specified per library |
 
-These third-party components are incorporated under their respective licenses and are not claimed as original work of Angus Bergman. Users must comply with the attribution and license requirements of each third-party source independently.
+These third-party components are incorporated under their respective licences and are not claimed as original work of Angus Bergman. Users must comply with the attribution and licence requirements of each third-party source independently.
 
 **Attribution Requirements for Third-Party Data:**
 
@@ -132,17 +124,17 @@ Copyright (c) 2026 Angus Bergman
 All Rights Reserved
 ```
 
-### Licensed Components (Dual License: AGPL-3.0 | Commercial)
+### Licensed Components (Dual Licence: AGPL-3.0 | Commercial)
 
-The following components are dual-licensed under **AGPL-3.0** and a **commercial license**:
+The following components are dual-licensed under **AGPL-3.0** and a **commercial licence**:
 
 - Source code
 - Documentation
 - Design specifications
 - Brand guidelines (for reference only)
 
-**AGPL-3.0 License:** https://www.gnu.org/licenses/agpl-3.0.html
-**Commercial License:** Contact commutecompute.licensing@gmail.com
+**AGPL-3.0 Licence:** https://www.gnu.org/licenses/agpl-3.0.html
+**Commercial Licence:** Contact commutecompute.licensing@gmail.com
 
 ### What AGPL-3.0 Permits
 
@@ -154,9 +146,9 @@ The following components are dual-licensed under **AGPL-3.0** and a **commercial
 
 - All modifications must be released under AGPL-3.0
 - Network users must be given access to source code
-- Copyright and license notices must be preserved
+- Copyright and licence notices must be preserved
 
-### Commercial License Option
+### Commercial Licence Option
 
 For use cases incompatible with AGPL-3.0 (closed-source products, proprietary SaaS, embedded systems without source disclosure), contact commutecompute.licensing@gmail.com for a commercial licence.
 
@@ -241,16 +233,16 @@ Liability, warranty, and indemnification terms for commercial licensees will be 
 
 ## Third-Party Components
 
-The Commute Compute System incorporates third-party components with their own licenses:
+The Commute Compute System incorporates third-party components with their own licences:
 
-| Component | License | Usage |
+| Component | Licence | Usage |
 |-----------|---------|-------|
 | Transport Victoria OpenData | CC BY 4.0 | Transit data |
 | Bureau of Meteorology | CC BY 3.0 AU | Weather data |
 | OpenStreetMap | ODbL | Geocoding |
 | Node.js dependencies | Various (MIT, Apache, etc.) | Runtime libraries |
 
-Third-party libraries retain their original licenses.
+Third-party libraries retain their original licences.
 
 ---
 
@@ -302,7 +294,7 @@ All original source files MUST include:
 
 The following files/directories contain third-party code and are **excluded** from copyright claims:
 
-| Path | Content | License |
+| Path | Content | Licence |
 |------|---------|---------|
 | `node_modules/` | npm dependencies | Various (MIT, Apache, ISC, etc.) |
 | `firmware/.pio/libdeps/` | PlatformIO libraries | Various (MIT, Apache, etc.) |
@@ -336,9 +328,9 @@ GitLab: [@angusbergman](https://gitlab.com/angusbergman)
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.4 | 2026-02-15 | Added IP Australia TM 2627709/2627710 applications, updated trademark heading for registration-pending status |
+| 1.4 | 2026-02-15 | Added IP Australia trademark application details, updated trademark heading for registration-pending status |
 | 1.3 | 2026-02-14 | Added Governing Law & Jurisdiction (Victoria, Australia), Copyright Act 1968 (Cth) references, moral rights assertion, Commercial Licence Framework (bespoke per-licensee terms), Limitation of Liability with ACL compliance |
-| 1.2 | 2026-02-07 | Updated to AGPL-3.0 Dual License model (open source + commercial) |
+| 1.2 | 2026-02-07 | Updated to AGPL-3.0 Dual Licence model (open source + commercial) |
 | 1.1 | 2026-01-31 | Added File Attribution Audit section, Trademark Family File Registry, third-party exclusions documentation |
 | 1.0 | 2026-01-30 | Initial IP documentation |
 
