@@ -89,9 +89,10 @@ pio run --target upload --upload-port $PORT
 echo ""
 echo -e "${GREEN}✅ Firmware flashed successfully!${NC}"
 echo ""
-echo -e "${BLUE}📊 Monitoring serial output...${NC}"
-echo -e "${YELLOW}Press Ctrl+C to exit${NC}"
+echo -e "${YELLOW}WARNING: Do NOT use 'pio device monitor' -- it causes crash/freeze on ESP32-C3.${NC}"
+echo -e "${BLUE}📊 Opening serial monitor (standalone terminal)...${NC}"
+echo -e "${YELLOW}Press Ctrl+A then K to exit screen${NC}"
 echo ""
 sleep 2
 
-pio device monitor --port $PORT --baud 115200
+screen $PORT 115200

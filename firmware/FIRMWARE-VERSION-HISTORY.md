@@ -4,6 +4,8 @@
 
 # Commute Compute™ Firmware Version History
 
+> **Note:** References to `pio device monitor` in this document are historical. Do NOT use `pio device monitor` with ESP32-C3 hardware -- it causes system crash/freeze. Use a standalone serial terminal instead (e.g., `screen /dev/cu.usbmodem* 115200` on macOS, or PuTTY on Windows).
+
 **Copyright (c) 2026 Angus Bergman — AGPL-3.0 Dual License**
 
 This document tracks all firmware releases for the Commute Compute System.

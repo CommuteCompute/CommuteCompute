@@ -908,7 +908,9 @@ pio run -e trmnl
 pio run -e trmnl -t upload
 
 # Monitor serial output
-pio device monitor -b 115200
+# WARNING: Do NOT use `pio device monitor` -- causes crash/freeze on ESP32-C3.
+screen /dev/cu.usbmodem* 115200          # macOS
+# On Windows, use PuTTY (Serial mode, 115200 baud)
 ```
 
 **Bootloader Mode:** Hold BOOT button while pressing RESET, then release.
@@ -1170,7 +1172,9 @@ git log --oneline -1
 pio run -e trmnl -t upload --upload-port /dev/cu.usbmodem*
 
 # 4. Monitor serial output (115200 baud via USB CDC)
-pio device monitor -b 115200
+# WARNING: Do NOT use `pio device monitor` -- causes crash/freeze on ESP32-C3.
+screen /dev/cu.usbmodem* 115200          # macOS
+# On Windows, use PuTTY (Serial mode, 115200 baud)
 
 # Expected output:
 # === Commute Compute v7.2.1 ===
@@ -1952,7 +1956,8 @@ curl "http://localhost:3000/api/livedash?device=web&state=NSW"
 cd firmware && pio run -e trmnl
 
 # Flash and monitor
-pio run -e trmnl -t upload && pio device monitor
+# WARNING: Do NOT use `pio device monitor` -- causes crash/freeze on ESP32-C3.
+pio run -e trmnl -t upload && screen /dev/cu.usbmodem* 115200
 
 # Check for:
 # - setup() < 5 seconds
@@ -3840,7 +3845,7 @@ The footer MUST display attributions based on what the user has configured in `l
 #### 22.9.4 Version Display Format
 
 ```
-[●] CommuteCompute v2.4  |  CCDash Renderer v1.81  |  System v3.5.0  |  Build 2026-02-07
+[●] CommuteCompute v3.1  |  CCDash Renderer v2.1  |  System v4.2.0  |  Build 2026-02-07
 ```
 
 - Green pulsing dot indicates live/connected status
@@ -4661,7 +4666,8 @@ npm run test                   # Run tests
 cd firmware
 pio run -e trmnl              # Compile
 pio run -e trmnl -t upload    # Flash
-pio device monitor            # Serial monitor
+# Serial monitor (do NOT use pio device monitor -- causes crash/freeze)
+screen /dev/cu.usbmodem* 115200          # macOS
 
 # Deployment
 vercel --prod                 # Deploy to Vercel

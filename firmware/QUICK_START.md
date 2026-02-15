@@ -6,7 +6,7 @@
 
 ## Your Device is Ready!
 
-Your TRMNL device has been flashed with custom firmware and is ready to connect to your Commute Compute(TM) admin panel.
+Your CC E-Ink device has been flashed with custom firmware and is ready to connect to your Commute Compute(TM) admin panel.
 
 ---
 
@@ -14,18 +14,18 @@ Your TRMNL device has been flashed with custom firmware and is ready to connect 
 
 1. **Disconnect USB** (if connected)
 2. **Power on device** (battery or USB)
-3. Device will boot and create a WiFi hotspot
+3. Device will boot and start BLE (Bluetooth) advertising
 
 ---
 
-## Step 2: WiFi Setup
+## Step 2: WiFi Setup (via BLE)
 
-1. **Look for WiFi network:** `Commute Compute-Setup`
-2. **Connect** using password: `transport123`
-3. **Browser opens automatically** (or go to `192.168.4.1`)
-4. **Select your WiFi** network from the list
-5. **Enter password** and submit
-6. Device will **reboot** and connect to your network
+1. **On your computer**, open Chrome or Edge (not Safari/Firefox)
+2. **Navigate to** your Commute Compute admin panel or Setup Wizard
+3. **Click "Pair Device"** — your browser will scan for BLE devices
+4. **Select** your device (appears as `CC-XXXXXX`)
+5. **Enter your WiFi** network name and password when prompted
+6. Device will **reboot** and connect to your WiFi network
 
 ---
 
@@ -45,8 +45,8 @@ Your TRMNL device has been flashed with custom firmware and is ready to connect 
 ## What You Should See
 
 ### On First Boot:
-- Device creates `Commute Compute-Setup` WiFi hotspot
-- Display shows setup instructions
+- Device starts BLE advertising as `CC-XXXXXX`
+- Display shows BLE pairing instructions
 
 ### After WiFi Setup:
 - Device connects to your WiFi
@@ -62,14 +62,17 @@ Your TRMNL device has been flashed with custom firmware and is ready to connect 
 
 ## Monitoring Serial Output
 
-To see what the device is doing:
+> **WARNING:** Do NOT use `pio device monitor` — it causes system crash/freeze on ESP32-C3 hardware. Use a standalone serial terminal instead.
 
+**On macOS:**
 ```bash
-cd /path/to/commute-compute/firmware
-pio device monitor --baud 115200
+screen /dev/cu.usbmodem* 115200
 ```
 
-You should see:
+**On Windows:**
+Use PuTTY or similar serial terminal at 115200 baud.
+
+You should see output like:
 ```
 === Commute Compute BOOT ===
 Reset reason: POWER ON
@@ -113,8 +116,8 @@ Dashboard updated successfully
 
 ### Display Not Updating
 ```bash
-# Check serial output
-pio device monitor --baud 115200
+# Check serial output (do NOT use pio device monitor)
+screen /dev/cu.usbmodem* 115200  # macOS
 
 # Look for errors like:
 # - "WiFi connection failed"
@@ -125,9 +128,7 @@ pio device monitor --baud 115200
 ### WiFi Won't Connect
 ```bash
 # Reset WiFi credentials by holding button for 5 seconds
-# Or via serial:
-pio device monitor
-# Then press any key and type: wifi reset
+# Or reflash firmware to reset WiFi credentials
 ```
 
 ### Admin Panel Not Responding
@@ -140,7 +141,7 @@ curl https://your-server-name.vercel.app/api/health
 
 ### No Serial Output
 - **Don't worry!** USB CDC is now enabled
-- Make sure you're using: `pio device monitor --baud 115200`
+- Use a standalone serial terminal at 115200 baud (do NOT use `pio device monitor`)
 - Try unplugging and replugging USB
 
 ---
@@ -188,13 +189,13 @@ To change, edit `include/config.h` and reflash.
 - **Detailed flashing guide:** `docs/FLASHING.md`
 - **Diagnostic report:** `docs/DIAGNOSTIC_FINDINGS.md`
 - **Full README:** `README.md`
-- **Serial debugging:** `pio device monitor --baud 115200`
+- **Serial debugging:** Use a standalone serial terminal at 115200 baud (not `pio device monitor`)
 
 ---
 
 ## Current Status
 
-[DONE] Firmware flashed (CC-FW-7.4.3, 1.13MB)
+[DONE] Firmware flashed (CC-FW-7.6.0)
 [DONE] USB CDC enabled
 [DONE] Configuration corrected
 [DONE] Documentation complete

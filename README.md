@@ -25,7 +25,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-CC%20E--Ink%20%7C%20Kindle%20%7C%20Inkplate-orange.svg?style=flat-square" alt="Platform: CC E-Ink | Kindle | Inkplate">
   &nbsp;
-  <img src="https://img.shields.io/badge/States-VIC%20%7C%20NSW%20%7C%20QLD%20%7C%20SA%20%7C%20WA%20%7C%20TAS%20%7C%20NT%20%7C%20ACT-yellow.svg?style=flat-square" alt="Multi-State Support">
+  <img src="https://img.shields.io/badge/VIC%20(Live%20GTFS--RT)%20%7C%207%20States%20(Timetable)-yellow.svg?style=flat-square" alt="VIC (Live) | 7 States (Timetable)">
   &nbsp;
   <img src="https://img.shields.io/badge/Melbourne_Metro_Tunnel-Fully_Supported-0072CE.svg?style=flat-square" alt="Melbourne Metro Tunnel Supported">
 </p>
@@ -433,7 +433,7 @@ See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed step-by-step instructions 
 | Intelligence Engines | 5 |
 | Development Rules Sections | 24 |
 | Automated Compliance Checks | 214 |
-| Australian States Supported | 8 (VIC, NSW, QLD, SA, WA, TAS, NT, ACT) |
+| Australian Coverage | VIC (Live GTFS-RT), 7 States/Territories (timetable) |
 
 <br>
 

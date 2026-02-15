@@ -48,7 +48,9 @@
 cd firmware
 pio run -e trmnl           # Compile
 pio run -e trmnl -t upload # Flash via USB
-pio device monitor -b 115200  # Monitor
+# Monitor serial output (do NOT use pio device monitor -- causes crash/freeze on ESP32-C3)
+screen /dev/cu.usbmodem* 115200          # macOS
+# On Windows, use PuTTY (Serial mode, 115200 baud)
 ```
 
 ### Recovery

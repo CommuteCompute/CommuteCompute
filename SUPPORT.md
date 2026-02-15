@@ -14,7 +14,7 @@ Thank you for considering supporting Commute Compute(TM)! This project is develo
 
 | Platform | Link | Description |
 |----------|------|-------------|
-| **Buy Me a Coffee** | [ko-fi.com/commutecompute](https://ko-fi.com/commutecompute) | One-time donations |
+| **Buy Me a Coffee** | [buymeacoffee.com/angusbergman](https://buymeacoffee.com/angusbergman) | One-time donations |
 | **GitLab Sponsors** | [gitlab.com/angusbergman/commute-compute-system](https://gitlab.com/angusbergman/commute-compute-system) | Monthly sponsorship |
 
 ### Non-Financial Support
@@ -77,7 +77,7 @@ If you're using Commute Compute(TM) for your daily commute and finding it useful
 ---
 
 <p align="center">
-  <a href="https://ko-fi.com/commutecompute">
+  <a href="https://buymeacoffee.com/angusbergman">
     <img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee">
   </a>
   &nbsp;
