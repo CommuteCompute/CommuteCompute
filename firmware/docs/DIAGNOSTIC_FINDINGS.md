@@ -4,6 +4,8 @@
 
 # Diagnostic Findings - 2026-01-26
 
+> **Note:** References to `pio device monitor` in this document are historical. Do NOT use `pio device monitor` with ESP32-C3 hardware -- it causes system crash/freeze. Use a standalone serial terminal instead (e.g., `screen /dev/cu.usbmodem* 115200` on macOS, or PuTTY on Windows).
+
 Complete diagnostic report from boot loop investigation and firmware troubleshooting session.
 
 ## Executive Summary

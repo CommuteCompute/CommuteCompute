@@ -202,7 +202,7 @@ build_flags =
 
 USB CDC (Communications Device Class) enables the ESP32-C3 to act as a serial port over USB:
 - Required for `Serial.println()` output
-- Required for `pio device monitor`
+- Required for serial monitor output
 - Works with built-in USB-JTAG interface
 - No external USB-UART chip needed
 
@@ -300,7 +300,9 @@ esptool.py --port /dev/cu.usbmodem14101 read_flash 0x8000 0xC00 partition.bin
 **Symptoms:**
 - esptool works fine
 - Upload successful
-- No output from `pio device monitor`
+- No output from serial monitor
+
+> **WARNING:** Do NOT use `pio device monitor` -- it causes system crash/freeze on ESP32-C3 hardware. Use a standalone serial terminal instead (see below).
 
 **Solutions:**
 
@@ -322,10 +324,12 @@ esptool.py --port /dev/cu.usbmodem14101 read_flash 0x8000 0xC00 partition.bin
    # Should show both cu and tty devices
    ```
 
-3. **Try Different Serial Device**
+3. **Use a Standalone Serial Terminal**
    ```bash
-   # Try tty instead of cu (macOS)
-   pio device monitor --port /dev/tty.usbmodem14101
+   # macOS
+   screen /dev/cu.usbmodem* 115200
+
+   # Windows: Use PuTTY (Serial mode, 115200 baud)
    ```
 
 4. **Check Code for Serial Usage**
@@ -486,18 +490,18 @@ esptool.py --port /dev/cu.usbmodem14101 read_mac
 
 ### Monitor Options
 
+> **WARNING:** Do NOT use `pio device monitor` -- it causes system crash/freeze on ESP32-C3 hardware. Use a standalone serial terminal instead.
+
 ```bash
-# Basic monitoring
-pio device monitor
+# macOS -- standalone serial terminal (recommended)
+screen /dev/cu.usbmodem* 115200
 
-# With filter
-pio device monitor --filter esp32_exception_decoder
+# Exit screen: Ctrl+A then K, then Y to confirm
 
-# Different baud rate
-pio device monitor --baud 921600
-
-# Raw mode (no processing)
-pio device monitor --raw
+# Windows -- use PuTTY
+# Connection type: Serial
+# Serial line: COM3 (or your port)
+# Speed: 115200
 ```
 
 ---

@@ -64,7 +64,7 @@ Commute Compute™ communicates with the following external services to provide 
 | [Google Places API (New)](https://developers.google.com/maps/documentation/places/web-service) | Address search queries, Melbourne location bias | Geocoding and place autocomplete | Optional — free OpenStreetMap fallback available | [Google Privacy Policy](https://policies.google.com/privacy) |
 | [Bureau of Meteorology](https://www.bom.gov.au) | None (unauthenticated public GET request) | Weather observations (temperature, conditions, wind) | Yes | [BOM Privacy](https://www.bom.gov.au/other/privacy.shtml) |
 | [OpenStreetMap Nominatim](https://nominatim.openstreetmap.org) | Address search queries | Geocoding fallback when Google Places is not configured | Fallback only | [OSM Privacy Policy](https://wiki.osmfoundation.org/wiki/Privacy_Policy) |
-| [Vercel](https://vercel.com) | All stored data (hosting and KV storage) | Application hosting, serverless functions, KV database | Yes | [Vercel Privacy Policy](https://vercel.com/legal/privacy-policy) |
+| [Vercel](https://vercel.com) | All stored data (hosting and Redis storage) | Application hosting, serverless functions, Redis database | Yes | [Vercel Privacy Policy](https://vercel.com/legal/privacy-policy) |
 
 **Important:** Your home, work, and cafe addresses are **not** sent to transit authorities. Only public GTFS stop IDs (e.g., `"12179"` for South Yarra Station) are used to query real-time departure data.
 

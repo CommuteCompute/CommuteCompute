@@ -579,8 +579,11 @@ LOOP() (Non-blocking state machine):
 ### If device bricks again:
 
 1. **Connect serial monitor**:
+   > **WARNING:** Do NOT use `pio device monitor` -- it causes system crash/freeze on ESP32-C3. Use a standalone serial terminal instead.
    ```bash
-   pio device monitor -b 115200
+   # macOS
+   screen /dev/cu.usbmodem* 115200
+   # Windows: Use PuTTY (Serial mode, 115200 baud)
    ```
 
 2. **Identify last log message**:

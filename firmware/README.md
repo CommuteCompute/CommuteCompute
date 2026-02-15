@@ -153,7 +153,10 @@ pio run -e trmnl
 pio run -e trmnl -t upload --upload-port /dev/cu.usbmodem*
 
 # Monitor serial (115200 baud via USB CDC)
-pio device monitor -b 115200
+# WARNING: Do NOT use `pio device monitor` -- it causes crash/freeze on ESP32-C3.
+# Use a standalone serial terminal instead:
+screen /dev/cu.usbmodem* 115200          # macOS
+# On Windows, use PuTTY (Serial mode, 115200 baud)
 ```
 
 ### Expected Boot Output
