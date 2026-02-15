@@ -27,7 +27,7 @@
             --accent: #4fb28e;
             --accent-hover: #6ec9a8;
             --text-primary: #f1f5f9;
-            --text-secondary: #a3b8d0;
+            --text-secondary: #b8cbe0;
             --text-muted: #94a3b8;
             --border: #3d5278;
             --purple: #667eea;
@@ -1531,20 +1531,24 @@
             outline-offset: 3px;
         }
 
-        /* Skip to content link for screen readers */
-        .skip-to-content {
+        /* Skip to main content link for accessibility */
+        .skip-link {
             position: absolute;
-            top: -40px;
-            left: 0;
-            background: var(--accent);
-            color: var(--text-primary);
-            padding: 8px;
-            text-decoration: none;
-            z-index: 100;
+            left: -9999px;
+            top: auto;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
         }
-
-        .skip-to-content:focus {
-            top: 0;
+        .skip-link:focus {
+            position: static;
+            width: auto;
+            height: auto;
+            overflow: visible;
+            padding: 8px 16px;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            z-index: 9999;
         }
 
         /* High contrast text for accessibility */
@@ -1660,6 +1664,7 @@
     </style>
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
     <!-- SVG Icon Sprite - DEVELOPMENT-RULES Section 22.3 Compliant -->
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
         <symbol id="icon-rocket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1782,12 +1787,12 @@
     </svg>
     <!-- Global Navigation -->
     <!-- Sticky Header (matches privacy/help pages) -->
-    <header class="header-bar">
+    <header class="header-bar" role="banner" aria-label="Site header">
         <a href="/" class="brand">
             <img src="/assets/brand/cc-logo-128.png" alt="Commute Compute&#8482;" style="height: 56px; width: auto; margin-right: 10px;">
             <span>Commute Compute&#8482;</span>
         </a>
-        <nav class="nav-links">
+        <nav class="nav-links" role="navigation" aria-label="Main navigation">
             <a href="/" class="nav-link">Home</a>
             <a href="/setup-wizard.html" class="nav-link">Setup</a>
             <a href="/admin.html" class="nav-link active">Dashboard</a>
@@ -1797,8 +1802,7 @@
         </nav>
     </header>
 
-    <!-- Skip to content link for accessibility -->
-    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+    <!-- Skip link moved to first element inside <body> for accessibility -->
 
     <!-- Toast Notification Container -->
     <div id="toast-container" class="toast-container"></div>
@@ -1826,9 +1830,9 @@
     <!-- Show Tutorial Again Button (hidden by default) -->
     <button id="show-tutorial-btn" class="show-tutorial-btn" onclick="restartTutorial()" style="display: none;">? Show Tutorial</button>
 
-    <div class="container" id="main-content">
+    <div class="container" id="main-content" role="main">
         <!-- Sidebar Navigation (matches privacy/help pages) -->
-        <aside class="sidebar">
+        <aside class="sidebar" role="navigation" aria-label="Sidebar navigation">
             <div class="sidebar-title">Dashboard</div>
             <ul class="sidebar-nav">
                 <li><a href="#" data-section="live" class="active" onclick="showTab('live', null); updateSidebarActive(this); return false;">Live Data</a></li>
@@ -1848,7 +1852,7 @@
         </aside>
 
         <!-- Content Area -->
-        <div class="content">
+        <div class="content" aria-label="Dashboard content">
             <!-- Sub-header: time/status display -->
             <div class="header">
                 <h1>Commute Compute&#8482; Dashboard</h1>

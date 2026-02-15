@@ -15,7 +15,7 @@ Key requirements:
 - Never use "PTV API" — use "Transport Victoria OpenData API"
 - Custom firmware only — NO usetrmnl.com dependencies
 - 1-bit BMP rendering — no grayscale
-- AGPL-3.0 dual license required on all contributions (see [LICENSE](LICENSE))
+- AGPL-3.0 dual licence required on all contributions (see [LICENSE](LICENSE))
 
 ## How to Contribute
 
@@ -71,18 +71,41 @@ npm run dev
 # Test all changes in the dashboard preview
 ```
 
-## License
+## Licence
 
 By contributing, you agree that your contributions will be dual-licensed under **AGPL-3.0** and commercial terms (see [LICENSE](LICENSE)).
 
-All contributions must include the license header:
+All contributions must include the licence header:
 ```
 Copyright (c) 2026 Angus Bergman
 SPDX-License-Identifier: AGPL-3.0-or-later
 Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
 ```
 
+## Contributor Licence Agreement (CLA)
+
+Before your first contribution can be merged, you must sign our [Individual Contributor Licence Agreement](CLA.md). This is required to protect the dual-licensing model (AGPL-3.0 open source + commercial licensing).
+
+### Why a CLA?
+
+Commute Compute™ is dual-licensed: the open-source version is AGPL-3.0, and a commercial licence is available for organisations that cannot comply with AGPL terms. The CLA ensures all contributions can be included in both the open-source and commercial versions.
+
+### How to Sign
+
+1. Read the [CLA](CLA.md)
+2. Email a signed copy to commutecompute.licensing@gmail.com
+3. Include your GitHub/GitLab username in the email
+4. Your signed CLA will be acknowledged before your first PR is merged
+
 ## Developer Certificate of Origin (DCO)
+
+In addition to the CLA, all commits must include a `Signed-off-by` line:
+
+```
+git commit -s -m "Your commit message"
+```
+
+This certifies you have the right to submit the code under the project's licence.
 
 All contributions to Commute Compute™ **must** include a `Signed-off-by` line in the commit message, certifying that the contributor has the right to submit the work under the project's licence.
 

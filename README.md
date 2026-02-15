@@ -401,6 +401,7 @@ See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed step-by-step instructions 
 | **Firmware** | ESP32-C3 via PlatformIO / Arduino framework |
 | **Frontend** | Vanilla HTML / CSS / JS -- zero framework dependency |
 | **Provisioning** | Web Bluetooth (BLE) for zero-config device setup |
+| **Browser Requirement** | The Admin Panel, Setup Wizard, and browser-based flasher require a modern web browser (Chrome, Firefox, Safari, or Edge). Internet Explorer is not supported. The browser-based flasher requires Chrome or Edge (Web Serial API). |
 
 <br>
 
