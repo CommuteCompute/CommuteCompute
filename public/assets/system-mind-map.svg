@@ -123,10 +123,10 @@
     <text x="100" y="88" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">Stress / steps / feels-like</text>
   </g>
 
-  <!-- CoffeeDecision™ -->
+  <!-- CoffeeDecision -->
   <g transform="translate(780, 540)">
     <rect x="0" y="0" width="180" height="90" rx="8" fill="#1e293b" stroke="#10b981" stroke-width="2"/>
-    <text x="90" y="25" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#22c55e" text-anchor="middle">CoffeeDecision™</text>
+    <text x="90" y="25" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#22c55e" text-anchor="middle">CoffeeDecision</text>
     <text x="90" y="44" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">Cafe timing analysis</text>
     <text x="90" y="60" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">Busyness check</text>
     <text x="90" y="76" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">YES / NO decision</text>
@@ -250,7 +250,7 @@
     <!-- Layer 2 -->
     <circle cx="10" cy="75" r="8" fill="#10b981"/>
     <text x="25" y="80" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#94a3b8">
-      Layer 2: Engine stack (CommuteCompute™, DepartureConfidence, LifestyleContext, CoffeeDecision™, SleepOptimizer, AltTransit)
+      Layer 2: Engine stack (CommuteCompute™, DepartureConfidence, LifestyleContext, CoffeeDecision, SleepOptimizer, AltTransit)
     </text>
 
     <!-- Layer 3 -->

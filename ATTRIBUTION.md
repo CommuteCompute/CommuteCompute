@@ -4,7 +4,7 @@
 
 # Attribution
 
-**Last Updated:** 2026-02-06
+**Last Updated:** 2026-02-15
 
 Commute Compute(TM) uses data and services from the following providers:
 
@@ -13,7 +13,7 @@ Commute Compute(TM) uses data and services from the following providers:
 ### Transport for Victoria
 - **Data**: GTFS static and real-time feeds
 - **License**: Creative Commons Attribution 4.0 (CC BY 4.0)
-- **Source**: https://discover.data.vic.gov.au/
+- **Source**: https://opendata.transport.vic.gov.au/
 - **Terms**: https://www.ptv.vic.gov.au/footer/data-and-reporting/
 
 ### Other Australian States (Fallback Timetables)
