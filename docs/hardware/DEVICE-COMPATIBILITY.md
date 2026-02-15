@@ -44,7 +44,7 @@ Commute Compute supports multiple e-ink display devices. This guide helps you:
 
 ## Device Comparison
 
-### TRMNL BYOS (Official Platform)
+### CC E-Ink BYOS (Official Platform - TRMNL Hardware)
 
 **Pros**:
 - **Plug and play**: No jailbreaking required
@@ -73,7 +73,7 @@ Commute Compute supports multiple e-ink display devices. This guide helps you:
 - **Requires jailbreak**: More technical setup
 - **Warranty void**: Jailbreaking voids Amazon warranty
 - **More setup steps**: Needs custom software installation
-- **Smaller screen**: 6" vs 7.5" for TRMNL
+- **Smaller screen**: 6" vs 7.5" for TRMNL displays
 
 **Best For**: Tech-savvy users, budget-conscious buyers, or those with old Kindles lying around.
 
@@ -83,7 +83,7 @@ Commute Compute supports multiple e-ink display devices. This guide helps you:
 
 ## Device Specifications
 
-### TRMNL BYOS
+### CC E-Ink BYOS (TRMNL Hardware)
 
 **Hardware**:
 - **Display**: 7.5" Waveshare e-paper
@@ -324,7 +324,7 @@ function detectDevice(req) {
     return detectKindleModel(userAgent);
   }
 
-  // Default to TRMNL BYOS
+  // Default to CC E-Ink BYOS
   return getDeviceConfig('trmnl-byos');
 }
 ```
@@ -347,37 +347,35 @@ DEVICE_HEIGHT=480
 
 ---
 
-## Setup Guide: TRMNL BYOS
+## Setup Guide: CC E-Ink BYOS (TRMNL Hardware)
 
 ### 1. Hardware Setup
 
-1. Unbox your TRMNL device
+1. Unbox your TRMNL display
 2. Connect USB-C power cable
 3. Wait for boot screen (~30 seconds)
 4. Connect to WiFi network (follow on-screen prompts)
 
-### 2. Configure TRMNL Dashboard
+### 2. Flash CC E-Ink Firmware
 
-1. Go to [Self-hosted - use your Vercel deployment]
-2. Log in to your account
-3. Click **Add Device**
-4. Enter device setup code (shown on screen)
-5. Device registers automatically
+1. Download CC E-Ink firmware from repository
+2. Follow flashing instructions in `/tools/setup-wizard/`
+3. Configure WiFi credentials
+4. Set webhook URL to your Vercel deployment
 
-### 3. Add Commute Compute Plugin
+### 3. Configure Webhook
 
-1. In TRMNL dashboard, navigate to **Plugins**
-2. Click **Custom API**
-3. Enter your webhook URL:
+1. In your CC E-Ink firmware settings
+2. Set webhook URL:
    ```
    https://your-server-name.vercel.app/api/screen
    ```
-4. Set **Refresh Rate**: 15 minutes (900 seconds)
-5. Click **Save**
+3. Set **Refresh Rate**: 15 minutes (900 seconds)
+4. Save configuration
 
 ### 4. Test Display
 
-1. Click **Refresh Now** in TRMNL dashboard
+1. Trigger manual refresh via firmware controls
 2. Wait ~30 seconds
 3. Display shows your transit dashboard
 
@@ -400,14 +398,14 @@ DEVICE_HEIGHT=480
 **WARNING**: Jailbreaking voids your Amazon warranty.
 
 **For Kindle Paperwhite 3/4/5**:
-1. Follow TRMNL's official guide: [See Commute Compute Kindle setup guide]
+1. Follow Commute Compute's Kindle setup guide
 2. Download jailbreak tools from MobileRead forums
 3. Install via USB connection
 4. Verify jailbreak successful
 
 **Resources**:
 - MobileRead Wiki: https://wiki.mobileread.com/wiki/Kindle_Hacks_Information
-- TRMNL Kindle Guide: [See Commute Compute Kindle setup guide]
+- Commute Compute Kindle Setup Guide: See `/docs/hardware/KINDLE-SETUP.md`
 
 ### Step 2: Install Kiosk Mode
 
@@ -459,7 +457,7 @@ https://your-server-name.vercel.app/api/dashboard?device=kindle-pw3&orientation=
 
 ## Server Endpoints for Different Devices
 
-### TRMNL BYOS Webhook
+### CC E-Ink BYOS Webhook
 
 **Endpoint**: `GET /api/screen`
 
@@ -581,7 +579,7 @@ All outputs follow e-ink best practices:
 
 ### Device-Specific Optimizations
 
-**TRMNL BYOS (800×480)**:
+**CC E-Ink BYOS (800×480)**:
 - Font sizes: 24-48px
 - 4-6 data cards per screen
 - Landscape orientation
@@ -612,13 +610,13 @@ All outputs follow e-ink best practices:
 
 ## Troubleshooting
 
-### TRMNL BYOS Issues
+### CC E-Ink BYOS Issues
 
 **Device not refreshing**:
 - Check webhook URL is correct
 - Verify Render service not sleeping
 - Test webhook directly in browser
-- Check TRMNL dashboard for errors
+- Check CC E-Ink firmware configuration
 
 **Image not displaying**:
 - Verify image is 800×480 pixels exactly
@@ -755,9 +753,9 @@ Start Here
 | **Budget Build** | Used Kindle 4 ($20-40) | Cheapest option, still very functional |
 | **Best Value** | Used Kindle PW3/4 ($50-80) | Great screen, affordable |
 | **Best Quality** | Kindle PW5 ($90-120) | Highest resolution, newer hardware |
-| **Easiest Setup** | TRMNL BYOS ($150-200) | No jailbreaking, official support |
+| **Easiest Setup** | TRMNL display ($150-200) | No jailbreaking, hardware support |
 | **Repurpose Old Device** | Your existing Kindle | Free if you already own one |
-| **Future-Proof** | TRMNL BYOS | Purpose-built, will get updates |
+| **Future-Proof** | TRMNL display | Purpose-built hardware, CC E-Ink firmware |
 
 ---
 
@@ -780,7 +778,7 @@ A: Maybe! Check if it has WiFi and can run custom software. Post specs in GitLab
 
 **Q: How long does battery last?**
 A: Kindle: 2-4 weeks (refreshing every 15 min, WiFi on)
-TRMNL: Designed for always-plugged operation
+TRMNL displays: Designed for always-plugged operation
 
 **Q: Can I rotate the display?**
 A: Yes! Use `?orientation=landscape` or `portrait` parameter.
@@ -793,9 +791,9 @@ A: Open a GitLab Issue with your device specs. Community may have already tested
 ## Resources
 
 ### Official Guides
-- **TRMNL Kindle Guide**: [See Commute Compute Kindle setup guide]
-- **TRMNL BYOS**: [Commute Compute is self-hosted]
-- **TRMNL Discord**: https://discord.gg/trmnl
+- **Commute Compute Kindle Guide**: See `/docs/hardware/KINDLE-SETUP.md`
+- **CC E-Ink Firmware**: See `/tools/setup-wizard/firmware/`
+- **TRMNL Hardware Support**: https://discord.gg/trmnl
 
 ### Jailbreaking Resources
 - **MobileRead Wiki**: https://wiki.mobileread.com/wiki/Kindle_Hacks_Information
@@ -803,7 +801,7 @@ A: Open a GitLab Issue with your device specs. Community may have already tested
 - **Kindle Development**: https://www.mobileread.com/forums/forumdisplay.php?f=150
 
 ### Where to Buy
-- **TRMNL BYOS**: [Commute Compute is self-hosted] (new)
+- **TRMNL Displays**: Official TRMNL hardware store (new)
 - **Used Kindles**: eBay, Facebook Marketplace, Craigslist
 - **Amazon Renewed**: Refurbished Kindles with warranty
 

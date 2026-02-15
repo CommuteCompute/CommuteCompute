@@ -22,7 +22,7 @@ Setting up Commute Compute involves four steps:
 3. **Configure** -- Run the Setup Wizard (addresses, API keys, preferences)
 4. **Pair** -- Flash and pair your CC E-Ink device
 
-**Time required:** ~15 minutes
+**Time required:** ~60-90 minutes (first-time setup; includes API key registration and approval wait times)
 
 ---
 
@@ -32,7 +32,7 @@ Setting up Commute Compute involves four steps:
 |-------------|-------------|
 | Vercel account | Free tier works perfectly |
 | CC E-Ink device | Or jailbroken Kindle |
-| Transport Victoria API key | Recommended -- register at [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/) |
+| Transport Victoria API key | Required for live departure data -- register at [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/) |
 | Google Places API key | Optional -- for address autocomplete |
 
 ---
@@ -129,9 +129,9 @@ Enter your home and work addresses:
 
 **Example:** `123 Example Street, Suburb VIC 3000`
 
-### 3.5 Transport Victoria API Key (Recommended)
+### 3.5 Transport Victoria API Key (Required for live departure data)
 
-For live real-time departure data:
+This key is essential for live real-time departure countdowns -- the core feature of Commute Compute™:
 1. Go to [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/)
 2. Create an account and request an API key
 3. Enter the key in the wizard

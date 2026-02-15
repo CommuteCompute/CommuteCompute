@@ -43,3 +43,8 @@ user-preferences.json
 # Security patterns (private config)
 .cc-secret-patterns
 .cc-security-patterns
+
+*.log
+*.tgz
+coverage/
+dist/
