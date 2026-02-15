@@ -161,9 +161,31 @@ The wizard shows a **6-character code** (like `ABC123`).
 2. Connect USB-C cable to computer
 3. Device screen may be blank — that's normal
 
-### Step 3.2: Install Firmware Software
+### Step 3.2: Flash Firmware to Your Device
 
-You need PlatformIO to install the firmware.
+You have two options to flash firmware to your CC E-Ink display. The browser flasher is the easiest method and requires no software installation.
+
+### Option A: Browser Flasher (Recommended — No Software Install Required)
+
+The easiest way to flash your CC E-Ink device is using the built-in browser flasher at `your-vercel-url.app/flasher`.
+
+**Requirements:**
+- Chrome or Edge desktop browser (Safari/Firefox not supported)
+- USB connection to your CC E-Ink device
+
+**Steps:**
+1. Connect device via USB to your computer
+2. Go to your deployment's `/flasher` page: `https://YOUR-PROJECT.vercel.app/flasher`
+3. Click **Connect** and select your device from the pop-up
+4. Click **Flash** and wait for completion (approximately 2 minutes)
+
+**Note:** iPhone and Safari do not support Web Serial/Web Bluetooth. You must use Chrome or Edge on a desktop/laptop computer.
+
+### Option B: PlatformIO CLI (Advanced)
+
+If you prefer command-line tools or the browser flasher doesn't work, you can use PlatformIO.
+
+**Step 1: Install PlatformIO**
 
 **On Mac:**
 ```bash
@@ -175,7 +197,7 @@ pip3 install platformio
 2. Open Command Prompt
 3. Run: `pip install platformio`
 
-### Step 3.3: Download Firmware
+**Step 2: Download Firmware**
 
 1. Download the Commute Compute code:
    - Go to the GitLab repository
@@ -189,7 +211,7 @@ pip3 install platformio
    cd Downloads/commute-compute-main/firmware
    ```
 
-### Step 3.4: Flash Firmware
+**Step 3: Flash Firmware**
 
 **On Mac:**
 ```bash

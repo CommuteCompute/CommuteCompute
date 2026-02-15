@@ -268,7 +268,7 @@ MAPBOX_ACCESS_TOKEN=your-mapbox-token  # Fallback geocoding
 ├── setup-wizard.js          # Main wizard script
 ├── README.md                # This file
 └── firmware/
-    ├── trmnl-byos.ino       # TRMNL OG firmware (ESP32)
+    ├── cc-eink-byos.ino     # CC E-Ink firmware for TRMNL hardware (ESP32)
     └── kindle-launcher.sh   # Kindle launcher script
 ```
 

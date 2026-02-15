@@ -32,7 +32,6 @@
     "dayjs": "^1.11.10",
     "express": "^4.22.1",
     "gtfs-realtime-bindings": "^1.1.1",
-    "ioredis": "^5.9.2",
     "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.12"
   },
