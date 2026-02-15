@@ -63,7 +63,11 @@ For detailed specifications, setup instructions, and a full list of supported de
 
 ---
 
-## Part 1: Create Your Server (10 minutes)
+**Total time:** approximately 60--90 minutes for first-time setup (15--20 minutes active work, plus API key approval wait time which may take up to 48 hours).
+
+---
+
+## Part 1: Create Your Server
 
 Your Commute Compute server runs in the cloud for free on Vercel.
 
@@ -106,7 +110,7 @@ Redis installed via the Marketplace is automatically connected to your project.
 
 ---
 
-## Part 2: Configure Your Journey (5 minutes)
+## Part 2: Configure Your Journey
 
 Now tell the system about your commute.
 
@@ -170,7 +174,7 @@ The wizard shows a **6-character code** (like `ABC123`).
 
 ---
 
-## Part 3: Set Up Your Device (10 minutes)
+## Part 3: Set Up Your Device
 
 ### Step 3.1: Unbox Your CC E-Ink Display
 
@@ -333,11 +337,18 @@ For better address autocomplete:
 
 ## Troubleshooting
 
+### "Display is blank after flashing"
+
+- This is normal. After flashing, allow 2--3 minutes for the device to connect to WiFi and fetch its first dashboard image.
+- The first load may take longer than subsequent refreshes. Do not power off or reset during this time.
+
 ### "Device won't connect to WiFi"
 
-- Ensure you're using 2.4GHz WiFi (not 5GHz)
-- Check password is correct
-- Move device closer to router
+- Ensure your router broadcasts on 2.4 GHz. The ESP32-C3 does not support 5 GHz networks.
+- If WiFi scanning does not show your network, check that your router's 2.4 GHz band is enabled (some routers disable it when a 5 GHz band is active).
+- If selecting a scanned network does not populate the SSID field, try typing the network name manually.
+- Check the password is correct.
+- Move the device closer to your router during initial setup.
 
 ### "Pairing code expired"
 

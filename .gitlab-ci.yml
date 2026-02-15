@@ -26,6 +26,19 @@ audit-job:
   before_script:
     - npm ci --prefer-offline
   script:
+    - echo "Running comprehensive compliance audit..."
+    - bash ./scripts/comprehensive-compliance-audit.sh
+    - echo "Running npm supply chain audit..."
+    - npm audit --audit-level=critical || echo "WARN: npm audit found vulnerabilities"
+  allow_failure: false
+
+# Stage 3: Test suite
+test-job:
+  stage: test
+  image: node:${NODE_VERSION}
+  before_script:
+    - npm ci --prefer-offline
+  script:
     - echo "Running test suite..."
     - npm test
   allow_failure: false

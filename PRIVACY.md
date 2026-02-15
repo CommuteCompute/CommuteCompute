@@ -5,7 +5,7 @@
 # Commute Compute™ — Privacy Policy & Data Collection Disclosure
 
 **Effective Date:** 15 February 2026
-**Last Updated:** 15 February 2026
+**Last Updated:** 16 February 2026
 **System Version:** v4.2.0
 
 ---
@@ -67,6 +67,10 @@ Commute Compute™ communicates with the following external services to provide 
 | [Vercel](https://vercel.com) | All stored data (hosting and Redis storage) | Application hosting, serverless functions, Redis database | Yes | [Vercel Privacy Policy](https://vercel.com/legal/privacy-policy) |
 
 **Important:** Your home, work, and cafe addresses are **not** sent to transit authorities. Only public GTFS stop IDs (e.g., `"12179"` for South Yarra Station) are used to query real-time departure data.
+
+### Cross-Border Data Flows (APP 8)
+
+**Cross-border data flows:** Some third-party services process data outside Australia (Vercel and Upstash infrastructure is located in the United States). We take reasonable steps to protect your personal information when disclosed to overseas recipients by: (1) selecting providers with SOC 2 Type II or equivalent certification, (2) using encryption in transit (HTTPS/TLS 1.3) and at rest (AES-256), and (3) reviewing third-party privacy policies for compliance with international privacy standards. We recommend selecting the Sydney (Australia) region when creating your Redis database to minimise cross-border data transfers.
 
 ---
 
@@ -193,13 +197,19 @@ These decisions are made entirely on your own server — no personal data is sen
 
 ---
 
-## 14. Contact
+## 14. Contact and Complaints
 
 For privacy-related enquiries:
 
 - **Email:** commutecompute.licensing@gmail.com
 - **GitLab Issues:** [gitlab.com/angusbergman/commute-compute-system/issues](https://gitlab.com/angusbergman/commute-compute-system/issues)
 - **Licensing and legal:** See [LEGAL.md](LEGAL.md)
+
+### Complaint Resolution
+
+If you have a privacy concern or complaint, please contact us first at commutecompute.licensing@gmail.com. We will respond within 30 days.
+
+If you are not satisfied with our response, you may lodge a complaint with the Office of the Australian Information Commissioner (OAIC) at [oaic.gov.au/privacy/privacy-complaints](https://www.oaic.gov.au/privacy/privacy-complaints) or by calling 1300 363 992.
 
 ---
 

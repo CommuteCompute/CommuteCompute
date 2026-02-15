@@ -234,12 +234,20 @@ Access the admin panel at: `https://your-project-name.vercel.app/admin.html`
 
 ## Troubleshooting
 
+### Display blank after flashing
+
+- This is normal. After flashing, allow 2--3 minutes for the device to connect to WiFi and fetch its first dashboard image.
+- The first load takes longer than subsequent refreshes. Do not power off or reset during this time.
+
 ### Device not connecting
 
-1. Ensure WiFi credentials are correct
-2. Check device is within WiFi range
-3. Verify Vercel deployment is successful
-4. Check `/api/status` endpoint
+1. Ensure your router broadcasts on 2.4 GHz (the ESP32-C3 does not support 5 GHz networks)
+2. If WiFi scanning does not show your network, check that your router's 2.4 GHz band is enabled
+3. If selecting a scanned network does not populate the SSID field, try typing the network name manually
+4. Ensure WiFi credentials are correct
+5. Check device is within WiFi range
+6. Verify Vercel deployment is successful
+7. Check `/api/status` endpoint
 
 ### No departure data
 
