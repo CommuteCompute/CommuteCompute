@@ -27,6 +27,17 @@ The display updates automatically every 60 seconds with real-time information.
 
 ---
 
+## Compatible Display Hardware
+
+Commute Compute is compatible with the following e-ink displays:
+
+- **TRMNL OG** (800x480, 7.5" e-ink) -- A purpose-built e-ink display available from the TRMNL website. Commute Compute is compatible with TRMNL hardware but is not affiliated with or endorsed by TRMNL.
+- **Jailbroken Kindle** -- Various Kindle models (Paperwhite 3/4/5, Kindle 4) can be repurposed as Commute Compute displays. Requires jailbreaking the device.
+
+For detailed specifications, setup instructions, and a full list of supported devices, see the [Device Compatibility Guide](../hardware/DEVICE-COMPATIBILITY.md).
+
+---
+
 ## What You'll Need
 
 ### Required
@@ -38,11 +49,16 @@ The display updates automatically every 60 seconds with real-time information.
 | **WiFi Network** | 2.4GHz (not 5GHz) | — |
 | **Vercel Account** | Free hosting service | Free |
 
+### Required for Live Data
+
+| Item | Description | Benefit |
+|------|-------------|---------|
+| **Transport Victoria API Key** | Required for live departure data | Powers the core feature — live departure countdowns |
+
 ### Optional (Recommended)
 
 | Item | Description | Benefit |
 |------|-------------|---------|
-| **Transport Victoria API Key** | Real-time data | Live departures |
 | **Google Places API Key** | Address autocomplete | Easier setup |
 
 ---
@@ -119,21 +135,22 @@ Now tell the system about your commute.
 
 If you want coffee recommendations:
 
-1. Type your favorite cafe name and address
+1. Type your favourite cafe name and address
 2. Select from suggestions
 3. Click **Next**
 
 Or click **Skip** to continue without coffee stops.
 
-### Step 2.5: API Keys (Optional)
+### Step 2.5: API Keys
 
-**Transport Victoria API Key:**
+**Transport Victoria API Key (Required for live departure data):**
 
-If you have one, enter it here for live departure data.
+This key powers the live departure countdowns, which is the core feature of Commute Compute™. Without it, transit legs will not be shown on your dashboard.
 
-Don't have one? That's OK! Click **Skip** — the system will use timetable data.
+1. If you already have a key, enter it here
+2. If you don't have one yet, see **Part 5** below for how to get one — you can come back to the Setup Wizard later to add it via the Admin Panel
 
-**Google Places Key:**
+**Google Places Key (Optional):**
 
 If you entered one earlier, address search will be easier.
 
@@ -275,8 +292,7 @@ Wait for "SUCCESS" message (about 30 seconds).
 | **X MIN TOTAL** | Total journey duration |
 | **GET A COFFEE** | You have time for coffee! |
 | **[WARNING] NO TIME** | Skip the coffee today |
-| **● LIVE DATA** | Real-time departures |
-| **○ TIMETABLE** | Using scheduled times |
+| **● LIVE DATA** | Real-time departures (requires API key) |
 
 ### Display Updates
 
@@ -336,8 +352,8 @@ For better address autocomplete:
 
 ### "No departure times showing"
 
-- Without API key, system uses timetable data
-- Add Transport Victoria API key for live data
+- A Transport Victoria API key is required for live departure data — without it, transit legs are not displayed
+- Add your key via the Admin Panel at `/admin.html`
 - Check your home address is near transit stops
 
 ### "Device won't flash"

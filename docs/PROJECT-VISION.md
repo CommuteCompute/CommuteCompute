@@ -4,8 +4,8 @@
 
 # Commute Compute System™ — Project Vision & Roadmap
 
-**Version:** 2.0  
-**Last Updated:** 2026-01-30  
+**Version:** 2.1
+**Last Updated:** 2026-02-15
 **Author:** Angus Bergman
 **License:** AGPL-3.0 Dual License
 
@@ -26,7 +26,7 @@ Your commute data stays on YOUR server. No tracking, no analytics, no central da
 Runs entirely on free-tier infrastructure (Vercel). No subscriptions, no hidden costs, no premium features locked behind paywalls. Optional paid APIs (Google Places) have free fallbacks.
 
 ### Zero Dependencies
-No reliance on third-party clouds or services. CCFirm™ custom firmware means your device connects only to your server — not to usetrmnl.com or any other external service.
+No reliance on third-party clouds or services. CCFirm™ custom firmware means your device connects only to your server — not to any external cloud display service.
 
 ### Australian Focus
 Purpose-built for Australian public transport systems. Full support for Victoria (Transport Victoria OpenData API), with NSW and Queensland supported and architecture designed for all states/territories.
@@ -60,7 +60,7 @@ Create a **"set and forget"** smart transit display that tells you exactly when 
 
 | Goal | Metric | Status |
 |------|--------|--------|
-| **Setup Time** | < 10 minutes from deployment to working display | [YES] Achieved |
+| **Setup Time** | ~60-90 minutes from deployment to working display (first-time) | [YES] Achieved |
 | **Zero Maintenance** | Device runs indefinitely without user intervention | [YES] Achieved |
 | **Glanceable** | All critical info visible in < 2 seconds | [YES] Achieved |
 | **Accurate** | Real-time data within 30 seconds of actuality | [YES] Achieved |
@@ -120,8 +120,8 @@ Create a **"set and forget"** smart transit display that tells you exactly when 
 - [x] bb_epaper library integration
 
 ### Phase 3: Documentation -- COMPLETE
-- [x] DEVELOPMENT-RULES.md v1.6 (21 sections, 67 subsections)
-- [x] System architecture documentation (v4.0)
+- [x] DEVELOPMENT-RULES.md v1.28 (24 sections, 210+ compliance checks)
+- [x] System architecture documentation (v4.2.0)
 - [x] Setup Wizard architecture (v2.0)
 - [x] Project vision and roadmap
 - [x] Installation guides
@@ -134,7 +134,7 @@ Create a **"set and forget"** smart transit display that tells you exactly when 
 - [x] NSW (TfNSW) support
 - [x] Queensland (TransLink) support
 - [x] State auto-detection
-- [x] Fallback timetables
+- [x] Timetable-based coverage for non-VIC states
 
 ### Phase 5: Setup & UX -- COMPLETE
 - [x] Zero-config serverless architecture
@@ -161,12 +161,14 @@ Create a **"set and forget"** smart transit display that tells you exactly when 
 - [ ] Multi-language support (future)
 - [ ] Alternative dashboard layouts (future)
 
-### Phase 8: Launch -- PLANNED
-- [ ] Public repository finalization
-- [ ] Community documentation
-- [ ] Reddit/social media announcement
-- [ ] User feedback collection
-- [ ] Video tutorials
+### Phase 8: Launch -- COMPLETE
+- [x] Public repository finalization
+- [x] Community documentation
+- [x] Reddit/social media announcement (222k+ views)
+- [x] IP Australia trade mark applications filed
+- [x] ABN registered
+- [x] Live deployment on Vercel
+- [ ] Video tutorials (future)
 
 ### Phase 9: Expansion -- FUTURE
 - [ ] South Australia (Adelaide Metro)
@@ -243,7 +245,7 @@ The entire system must be usable for free. Paid APIs (Google Places) are optiona
 ## Success Metrics
 
 ### User Success
-- Users can set up a working display in < 10 minutes [YES]
+- Users can set up a working display in ~60-90 minutes (first-time) [YES]
 - Display shows accurate departure times [YES]
 - Coffee decision logic is trusted [YES]
 - System requires zero maintenance [YES]
@@ -276,7 +278,7 @@ Things we explicitly **will not** pursue:
 | Premium features | Everything is free |
 | Real-time location tracking | Privacy concern |
 | Social features | Out of scope |
-| usetrmnl.com integration | Independence required |
+| Third-party cloud display integration | Independence required |
 
 ---
 
@@ -291,7 +293,7 @@ Things we explicitly **will not** pursue:
 ### Decision Making
 - Major changes require specification updates
 - CCDashDesignV15.0 spec is LOCKED — changes require new version
-- DEVELOPMENT-RULES.md v1.6 is the source of truth
+- DEVELOPMENT-RULES.md v1.28 is the source of truth
 - Community input welcome via GitLab Issues
 
 ### Contribution Model
@@ -317,8 +319,7 @@ Things we explicitly **will not** pursue:
 - No paid support tier
 
 ### Donations
-- Buy Me a Coffee: [ko-fi.com/commutecompute](https://ko-fi.com/commutecompute)
-- Buy Me a Coffee / Sponsor (future)
+- Buy Me a Coffee: [buymeacoffee.com/angusbergman](https://buymeacoffee.com/angusbergman)
 - All donations support development time
 
 ---
@@ -334,7 +335,7 @@ Things we explicitly **will not** pursue:
 | Setup & UX | Q1 2026 | [YES] Complete |
 | Testing | Q1 2026 | In Progress |
 | Polish | Q1 2026 | In Progress |
-| Launch | Q1 2026 | Planned |
+| Launch | Q1 2026 | [YES] Complete |
 | Expansion | Q2 2026+ | Future |
 
 ---
@@ -349,4 +350,4 @@ The project succeeds when an Australian commuter can glance at their e-ink displ
 
 **Built with coffee in Melbourne**
 
-*Copyright © 2025-2026 Angus Bergman — AGPL-3.0 Dual License*
+*Copyright (c) 2026 Angus Bergman — AGPL-3.0 Dual License*

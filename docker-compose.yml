@@ -28,7 +28,9 @@ services:
       - GOOGLE_PLACES_API_KEY=${GOOGLE_PLACES_API_KEY:-}
       - MAPBOX_ACCESS_TOKEN=${MAPBOX_ACCESS_TOKEN:-}
 
-      # Redis/KV Storage (Optional - for persistent config)
+      # For self-hosted Docker deployments, use REDIS_URL with your own Redis instance.
+      # For Vercel deployments, the app uses UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN
+      # (configured automatically via the Vercel Marketplace Redis integration).
       - REDIS_URL=${REDIS_URL:-}
 
       # Email Configuration (Optional)

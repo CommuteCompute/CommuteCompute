@@ -162,9 +162,26 @@ Commute Compute™ is designed with the Australian Privacy Principles (APPs) und
 - **Transparency:** This policy and the open-source code provide full visibility into data handling
 - **Security:** Encryption at rest, HTTPS in transit, input sanitisation, and token-based authentication
 
+### Privacy Act 2025 Amendments
+
+The *Privacy Act 1988* (Cth), as amended by the *Privacy and Other Legislation Amendment Bill 2025* (effective 10 June 2025), introduces a statutory tort for serious invasions of privacy and expands the definition of "personal information" to include device identifiers and technical data. Commute Compute™'s self-hosted, privacy-first architecture is designed so that all personal data remains under your control on your own Vercel deployment. The project maintainer does not collect, access, or store any user data.
+
 ---
 
-## 12. Changes to This Policy
+## 12. Automated Decision-Making (ADM) Transparency
+
+Commute Compute™ uses automated processing to personalise your dashboard. Here is what that means in plain terms:
+
+- **Departure timing:** The CommuteCompute Engine calculates when you should leave home based on your saved addresses, preferred arrival time, and current transit conditions.
+- **Route selection:** The engine automatically picks the best route considering live departures, walking pace, and your mode preferences.
+- **Coffee recommendations:** The CoffeeDecision feature uses your journey timing and coffee preferences to suggest whether you have time to grab a coffee.
+- **Live departures:** CC LiveDash™ automatically selects which transit departures to show based on proximity to your stops and route relevance.
+
+These decisions are made entirely on your own server — no personal data is sent to third parties for decision-making. You can change the inputs to all of these decisions at any time through the Admin Panel or Setup Wizard.
+
+---
+
+## 13. Changes to This Policy
 
 - Policy updates are tracked in [docs/CHANGELOG.md](docs/CHANGELOG.md)
 - The full revision history of this file is available in the git repository
@@ -172,7 +189,7 @@ Commute Compute™ is designed with the Australian Privacy Principles (APPs) und
 
 ---
 
-## 13. Contact
+## 14. Contact
 
 For privacy-related enquiries:
 

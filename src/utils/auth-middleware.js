@@ -10,6 +10,7 @@
  * Part of the Commute Compute System
  */
 
+import crypto from 'node:crypto';
 import { getTransitApiKey } from '../data/kv-preferences.js';
 
 /**
@@ -42,7 +43,18 @@ export function requireAuth(req) {
 
   const providedToken = match[1];
 
-  if (providedToken !== adminToken) {
+  // Timing-safe comparison to prevent timing attacks (Section 17)
+  const providedBuf = Buffer.from(providedToken, 'utf8');
+  const expectedBuf = Buffer.from(adminToken, 'utf8');
+  const lengthsMatch = providedBuf.length === expectedBuf.length;
+
+  // When lengths differ, compare expectedBuf against itself to maintain
+  // constant-time behaviour, then reject based on the length mismatch.
+  const tokenMatch = lengthsMatch
+    ? crypto.timingSafeEqual(providedBuf, expectedBuf)
+    : !crypto.timingSafeEqual(expectedBuf, expectedBuf);
+
+  if (!tokenMatch) {
     return {
       error: 'Forbidden',
       message: 'Invalid admin token'

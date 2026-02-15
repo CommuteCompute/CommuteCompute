@@ -139,7 +139,7 @@ This key is essential for live real-time departure countdowns -- the core featur
 ### 3.6 Journey Settings
 
 - Set your **target arrival time** at work (e.g., 9:00 AM)
-- Enable **CoffeeDecision™** if you want coffee stop recommendations
+- Enable **CoffeeDecision** if you want coffee stop recommendations
 
 ### 3.7 Complete Setup
 
@@ -206,7 +206,7 @@ Your CC E-Ink device should display:
 - Current time and journey legs
 - Live departure countdowns
 - Weather and lifestyle suggestions
-- CoffeeDecision™ recommendation
+- CoffeeDecision recommendation
 
 ---
 
