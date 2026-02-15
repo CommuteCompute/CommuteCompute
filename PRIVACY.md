@@ -70,7 +70,7 @@ Commute Compute™ communicates with the following external services to provide 
 
 ### Cross-Border Data Flows (APP 8)
 
-**Cross-border data flows:** Some third-party services process data outside Australia (Vercel and Upstash infrastructure is located in the United States). We take reasonable steps to protect your personal information when disclosed to overseas recipients by: (1) selecting providers with SOC 2 Type II or equivalent certification, (2) using encryption in transit (HTTPS/TLS 1.3) and at rest (AES-256), and (3) reviewing third-party privacy policies for compliance with international privacy standards. We recommend selecting the Sydney (Australia) region when creating your Redis database to minimise cross-border data transfers.
+**Cross-border data flows:** Some third-party services process data outside Australia (Vercel and Upstash infrastructure is located in the United States). We take reasonable steps to protect your personal information when disclosed to overseas recipients by: (1) selecting providers with SOC 2 Type II or equivalent certification, (2) using encryption in transit (HTTPS/TLS 1.3) and at rest (AES-256), and (3) reviewing third-party privacy policies for compliance with international privacy standards. For Upstash security practices and certifications, see the [Upstash Security Page](https://upstash.com/docs/common/security). We recommend selecting the Sydney (Australia) region when creating your Redis database to minimise cross-border data transfers.
 
 ---
 
@@ -92,6 +92,8 @@ Commute Compute™ communicates with the following external services to provide 
 - API keys are validated before storage and are never logged or displayed in full
 - No personal information is hardcoded in the source code
 
+For our full security policy, responsible disclosure process, and data breach response plan, see [SECURITY.md](SECURITY.md).
+
 ### Config Token Security
 
 Dashboard device URLs contain Base64URL-encoded configuration tokens. These tokens include your minified preferences (addresses, API keys, coordinates). Tokens are **encoded, not encrypted**.
@@ -111,6 +113,8 @@ Dashboard device URLs contain Base64URL-encoded configuration tokens. These toke
 | Device status | Overwritten on next device report | Admin panel or `/api/admin/reset` endpoint |
 | Journey profiles | Until manually deleted | Admin panel |
 
+**To export all stored data as JSON:** Call `/api/admin/export` with your admin token. This returns all preferences, API keys (masked), device status, and journey profiles.
+
 **To delete all data:** Use the admin reset endpoint (`/api/admin/reset` with your admin token) or delete your Vercel project entirely. Vercel's own data retention policies apply to infrastructure-level backups — see the [Vercel Privacy Policy](https://vercel.com/legal/privacy-policy) for details.
 
 ---
@@ -120,6 +124,9 @@ Dashboard device URLs contain Base64URL-encoded configuration tokens. These toke
 Commute Compute™ is architected so that each user deploys and controls their own instance:
 
 - Each Vercel deployment is fully isolated — no data is shared between users
+- Each deployment operator is the data controller for their own instance — the project maintainer has no access to any user's Redis data, preferences, or commute patterns
+- By deploying Commute Compute™, you create your own independent Vercel instance and Redis database. You assume responsibility for the security and privacy compliance of your own deployment, including your obligations under applicable privacy laws
+- If you configure Commute Compute™ for another person, you are responsible for ensuring they are informed about data collection and their right to request deletion
 - There is no central Commute Compute™ server collecting or aggregating data
 - There is no user profiling, behavioural analytics, or telemetry
 - The full source code is available and auditable under AGPL-3.0
@@ -186,6 +193,17 @@ Commute Compute uses automated processing to personalise your dashboard:
 **Your rights:** You can view, change, or delete all inputs to these automated decisions at any time via the Admin Panel (`/admin`) or Setup Wizard (`/setup-wizard.html`). To delete all stored data, use the admin reset endpoint (`/api/admin/reset`).
 
 These decisions are made entirely on your own server — no personal data is sent to third parties for decision-making. No automated decisions are made that have legal or similarly significant effects.
+
+**Kinds of personal information used in automated decisions:**
+
+- Home and work addresses (text and geocoded coordinates)
+- Preferred arrival time and departure window
+- Transit mode preferences (train, tram, bus, V/Line)
+- Walking pace estimate
+- Coffee and cafe preferences
+- Device identifier (for display targeting)
+
+All inputs are provided directly by you via the Setup Wizard or Admin Panel and stored exclusively in your own Redis instance.
 
 ---
 

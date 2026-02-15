@@ -29,7 +29,7 @@ audit-job:
     - echo "Running comprehensive compliance audit..."
     - bash ./scripts/comprehensive-compliance-audit.sh
     - echo "Running npm supply chain audit..."
-    - npm audit --audit-level=critical || echo "WARN: npm audit found vulnerabilities"
+    - npm audit --audit-level=critical
   allow_failure: false
 
 # Stage 3: Test suite
