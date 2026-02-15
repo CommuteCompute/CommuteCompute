@@ -42,11 +42,11 @@ Commute Compute&#8482; is not another transit app. It is an open-source commuter
 
 Here is what no other commuter tool provides:
 
-- **Single-glance intelligence on e-ink.** The entire commute -- departure countdowns, weather preparation, coffee feasibility, journey confidence, sleep optimization, and alternative transport costs -- rendered as one image. Readable from across a room.
+- **Single-glance intelligence on e-ink.** The entire commute -- departure countdowns, weather preparation, coffee feasibility, journey confidence, sleep optimisation, and alternative transport costs -- rendered as one image. Readable from across a room.
 
 - **Five interconnected intelligence engines.** CommuteCompute&#8482;, DepartureConfidence, LifestyleContext, SleepOptimizer, and AltTransit work together. A weather change affects clothing suggestions, walking speed estimates, coffee feasibility, and confidence scoring simultaneously. They do not operate in isolation.
 
-- **Sleep optimization for next-day commute readiness.** No other transit tool calculates your optimal bedtime and alarm time based on tomorrow's journey duration, your wake routine, and desired sleep hours.
+- **Sleep optimisation for next-day commute readiness.** No other transit tool calculates your optimal bedtime and alarm time based on tomorrow's journey duration, your wake routine, and desired sleep hours.
 
 - **Alternative transport cost estimation.** When public transit is cancelled, the system instantly calculates rideshare, e-scooter, and bike share costs with peak surge detection. You see what it costs to get to work before you even leave the house.
 
@@ -122,7 +122,7 @@ Core journey orchestration with real-time multi-modal planning and Melbourne Met
 | | |
 |---|---|
 | **Inputs** | Home/work addresses, transit API data, live GTFS-RT departures, stop IDs, cafe location, current time |
-| **Outputs** | Optimized journey legs with live departure countdowns, total duration, arrival estimate, coffee decision |
+| **Outputs** | Optimised journey legs with live departure countdowns, total duration, arrival estimate, coffee decision |
 
 **Example Scenario:**
 
@@ -315,7 +315,7 @@ This makes Commute Compute&#8482; one of the first commuter tools to fully suppo
 1. **User Configuration** is stored in Redis via the Setup Wizard (addresses, preferences, API keys).
 2. **Data Sources** are polled on each request: GTFS-RT for live transit (30s cache), BOM for weather (5min cache), Google Places for cafe status.
 3. **Five Intelligence Engines** process the combined data into a unified journey model.
-4. **CCDash&#8482; Renderer** converts the data model into an 800x480 1-bit BMP image optimized for e-ink.
+4. **CCDash&#8482; Renderer** converts the data model into an 800x480 1-bit BMP image optimised for e-ink.
 5. **The device** (CC E-Ink, Kindle, Inkplate, or browser) fetches the rendered image over HTTPS on a 60-second refresh cycle.
 
 ### Caching Strategy
@@ -420,6 +420,16 @@ See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed step-by-step instructions 
 | Inkplate 6 | 800 x 600 | Supported |
 | Inkplate 10 | 1200 x 825 | Supported |
 | Web Browser | Any | Full dashboard via `/api/screen` endpoint |
+
+### Where to Buy Hardware
+
+| Device | Source | Notes |
+|:-------|:-------|:------|
+| **CC E-Ink OG (ESP32-C3)** | [TRMNL Shop](https://usetrmnl.com/shop) | Primary supported hardware. Approximately AU$120-150 shipped to Australia. |
+| **Kindle Paperwhite / Basic** | Amazon or second-hand | Requires jailbreak. Older models (PW3/PW4) recommended for jailbreak compatibility. |
+| **Inkplate 6 / 10** | [Soldered Electronics](https://soldered.com) | Open-hardware ESP32 e-ink boards. |
+
+The CC E-Ink OG display is the primary supported device and provides the best experience with CCFirm&#8482; firmware and BLE provisioning.
 
 <br>
 

@@ -170,14 +170,18 @@ The *Privacy Act 1988* (Cth), as amended by the *Privacy and Other Legislation A
 
 ## 12. Automated Decision-Making (ADM) Transparency
 
-Commute Compute™ uses automated processing to personalise your dashboard. Here is what that means in plain terms:
+*In accordance with Australian Privacy Principle 1 (APP 1), as amended by the Privacy and Other Legislation Amendment Bill 2025, and effective from 10 December 2026, the following disclosure is provided.*
 
-- **Departure timing:** The CommuteCompute Engine calculates when you should leave home based on your saved addresses, preferred arrival time, and current transit conditions.
-- **Route selection:** The engine automatically picks the best route considering live departures, walking pace, and your mode preferences.
-- **Coffee recommendations:** The CoffeeDecision feature uses your journey timing and coffee preferences to suggest whether you have time to grab a coffee.
-- **Live departures:** CC LiveDash™ automatically selects which transit departures to show based on proximity to your stops and route relevance.
+Commute Compute uses automated processing to personalise your dashboard:
 
-These decisions are made entirely on your own server — no personal data is sent to third parties for decision-making. You can change the inputs to all of these decisions at any time through the Admin Panel or Setup Wizard.
+- **Departure timing:** The CommuteCompute Engine calculates when you should leave based on your saved addresses, preferred arrival time, and current transit conditions.
+- **Route selection:** The engine automatically selects the best route considering live departures, walking pace, and your mode preferences.
+- **Coffee recommendations:** The CoffeeDecision feature uses your journey timing and coffee preferences to suggest whether you have time for a coffee.
+- **Live departures:** CC LiveDash™ automatically selects which transit departures to display based on proximity and route relevance.
+
+**Your rights:** You can view, change, or delete all inputs to these automated decisions at any time via the Admin Panel (`/admin`) or Setup Wizard (`/setup-wizard.html`). To delete all stored data, use the admin reset endpoint (`/api/admin/reset`).
+
+These decisions are made entirely on your own server — no personal data is sent to third parties for decision-making. No automated decisions are made that have legal or similarly significant effects.
 
 ---
 
