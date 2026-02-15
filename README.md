@@ -54,7 +54,7 @@ Here is what no other commuter tool provides:
 
 - **Melbourne Metro Tunnel compliance.** Full support for Melbourne's once-in-a-generation infrastructure change: 5 new underground stations, rerouted Pakenham/Cranbourne/Sunbury lines, and discontinued City Loop services. First-to-market for this routing change.
 
-- **Zero-config setup via BLE provisioning.** No environment variables. No config files. Pair via Bluetooth, run the Setup Wizard, and you are live in under 5 minutes.
+- **Zero-config setup via BLE provisioning.** No environment variables. No config files. Pair via Bluetooth, run the Setup Wizard, and configure everything through a guided web interface. First-time setup takes approximately 60-90 minutes including API key registration and device flashing.
 
 - **Graceful offline degradation.** When APIs are unreachable, the system falls back to cached data and static timetables. The display always shows something useful.
 
@@ -115,7 +115,7 @@ The pipeline runs entirely serverless on Vercel. The device fetches a pre-render
 
 All five engines operate under the CommuteCompute&#8482; umbrella. They share data, influence each other, and produce a unified commute intelligence model.
 
-### 1. CommuteCompute&#8482; Engine (v3.0)
+### 1. CommuteCompute&#8482; Engine (v3.1)
 
 Core journey orchestration with real-time multi-modal planning and Melbourne Metro Tunnel compliance.
 
