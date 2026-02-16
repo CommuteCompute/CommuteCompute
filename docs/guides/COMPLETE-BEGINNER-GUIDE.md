@@ -42,11 +42,30 @@ The display updates automatically every 60 seconds with real-time information.
 
 ---
 
+## Step 0: Before You Begin
+
+Before starting, confirm you have the following. Gathering everything upfront will make the process much smoother.
+
+**Hardware checklist:**
+- [ ] A CC E-Ink display (TRMNL BYOS from the [TRMNL Shop](https://shop.trmnl.com), or a jailbroken Kindle)
+- [ ] A USB-C data cable (not charge-only) for connecting the display to your computer
+- [ ] A desktop or laptop computer with **Chrome or Edge** browser (required for device flashing and BLE WiFi provisioning; Safari, Firefox, and iPhone/iPad are not supported for these steps)
+- [ ] A **2.4GHz WiFi network** -- the CC E-Ink display does not support 5GHz networks. If your router broadcasts a combined 2.4/5GHz network, ensure the 2.4GHz band is enabled.
+
+**Accounts checklist:**
+- [ ] A **Vercel account** (free) -- sign up at [vercel.com](https://vercel.com)
+- [ ] A **Transport Victoria OpenData API key** (required for live departure data) -- register at [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/). Approval can take up to 48 hours, so register early.
+- [ ] A **Google Places API key** (optional, for address autocomplete) -- from [Google Cloud Console](https://console.cloud.google.com/)
+
+**Estimated total setup time:** 60-90 minutes of active work. If you have not yet registered for a Transport Victoria API key, allow an additional 24-48 hours for approval (you can complete most of the setup without it and add the key later).
+
+---
+
 ## Compatible Display Hardware
 
 Commute Compute™ is compatible with the following e-ink displays:
 
-- **TRMNL OG** (800x480, 7.5" e-ink) — A purpose-built e-ink display available from the [TRMNL Shop](https://shop.trmnl.com). The hardware is manufactured by TRMNL; Commute Compute™ runs custom CCFirm™ firmware on it. Commute Compute is not affiliated with or endorsed by TRMNL.
+- **CC E-Ink BYOS** (also known as OG) (800x480, 7.5" e-ink) — A purpose-built e-ink display available from the [TRMNL Shop](https://shop.trmnl.com). The hardware is manufactured by TRMNL; Commute Compute™ runs custom CCFirm™ firmware on it. Commute Compute is not affiliated with or endorsed by TRMNL.
 - **Jailbroken Kindle** — Various Kindle models (Paperwhite 3/4/5, Kindle 4) can be repurposed as Commute Compute displays. Requires jailbreaking the device.
 
 For detailed specifications, setup instructions, and a full list of supported devices, see the [Device Compatibility Guide](../hardware/DEVICE-COMPATIBILITY.md).
@@ -61,7 +80,7 @@ Before starting, gather these items and information:
 
 | Item | Description | Cost |
 |------|-------------|------|
-| **TRMNL display** | E-ink display device (e.g. TRMNL OG from the [TRMNL Shop](https://shop.trmnl.com)) | ~$150 AUD |
+| **CC E-Ink display** | E-ink display device (e.g. CC E-Ink BYOS from the TRMNL Shop) | ~$150 AUD |
 | **Computer** | Desktop or laptop for initial setup (not iPhone/iPad) | — |
 | **USB Cable** | USB-C cable for connecting display to computer | Usually included |
 | **WiFi Network** | 2.4 GHz network (5 GHz not supported) | — |
@@ -304,8 +323,8 @@ Click **Next** to continue.
 [TIME] Less than 1 minute.
 
 Choose your display device type:
-- **TRMNL OG** -- Select this for the standard 800x480 TRMNL display
-- **TRMNL Mini** -- For smaller 400x300 displays
+- **CC E-Ink BYOS** -- Select this for the standard 800x480 CC E-Ink display
+- **CC E-Ink Mini** -- For smaller 400x300 displays
 - **Kindle** -- For jailbroken Kindle devices
 
 Click **Complete Setup** to finish configuration.
@@ -321,6 +340,26 @@ The wizard now shows your admin authentication token:
    - This token does not expire
 
 [IMPORTANT] Write this down before closing the page. The admin token is shown only once.
+
+### Step 2.9: Verify Your Dashboard Before Flashing
+
+[TIME] Less than 1 minute.
+
+Before proceeding to flash your device, verify your dashboard is working by visiting your Vercel deployment URL in a browser:
+
+1. Open a new browser tab
+2. Go to: `https://YOUR-PROJECT-NAME.vercel.app/api/screen`
+   (Replace `YOUR-PROJECT-NAME` with your actual project name)
+3. You should see a rendered dashboard image (the layout will be visible even without live departure data)
+
+**If you see the dashboard image:** Your server is correctly configured. Proceed to Part 3.
+
+**If you see an error or blank page:**
+- Check that Redis is connected: visit `/api/kv-status` and confirm `"connected": true`
+- Re-check your addresses in the Setup Wizard
+- Ensure you completed the redeployment step (Step 1.5)
+
+This verification confirms your server is working before you invest time in device flashing.
 
 **Next:** Proceed to Part 3 to set up your physical display device.
 

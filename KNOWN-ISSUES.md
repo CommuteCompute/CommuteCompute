@@ -93,6 +93,18 @@ The `/api/geocode` endpoint (the address lookup service) returns a "404 not foun
 
 ---
 
+## Hardware Considerations
+
+### WiFi Must Be 2.4GHz
+
+The CC E-Ink display hardware (ESP32-C3 chipset) only supports 2.4GHz WiFi networks. 5GHz networks are not supported and will not appear in WiFi scans during setup.
+
+If your router broadcasts a combined 2.4/5GHz network (common with modern routers), the device may fail to connect or the network may not appear in scans. **Fix:** Check your router settings and ensure a dedicated 2.4GHz network is available, or that your combined network supports 2.4GHz clients. Some dual-band routers disable the 2.4GHz band when only 5GHz is active -- ensure it is enabled.
+
+**What this means for you:** Before setting up your CC E-Ink display, verify that your WiFi router is broadcasting on 2.4GHz. If you only see 5GHz networks in your router settings, enable the 2.4GHz band. Most modern routers broadcast both by default.
+
+---
+
 ## Other Notes
 
 ### Display Coordinate System

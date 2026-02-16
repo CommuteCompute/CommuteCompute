@@ -80,8 +80,11 @@ CCFirm™ is the custom firmware that runs on TRMNL e-ink display hardware to po
 ## Device Setup Flow
 
 ### Phase 1: BLE Provisioning
+
+[NOTE] BLE provisioning requires **Chrome or Edge** browser on a desktop or laptop computer. Safari and Firefox do not support Web Bluetooth. iPhone does not support Web Bluetooth. General Setup Wizard configuration (addresses, API keys, preferences) works in any modern browser.
+
 1. Device boots, shows welcome screen with pairing code
-2. User opens Setup Wizard on phone/computer
+2. User opens Setup Wizard in Chrome or Edge on their computer
 3. Wizard connects via BLE, sends WiFi credentials (SSID + password only)
 4. Device connects to WiFi
 
