@@ -79,11 +79,11 @@ Commute Compute™ communicates with the following external services to provide 
 | [OpenStreetMap Nominatim](https://nominatim.openstreetmap.org) | Address search queries | Geocoding fallback when Google Places is not configured | Fallback only | [OSM Privacy Policy](https://wiki.osmfoundation.org/wiki/Privacy_Policy) |
 | [Vercel](https://vercel.com) | All stored data (hosting and Redis storage) | Application hosting, serverless functions, Redis database | Yes | [Vercel Privacy Policy](https://vercel.com/legal/privacy-policy) |
 
-**Important:** Your home, work, and cafe addresses are **not** sent to transit authorities. Only public GTFS stop IDs (e.g., `"12179"` for South Yarra Station) are used to query real-time departure data.
+**Important:** Your home, work, and cafe addresses are **not** sent to transit authorities. Only public GTFS stop IDs (GTFS — General Transit Feed Specification — is a standard data format used worldwide for transit schedules and real-time updates; e.g., stop ID `"12179"` for South Yarra Station) are used to query real-time departure data.
 
 ### Cross-Border Data Flows (APP 8)
 
-**Cross-border data flows:** Some third-party services process data outside Australia (Vercel and Upstash infrastructure is located in the United States). We take reasonable steps to protect your personal information when disclosed to overseas recipients by: (1) selecting providers with SOC 2 Type II or equivalent certification, (2) using encryption in transit (HTTPS/TLS 1.3 — secure communication protocols that encrypt data sent between your browser and servers, indicated by the padlock icon in your browser) and at rest (AES-256), and (3) reviewing third-party privacy policies for compliance with international privacy standards. For Upstash security practices and certifications, see the [Upstash Security Page](https://upstash.com/docs/common/security). We recommend selecting the Sydney (Australia) region when creating your Redis database to minimise cross-border data transfers.
+**Cross-border data flows:** Some third-party services process data outside Australia (Vercel and Upstash infrastructure is located in the United States). We take reasonable steps to protect your personal information when disclosed to overseas recipients by: (1) selecting providers with SOC 2 Type II certification (an independent audit standard that verifies a service organisation's security controls are effective over a sustained period) or equivalent, (2) using encryption in transit (HTTPS/TLS 1.3 — secure communication protocols that encrypt data sent between your browser and servers, indicated by the padlock icon in your browser) and at rest (AES-256), and (3) reviewing third-party privacy policies for compliance with international privacy standards. For Upstash security practices and certifications, see the [Upstash Security Page](https://upstash.com/docs/common/security). We recommend selecting the Sydney (Australia) region when creating your Redis database to minimise cross-border data transfers.
 
 ---
 
@@ -101,7 +101,7 @@ Commute Compute™ communicates with the following external services to provide 
 - All external API communication uses HTTPS/TLS (secure communication protocols that encrypt data sent between your browser and servers — indicated by the padlock icon in your browser)
 - Zero-config architecture: no `.env` files, no hardcoded secrets in source code
 - All user input is sanitised before display to prevent cross-site scripting (XSS)
-- Admin endpoints are protected by bearer token authentication (`CC_ADMIN_TOKEN`)
+- Admin endpoints are protected by bearer token authentication (a bearer token is an authentication credential that grants access to API resources — similar to a password that proves you are authorised) (`CC_ADMIN_TOKEN`)
 - API keys are validated before storage and are never logged or displayed in full
 - No personal information is hardcoded in the source code
 
@@ -141,7 +141,15 @@ Dashboard device URLs contain Base64URL-encoded configuration tokens (a method o
 
 **To export all stored data as JSON:** Call `/api/admin/export` with your admin token. This returns all preferences, API keys (masked), device status, and journey profiles.
 
-**To delete all data:** Use the admin reset endpoint (`/api/admin/reset` with your admin token) or delete your Vercel project entirely. Vercel's own data retention policies apply to infrastructure-level backups — see the [Vercel Privacy Policy](https://vercel.com/legal/privacy-policy) for details.
+### How to Delete Your Data
+
+You have several options for deleting your data:
+
+1. **Clear all stored data via the Admin Panel:** Navigate to your Admin Panel (`/admin`), authenticate with your admin token, and use the "Reset All Data" function. This immediately deletes all preferences, API keys, device status, and journey profiles from your Redis database. Alternatively, call the `/api/admin/reset` endpoint directly with your admin token.
+
+2. **Delete your Vercel deployment:** If you delete your Vercel project entirely, all associated Redis data is permanently removed along with the deployment. No residual personal data remains in the Commute Compute™ application after the project is deleted. Vercel's own data retention policies apply to infrastructure-level backups — see the [Vercel Privacy Policy](https://vercel.com/legal/privacy-policy) for details.
+
+3. **Request deletion by email:** If you are unable to delete your data using the methods above, or if you have any questions about data deletion, contact us at commutecompute.licensing@gmail.com and we will assist you within 30 days.
 
 ---
 
@@ -220,7 +228,37 @@ Commute Compute uses automated processing to personalise your dashboard:
 
 These decisions are made entirely on your own server — no personal data is sent to third parties for decision-making. No automated decisions are made that have legal or similarly significant effects.
 
-**Kinds of personal information used in automated decisions:**
+### 12.1 CommuteCompute Engine
+
+The CommuteCompute Engine is responsible for the core departure timing and route selection described above.
+
+- **Input:** Home and work addresses (text and geocoded coordinates), preferred arrival time and departure window, transit mode preferences (train, tram, bus, V/Line), walking pace estimate, coffee and cafe preferences, and device identifier (for display targeting).
+- **Processing:** Calculates optimal departure time by combining your saved preferences with live transit data (GTFS-RT — General Transit Feed Specification Realtime, a standard format for live transit departure and service alert data) and walking distance estimates. Selects the best available route considering real-time departures, service disruptions, and your mode preferences.
+- **Output:** Departure countdown, recommended route, and transit connection details displayed on your dashboard.
+- **Impact:** Informational only — provides timing recommendations. No binding decisions, no financial transactions, no legal consequences.
+- **Human oversight:** You can view, change, or delete all inputs at any time via the Admin Panel (`/admin`) or Setup Wizard (`/setup-wizard.html`). You may also switch between saved Journey Profiles to override the route selection.
+
+### 12.2 LifestyleContext Engine
+
+The LifestyleContext Engine provides contextually appropriate lifestyle suggestions alongside your commute data.
+
+- **Input:** Current time of day, day of week, and your commute schedule (derived from your saved preferences).
+- **Processing:** Selects lifestyle suggestions based on the current context — for example, coffee recommendations when you are approaching your departure window, or timing advice relevant to your commute pattern.
+- **Output:** Text suggestions displayed on the dashboard (e.g., coffee timing, preparation reminders).
+- **Impact:** Informational only — no binding decisions, no financial impact, no notifications sent to third parties.
+- **Human oversight:** You can disable lifestyle suggestions via Admin Panel preferences. All inputs are derived from preferences you have explicitly configured.
+
+### 12.3 SleepOptimizer
+
+The SleepOptimizer determines when to transition your dashboard between sleep and active display modes.
+
+- **Input:** Current time and your wake-up preferences (if configured via the Admin Panel).
+- **Processing:** Determines whether the dashboard should display in sleep mode (minimal, dimmed display) or active mode (full commute dashboard), and calculates pre-commute preparation timing based on your configured schedule.
+- **Output:** Dashboard transitions between sleep and active modes at the appropriate times.
+- **Impact:** Display mode only — no alarms are triggered, no notifications are sent to third parties, and no data is shared externally.
+- **Human oversight:** You configure your sleep schedule and wake-up preferences via the Admin Panel. You may disable sleep mode entirely if preferred.
+
+### Kinds of personal information used in automated decisions
 
 - Home and work addresses (text and geocoded coordinates)
 - Preferred arrival time and departure window
@@ -228,6 +266,8 @@ These decisions are made entirely on your own server — no personal data is sen
 - Walking pace estimate
 - Coffee and cafe preferences
 - Device identifier (for display targeting)
+- Time-of-day and day-of-week context (derived from system clock)
+- Sleep schedule and wake-up preferences (if configured)
 
 All inputs are provided directly by you via the Setup Wizard or Admin Panel and stored exclusively in your own Redis instance.
 

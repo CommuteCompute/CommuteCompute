@@ -5,7 +5,7 @@
 # Device Compatibility Guide
 **Supported E-ink Displays for Commute Compute™**
 
-Last Updated: 2026-01-29
+Last Updated: 2026-02-16
 
 ---
 
@@ -25,7 +25,7 @@ Commute Compute supports multiple e-ink display devices. This guide helps you:
 
 | Device | Screen Size | Resolution | Status | Price Range |
 |--------|-------------|------------|--------|-------------|
-| **TRMNL OG** | 7.5" | 800×480 | Official | $150-200 USD |
+| **TRMNL BYOS** (also known as OG) | 7.5" | 800×480 | Official | $150-200 USD |
 | **TRMNL Mini** | 4.2" | 400×300 | Official | $99-120 USD |
 | **Kindle Paperwhite 3/4** | 6" | 758×1024 | Supported | $50-80 USD (used) |
 | **Kindle Paperwhite 5** | 6.8" | 1236×1648 | Supported | $90-120 USD (used) |
@@ -44,7 +44,7 @@ Commute Compute supports multiple e-ink display devices. This guide helps you:
 
 ## Device Comparison
 
-### TRMNL OG (Official Platform)
+### CC E-Ink BYOS (Official Platform - TRMNL Hardware)
 
 **Pros**:
 - **Plug and play**: No jailbreaking required
@@ -73,7 +73,7 @@ Commute Compute supports multiple e-ink display devices. This guide helps you:
 - **Requires jailbreak**: More technical setup
 - **Warranty void**: Jailbreaking voids Amazon warranty
 - **More setup steps**: Needs custom software installation
-- **Smaller screen**: 6" vs 7.5" for TRMNL displays
+- **Smaller screen**: 6" vs 7.5" for TRMNL BYOS display
 
 **Best For**: Tech-savvy users, budget-conscious buyers, or those with old Kindles lying around.
 
@@ -83,7 +83,7 @@ Commute Compute supports multiple e-ink display devices. This guide helps you:
 
 ## Device Specifications
 
-### TRMNL OG
+### CC E-Ink BYOS (TRMNL Hardware)
 
 **Hardware**:
 - **Display**: 7.5" Waveshare e-paper
@@ -146,8 +146,8 @@ const TRMNL_MINI = {
 
 **Scaling Notes**:
 - V13 dashboard is proportionally scaled down
-- Header height: 60px (vs 94px on OG)
-- Maximum journey legs: 4 (vs 5 on OG)
+- Header height: 60px (vs 94px on BYOS)
+- Maximum journey legs: 4 (vs 5 on BYOS)
 - Font sizes reduced proportionally
 
 ### Kindle Paperwhite 3 (7th Gen)
@@ -324,7 +324,7 @@ function detectDevice(req) {
     return detectKindleModel(userAgent);
   }
 
-  // Default to TRMNL OG
+  // Default to CC E-Ink BYOS
   return getDeviceConfig('trmnl-byos');
 }
 ```
@@ -347,7 +347,7 @@ DEVICE_HEIGHT=480
 
 ---
 
-## Setup Guide: TRMNL OG (TRMNL Hardware)
+## Setup Guide: CC E-Ink BYOS (TRMNL Hardware)
 
 ### 1. Hardware Setup
 
@@ -457,7 +457,7 @@ https://your-server-name.vercel.app/api/dashboard?device=kindle-pw3&orientation=
 
 ## Server Endpoints for Different Devices
 
-### TRMNL OG Webhook
+### CC E-Ink BYOS Webhook
 
 **Endpoint**: `GET /api/screen`
 
@@ -469,6 +469,10 @@ https://your-server-name.vercel.app/api/dashboard?device=kindle-pw3&orientation=
   "refresh_rate": 900  // 15 minutes
 }
 ```
+
+### CC E-Ink BYOS LiveDash
+
+**Endpoint**: `GET /api/livedash?device=trmnl-byos`
 
 ### Kindle HTML Dashboard
 
@@ -509,14 +513,14 @@ The LiveDash endpoint provides a unified multi-device rendering API that automat
 **Query Parameters**:
 | Parameter | Values | Default | Description |
 |-----------|--------|---------|-------------|
-| `device` | See below | `trmnl-og` | Target device ID |
+| `device` | See below | `trmnl-byos` | Target device ID |
 | `format` | `png`, `json`, `html` | `png` | Output format |
 | `refresh` | `true`, `false` | `false` | Force data refresh |
 
 **Supported Devices**:
 | Device ID | Resolution | Orientation | Notes |
 |-----------|------------|-------------|-------|
-| `trmnl-og` | 800×480 | Landscape | TRMNL Original (default) |
+| `trmnl-byos` | 800×480 | Landscape | TRMNL BYOS (default) |
 | `trmnl-mini` | 400×300 | Landscape | TRMNL Mini (scaled down) |
 | `kindle-pw3` | 758×1024 | Portrait | Kindle Paperwhite 3/4 |
 | `kindle-pw5` | 1236×1648 | Portrait | Kindle Paperwhite 5 |
@@ -543,7 +547,7 @@ GET /api/livedash?device=kindle-pw5&format=html
 ```
 Content-Type: image/png
 Cache-Control: public, max-age=30
-X-Device: trmnl-og
+X-Device: trmnl-byos
 X-Dimensions: 800x480
 ```
 
@@ -552,8 +556,8 @@ X-Dimensions: 800x480
 {
   "status": "ok",
   "device": {
-    "id": "trmnl-og",
-    "name": "TRMNL Original",
+    "id": "trmnl-byos",
+    "name": "TRMNL BYOS",
     "width": 800,
     "height": 480,
     "orientation": "landscape"
@@ -579,7 +583,7 @@ All outputs follow e-ink best practices:
 
 ### Device-Specific Optimisations
 
-**TRMNL OG (800×480)**:
+**CC E-Ink BYOS (800×480)**:
 - Font sizes: 24-48px
 - 4-6 data cards per screen
 - Landscape orientation
@@ -610,7 +614,7 @@ All outputs follow e-ink best practices:
 
 ## Troubleshooting
 
-### TRMNL OG Issues
+### CC E-Ink BYOS Issues
 
 **Device not refreshing**:
 - Verify the server URL was delivered correctly during BLE provisioning (re-run WiFi setup if needed)
@@ -732,10 +736,10 @@ Start Here
 │  ├─ Under $50   → Buy used Kindle 4 ($20-40)
 │  ├─ $50-$100    → Buy used Kindle Paperwhite 3/4 ($50-80)
 │  ├─ $100-$150   → Buy used Kindle Paperwhite 5 ($90-120)
-│  └─ $150-$200   → Buy TRMNL BYOS ($150-200)
+│  └─ $150-$200   → Buy TRMNL BYOS display ($150-200)
 │
 ├─ How technical are you?
-│  ├─ Not technical → TRMNL BYOS (plug & play)
+│  ├─ Not technical → TRMNL BYOS (plug and play)
 │  ├─ Somewhat tech-savvy → Kindle Paperwhite (moderate jailbreak)
 │  └─ Very technical → Any device (you can handle it)
 │
@@ -753,9 +757,9 @@ Start Here
 | **Budget Build** | Used Kindle 4 ($20-40) | Cheapest option, still very functional |
 | **Best Value** | Used Kindle PW3/4 ($50-80) | Great screen, affordable |
 | **Best Quality** | Kindle PW5 ($90-120) | Highest resolution, newer hardware |
-| **Easiest Setup** | TRMNL display ($150-200) | No jailbreaking, hardware support |
+| **Easiest Setup** | TRMNL BYOS display ($150-200) | No jailbreaking, hardware support |
 | **Repurpose Old Device** | Your existing Kindle | Free if you already own one |
-| **Future-Proof** | TRMNL display | Purpose-built hardware, CCFirm™ firmware |
+| **Future-Proof** | TRMNL BYOS display | Purpose-built hardware, CC E-Ink firmware |
 
 ---
 
@@ -824,6 +828,6 @@ Have a device working? Help others!
 
 ---
 
-**Last Updated**: 2026-01-26
+**Last Updated**: 2026-02-16
 **Maintained By**: Angus Bergman & Community Contributors
 **Licence**: AGPL-3.0 Dual Licence
