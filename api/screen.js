@@ -21,6 +21,7 @@ import DepartureConfidence from '../src/engines/departure-confidence.js';
 import LifestyleContext from '../src/engines/lifestyle-context.js';
 import SleepOptimizer from '../src/engines/sleep-optimizer.js';
 import AltTransit from '../src/engines/alt-transit.js';
+import crypto from 'node:crypto';
 
 // Engine cache - re-initialized when preferences change
 let journeyEngine = null;
@@ -1537,7 +1538,13 @@ export default async function handler(req, res) {
           return res.status(401).json({ error: 'Device authentication required. Set X-Device-Token header or ?token= parameter.' });
         }
         const storedToken = await kvClient.get('cc:device-token');
-        if (!storedToken || deviceToken !== storedToken) {
+        // Timing-safe comparison prevents timing side-channel attacks
+        if (!storedToken) {
+          return res.status(403).json({ error: 'Invalid device token.' });
+        }
+        const tokenBuf = Buffer.from(String(deviceToken));
+        const storedBuf = Buffer.from(String(storedToken));
+        if (tokenBuf.length !== storedBuf.length || !crypto.timingSafeEqual(tokenBuf, storedBuf)) {
           return res.status(403).json({ error: 'Invalid device token.' });
         }
       }
@@ -2064,7 +2071,9 @@ export default async function handler(req, res) {
     return res.status(200).send(png);
 
   } catch (error) {
+    // Sanitise error response — never expose internal error.message to client
+    console.error('Render error:', error.message);
     res.setHeader('Content-Type', 'application/json');
-    return res.status(500).json({ error: error.message, code: 'RENDER_ERROR' });
+    return res.status(500).json({ error: 'Dashboard rendering failed', code: 'RENDER_ERROR' });
   }
 }

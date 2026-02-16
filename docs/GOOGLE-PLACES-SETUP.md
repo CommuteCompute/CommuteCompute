@@ -113,40 +113,33 @@
 
 4. **Save**
 
-### Step 5: Add to Environment Variables
+### Step 5: Add Your API Key
 
-**For Render Deployment**:
+**Recommended: Setup Wizard / Admin Panel (Zero-Config)**
 
-1. Go to: https://dashboard.render.com/
-2. Select your `commute-compute` service
-3. Go to "Environment" tab
-4. Click "Add Environment Variable"
-5. Add:
+The preferred method is to enter your Google Places API key through the Setup Wizard or Admin Panel. This stores the key securely in Redis -- no environment files required.
+
+1. Open your Admin Panel: `https://your-project.vercel.app/admin`
+2. Navigate to **API Settings** tab
+3. Enter your Google Places API key in the **Google Places** field
+4. Click **Save**
+
+The key is stored in Redis and takes effect immediately -- no redeployment needed.
+
+**Alternative: Vercel Environment Variables**
+
+If you prefer environment variables (e.g., for Render or Docker deployments):
+
+1. Go to your hosting dashboard (Vercel, Render, etc.)
+2. Navigate to **Environment Variables**
+3. Add:
    ```
-   Key:   GOOGLE_PLACES_KEY
+   Key:   GOOGLE_PLACES_API_KEY
    Value: AIzaSyBK2Xj9x_xxxxxxxxxxxxxxxxxxxxxxx
    ```
-6. Click "Save Changes"
-7. Service will auto-redeploy (~90 seconds)
+4. Redeploy your service
 
-**For Local Development**:
-
-Edit `.env` file:
-```bash
-# Add this line
-GOOGLE_PLACES_KEY=AIzaSyBK2Xj9x_xxxxxxxxxxxxxxxxxxxxxxx
-
-# Full .env example:
-ODATA_API_KEY=your-ptv-key
-ODATA_TOKEN=your-ptv-token
-GOOGLE_PLACES_KEY=AIzaSyBK2Xj9x_xxxxxxxxxxxxxxxxxxxxxxx
-PORT=3000
-```
-
-Restart server:
-```bash
-npm start
-```
+**Important:** The correct variable name is `GOOGLE_PLACES_API_KEY` (not `GOOGLE_PLACES_KEY` or `GOOGLE_API_KEY`).
 
 ---
 
@@ -308,7 +301,7 @@ Every 6-12 months:
 1. Verify environment variable is set:
    ```bash
    # In Render dashboard → Environment
-   # Should see: GOOGLE_PLACES_KEY = AIzaSy...
+   # Should see: GOOGLE_PLACES_API_KEY = AIzaSy...
    ```
 
 2. Check server logs for errors:
@@ -366,7 +359,7 @@ Every 6-12 months:
 ```
 1. User types in address field
    ↓
-2. Server checks for GOOGLE_PLACES_KEY
+2. Server checks for GOOGLE_PLACES_API_KEY
    ↓
 3. If present → Use Google Places Autocomplete
    ↓
