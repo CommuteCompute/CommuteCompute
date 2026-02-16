@@ -114,7 +114,7 @@ router.get('/kindle', async (req, res) => {
     await calculateJourney(await getLiveDataFromServices());
     const journey = currentJourney;
     
-    // Generate HTML optimized for Kindle e-ink
+    // Generate HTML optimised for Kindle e-ink
     const html = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><style>
 *{margin:0;padding:0;box-sizing:border-box}

@@ -233,9 +233,9 @@ See `docs/FLASHING.md` for detailed troubleshooting.
 
 ---
 
-## License
+## Licence
 
-**AGPL-3.0 Dual License**  
+**AGPL-3.0 Dual Licence**  
 Copyright © 2026 Angus Bergman  
 https://www.gnu.org/licenses/agpl-3.0.html
 

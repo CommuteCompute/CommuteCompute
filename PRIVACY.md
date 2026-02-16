@@ -107,6 +107,19 @@ Commute Compute™ communicates with the following external services to provide 
 
 For our full security policy, responsible disclosure process, and data breach response plan, see [SECURITY.md](SECURITY.md).
 
+### BLE Provisioning Security
+
+During initial device setup (Step 4 of the Setup Guide), your TRMNL display uses Bluetooth Low Energy (BLE) to receive WiFi credentials and the server URL from your browser.
+
+**BLE Security Note:** During initial device setup, Bluetooth Low Energy (BLE) communication between your browser and device does not use link-layer encryption. WiFi credentials and the server URL are transmitted in plaintext over the BLE air interface. This is standard for BLE provisioning on IoT devices and is mitigated by:
+
+- BLE range is physically limited to approximately 10-30 metres
+- The Web Bluetooth API requires you to manually select your device in a browser permission dialog
+- BLE provisioning is only active during initial setup — once configured, the device communicates exclusively over your WiFi network via HTTPS
+- We recommend performing initial device setup in a private environment (your home or office)
+
+After provisioning completes, all subsequent communication between the device and your server occurs over your WiFi network using HTTPS. BLE is not used again unless you factory reset the device.
+
 ### Config Token Security
 
 Dashboard device URLs contain Base64URL-encoded configuration tokens (a method of encoding data into text characters — similar to how a barcode represents a product number). These tokens include your minified preferences (addresses, API keys, coordinates). Tokens are **encoded, not encrypted**.
@@ -143,7 +156,7 @@ Commute Compute™ is architected so that each user deploys and controls their o
 - There is no central Commute Compute™ server collecting or aggregating data
 - There is no user profiling, behavioural analytics, or telemetry
 - The full source code is available and auditable under AGPL-3.0
-- Compliance is verified by 214 automated audit checks (see [DEVELOPMENT-RULES.md](DEVELOPMENT-RULES.md))
+- Compliance is verified by 240+ automated audit checks (see [DEVELOPMENT-RULES.md](DEVELOPMENT-RULES.md))
 
 ---
 
@@ -165,7 +178,7 @@ Google Places API is optional. If not configured, the system uses free OpenStree
 - Licensed under AGPL-3.0 (an open-source software licence that allows free use but requires sharing modifications) — dual licence available, see [LEGAL.md](LEGAL.md)
 - All data flows are visible and auditable in the source code
 - No hidden telemetry, phone-home, or data exfiltration code
-- Repository includes automated compliance auditing with 214 checks across 25 rule sections
+- Repository includes automated compliance auditing with 240+ checks across 25 rule sections
 - All third-party data source attributions listed in [ATTRIBUTION.md](ATTRIBUTION.md)
 
 ---
@@ -230,7 +243,7 @@ All inputs are provided directly by you via the Setup Wizard or Admin Panel and 
 
 ## 14. Statutory Tort — Serious Invasion of Privacy
 
-The *Privacy Act 1988* (Cth), as amended by the *Privacy and Other Legislation Amendment (Data Breaches) Act 2022* and subsequent reforms, provides individuals with a statutory cause of action for serious invasions of privacy. Commute Compute™ is committed to handling all personal information in accordance with the Australian Privacy Principles to minimise the risk of such invasions.
+The *Privacy Act 1988* (Cth), as amended by the *Privacy and Other Legislation Amendment Bill 2025* and subsequent reforms, provides individuals with a statutory cause of action for serious invasions of privacy. Commute Compute™ is committed to handling all personal information in accordance with the Australian Privacy Principles to minimise the risk of such invasions.
 
 If you believe your privacy has been seriously invaded through the use of this service, you may:
 1. Contact us at commutecompute.licensing@gmail.com

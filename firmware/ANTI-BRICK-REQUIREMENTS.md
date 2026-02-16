@@ -7,7 +7,7 @@
 **CRITICAL DOCUMENT - MUST FOLLOW TO PREVENT DEVICE BRICKING**
 
 **Copyright (c) 2026 Angus Bergman**
-**AGPL-3.0 Dual License**
+**AGPL-3.0 Dual Licence**
 
 ---
 
@@ -669,4 +669,4 @@ LOOP() (Non-blocking state machine):
 ---
 
 **Copyright (c) 2026 Angus Bergman**
-**AGPL-3.0 Dual License**
+**AGPL-3.0 Dual Licence**

@@ -7,7 +7,7 @@
 **Version:** 2.1
 **Last Updated:** 2026-02-15
 **Author:** Angus Bergman
-**License:** AGPL-3.0 Dual License
+**Licence:** AGPL-3.0 Dual Licence
 
 ---
 
@@ -165,8 +165,8 @@ Create a **"set and forget"** smart transit display that tells you exactly when 
 - [x] Public repository finalization
 - [x] Community documentation
 - [x] Reddit/social media announcement (222k+ views)
-- [x] IP Australia trade mark applications filed (TM 2627709, TM 2627710)
-- [x] ABN registered (59 402 869 395)
+- [x] IP Australia trade mark applications filed
+- [x] ABN registered
 - [x] Live deployment on Vercel
 - [ ] Video tutorials (future)
 
@@ -221,7 +221,7 @@ The entire system must be usable for free. Paid APIs (Google Places) are optiona
 | 1-bit colour | Black and white only, no grayscale |
 | Slow refresh | 2-3 seconds full, 500ms partial |
 | Ghosting | Requires anti-ghosting patterns |
-| Power | Optimized for battery life (deep sleep) |
+| Power | Optimised for battery life (deep sleep) |
 
 ### ESP32-C3 Limitations
 | Constraint | Impact |
@@ -286,7 +286,7 @@ Things we explicitly **will not** pursue:
 
 ### Project Ownership
 - **Creator:** Angus Bergman
-- **License:** AGPL-3.0 Dual License
+- **Licence:** AGPL-3.0 Dual Licence
 - **Repository:** Public GitLab
 - **Trademarks:** All ™ marks owned by Angus Bergman
 
@@ -299,7 +299,7 @@ Things we explicitly **will not** pursue:
 ### Contribution Model
 - Fork and pull request
 - Must follow DEVELOPMENT-RULES.md
-- AGPL-3.0 dual license required on contributions
+- AGPL-3.0 dual licence required on contributions
 - Code review required for merges
 
 ---
@@ -350,4 +350,4 @@ The project succeeds when an Australian commuter can glance at their e-ink displ
 
 **Built with coffee in Melbourne**
 
-*Copyright (c) 2026 Angus Bergman — AGPL-3.0 Dual License*
+*Copyright (c) 2026 Angus Bergman — AGPL-3.0 Dual Licence*

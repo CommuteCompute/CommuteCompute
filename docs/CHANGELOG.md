@@ -7,7 +7,7 @@
 All notable changes to this project are documented here.
 
 **Format:** [Semantic Versioning](https://semver.org/)  
-**Copyright (c) 2025-2026 Angus Bergman — AGPL-3.0 Dual License**
+**Copyright (c) 2025-2026 Angus Bergman — AGPL-3.0 Dual Licence**
 
 ---
 

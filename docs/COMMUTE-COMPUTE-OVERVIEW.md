@@ -8,7 +8,7 @@
 **Version:** 1.0  
 **Date:** January 2026  
 **Author:** Angus Bergman
-**License:** AGPL-3.0 Dual License
+**Licence:** AGPL-3.0 Dual Licence
 
 ---
 
@@ -575,4 +575,4 @@ The project succeeds when a Melbourne commuter can glance at their e-ink display
 
 **Built with coffee in Melbourne**
 
-*Copyright © 2025-2026 Angus Bergman — AGPL-3.0 Dual License*
+*Copyright © 2025-2026 Angus Bergman — AGPL-3.0 Dual Licence*

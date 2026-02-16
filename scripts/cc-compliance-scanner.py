@@ -3,22 +3,18 @@
 # Copyright (c) 2026 Angus Bergman
 """
 Commute Compute Compliance Scanner v1.1
-Board Review v12 -- Marcus Rivera (CTO) Second Pass
 
-Comprehensive Python compliance scanning covering all board findings from:
-- 14 parallel agent reviews (Sarah, Marcus, Diana, James, Pat, Catherine,
-  Alex, Otto, Riley, Andy, William, Tahmina, Kai, Carsten)
-- Darcy gap analysis
-- EVE VP sign-off conditions
+Comprehensive Python compliance scanning covering:
 - DEVELOPMENT-RULES.md (26 sections)
-- MEMORY.md critical patterns
-
-v1.1 additions (Board Review v12):
-- Category C.8: Device naming consistency (BYOS -> OG)
-- Category C.9: SUPPORT.md technical help signpost
-- Category C.10: README.md privacy link in prerequisites
-- Category K: Docker & Deployment Consistency (Node.js version)
-- Category L: Numeric Legal Claim Validation (statutory figures)
+- Trademark, licensing, and IP compliance
+- Australian English enforcement
+- Security and secret detection
+- Privacy and regulatory checks (APP, OAIC)
+- CI/CD and supply chain verification
+- UI/UX and accessibility standards
+- Code quality and critical patterns
+- Docker and deployment consistency
+- Numeric legal claim validation
 
 Run from repository root:
     python3 scripts/cc-compliance-scanner.py [--repo-root /path/to/repo]
@@ -192,7 +188,7 @@ METRO_TUNNEL_STATIONS = [
     "Anzac",
 ]
 
-# Current system versions (from MEMORY.md)
+# Current system versions -- keep in sync with api/version.js
 EXPECTED_VERSIONS = {
     "system": "v4.2.0",
     "commute_compute_engine": "v3.1",
@@ -335,14 +331,11 @@ def is_code_identifier(line: str, word: str, pos: int) -> bool:
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 1: TRADEMARK COMPLIANCE
-# Source: Otto, Catherine, William, Sarah, MEMORY.md
 # ============================================================================
 
 def check_trademark_symbols(repo_root: Path, results: AuditResults):
     """
     Verify that required trademarks have TM symbol in public-facing docs.
-    Board finding: Otto (trademark consistency in README), Catherine (IP posture),
-    William (TM symbols enforced).
     """
     print("\n--- Trademark Symbol Enforcement ---")
     doc_files = get_files(repo_root, DOC_EXTENSIONS)
@@ -421,7 +414,7 @@ def check_trademark_symbols(repo_root: Path, results: AuditResults):
 def check_coffeedecision_no_tm(repo_root: Path, results: AuditResults):
     """
     Verify CoffeeDecision does NOT have TM symbol.
-    Board finding: MEMORY.md, Catherine -- CoffeeDecision is a feature name, not a trademark.
+    CoffeeDecision is a feature name, not a trademark.
     """
     print("\n--- CoffeeDecision No-TM Check ---")
     all_files = get_files(repo_root, ALL_TEXT_EXTENSIONS)
@@ -450,14 +443,13 @@ def check_coffeedecision_no_tm(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 2: AUSTRALIAN ENGLISH
-# Source: EVE (enforcement), William (verification)
 # ============================================================================
 
 def check_australian_english(repo_root: Path, results: AuditResults):
     """
     Scan .md, .html, .txt files for American English spellings.
     Code identifiers (camelCase, UPPER_CASE, inside backticks) are exempt.
-    Board finding: EVE (all prose must use Australian English), William (verified).
+    All prose must use Australian (British) English.
     """
     print("\n--- Australian English Enforcement ---")
     doc_files = get_files(repo_root, {".md", ".html", ".txt"})
@@ -547,13 +539,12 @@ def check_australian_english(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 3: SECURITY
-# Source: Riley (CISO), Marcus (CTO), Andy (devil's advocate)
 # ============================================================================
 
 def check_no_env_files(repo_root: Path, results: AuditResults):
     """
     Verify no .env files exist (Section 3.1 Zero-Config).
-    Board finding: Riley (repo hygiene), DEVELOPMENT-RULES Section 3.
+    DEVELOPMENT-RULES Section 3.
     """
     print("\n--- No .env Files (Section 3.1) ---")
     env_files = []
@@ -573,7 +564,6 @@ def check_no_env_files(repo_root: Path, results: AuditResults):
 def check_no_hardcoded_secrets(repo_root: Path, results: AuditResults):
     """
     Scan for hardcoded API keys, tokens, or credentials.
-    Board finding: Riley (secret exposure), Andy (ABN exposure).
     """
     print("\n--- No Hardcoded Secrets ---")
     source_files = get_files(repo_root, SOURCE_EXTENSIONS | {".html"},
@@ -614,7 +604,7 @@ def check_no_hardcoded_secrets(repo_root: Path, results: AuditResults):
 def check_xss_sanitisation(repo_root: Path, results: AuditResults):
     """
     Check for innerHTML/outerHTML usage without sanitisation.
-    Board finding: Riley (Section 17 security), Marcus (security headers).
+    DEVELOPMENT-RULES Section 17.
     """
     print("\n--- XSS Sanitisation (Section 17) ---")
     html_files = get_files(repo_root, {".html"}, subdirs=["public"])
@@ -670,7 +660,6 @@ def check_xss_sanitisation(repo_root: Path, results: AuditResults):
 def check_csp_no_unsafe_eval(repo_root: Path, results: AuditResults):
     """
     Verify CSP header does not contain unsafe-eval.
-    Board finding: Riley (v8 removal verified), Marcus (security headers).
     """
     print("\n--- CSP No unsafe-eval ---")
     vercel_json = repo_root / "vercel.json"
@@ -684,20 +673,18 @@ def check_csp_no_unsafe_eval(repo_root: Path, results: AuditResults):
         return
 
     if "unsafe-eval" in content:
-        results.fail_check("CSP contains 'unsafe-eval' -- must be removed (v8 fix)")
+        results.fail_check("CSP contains 'unsafe-eval' -- must be removed")
     else:
         results.pass_check("CSP does not contain unsafe-eval")
 
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 4: LICENSING & IP
-# Source: Catherine (GC), Riley (CISO), William (IP strategist)
 # ============================================================================
 
 def check_spdx_headers(repo_root: Path, results: AuditResults):
     """
     Verify SPDX-License-Identifier headers on all source files.
-    Board finding: Catherine (100% SPDX compliance), Riley (licence header compliance).
     """
     print("\n--- SPDX Licence Headers ---")
     source_files = get_files(repo_root, SOURCE_EXTENSIONS,
@@ -726,7 +713,6 @@ def check_spdx_headers(repo_root: Path, results: AuditResults):
 def check_copyright_year(repo_root: Path, results: AuditResults):
     """
     Verify copyright year is 2026 across all source files.
-    Board finding: Catherine (copyright year consistency), Riley (100% compliance).
     """
     print("\n--- Copyright Year 2026 ---")
     source_files = get_files(repo_root, SOURCE_EXTENSIONS,
@@ -756,7 +742,6 @@ def check_copyright_year(repo_root: Path, results: AuditResults):
 def check_licence_file(repo_root: Path, results: AuditResults):
     """
     Verify LICENSE file exists with AGPL-3.0 content.
-    Board finding: Catherine (AGPL compliance), Riley (licence file presence).
     """
     print("\n--- AGPL-3.0 Licence File ---")
     licence_file = repo_root / "LICENSE"
@@ -778,7 +763,7 @@ def check_licence_file(repo_root: Path, results: AuditResults):
 def check_governing_law(repo_root: Path, results: AuditResults):
     """
     Verify LEGAL.md references Victoria, Australia as governing law.
-    Board finding: Catherine (governing law clause), Section 20.7.
+    DEVELOPMENT-RULES Section 20.7.
     """
     print("\n--- Governing Law: Victoria, Australia ---")
     legal_md = repo_root / "LEGAL.md"
@@ -800,7 +785,6 @@ def check_governing_law(repo_root: Path, results: AuditResults):
 def check_dco_documented(repo_root: Path, results: AuditResults):
     """
     Check CONTRIBUTING.md documents DCO requirement.
-    Board finding: William (DCO enforcement 2/10), Catherine (IP assignment gap).
     """
     print("\n--- DCO Documented in CONTRIBUTING.md ---")
     contributing = repo_root / "CONTRIBUTING.md"
@@ -821,13 +805,13 @@ def check_dco_documented(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 5: PROHIBITIONS
-# Source: DEVELOPMENT-RULES Sections 1-2, MEMORY.md
+# DEVELOPMENT-RULES Sections 1-2
 # ============================================================================
 
 def check_forbidden_ptv_terms(repo_root: Path, results: AuditResults):
     """
     Scan source/HTML for forbidden PTV terms.
-    Board finding: DEVELOPMENT-RULES Section 1, Riley audit coverage.
+    DEVELOPMENT-RULES Section 1.
     """
     print("\n--- Forbidden PTV Terms (Section 1) ---")
     scan_files = get_files(repo_root, SOURCE_EXTENSIONS | {".html"},
@@ -859,7 +843,7 @@ def check_forbidden_ptv_terms(repo_root: Path, results: AuditResults):
 def check_trmnl_references(repo_root: Path, results: AuditResults):
     """
     Check for TRMNL server/cloud references in code (Section 2).
-    Board finding: DEVELOPMENT-RULES Section 2, Riley audit coverage.
+    DEVELOPMENT-RULES Section 2.
     NOTE: Documentation references to shop.trmnl.com for hardware purchase are exempt.
     """
     print("\n--- TRMNL Server References (Section 2) ---")
@@ -891,7 +875,6 @@ def check_trmnl_references(repo_root: Path, results: AuditResults):
 def check_smartcommute_removed(repo_root: Path, results: AuditResults):
     """
     Verify SmartCommute references are removed (renamed to CommuteCompute 2026-02-07).
-    Board finding: MEMORY.md prohibition.
     """
     print("\n--- SmartCommute Removed ---")
     all_files = get_files(repo_root, ALL_TEXT_EXTENSIONS)
@@ -923,13 +906,11 @@ def check_smartcommute_removed(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 6: DOCUMENTATION CONSISTENCY
-# Source: Pat, Alex, Otto, Andy, James, Carsten
 # ============================================================================
 
 def check_version_consistency(repo_root: Path, results: AuditResults):
     """
     Cross-reference system version numbers across key files.
-    Board finding: Marcus (version consistency G6), Kai (version tracking).
     """
     print("\n--- Version Consistency ---")
     version_files = [
@@ -968,8 +949,7 @@ def check_version_consistency(repo_root: Path, results: AuditResults):
 def check_setup_time_estimates(repo_root: Path, results: AuditResults):
     """
     Flag inconsistent setup time estimates across guides.
-    Board finding: Pat (3.6x discrepancy), Alex, Otto (ADHD accessibility),
-    Andy (3rd review flagging), James, Carsten, Darcy (corrected text provided).
+    Checks for discrepancies in quoted setup times between documentation files.
     """
     print("\n--- Setup Time Estimate Consistency ---")
     guide_files = {
@@ -1007,7 +987,7 @@ def check_setup_time_estimates(repo_root: Path, results: AuditResults):
         # Just warn -- manual review needed for consistency
         results.warn_check(
             f"Setup time estimates found in {len(time_estimates)} guides -- "
-            f"verify consistency (Pat: 3.6x discrepancy flagged)",
+            f"verify consistency across guides",
             detail
         )
     else:
@@ -1017,7 +997,7 @@ def check_setup_time_estimates(repo_root: Path, results: AuditResults):
 def check_api_key_messaging(repo_root: Path, results: AuditResults):
     """
     Check API key is described as 'Required' consistently, not 'Optional'.
-    Board finding: Pat, Alex (contradictory messaging), Otto (trust erosion).
+    Flags contradictory messaging across documentation files.
     """
     print("\n--- API Key Messaging Consistency ---")
     doc_files = get_files(repo_root, {".md", ".html"})
@@ -1055,8 +1035,7 @@ def check_api_key_messaging(repo_root: Path, results: AuditResults):
 def check_device_naming(repo_root: Path, results: AuditResults):
     """
     Flag inconsistent device naming (CC E-Ink vs TRMNL OG).
-    Board finding: Pat (branding confusion), Alex (search fails for 'CC E-Ink OG'),
-    Carsten (product naming).
+    Mixed terminology can cause user confusion and search failures.
     """
     print("\n--- Device Naming Consistency ---")
     doc_files = get_files(repo_root, {".md"})
@@ -1089,7 +1068,7 @@ def check_device_naming(repo_root: Path, results: AuditResults):
 def check_hardware_urls(repo_root: Path, results: AuditResults):
     """
     Verify hardware purchase URLs point to valid locations.
-    Board finding: Pat (wrong URL), Carsten (shop.trmnl.com), Darcy (both valid).
+    Recommends shop.trmnl.com for cleaner direct link.
     """
     print("\n--- Hardware Purchase URLs ---")
     doc_files = get_files(repo_root, {".md"})
@@ -1107,7 +1086,7 @@ def check_hardware_urls(repo_root: Path, results: AuditResults):
 
     if "https://usetrmnl.com/shop" in urls_found:
         results.warn_check(
-            "README links to usetrmnl.com/shop -- Darcy recommends shop.trmnl.com "
+            "README links to usetrmnl.com/shop -- recommend shop.trmnl.com "
             "for cleaner direct link",
             f"  Found in: {', '.join(urls_found['https://usetrmnl.com/shop'])}"
         )
@@ -1119,14 +1098,12 @@ def check_hardware_urls(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 7: PRIVACY & REGULATORY
-# Source: Tahmina (privacy), Catherine (legal), EVE (conditions)
 # ============================================================================
 
 def check_privacy_app_compliance(repo_root: Path, results: AuditResults):
     """
     Verify PRIVACY.md contains required APP compliance sections.
-    Board finding: Tahmina (APP compliance matrix), Catherine (ADM Section 12),
-    EVE (retracted Condition 1 -- APP 1 IS present per Tahmina/Darcy).
+    Checks for Australian Privacy Principles, ADM disclosure, and OAIC reference.
     """
     print("\n--- PRIVACY.md APP Compliance ---")
     privacy_md = repo_root / "PRIVACY.md"
@@ -1154,36 +1131,34 @@ def check_privacy_app_compliance(repo_root: Path, results: AuditResults):
         else:
             results.warn_check(f"PRIVACY.md may be missing {label} disclosure")
 
-    # Check for OAIC complaint pathway (Tahmina Recommendation 4)
+    # Check for OAIC complaint pathway
     if "oaic.gov.au" in content.lower() or "OAIC" in content:
         results.pass_check("PRIVACY.md includes OAIC reference")
     else:
         results.warn_check(
-            "PRIVACY.md missing OAIC complaint pathway (Tahmina Rec 4) -- "
+            "PRIVACY.md missing OAIC complaint pathway -- "
             "add link to oaic.gov.au/privacy/privacy-complaints"
         )
 
-    # Check for APP 8 reasonable steps (Tahmina Rec 3, Darcy G3)
+    # Check for APP 8 reasonable steps for cross-border data
     if "reasonable steps" in content.lower():
         results.pass_check("PRIVACY.md includes APP 8 'reasonable steps' disclosure")
     else:
         results.warn_check(
-            "PRIVACY.md missing APP 8 'reasonable steps' for cross-border data -- "
-            "Tahmina/Darcy identified this gap"
+            "PRIVACY.md missing APP 8 'reasonable steps' for cross-border data"
         )
 
 
 def check_security_md_exists(repo_root: Path, results: AuditResults):
     """
     Verify SECURITY.md exists with responsible disclosure and NDB plan.
-    Board finding: Tahmina (sole identifier), Darcy (CRITICAL gap G2),
-    EVE (Condition 4).
+    CRITICAL: Must contain responsible disclosure policy, security contact, and NDB response plan.
     """
     print("\n--- SECURITY.md Existence ---")
     security_md = repo_root / "SECURITY.md"
     if not security_md.exists():
         results.fail_check(
-            "SECURITY.md not found -- CRITICAL gap (Tahmina, Darcy G2, EVE Condition 4). "
+            "SECURITY.md not found -- CRITICAL gap. "
             "Must contain: responsible disclosure policy, security contact, NDB response plan"
         )
         return
@@ -1208,16 +1183,12 @@ def check_security_md_exists(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 8: CI/CD & SUPPLY CHAIN
-# Source: James, Riley, William, Kai, Darcy, EVE
 # ============================================================================
 
 def check_cicd_audit_job(repo_root: Path, results: AuditResults):
     """
     Verify .gitlab-ci.yml audit-job runs the actual compliance audit script,
     not 'npm test'.
-    Board finding: James (3rd consecutive review), Riley (governance integrity),
-    William (CI/CD D+), Kai (mislabelled audit job), Darcy (CRITICAL #1),
-    EVE (Condition 2).
     """
     print("\n--- CI/CD Audit Job Configuration ---")
     cicd_file = repo_root / ".gitlab-ci.yml"
@@ -1236,8 +1207,8 @@ def check_cicd_audit_job(repo_root: Path, results: AuditResults):
     elif "npm test" in content:
         results.fail_check(
             "CI/CD audit-job runs 'npm test' (1 integration test) instead of "
-            "comprehensive-compliance-audit.sh (214 checks) -- "
-            "EVE Condition 2, 3rd consecutive review"
+            "comprehensive-compliance-audit.sh (240+ checks) -- "
+            "must run the full compliance scanner"
         )
     else:
         results.warn_check("CI/CD audit-job configuration unclear -- verify manually")
@@ -1248,15 +1219,14 @@ def check_cicd_audit_job(repo_root: Path, results: AuditResults):
     else:
         results.warn_check(
             "CI/CD missing 'npm audit --audit-level=critical' -- "
-            "Riley, William, Andy all recommend adding supply chain scanning"
+            "recommend adding supply chain scanning"
         )
 
 
 def check_ghost_dependencies(repo_root: Path, results: AuditResults):
     """
     Verify no ghost dependencies (declared but unused packages).
-    Board finding: Darcy (retracted Marcus v10 @upstash/redis claim -- it WAS removed).
-    This check prevents future ghost deps from entering.
+    Prevents declared-but-unimported packages from bloating the dependency tree.
     """
     print("\n--- Ghost Dependency Check ---")
     pkg_json = repo_root / "package.json"
@@ -1306,16 +1276,16 @@ def check_ghost_dependencies(repo_root: Path, results: AuditResults):
     # Check adm-zip is flagged as unmaintained
     if "adm-zip" in deps:
         results.warn_check(
-            "adm-zip present (unmaintained 12+ months per EVE/Riley/William) -- "
+            "adm-zip present (unmaintained 12+ months) -- "
             "evaluate replacement with yauzl for read-only GTFS extraction. "
-            "Risk accepted per Darcy (trusted government source, read-only)"
+            "Risk accepted: trusted government source, read-only usage"
         )
 
 
 def check_dependency_freshness(repo_root: Path, results: AuditResults):
     """
     Check package.json for exact version pinning (no caret ^ or tilde ~).
-    Board finding: Marcus (v10 -- all deps now pinned, verify maintained).
+    All deps should be exact-pinned to prevent unexpected updates.
     """
     print("\n--- Dependency Version Pinning ---")
     pkg_json = repo_root / "package.json"
@@ -1351,8 +1321,7 @@ def check_dependency_freshness(repo_root: Path, results: AuditResults):
 
 def check_node_version_pinning(repo_root: Path, results: AuditResults):
     """
-    Verify Node.js version is pinned to patched minimum.
-    Board finding: Marcus (M3, pin to >=20.17.0), Riley (L3, .nvmrc).
+    Verify Node.js version is pinned to patched minimum (>=20.17.0).
     """
     print("\n--- Node.js Version Pinning ---")
     pkg_json = repo_root / "package.json"
@@ -1376,7 +1345,7 @@ def check_node_version_pinning(repo_root: Path, results: AuditResults):
     if node_version == "20.x":
         results.warn_check(
             "Node.js version '20.x' is too broad -- pin to '>=20.17.0' "
-            "to ensure January 2026 security patches (8 CVEs per EVE)"
+            "to ensure January 2026 security patches (8 CVEs)"
         )
     elif ">=" in node_version or re.match(r'\d+\.\d+\.\d+', node_version):
         results.pass_check(f"Node.js version pinned: {node_version}")
@@ -1394,7 +1363,6 @@ def check_node_version_pinning(repo_root: Path, results: AuditResults):
 def check_npm_audit_in_cicd(repo_root: Path, results: AuditResults):
     """
     Verify npm audit is part of CI/CD pipeline.
-    Board finding: Riley (H2), William (MEDIUM-HIGH), Andy (dependency hygiene).
     """
     # This is already checked in check_cicd_audit_job, but we include explicit pass
     print("\n--- npm Audit in CI/CD ---")
@@ -1409,19 +1377,18 @@ def check_npm_audit_in_cicd(repo_root: Path, results: AuditResults):
     else:
         results.warn_check(
             "npm audit not in CI/CD -- add 'npm audit --audit-level=critical' "
-            "to audit-job (Riley H2, William, Andy)"
+            "to audit-job"
         )
 
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 9: UI/UX & ACCESSIBILITY
-# Source: Otto (WCAG), MEMORY.md (no emojis)
 # ============================================================================
 
 def check_no_emojis_admin(repo_root: Path, results: AuditResults):
     """
     Verify admin panel uses SVG icons, not emojis.
-    Board finding: MEMORY.md prohibition, audit script EMOJI_PATTERN.
+    DEVELOPMENT-RULES Section 22.3.
     """
     print("\n--- No Emojis in Admin Panel ---")
     admin_file = repo_root / "public" / "admin.html"
@@ -1462,8 +1429,8 @@ def check_no_emojis_admin(repo_root: Path, results: AuditResults):
 def check_wcag_contrast_values(repo_root: Path, results: AuditResults):
     """
     Check admin panel CSS for known WCAG colour contrast failures.
-    Board finding: Otto (admin panel --text-secondary #a3b8d0 on #1e293b = 4.2:1,
-    requires 4.5:1). DDA 1992 compliance risk.
+    --text-secondary #a3b8d0 on #1e293b = 4.2:1 (requires 4.5:1).
+    DDA 1992 compliance risk.
     """
     print("\n--- WCAG 2.2 AA Colour Contrast ---")
     admin_file = repo_root / "public" / "admin.html"
@@ -1477,12 +1444,12 @@ def check_wcag_contrast_values(repo_root: Path, results: AuditResults):
         return
 
     # Check for the known failing colour combination
-    # Otto: --text-secondary: #a3b8d0 on --bg-secondary: #1e293b = 4.2:1
+    # --text-secondary: #a3b8d0 on --bg-secondary: #1e293b = 4.2:1
     if "#a3b8d0" in content:
         results.warn_check(
             "Admin panel uses --text-secondary: #a3b8d0 (4.2:1 contrast ratio) -- "
-            "Otto reports WCAG 1.4.3 failure (requires 4.5:1). "
-            "Fix: change to #b8cbe0 (4.6:1) per Otto recommendation. "
+            "WCAG 1.4.3 failure (requires 4.5:1). "
+            "Fix: change to #b8cbe0 (4.6:1). "
             "DDA 1992 non-compliance risk."
         )
     else:
@@ -1491,13 +1458,11 @@ def check_wcag_contrast_values(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 10: CODE QUALITY & PATTERNS
-# Source: MEMORY.md critical patterns, Marcus (CTO)
 # ============================================================================
 
 def check_time_format(repo_root: Path, results: AuditResults):
     """
     Verify 12-hour time format uses hourCycle: 'h23'.
-    Board finding: MEMORY.md Critical Pattern 3.
     """
     print("\n--- 12-Hour Time Format (h23 hourCycle) ---")
     source_files = get_files(repo_root, SOURCE_EXTENSIONS,
@@ -1527,7 +1492,7 @@ def check_timezone_usage(repo_root: Path, results: AuditResults):
     """
     Verify timezone handling uses getMelbourneDisplayTime() / localHour,
     not new Date().getHours() directly.
-    Board finding: MEMORY.md Critical Pattern 11 (Vercel returns UTC).
+    Vercel serverless functions return UTC, not local time.
     """
     print("\n--- Timezone Correctness ---")
     source_files = get_files(repo_root, SOURCE_EXTENSIONS,
@@ -1561,7 +1526,7 @@ def check_timezone_usage(repo_root: Path, results: AuditResults):
 def check_no_mock_data(repo_root: Path, results: AuditResults):
     """
     Verify opendata-client.js returns [] not mock data on failure.
-    Board finding: MEMORY.md Critical Pattern 1 (strictly live GTFS-RT).
+    Strictly live GTFS-RT only.
     """
     print("\n--- No Mock Data (opendata-client.js) ---")
     client_file = repo_root / "src" / "services" / "opendata-client.js"
@@ -1597,8 +1562,7 @@ def check_no_mock_data(repo_root: Path, results: AuditResults):
 def check_transport_vic_api_references(repo_root: Path, results: AuditResults):
     """
     Verify Transport Victoria API references use new portal URL.
-    Board finding: ALL 14 agents + EVE (CRITICAL operational gap),
-    Darcy (remediation plan #2).
+    Legacy DEP URLs were decommissioned 30 Sep 2025.
     """
     print("\n--- Transport Victoria API References ---")
     source_files = get_files(repo_root, SOURCE_EXTENSIONS | DOC_EXTENSIONS,
@@ -1637,8 +1601,7 @@ def check_transport_vic_api_references(repo_root: Path, results: AuditResults):
 
 def check_metro_tunnel_stations(repo_root: Path, results: AuditResults):
     """
-    Verify Metro Tunnel station references are present.
-    Board finding: Riley (G9 coverage), Otto (10/10 Metro Tunnel compliance).
+    Verify Metro Tunnel station references are present in source code.
     """
     print("\n--- Metro Tunnel Station References ---")
     source_files = get_files(repo_root, SOURCE_EXTENSIONS,
@@ -1666,13 +1629,11 @@ def check_metro_tunnel_stations(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 11: TERMINOLOGY
-# Source: MEMORY.md (Redis terminology 2026-02-14)
 # ============================================================================
 
 def check_redis_terminology(repo_root: Path, results: AuditResults):
     """
     Verify Redis storage uses correct terminology (not 'Vercel KV' or 'Upstash Redis').
-    Board finding: MEMORY.md (Redis terminology CRITICAL 2026-02-14).
     Product name: 'Redis' (via Vercel Marketplace, powered by Upstash).
     """
     print("\n--- Redis Terminology ---")
@@ -1708,14 +1669,12 @@ def check_redis_terminology(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY C EXPANSION (C.8-C.10): DOC CONSISTENCY
-# Source: Marcus (CTO), Board Review v12
 # ============================================================================
 
 def check_device_naming_consistency(repo_root: Path, results: AuditResults):
     """
     C.8: Check docs/hardware/DEVICE-COMPATIBILITY.md for 'CC E-Ink BYOS'
     which should be 'CC E-Ink OG'.
-    Board finding: Marcus (CTO) v12 -- incorrect product suffix.
     """
     print("\n--- C.8 Device Naming: BYOS -> OG ---")
     compat_file = repo_root / "docs" / "hardware" / "DEVICE-COMPATIBILITY.md"
@@ -1746,7 +1705,7 @@ def check_device_naming_consistency(repo_root: Path, results: AuditResults):
 def check_support_signpost(repo_root: Path, results: AuditResults):
     """
     C.9: Check first 20 lines of SUPPORT.md for technical help redirect keywords.
-    Board finding: Marcus (CTO) v12 -- SUPPORT.md must signpost users to help.
+    SUPPORT.md must signpost users to help channels.
     """
     print("\n--- C.9 SUPPORT.md Technical Help Signpost ---")
     support_md = repo_root / "SUPPORT.md"
@@ -1784,7 +1743,7 @@ def check_support_signpost(repo_root: Path, results: AuditResults):
 def check_readme_privacy_link(repo_root: Path, results: AuditResults):
     """
     C.10: Check README.md Prerequisites section for PRIVACY.md reference.
-    Board finding: Marcus (CTO) v12 -- prerequisites must link to privacy policy.
+    Prerequisites must link to privacy policy.
     """
     print("\n--- C.10 README.md Privacy Link in Prerequisites ---")
     readme = repo_root / "README.md"
@@ -1826,20 +1785,19 @@ def check_readme_privacy_link(repo_root: Path, results: AuditResults):
     else:
         results.warn_check(
             "README.md Prerequisites section missing PRIVACY.md reference -- "
-            "Marcus v12: users should see privacy policy before setup"
+            "users should see privacy policy before setup"
         )
 
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY K: DOCKER & DEPLOYMENT CONSISTENCY
-# Source: Marcus (CTO), Board Review v12
 # ============================================================================
 
 def check_docker_node_version(repo_root: Path, results: AuditResults):
     """
     K.1: Extract Node.js version from package.json engines field and check
     Dockerfile, docker-compose.yml, and .gitlab-ci.yml for version consistency.
-    Board finding: Marcus (CTO) v12 -- deployment artefacts must match pinned Node version.
+    Deployment artefacts must match pinned Node version.
     """
     print("\n--- K.1 Docker/CI Node.js Version Consistency ---")
     pkg_json = repo_root / "package.json"
@@ -1932,13 +1890,12 @@ def check_docker_node_version(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY L: NUMERIC LEGAL CLAIM VALIDATION
-# Source: Marcus (CTO), Board Review v12
 # ============================================================================
 
 def check_numeric_legal_claims(repo_root: Path, results: AuditResults):
     """
     L.1: Check LEGAL.md and PRIVACY.md for known incorrect statutory figures.
-    Board finding: Marcus (CTO) v12 -- numeric claims in legal docs must be accurate.
+    Numeric claims in legal docs must be accurate.
 
     Known checks:
     - Statutory tort cap: correct = $478,550; incorrect = $660,000 / $660K / $660k
@@ -2010,14 +1967,11 @@ def run_all_checks(repo_root: Path) -> int:
     print("=" * 66)
     print("COMMUTE COMPUTE COMPLIANCE SCANNER v1.1")
     print(f"Repository: {repo_root}")
-    print(f"Board Review: v12 (16 February 2026)")
-    print(f"Author: Marcus Rivera, CTO (Second Pass)")
     print("=" * 66)
 
     # Category 1: Trademark Compliance
     print("\n" + "=" * 66)
     print("CATEGORY 1: TRADEMARK COMPLIANCE")
-    print("  Sources: Otto, Catherine, William, Sarah, MEMORY.md")
     print("=" * 66)
     check_trademark_symbols(repo_root, results)
     check_coffeedecision_no_tm(repo_root, results)
@@ -2025,14 +1979,12 @@ def run_all_checks(repo_root: Path) -> int:
     # Category 2: Australian English
     print("\n" + "=" * 66)
     print("CATEGORY 2: AUSTRALIAN ENGLISH ENFORCEMENT")
-    print("  Sources: EVE (VP), William")
     print("=" * 66)
     check_australian_english(repo_root, results)
 
     # Category 3: Security
     print("\n" + "=" * 66)
     print("CATEGORY 3: SECURITY")
-    print("  Sources: Riley (CISO), Marcus (CTO), Andy")
     print("=" * 66)
     check_no_env_files(repo_root, results)
     check_no_hardcoded_secrets(repo_root, results)
@@ -2042,7 +1994,6 @@ def run_all_checks(repo_root: Path) -> int:
     # Category 4: Licensing & IP
     print("\n" + "=" * 66)
     print("CATEGORY 4: LICENSING & IP")
-    print("  Sources: Catherine (GC), Riley (CISO), William")
     print("=" * 66)
     check_spdx_headers(repo_root, results)
     check_copyright_year(repo_root, results)
@@ -2053,7 +2004,6 @@ def run_all_checks(repo_root: Path) -> int:
     # Category 5: Prohibitions
     print("\n" + "=" * 66)
     print("CATEGORY 5: PROHIBITIONS (DEVELOPMENT-RULES Sections 1-2)")
-    print("  Sources: DEVELOPMENT-RULES, Riley, MEMORY.md")
     print("=" * 66)
     check_forbidden_ptv_terms(repo_root, results)
     check_trmnl_references(repo_root, results)
@@ -2062,14 +2012,13 @@ def run_all_checks(repo_root: Path) -> int:
     # Category 6: Documentation Consistency
     print("\n" + "=" * 66)
     print("CATEGORY 6: DOCUMENTATION CONSISTENCY")
-    print("  Sources: Pat, Alex, Otto, Andy, James, Carsten, Darcy, Marcus (v12)")
     print("=" * 66)
     check_version_consistency(repo_root, results)
     check_setup_time_estimates(repo_root, results)
     check_api_key_messaging(repo_root, results)
     check_device_naming(repo_root, results)
     check_hardware_urls(repo_root, results)
-    # C.8-C.10: Marcus (CTO) v12 additions
+    # C.8-C.10: v1.1 additions
     check_device_naming_consistency(repo_root, results)
     check_support_signpost(repo_root, results)
     check_readme_privacy_link(repo_root, results)
@@ -2077,7 +2026,6 @@ def run_all_checks(repo_root: Path) -> int:
     # Category 7: Privacy & Regulatory
     print("\n" + "=" * 66)
     print("CATEGORY 7: PRIVACY & REGULATORY COMPLIANCE")
-    print("  Sources: Tahmina, Catherine, EVE, Darcy")
     print("=" * 66)
     check_privacy_app_compliance(repo_root, results)
     check_security_md_exists(repo_root, results)
@@ -2085,7 +2033,6 @@ def run_all_checks(repo_root: Path) -> int:
     # Category 8: CI/CD & Supply Chain
     print("\n" + "=" * 66)
     print("CATEGORY 8: CI/CD & SUPPLY CHAIN")
-    print("  Sources: James, Riley, William, Kai, Darcy, EVE")
     print("=" * 66)
     check_cicd_audit_job(repo_root, results)
     check_ghost_dependencies(repo_root, results)
@@ -2096,7 +2043,6 @@ def run_all_checks(repo_root: Path) -> int:
     # Category 9: UI/UX & Accessibility
     print("\n" + "=" * 66)
     print("CATEGORY 9: UI/UX & ACCESSIBILITY")
-    print("  Sources: Otto, MEMORY.md")
     print("=" * 66)
     check_no_emojis_admin(repo_root, results)
     check_wcag_contrast_values(repo_root, results)
@@ -2104,7 +2050,6 @@ def run_all_checks(repo_root: Path) -> int:
     # Category 10: Code Quality & Patterns
     print("\n" + "=" * 66)
     print("CATEGORY 10: CODE QUALITY & CRITICAL PATTERNS")
-    print("  Sources: MEMORY.md, Marcus (CTO)")
     print("=" * 66)
     check_time_format(repo_root, results)
     check_timezone_usage(repo_root, results)
@@ -2115,21 +2060,18 @@ def run_all_checks(repo_root: Path) -> int:
     # Category 11: Terminology
     print("\n" + "=" * 66)
     print("CATEGORY 11: TERMINOLOGY")
-    print("  Sources: MEMORY.md (Redis, 2026-02-14)")
     print("=" * 66)
     check_redis_terminology(repo_root, results)
 
     # Category K: Docker & Deployment Consistency
     print("\n" + "=" * 66)
     print("CATEGORY K: DOCKER & DEPLOYMENT CONSISTENCY")
-    print("  Sources: Marcus (CTO), Board Review v12")
     print("=" * 66)
     check_docker_node_version(repo_root, results)
 
     # Category L: Numeric Legal Claim Validation
     print("\n" + "=" * 66)
     print("CATEGORY L: NUMERIC LEGAL CLAIM VALIDATION")
-    print("  Sources: Marcus (CTO), Board Review v12")
     print("=" * 66)
     check_numeric_legal_claims(repo_root, results)
 

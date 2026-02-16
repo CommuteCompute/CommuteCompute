@@ -74,7 +74,7 @@ class SleepOptimizer {
    * @param {number} [params.wakeRoutineMins=30] - Minutes needed for morning routine
    * @param {number} [params.sleepHours=8] - Desired sleep duration in hours
    * @param {number} [params.localHour] - Local timezone hour (0-23), overrides currentTime.getHours() for timezone-correct evaluation
-   * @returns {Object} Sleep optimization result
+   * @returns {Object} Sleep optimisation result
    */
   calculate(params) {
     const {

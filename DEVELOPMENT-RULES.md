@@ -7,7 +7,7 @@
 **MANDATORY COMPLIANCE DOCUMENT**
 **Version:** 1.28
 **Last Updated:** 2026-02-07
-**Copyright (c) 2026 Commute Compute System by Angus Bergman — AGPL-3.0 Dual License**
+**Copyright (c) 2026 Commute Compute System by Angus Bergman — AGPL-3.0 Dual Licence**
 
 These rules govern all development on Commute Compute. Compliance is mandatory.
 
@@ -81,7 +81,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 | 17 | [Security](#-section-17-security) | [CRITICAL] | XSS, secrets, supply chain, CSP, rate limiting, input validation, encryption |
 | 18 | [Change Management](#-section-18-change-management) | [HIGH] | Locked elements, modification process |
 | 19 | [Refresh Timing](#-section-19-refresh-timing) | [CRITICAL] | 60s partial, 5min full refresh (v1.8) |
-| 20 | [Licensing](#-section-20-licensing) | [CRITICAL] | AGPL-3.0 Dual License requirement |
+| 20 | [Licensing](#-section-20-licensing) | [CRITICAL] | AGPL-3.0 Dual Licence requirement |
 | 21 | [Device Setup Flow](#-section-21-device-setup-flow-mandatory) | [CRITICAL] | Setup wizard, admin panel, device config |
 | 22 | [Admin Panel UI/UX Branding](#-section-22-admin-panel-uiux-branding-mandatory) | [CRITICAL] | Colors, typography, icons (no emojis), cards, readability |
 
@@ -172,7 +172,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 
 - 8.1 Display Dimensions
 - 8.2 Layout Structure
-- 8.3 Color Palette (LOCKED)
+- 8.3 Colour Palette (LOCKED)
 - 8.4 Mode Icons (LOCKED)
 - 8.5 Leg States (LOCKED)
 - 8.6 Status Bar Variants (LOCKED)
@@ -273,7 +273,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 - 17.11 API Rate Limiting (MANDATORY)
 - 17.12 HTTPS Enforcement (MANDATORY)
 - 17.13 Input Validation (MANDATORY)
-- 17.14 Data Minimization (MANDATORY)
+- 17.14 Data Minimisation (MANDATORY)
 - 17.15 Dependency Update Schedule (MANDATORY)
 - 17.16 Secret Rotation (RECOMMENDED)
 - 17.17 Encryption Standards (INFORMATIONAL)
@@ -299,7 +299,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 <details>
 <summary><strong>Section 20: Licensing</strong></summary>
 
-- License Header (Required in all files)
+- Licence Header (Required in all files)
 </details>
 
 <details>
@@ -316,7 +316,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 <details>
 <summary><strong>Section 22: Admin Panel UI/UX Branding</strong></summary>
 
-- 22.1 Color Palette
+- 22.1 Colour Palette
 - 22.2 Typography
 - 22.3 Icons & Imagery (NO EMOJIS)
 - 22.4 Card & Container Styles
@@ -374,13 +374,13 @@ The system was previously known as "Commute Compute". Update any remaining refer
 | 1.26 | 2026-02-06 | Angus Bergman | **TIME FORMAT CLARIFICATION**: Updated Section 12.2 — 24-hour time permissible in internal code (calculations, logging, API internals). 12-hour format required only for user-facing content: dashboard displays, e-ink screens, admin panel UI, firmware displays. Reduces false positives in compliance audits. |
 | 1.25 | 2026-02-05 | Angus Bergman | **ZERO-CONFIG AUTO-PAIRING**: Added Section 21.7.9 — Firmware v7.4.0+ auto-pairs with DEFAULT_SERVER when no custom URL configured. Eliminates manual pairing code requirement for default server. After WiFi connects, firmware automatically sets webhookUrl to `{DEFAULT_SERVER}/api/screen` and proceeds to dashboard. Enables true zero-config: BLE WiFi credentials only, no pairing code needed. Custom servers still supported via Setup Wizard pairing flow. |
 | 1.24 | 2026-02-04 | Angus Bergman | **OFFICIAL TAGLINE**: Added Section 22.10 — Canonical tagline from @Commute_Compute Twitter bio. "Other apps show delays. CommuteCompute(TM) reacts to them. Live data flows into every decision- coffee, timing, connections. 1 glance. No app switching. Open Source." Replaces all previous taglines. |
-| 1.20 | 2026-02-01 | Angus Bergman | **HYBRID BLE + PAIRING PROVISIONING**: Added Section 21.7 — Mandatory hybrid provisioning architecture. Phase 1: BLE sends WiFi credentials only (SSID + password). Phase 2: Device connects to WiFi, displays pairing code, polls `/api/pair/[code]` for server config. Documents: why WiFiManager/captive portal crashes ESP32-C3 (0xbaad5678), two-phase flow diagram, firmware state machine, BLE characteristics (URL removed), pairing screen display, setup wizard flow, re-configuration scenarios, factory reset behavior. |
-| 1.19 | 2026-02-01 | Angus Bergman | **DEVICE PAIRING WITH VERCEL KV**: Added Section 21.6 — Device pairing system with mandatory Vercel KV persistence. Documents 6-character pairing code flow, KV storage patterns (`pair:{CODE}` with 10min TTL), device polling behavior, setup wizard integration. Fixes serverless stateless issue where in-memory stores fail across invocations. Updated version refs to CCDash V12, Architecture v5.3. |
+| 1.20 | 2026-02-01 | Angus Bergman | **HYBRID BLE + PAIRING PROVISIONING**: Added Section 21.7 — Mandatory hybrid provisioning architecture. Phase 1: BLE sends WiFi credentials only (SSID + password). Phase 2: Device connects to WiFi, displays pairing code, polls `/api/pair/[code]` for server config. Documents: why WiFiManager/captive portal crashes ESP32-C3 (0xbaad5678), two-phase flow diagram, firmware state machine, BLE characteristics (URL removed), pairing screen display, setup wizard flow, re-configuration scenarios, factory reset behaviour. |
+| 1.19 | 2026-02-01 | Angus Bergman | **DEVICE PAIRING WITH VERCEL KV**: Added Section 21.6 — Device pairing system with mandatory Vercel KV persistence. Documents 6-character pairing code flow, KV storage patterns (`pair:{CODE}` with 10min TTL), device polling behaviour, setup wizard integration. Fixes serverless stateless issue where in-memory stores fail across invocations. Updated version refs to CCDash V12, Architecture v5.3. |
 | 1.18 | 2026-01-31 | Angus Bergman | **MULTI-MODAL JOURNEY SUPPORT + CCDASH V10.2-V10.3**: (1) Rewrote Section 23.7 — Multi-modal journey leg construction supporting N transit legs with interchange walks (Tram→Train, Bus→Train, etc.). (2) Added Section 23.9 — Alternative route detection (MANDATORY). Route discovery, scoring weights, multi-modal selection triggers. (3) Added delay accumulation across multiple transit legs. (4) Prohibition on hardcoded routes reinforced. Engine-only adaptation per Section 17.4. **CCDash Spec Amendments:** v10.2 DEPART time column (Section 5.6.2), actual location names (Section 5.5.1); v10.3 cafe closed detection (Section 7.2.1), FRIDAY TREAT status. |
 | 1.15 | 2026-01-31 | Angus Bergman | **SERVERLESS RENDERING & ADMIN PANEL FIXES**: (1) Added Section 10.4 — Font loading in Vercel serverless (try multiple paths: process.cwd, __dirname, /var/task). (2) Added Section 13.6 — Admin Panel JavaScript patterns (Image preload pattern to avoid onerror on empty src; KV sync before server requests). (3) Screen API now reads journey config from KV storage with random fallback when unconfigured. |
 | 1.14 | 2026-01-31 | Angus Bergman | **SYSTEM ARCHITECTURE PRINCIPLES**: Added Section 24 — complete architecture principles from ARCHITECTURE.md v4.0. Core principles (self-hosted, zero-config, no TRMNL cloud, server-side rendering, privacy-first, multi-state, free-tier). Distribution model, layer architecture, data flow, Vercel KV storage architecture, security model, free-tier architecture, multi-device support (CC LiveDash™), required endpoints, locked technology stack. |
 | 1.13 | 2026-01-31 | Angus Bergman | **COMMUTECOMPUTE DATA FLOW**: Added Section 23 — mandatory data flow requirements for CommuteCompute engine. GTFS-RT stop ID architecture (direction-specific IDs), citybound detection logic (isCityLoopStop), departure output schema, line name extraction, journey leg construction, fallback data requirements, pre-deployment verification tests. Added Section 17.4 (No Hardcoded Personal Information) for turnkey compliance. |
-| 1.12 | 2026-01-31 | Angus Bergman | **ADMIN PANEL UI/UX BRANDING**: Added Section 22 — mandatory branding rules for admin panel. Color palette, typography (Inter font), NO EMOJIS (use SVG icons), card styles, spacing, buttons, form inputs, readability requirements. Includes consistency checklist. |
+| 1.12 | 2026-01-31 | Angus Bergman | **ADMIN PANEL UI/UX BRANDING**: Added Section 22 — mandatory branding rules for admin panel. Colour palette, typography (Inter font), NO EMOJIS (use SVG icons), card styles, spacing, buttons, form inputs, readability requirements. Includes consistency checklist. |
 | 1.11 | 2026-01-31 | Angus Bergman | **FIRMWARE REQUIREMENTS**: Added to Section 5.2 — (1) Power cycle reboot support (device boots correctly when power disconnected/reconnected). (2) Firmware version must be displayed on screen for visual troubleshooting. |
 | 1.10 | 2026-01-31 | Angus Bergman | **UI CONSISTENCY TESTING**: Added Section 14.4 — mandatory testing checklist for UI changes. Covers: Setup Wizard steps, Admin Panel tabs, internal links, Quick Links, terminology consistency, localStorage key consistency, endpoint consistency, systematic testing order. |
 | 1.9 | 2026-01-31 | Angus Bergman | **ADMIN PANEL LOCALSTORAGE ARCHITECTURE**: (1) Admin panel tabs rebuilt to read from localStorage (Setup Wizard saves here). (2) Device naming: Use "TRMNL Display (OG)" not "CC E-Ink Display". (3) Firmware disclaimer required for all device references. (4) API Settings auto-populates from wizard data. (5) Added Section 3.7 (Admin Panel localStorage Keys). |
@@ -710,9 +710,9 @@ Setup Wizard
 | `/api/status` | Read config status from KV |
 | `/api/kv-status` | Debug: verify KV connection |
 
-#### 3.6.5 Fallback Behavior
+#### 3.6.5 Fallback Behaviour
 
-| Scenario | Behavior |
+| Scenario | Behaviour |
 |----------|----------|
 | KV connected, key saved | [YES] Live Transport Victoria data |
 | KV connected, no key | [CAUTION] Fallback to timetable data |
@@ -854,7 +854,7 @@ TZ=Australia/Melbourne
 |----------|---------|
 | `/api/zones` | Zone data for TRMNL (1-bit BMP, partial refresh) |
 | `/api/screen` | Full 800×480 PNG for TRMNL webhook |
-| `/api/kindle/image` | Kindle-optimized PNG (portrait, 8-bit) |
+| `/api/kindle/image` | Kindle-optimised PNG (portrait, 8-bit) |
 | `/api/livedash` | LiveDash multi-device renderer (TRMNL, Kindle, web) |
 | `/api/status` | Server health check |
 | `/api/setup-status` | Setup completion check |
@@ -1299,7 +1299,7 @@ Each zone has exact dimensions per the specification. Content must fit within th
 
 **CRITICAL RULE: The CCDashRenderer MUST implement ALL elements defined in CCDashDesignV15.0.**
 
-Every visual element, state, icon, or behavior specified in `specs/CCDashDesignV15.md` (V15.0) MUST have a corresponding implementation in the renderer (`src/services/ccdash-renderer.js`). No exceptions.
+Every visual element, state, icon, or behaviour specified in `specs/CCDashDesignV15.md` (V15.0) MUST have a corresponding implementation in the renderer (`src/services/ccdash-renderer.js`). No exceptions.
 
 #### 7.4.1 Required Parity Elements
 
@@ -1354,7 +1354,7 @@ The following rules govern how journey legs are displayed:
 
 #### 7.5.1 Cafe Status vs Skip
 
-| Cafe State | Display Behavior |
+| Cafe State | Display Behaviour |
 |------------|------------------|
 | OPEN + Time Available | Show coffee leg normally |
 | OPEN + No Time | Show coffee leg with dashed border, "SKIPPED" text |
@@ -1449,7 +1449,7 @@ function mergeConsecutiveWalkLegs(legs) {
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 8.3 Color Palette (LOCKED)
+### 8.3 Colour Palette (LOCKED)
 
 | Name | Hex | Usage |
 |------|-----|-------|
@@ -1777,7 +1777,7 @@ const apiOptions = transitApiKey ? { apiKey: transitApiKey } : {};
 2. Connect to project (auto-injects `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`)
 3. Keys saved via Admin Panel will persist across deployments
 
-**Fallback Behavior:**
+**Fallback Behaviour:**
 - If KV not configured: falls back to in-memory storage (dev mode)
 - If no API key saved: returns mock/fallback departure data
 
@@ -2459,7 +2459,7 @@ grep -rn "SSID\|PASS\|password\|Optus\|Telstra" firmware/ --include="*.cpp" --in
 
 | Allowed | Example | Reason |
 |---------|---------|--------|
-| City center coordinates | Melbourne CBD: -37.8136, 144.9631 | Generic fallback, not personal |
+| City centre coordinates | Melbourne CBD: -37.8136, 144.9631 | Generic fallback, not personal |
 | Example addresses in comments | "e.g., 1 Example St, Melbourne" | Documentation only |
 | Default API endpoints | `api.opendata.transport.vic.gov.au` | Public infrastructure |
 | Stop ID ranges | "12xxx = Pakenham line citybound" | Technical documentation |
@@ -2519,7 +2519,7 @@ echo "Checking for personal data patterns..."
 | **MAC address** | `XX:XX:XX:XX:XX:XX` or `00:00:00:00:00:00` | `00:00:00:00:00:00` |
 | **Webhook token** | `your-token-here` or `BASE64_CONFIG_TOKEN` | `BASE64_CONFIG_TOKEN` |
 | **Email** | `user@example.com` | `user@example.com` |
-| **Coordinates** | Melbourne CBD default: `-37.8136, 144.9631` | Generic city center only |
+| **Coordinates** | Melbourne CBD default: `-37.8136, 144.9631` | Generic city centre only |
 | **Stop IDs** | Use official PTV names, not personal stops | `Flinders Street Station` |
 | **Person names** | `User`, `Example User` | Never use real names |
 
@@ -2972,7 +2972,7 @@ if (isNaN(stopId) || stopId < 0 || stopId > 99999) {
 }
 ```
 
-### 17.14 Data Minimization (MANDATORY)
+### 17.14 Data Minimisation (MANDATORY)
 
 **Principle**: Only collect and store data you actually need.
 
@@ -3282,9 +3282,9 @@ The following are **unregistered trademarks (™)** owned by **Angus Bergman**, 
 
 **Ownership:** All trademarks and associated intellectual property are exclusively owned by Angus Bergman.
 
-**License Disclaimer:** Use of the Commute Compute System™ and all associated trademarks and intellectual property is granted solely pursuant to the **AGPL-3.0 (Dual License)**. No ownership rights are transferred. Commercial use prohibited without written permission. See **LEGAL.md** for full terms.
+**Licence Disclaimer:** Use of the Commute Compute System™ and all associated trademarks and intellectual property is granted solely pursuant to the **AGPL-3.0 (Dual Licence)**. No ownership rights are transferred. Commercial use prohibited without written permission. See **LEGAL.md** for full terms.
 
-**Third-Party Exclusion:** Copyright claims apply to original work only. Third-party content (Transport Victoria, BoM, OpenStreetMap, npm dependencies) remains property of respective owners under their original licenses. See **LEGAL.md** Section "Third-Party Content Exclusion".
+**Third-Party Exclusion:** Copyright claims apply to original work only. Third-party content (Transport Victoria, BoM, OpenStreetMap, npm dependencies) remains property of respective owners under their original licences. See **LEGAL.md** Section "Third-Party Content Exclusion".
 
 #### CommuteCompute™ Intelligence Engines
 
@@ -3309,19 +3309,19 @@ All custom firmware MUST use the **CCFirm** prefix:
 | CCFirmWaveshare | Waveshare e-ink displays |
 | CCFirmESP32 | Generic ESP32 e-ink setups |
 
-### 20.4 License Header (Required in all files)
+### 20.4 Licence Header (Required in all files)
 
 ```
 Copyright (c) 2026 Angus Bergman
-Licensed under AGPL-3.0 (Dual License)
+Licensed under AGPL-3.0 (Dual Licence)
 https://www.gnu.org/licenses/agpl-3.0.html
 ```
 
-### 20.5 Prohibited Licenses
+### 20.5 Prohibited Licences
 
-**Prohibited licenses for original work:**
+**Prohibited licences for original work:**
 - [NO] MIT, Apache, GPL/LGPL, BSD
-- [YES] Third-party libraries retain their original licenses
+- [YES] Third-party libraries retain their original licences
 
 ### 20.6 Full Legal Documentation
 
@@ -3432,9 +3432,9 @@ Both support zero-config deployment from forked repo. Free tier sufficient for p
 | Property | Value |
 |----------|-------|
 | Length | 6 characters |
-| Character set | A-Z, 0-9 (uppercase alphanumeric) |
+| Character set | A-Z (excluding I, L, O) and 2-9 — 30 characters (ambiguous characters removed for readability) |
 | Example | `A3B7K9` |
-| Combinations | 36^6 = 2.1 billion |
+| Combinations | 30^6 = 729 million |
 | TTL | 10 minutes (auto-expires) |
 
 #### 21.6.3 Redis Storage (MANDATORY)
@@ -3462,7 +3462,7 @@ await client.del(`cc:pair:${code}`);
 
 **Fallback:** In-memory store ONLY for local development testing.
 
-#### 21.6.4 Device Polling Behavior
+#### 21.6.4 Device Polling Behaviour
 
 | Parameter | Value |
 |-----------|-------|
@@ -3630,7 +3630,7 @@ When device enters `STATE_PAIRING_MODE` (secondary flow only), display:
 | Change server/preferences | Factory reset → Re-provision via BLE, or use optional pairing code flow |
 | Move to new home | Factory reset → Full re-provision via BLE |
 
-#### 21.7.8 Factory Reset Behavior
+#### 21.7.8 Factory Reset Behaviour
 
 Factory reset clears:
 - WiFi SSID
@@ -3667,8 +3667,8 @@ if (strlen(webhookUrl) == 0) {
 devicePaired = true;
 ```
 
-| Scenario | Behavior |
-|----------|----------|
+| Scenario | Behaviour |
+|----------|-----------|
 | Fresh device + BLE WiFi | Receives webhook URL via BLE → Dashboard |
 | Factory reset | Clears all NVS → Returns to BLE setup for reprovisioning |
 | No webhook URL in NVS | Returns to `STATE_BLE_SETUP` (no DEFAULT_SERVER auto-pair) |
@@ -3679,7 +3679,7 @@ devicePaired = true;
 
 **[WARNING] CRITICAL:** All Admin Panel and Setup Wizard UI must adhere to Commute Compute branding guidelines. Consistency is mandatory across all pages, tabs, and components.
 
-### 22.1 Color Palette
+### 22.1 Colour Palette
 
 | Name | Hex | Usage |
 |------|-----|-------|
@@ -3720,7 +3720,7 @@ devicePaired = true;
 **Icon Guidelines:**
 - Use consistent icon set (recommend: Lucide, Heroicons, or Feather)
 - Icons should be 16px, 20px, or 24px (consistent within context)
-- Icon color should match text color or be CC Green for actions
+- Icon colour should match text colour or be CC Green for actions
 - Maintain 4px minimum padding around icons
 
 ### 22.4 Card & Container Styles
@@ -3844,7 +3844,7 @@ The footer MUST display attributions based on what the user has configured in `l
 
 | Data Source | When to Show | Attribution Text |
 |-------------|--------------|------------------|
-| **Always** | Always | `© 2026 Angus Bergman • AGPL-3.0 Dual License` |
+| **Always** | Always | `© 2026 Angus Bergman • AGPL-3.0 Dual Licence` |
 | **Transit API** | When `cc-transit-api-key` exists or addresses configured | `Transit data: Transport Victoria OpenData API (CC BY 4.0)` |
 | **Weather** | When addresses configured | `Weather: Bureau of Meteorology (CC BY 3.0 AU)` |
 | **Google Places** | When `cc-places-api-key` exists | `Places: Powered by Google` |
@@ -4727,7 +4727,6 @@ git push origin v3.0.0        # Push tag
 | Distribution Guide | `DISTRIBUTION.md` |
 | Firmware Anti-Brick | `firmware/ANTI-BRICK-REQUIREMENTS.md` |
 | Firmware History | `firmware/FIRMWARE-VERSION-HISTORY.md` |
-| Gap Analysis | `docs/DEVELOPMENT-RULES-GAP-ANALYSIS.md` |
 
 ---
 

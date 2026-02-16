@@ -394,4 +394,4 @@ The device was **not** in a boot loop. The root cause was a **configuration issu
 
 ---
 
-(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual License
+(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual Licence

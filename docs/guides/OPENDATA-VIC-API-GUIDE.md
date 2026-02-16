@@ -9,7 +9,7 @@
 **Version:** 3.0
 **Last Updated:** 2026-02-06
 **System Version:** v4.2.0 (CCDashDesignV15.0)
-**License:** AGPL-3.0 Dual License
+**Licence:** AGPL-3.0 Dual Licence
 
 ---
 
@@ -193,7 +193,7 @@ The API returns data in **Protocol Buffer (protobuf)** format, which Commute Com
 | 429 Too Many Requests | Rate limit exceeded | Reduce request frequency |
 | 500 Server Error | API issue | Fallback to timetable |
 
-### Fallback Behavior
+### Fallback Behaviour
 
 When the API is unavailable, Commute Compute automatically:
 
@@ -223,7 +223,7 @@ Commute Compute caches API responses to:
 
 By using the Transport Victoria OpenData API, you agree to:
 
-- Use data for non-commercial purposes (or obtain commercial license)
+- Use data for non-commercial purposes (or obtain commercial licence)
 - Attribute data source appropriately
 - Not redistribute raw data
 - Comply with all applicable laws
@@ -291,4 +291,4 @@ Commute Compute is designed to support multiple Australian states:
 
 ---
 
-© 2026 Commute Compute System by Angus Bergman — AGPL-3.0 Dual License
+© 2026 Commute Compute System by Angus Bergman — AGPL-3.0 Dual Licence

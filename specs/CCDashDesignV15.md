@@ -231,7 +231,7 @@
   - `⏱ DELAY → Arrive 8:27am (+8 min)` (delays)
   - `⚠ DISRUPTION → Arrive 8:27am (+8 min)` (major issues)
 
-### 3.2 Center-Right: Delay Box (Conditional)
+### 3.2 Centre-Right: Delay Box (Conditional)
 - **Position:** Before total time
 - **Size:** 80×18px
 - **Condition:** Only shown if legs have actual delays (delayMinutes > 0)
@@ -816,4 +816,4 @@ Full-day forecast-driven equipment suggestions.
 ## 14. Licensing
 
 **Copyright (c) 2026 Angus Bergman**
-AGPL-3.0 Dual License
+AGPL-3.0 Dual Licence

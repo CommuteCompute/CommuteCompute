@@ -1,5 +1,5 @@
 /**
- * CCFirm™ v7.6 — Hybrid BLE + Pairing Code Firmware
+ * CCFirm™ v7.7 — Hybrid BLE + Pairing Code Firmware
  * Part of the Commute Compute System™
  *
  * BLE PROVISIONING (see DEVELOPMENT-RULES.md Section 21.7):
@@ -22,6 +22,7 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
+#include <BLESecurity.h>
 #include <nvs_flash.h>
 #include <bb_epaper.h>
 #include "base64.hpp"
@@ -64,12 +65,50 @@
 // Example: "https://your-project.vercel.app"
 #define DEFAULT_SERVER "https://your-project.vercel.app"
 
+// ==========================================================================
+// TLS CERTIFICATE PINNING
+// Let's Encrypt ISRG Root X1 — expires 2035-06-04
+// Used by Vercel deployments
+// ==========================================================================
+const char* ISRG_ROOT_X1 = \
+"-----BEGIN CERTIFICATE-----\n" \
+"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\n" \
+"-----END CERTIFICATE-----\n";
+
 // ============================================================================
 // LOGGING SYSTEM (v7.4.3)
 // ============================================================================
 // Log levels: 0=OFF, 1=ERROR, 2=WARN, 3=INFO, 4=DEBUG
 // Set LOG_LEVEL to control verbosity. Production recommended: 2 (WARN)
-#define LOG_LEVEL 3  // INFO level for normal operation
+#define LOG_LEVEL 2  // 0=OFF, 1=ERROR, 2=WARN, 3=INFO, 4=DEBUG
 
 #define LOG_ERROR(fmt, ...) do { if (LOG_LEVEL >= 1) Serial.printf("[ERROR] " fmt "\n", ##__VA_ARGS__); } while(0)
 #define LOG_WARN(fmt, ...)  do { if (LOG_LEVEL >= 2) Serial.printf("[WARN] " fmt "\n", ##__VA_ARGS__); } while(0)
@@ -182,6 +221,7 @@ void showSetupScreen();
 void showConnectingScreen();
 void showPairedScreen();
 void showErrorScreen(const char* msg);
+void displayBLEPasskey(const char* passkey);
 void loadSettings();
 void saveSettings();
 void initBLE();
@@ -210,6 +250,30 @@ String jsonGetString(const String& json, const char* key) {
     if (end < 0) return "";
     return json.substring(start, end);
 }
+
+// ============================================================================
+// BLE SECURITY CALLBACKS (MITM-protected bonding)
+// ============================================================================
+
+class CCBLESecurityCallbacks : public BLESecurityCallbacks {
+    uint32_t onPassKeyRequest() { return 0; }
+    void onPassKeyNotify(uint32_t pass_key) {
+        // Display passkey on e-ink screen for user verification
+        char passStr[7];
+        snprintf(passStr, sizeof(passStr), "%06d", pass_key);
+        Serial.printf("[BLE] Passkey: %s\n", passStr);
+        displayBLEPasskey(passStr);
+    }
+    bool onConfirmPIN(uint32_t pin) { return true; }
+    bool onSecurityRequest() { return true; }
+    void onAuthenticationComplete(esp_ble_auth_cmpl_t auth_cmpl) {
+        if (auth_cmpl.success) {
+            Serial.println("[BLE] Authentication complete");
+        } else {
+            Serial.println("[BLE] Authentication failed");
+        }
+    }
+};
 
 // ============================================================================
 // BLE CALLBACKS
@@ -282,7 +346,7 @@ class CredentialCallbacks : public BLECharacteristicCallbacks {
             else if (uuid.indexOf("0004") > 0) {
                 // Webhook URL received from Setup Wizard
                 strncpy(webhookUrl, value.c_str(), sizeof(webhookUrl) - 1);
-                Serial.printf("[BLE] Webhook URL: %s\n", webhookUrl);
+                Serial.println("[BLE] Webhook URL received");
             }
 
             // Check if all credentials received (SSID + Password + URL)
@@ -777,6 +841,14 @@ void initBLE() {
     snprintf(deviceName, sizeof(deviceName), "CommuteCompute-%02X%02X", mac[4], mac[5]);
 
     BLEDevice::init(deviceName);
+
+    // BLE Security — passkey displayed on e-ink screen
+    BLEDevice::setSecurityCallbacks(new CCBLESecurityCallbacks());
+    BLESecurity *pSecurity = new BLESecurity();
+    pSecurity->setAuthenticationMode(ESP_LE_AUTH_REQ_SC_MITM_BOND);
+    pSecurity->setCapability(ESP_IO_CAP_OUT);  // Display only (e-ink shows passkey)
+    pSecurity->setInitEncryptionKey(ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK);
+
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new ServerCallbacks());
 
@@ -841,6 +913,9 @@ bool connectWiFi() {
 // ============================================================================
 
 void generatePairingCode() {
+    // Ensure hardware RNG is active (requires WiFi radio)
+    WiFi.mode(WIFI_STA);
+
     const char* chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
     int len = strlen(chars);
     for (int i = 0; i < 6; i++) {
@@ -852,7 +927,7 @@ void generatePairingCode() {
 
 bool pollPairingServer() {
     WiFiClientSecure client;
-    client.setInsecure();
+    client.setCACert(ISRG_ROOT_X1);
     HTTPClient http;
 
     // Extract base server URL from webhookUrl (strip /api/screen suffix)
@@ -909,6 +984,40 @@ void showBootScreen() {
     bbep->loadBMP(LOGO_BOOT, bootX, bootY, BBEP_BLACK, BBEP_WHITE);
     bbep->refresh(REFRESH_FULL, true);
     lastFullRefresh = millis();
+}
+
+void displayBLEPasskey(const char* passkey) {
+    // Render BLE passkey on e-ink screen for pairing verification
+    // Uses BMP text renderer — bb_epaper text crashes in bufferless mode (ESP32-C3)
+    bbep->fillScreen(BBEP_WHITE);
+
+    // Logo at top
+    int logoX = (SCREEN_W - LOGO_SMALL_W) / 2;
+    bbep->loadBMP(LOGO_SMALL, logoX, 20, BBEP_BLACK, BBEP_WHITE);
+
+    // Title
+    drawTextCentered(bbep, "=== BLE PAIRING ===", SCREEN_W, 170);
+
+    // Instructions
+    drawTextCentered(bbep, "Enter this code in your browser:", SCREEN_W, 210);
+
+    // Passkey — display as large centred text
+    // BMP text renderer uses 8x8 font; render the passkey
+    char passLine[32];
+    snprintf(passLine, sizeof(passLine), "[ %s ]", passkey);
+    drawTextCentered(bbep, passLine, SCREEN_W, 270);
+
+    // Subtitle
+    drawTextCentered(bbep, "Code expires when setup completes", SCREEN_W, 330);
+
+    // Footer
+    char verStr[32];
+    snprintf(verStr, sizeof(verStr), "CCFirm v%s", FIRMWARE_VERSION);
+    drawTextCentered(bbep, verStr, SCREEN_W, 450);
+    drawTextCentered(bbep, "(c) 2026 Angus Bergman - AGPL-3.0", SCREEN_W, 463);
+
+    bbep->refresh(REFRESH_FULL, true);
+    Serial.println("[BLE] Passkey displayed on e-ink");
 }
 
 void showSetupScreen() {
@@ -1076,7 +1185,7 @@ bool fetchFullScreenBMP() {
     if (strlen(webhookUrl) == 0) return false;
 
     WiFiClientSecure client;
-    client.setInsecure();
+    client.setCACert(ISRG_ROOT_X1);
     HTTPClient http;
 
     // Fetch full-screen BMP from device endpoint

@@ -63,7 +63,7 @@ I've added comprehensive debugging and error handling to help identify the issue
 
 ### Step 3: Test Cafe Search
 
-1. Click in the "Favorite Cafe" field
+1. Click in the "Favourite Cafe" field
 2. Type: `Norman South Yarra`
 3. **Watch the console** for results
 
@@ -289,7 +289,7 @@ Expected response:
 
 ---
 
-## Expected Behavior (After Fix)
+## Expected Behaviour (After Fix)
 
 ### When Address Search Works:
 1. Type 3+ characters
@@ -352,4 +352,4 @@ If you've tried all the above and it's still not working:
 **Version**: v4.2.0 (CCDashDesignV15.0)
 **Status**: Debugging tools active
 
-(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual License
+(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual Licence

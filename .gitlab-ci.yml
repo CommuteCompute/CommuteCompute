@@ -19,7 +19,7 @@ lint-job:
     - find api/ src/ -name '*.js' -exec node --check {} +
     - echo "All JavaScript files pass syntax validation."
 
-# Stage 2: Comprehensive compliance audit (214 checks)
+# Stage 2: Comprehensive compliance audit (240+ checks)
 audit-job:
   stage: audit
   image: node:${NODE_VERSION}

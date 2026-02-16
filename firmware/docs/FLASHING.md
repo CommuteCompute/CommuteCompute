@@ -206,7 +206,7 @@ USB CDC (Communications Device Class) enables the ESP32-C3 to act as a serial po
 - Works with built-in USB-JTAG interface
 - No external USB-UART chip needed
 
-### Serial Object Behavior
+### Serial Object Behaviour
 
 ```cpp
 void setup() {
@@ -610,7 +610,7 @@ Before deploying custom firmware:
 - **Fixed:** USB CDC configuration in platformio.ini
 - **Added:** Comprehensive diagnostic findings
 - **Verified:** Flash upload working at 1100+ kbit/s
-- **Documented:** ESP32-C3 USB-JTAG behavior
+- **Documented:** ESP32-C3 USB-JTAG behaviour
 - **Updated:** Serial configuration requirements
 
 ---
@@ -621,4 +621,4 @@ Before deploying custom firmware:
 
 ---
 
-(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual License
+(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual Licence
