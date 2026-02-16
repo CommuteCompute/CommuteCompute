@@ -69,7 +69,7 @@ bbep.setFont(FONT_8x8);     // ONLY use 8x8 font
 
 ### Note
 
-V15.0 introduces larger fonts for improved readability in the CCDash™ Renderer (v1.81). These enhanced font sizes are rendered on the server (in the cloud) and sent to your display as a pre-built image. Because of this, they are **not** affected by the FONT_12x16 firmware rotation bug described above. The firmware continues to display server-rendered images. No firmware font changes are required.
+V15.0 introduces larger fonts for improved readability in the CCDash™ Renderer (v2.1). These enhanced font sizes are rendered on the server (in the cloud) and sent to your display as a pre-built image. Because of this, they are **not** affected by the FONT_12x16 firmware rotation bug described above. The firmware continues to display server-rendered images. No firmware font changes are required.
 
 **What this means for you:** Your dashboard text is now larger and easier to read from across the room. This change happens automatically on the server — you do not need to update your device or firmware to benefit from it.
 
