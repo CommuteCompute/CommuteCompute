@@ -168,7 +168,7 @@ Redis (via Vercel Marketplace) is **required** for persistent storage. The syste
 | **Root Directory** | (leave blank) |
 | **Runtime** | `Node` |
 | **Build Command** | `npm install` |
-| **Start Command** | `node server.js` |
+| **Start Command** | `node src/server.js` |
 
 ### 3.3 Select Free Tier Plan
 
@@ -179,7 +179,7 @@ Redis (via Vercel Marketplace) is **required** for persistent storage. The syste
 **Deployment Started**: Render will now:
 1. Clone your repository
 2. Run `npm install` to install dependencies
-3. Start the server with `node server.js`
+3. Start the server with `node src/server.js`
 4. Assign you a URL: `https://your-server-name.onrender.com`
 
 **Wait Time**: ~5-10 minutes for first deploy

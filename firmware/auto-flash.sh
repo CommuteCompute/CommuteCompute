@@ -57,7 +57,7 @@ flash_device() {
         echo "Next steps:"
         echo "1. The device will reboot"
         echo "2. It will create a WiFi hotspot: Commute Compute System-Setup"
-        echo "3. Connect to it with password: transport123"
+        echo "3. Connect to it with password: your-wifi-password"
         echo "4. Configure your WiFi network"
         echo "5. Enjoy your Melbourne PT display!"
         echo ""

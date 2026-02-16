@@ -390,6 +390,13 @@ This is normal behaviour during initial setup:
 2. Check network connectivity
 3. Review Vercel function logs for errors
 
+### Server errors
+
+1. **HTTP 500 (Internal Server Error):** Check your Redis connection. Verify that `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` environment variables are set in your Vercel project settings. Visit `/api/kv-status` to confirm `"connected": true`.
+2. **HTTP 401/403 (Unauthorised):** Verify your API token is correctly configured in the Setup Wizard or Admin Panel. Re-enter the token if necessary.
+3. **Blank screen in browser:** Open your browser's developer console (F12) and check for errors. Verify that your Vercel deployment completed successfully (green checkmark in the Deployments tab).
+4. **Connection timeout:** Confirm your Vercel project is deployed and the URL is correct. Visit `/api/status` to check the server is responding. If using Render, note that free-tier instances spin down after inactivity and may take 30-60 seconds to wake.
+
 ---
 
 ## Re-Configuration

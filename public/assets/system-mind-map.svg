@@ -78,11 +78,11 @@
     <text x="100" y="98" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">Busyness data</text>
   </g>
 
-  <!-- Vercel KV -->
+  <!-- Redis -->
   <g transform="translate(1060, 1010)">
     <rect x="0" y="0" width="200" height="110" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
     <text x="100" y="28" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#fbbf24" text-anchor="middle">User Preferences</text>
-    <text x="100" y="48" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Vercel KV Storage</text>
+    <text x="100" y="48" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Redis Storage</text>
     <text x="100" y="66" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">Addresses + profiles</text>
     <text x="100" y="82" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">Device status</text>
     <text x="100" y="98" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">API keys (encrypted)</text>
@@ -94,10 +94,10 @@
     LAYER 2: V15.0 Engine Stack
   </text>
 
-  <!-- CommuteCompute Engine v3.0 -->
+  <!-- CommuteCompute Engine v3.1 -->
   <g transform="translate(400, 400)">
     <rect x="0" y="0" width="200" height="100" rx="8" fill="#1e293b" stroke="#10b981" stroke-width="2" filter="url(#glow)"/>
-    <text x="100" y="25" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#22c55e" text-anchor="middle">CommuteCompute v3.0</text>
+    <text x="100" y="25" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#22c55e" text-anchor="middle">CommuteCompute v3.1</text>
     <text x="100" y="44" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">Core journey planning</text>
     <text x="100" y="60" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">Multi-modal routing</text>
     <text x="100" y="76" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">Walk-faster exclusion</text>
@@ -153,7 +153,7 @@
   <!-- CCDash Renderer -->
   <g transform="translate(330, 720)">
     <rect x="0" y="0" width="160" height="80" rx="8" fill="#1e293b" stroke="#10b981" stroke-width="2"/>
-    <text x="80" y="22" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#22c55e" text-anchor="middle">CCDash v2.0</text>
+    <text x="80" y="22" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#22c55e" text-anchor="middle">CCDash v2.1</text>
     <text x="80" y="40" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">1-bit BMP renderer</text>
     <text x="80" y="56" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">Floyd-Steinberg</text>
     <text x="80" y="72" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">Layout engine</text>
@@ -205,7 +205,7 @@
     V15.0
   </text>
   <text x="700" y="762" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#c7d2fe" text-anchor="middle">
-    System 4.0.0
+    System 4.2.0
   </text>
 
   <!-- Connection lines (showing data flow) -->
@@ -256,7 +256,7 @@
     <!-- Layer 3 -->
     <circle cx="10" cy="100" r="8" fill="#f59e0b"/>
     <text x="25" y="105" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#94a3b8">
-      Layer 3: External data sources (Transport Victoria, BOM, Google Places, Vercel KV)
+      Layer 3: External data sources (Transport Victoria, BOM, Google Places, Redis)
     </text>
   </g>
 
@@ -281,7 +281,7 @@
 
   <!-- Version + Copyright footer -->
   <text x="700" y="1360" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#64748b" text-anchor="middle">
-    Commute Compute V15.0 | CommuteCompute Engine v3.0 | CCDash Renderer v2.0 | System 4.0.0
+    Commute Compute V15.0 | CommuteCompute Engine v3.1 | CCDash Renderer v2.1 | System 4.2.0
   </text>
   <text x="700" y="1385" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#475569" text-anchor="middle">
     Copyright (c) 2026 Angus Bergman | AGPL-3.0 Dual License

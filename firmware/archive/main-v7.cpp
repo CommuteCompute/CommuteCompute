@@ -208,7 +208,7 @@ void loop() {
             wifiManager.setConnectTimeout(30);
             
             // Non-blocking auto-connect
-            if (wifiManager.autoConnect("CommuteCompute-Setup", "transport123")) {
+            if (wifiManager.autoConnect("CommuteCompute-Setup", "setup-password")) {
                 Serial.println("✓ WiFi connected");
                 Serial.printf("  IP: %s\n", WiFi.localIP().toString().c_str());
                 wifiConnected = true;
