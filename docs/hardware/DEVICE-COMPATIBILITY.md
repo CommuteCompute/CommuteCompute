@@ -44,7 +44,7 @@ Commute Compute supports multiple e-ink display devices. This guide helps you:
 
 ## Device Comparison
 
-### CC E-Ink BYOS (Official Platform - TRMNL Hardware)
+### CC E-Ink OG (Official Platform - TRMNL Hardware)
 
 **Pros**:
 - **Plug and play**: No jailbreaking required
@@ -83,7 +83,7 @@ Commute Compute supports multiple e-ink display devices. This guide helps you:
 
 ## Device Specifications
 
-### CC E-Ink BYOS (TRMNL Hardware)
+### CC E-Ink OG (TRMNL Hardware)
 
 **Hardware**:
 - **Display**: 7.5" Waveshare e-paper
@@ -324,7 +324,7 @@ function detectDevice(req) {
     return detectKindleModel(userAgent);
   }
 
-  // Default to CC E-Ink BYOS
+  // Default to CC E-Ink OG
   return getDeviceConfig('trmnl-byos');
 }
 ```
@@ -347,7 +347,7 @@ DEVICE_HEIGHT=480
 
 ---
 
-## Setup Guide: CC E-Ink BYOS (TRMNL Hardware)
+## Setup Guide: CC E-Ink OG (TRMNL Hardware)
 
 ### 1. Hardware Setup
 
@@ -444,7 +444,7 @@ https://your-server-name.vercel.app/api/dashboard?device=kindle-pw3&orientation=
 2. Set interval: 10-15 minutes
 3. Test refresh works correctly
 
-### Step 6: Power Optimization
+### Step 6: Power Optimisation
 
 1. Disable Amazon Special Offers (if present)
 2. Disable WiFi auto-sleep
@@ -457,7 +457,7 @@ https://your-server-name.vercel.app/api/dashboard?device=kindle-pw3&orientation=
 
 ## Server Endpoints for Different Devices
 
-### CC E-Ink BYOS Webhook
+### CC E-Ink OG Webhook
 
 **Endpoint**: `GET /api/screen`
 
@@ -565,7 +565,7 @@ X-Dimensions: 800x480
 
 ---
 
-## Optimization for E-ink Displays
+## Optimisation for E-ink Displays
 
 ### Design Principles
 
@@ -579,7 +579,7 @@ All outputs follow e-ink best practices:
 
 ### Device-Specific Optimizations
 
-**CC E-Ink BYOS (800×480)**:
+**CC E-Ink OG (800×480)**:
 - Font sizes: 24-48px
 - 4-6 data cards per screen
 - Landscape orientation
@@ -610,7 +610,7 @@ All outputs follow e-ink best practices:
 
 ## Troubleshooting
 
-### CC E-Ink BYOS Issues
+### CC E-Ink OG Issues
 
 **Device not refreshing**:
 - Check webhook URL is correct
@@ -653,7 +653,7 @@ All outputs follow e-ink best practices:
 **Text too small**:
 - Add `?device=kindle-4` to URL
 - System will use larger fonts
-- Or customize CSS for your needs
+- Or customise CSS for your needs
 
 **Battery draining quickly**:
 - Keep Kindle plugged in

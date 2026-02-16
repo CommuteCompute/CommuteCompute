@@ -2,7 +2,7 @@
   <img src="cc-logo-apple-touch.png" alt="Commute Compute™" width="120">
 </p>
 
-# Commute Compute(TM) Brand Colors
+# Commute Compute(TM) Brand Colours
 
 **Last Updated:** 2026-02-07
 
@@ -34,11 +34,11 @@
   --cc-teal-dark: #2d6b5a;
   --cc-white: #ffffff;
   --cc-grey: #a8b0bc;
-  
+
   /* RGB Versions (for rgba() usage) */
   --cc-navy-rgb: 26, 39, 68;
   --cc-teal-rgb: 79, 178, 142;
-  
+
   /* Extended Palette */
   --cc-teal-light: #6ec9a8;
   --cc-navy-light: #2a3d5c;
@@ -62,8 +62,8 @@
 
 ## Typography
 
-| Element | Font | Weight | Color | Letter-spacing |
-|---------|------|--------|-------|----------------|
+| Element | Font | Weight | Colour | Letter-spacing |
+|---------|------|--------|--------|----------------|
 | **COMMUTE** | Montserrat | 500 (Medium) | `#4fb28e` | 0.25em |
 | **COMPUTE** | Montserrat | 700 (Bold) | `#ffffff` | 0.25em |
 
@@ -91,9 +91,9 @@ be regenerated from the branding sources without explicit approval.
 - All logo files include the TM mark baked directly into the image
 - Wordmark logos: "TM" appears as white superscript after "COMPUTE"
 - Mark-only logos: "TM" appears near the top-right of the CC icon
-- "COMMUTE" and "COMPUTE" must align center
+- "COMMUTE" and "COMPUTE" must align centre
 - Minimum clear space: 20% of logo height on all sides
-- Do not alter colors, proportions, alignment, or remove the TM mark
+- Do not alter colours, proportions, alignment, or remove the TM mark
 - Canonical source: `cc-logo-square.png` (900x900) -- all size variants derived from this
 
 ---

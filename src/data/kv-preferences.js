@@ -128,6 +128,8 @@ async function getUpstashClient() {
   // Try Redis Cloud (or other native Redis) via ioredis
   if (process.env.REDIS_URL) {
     try {
+      // Intentional Docker/self-host fallback — ioredis is not declared in package.json
+      // for Vercel deployments. Only triggered when REDIS_URL is set (non-Upstash Redis).
       const Redis = (await import('ioredis')).default;
 
       const client = new Redis(process.env.REDIS_URL, {
