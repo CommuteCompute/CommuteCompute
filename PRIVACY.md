@@ -55,7 +55,7 @@ All data listed above is stored exclusively in your own Redis instance, encrypte
 Commute Compute™ explicitly does **not** collect, store, or transmit:
 
 - IP addresses (not logged by the application)
-- Personal names or email addresses
+- Personal names (email addresses are only processed if voluntarily submitted via the feedback form -- see Section 4)
 - Browsing history or search history
 - Analytics, tracking pixels, or usage telemetry
 - Cookies for profiling or advertising
@@ -78,6 +78,10 @@ Commute Compute™ communicates with the following external services to provide 
 | [Bureau of Meteorology](https://www.bom.gov.au) | None (unauthenticated public GET request) | Weather observations (temperature, conditions, wind) | Yes | [BOM Privacy](https://www.bom.gov.au/other/privacy.shtml) |
 | [OpenStreetMap Nominatim](https://nominatim.openstreetmap.org) | Address search queries | Geocoding fallback when Google Places is not configured | Fallback only | [OSM Privacy Policy](https://wiki.osmfoundation.org/wiki/Privacy_Policy) |
 | [Vercel](https://vercel.com) | All stored data (hosting and Redis storage) | Application hosting, serverless functions, Redis database | Yes | [Vercel Privacy Policy](https://vercel.com/legal/privacy-policy) |
+
+### Feedback Email (Optional)
+
+Commute Compute™ includes an optional feedback form (`/api/feedback`) that allows users to submit feedback to the deployment operator. If the deployment operator has configured SMTP environment variables (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `FEEDBACK_EMAIL`), submitted feedback -- including the user-provided name, email address, feedback type, and message -- is sent via email using the nodemailer library. If SMTP is not configured, feedback is logged server-side only and no email is sent. No email addresses are stored persistently in Redis. Users are never required to provide an email address to use Commute Compute™.
 
 **Important:** Your home, work, and cafe addresses are **not** sent to transit authorities. Only public GTFS stop IDs (GTFS — General Transit Feed Specification — is a standard data format used worldwide for transit schedules and real-time updates; e.g., stop ID `"12179"` for South Yarra Station) are used to query real-time departure data.
 

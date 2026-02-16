@@ -75,6 +75,24 @@ V15.0 introduces larger fonts for improved readability in the CCDash™ Renderer
 
 ---
 
+## Resolved: leaveIn Calculation HTTP 500 on Overnight Journeys
+
+**Date Discovered:** 2026-02-16
+**Severity:** High (dashboard crash)
+**Status:** Resolved (v4.2.0)
+
+### Problem
+
+When the `leaveIn` countdown (minutes until departure) was calculated during overnight periods where the next departure was the following day, the subtraction could produce a negative intermediate value. Passing this to `Math.floor()` in certain edge cases triggered an unhandled exception in the dashboard renderer, causing an HTTP 500 response from `/api/screen`.
+
+### Fix Applied
+
+Added a guard clause to normalise `leaveIn` values: if the raw difference is negative (i.e., the departure is past midnight relative to the current time), the calculation wraps by adding 1440 (minutes in a day). This ensures `leaveIn` is always a non-negative integer before rendering.
+
+**What this means for you:** If your dashboard previously showed a blank screen or error during late-night/early-morning hours, this has been fixed. No action is required on your part.
+
+---
+
 ## Design Decisions (Not Bugs)
 
 ### `/api/geocode` Not Exposed
