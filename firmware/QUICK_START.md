@@ -299,7 +299,7 @@ If you need to change the server URL, factory reset the device (hold button 10 s
 
 ## Current Status
 
-[DONE] Firmware flashed (CC-FW-7.6.0)
+[DONE] Firmware flashed (CC-FW-7.7.0)
 [DONE] USB CDC enabled
 [DONE] Configuration corrected
 [DONE] Documentation complete

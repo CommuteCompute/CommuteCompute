@@ -44,7 +44,7 @@
 | Hardware | TRMNL OG or TRMNL Mini |
 | MCU | ESP32-C3 |
 | Display | 7.5" e-ink (800×480) or 4.2" (400×300) |
-| Firmware | CC-FW-7.6.0 (custom) |
+| Firmware | CC-FW-7.7.0 (custom) |
 
 ### Development
 
@@ -180,7 +180,7 @@ Redis (via Vercel Marketplace) is **required** for persistent storage. The syste
 1. Clone your repository
 2. Run `npm install` to install dependencies
 3. Start the server with `node server.js`
-4. Assign you a URL: `https://your-server-name.vercel.app`
+4. Assign you a URL: `https://your-server-name.onrender.com`
 
 **Wait Time**: ~5-10 minutes for first deploy
 
@@ -188,7 +188,7 @@ Redis (via Vercel Marketplace) is **required** for persistent storage. The syste
 
 Once deployment completes:
 
-1. Click the **URL** at the top of the page (looks like `https://your-server-name.vercel.app`)
+1. Click the **URL** at the top of the page (looks like `https://your-server-name.onrender.com`)
 2. You should see a redirect to `/admin`
 3. The admin panel should load (may take 15s on first cold start)
 
@@ -245,9 +245,9 @@ Name:  GOOGLE_PLACES_API_KEY
 Value: AIzaSyC_your_actual_api_key_here
 ```
 
-### 4.5 Optional: Transit Authority APIs (for real-time departure data)
+### 4.5 Required: Transit Authority APIs (for real-time departure data)
 
-Add these **only if** you have API credentials for your local transit authority.
+Live departure data requires API credentials for your local transit authority. Register to obtain your key -- approval may take up to 48 hours.
 
 #### For Victoria (Transport for Victoria)
 
@@ -374,7 +374,7 @@ Data Sources:
 
 ### 5.1 Open Admin Panel
 
-1. Go to your Render URL: `https://your-server-name.vercel.app/admin`
+1. Go to your server URL: `https://your-project.vercel.app/admin` (Vercel) or `https://your-server-name.onrender.com/admin` (Render)
 2. Click on the **Setup & Journey** tab (should be selected by default)
 
 ### 5.2 Enter Your Journey Details
@@ -428,15 +428,16 @@ The system automatically:
 
 ### 6.1 Get Your Webhook URL
 
-Your TRMNL webhook URL is:
+Your webhook URL is:
 
 ```
-https://your-server-name.vercel.app/api/screen
+https://your-project.vercel.app/api/screen
 ```
 
-Replace `your-service` with your actual Render service name.
+Replace `your-project` with your actual project/service name.
 
-**Example**: `https://your-server-name.vercel.app/api/screen`
+**Example (Vercel)**: `https://your-project.vercel.app/api/screen`
+**Example (Render)**: `https://your-server-name.onrender.com/api/screen`
 
 ### 6.2 Flash Custom Firmware
 
@@ -572,7 +573,7 @@ Commute Compute uses **hybrid provisioning** (BLE + Pairing Code):
 
 ### Transport Victoria OpenData API
 
-**Status:** Optional (system works without it)
+**Status:** Required for live departure data
 
 1. **Create Account**
    - Go to [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/)
@@ -666,8 +667,12 @@ services:
     environment:
       - NODE_ENV=production
       - TZ=Australia/Melbourne
+      - UPSTASH_REDIS_REST_URL=https://your-redis-instance.upstash.io
+      - UPSTASH_REDIS_REST_TOKEN=your-redis-token
     restart: unless-stopped
 ```
+
+**Required:** The `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` variables are required for persistent storage (preferences, API keys, pairing codes). Obtain these from your Upstash Redis instance or Vercel Marketplace Redis integration.
 
 ```bash
 docker-compose up -d

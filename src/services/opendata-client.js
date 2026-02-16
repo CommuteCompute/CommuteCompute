@@ -750,7 +750,10 @@ export async function getWeather(lat = MELBOURNE_LAT, lon = MELBOURNE_LON) {
     const hourlyPrecip = data.hourly?.precipitation || [];
     const hourlyTemp = data.hourly?.temperature_2m || [];
     const hourlyApparent = data.hourly?.apparent_temperature || [];
-    const nowHour = new Date().getHours();
+    // Use Melbourne timezone (Vercel runs UTC)
+    const now = new Date();
+    const melbourneTime = new Date(now.toLocaleString('en-US', { timeZone: 'Australia/Melbourne' }));
+    const nowHour = melbourneTime.getHours();
 
     for (let i = 0; i < hourlyTimes.length; i++) {
       const forecastHour = new Date(hourlyTimes[i]).getHours();

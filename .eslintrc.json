@@ -1,0 +1,37 @@
+{
+  "env": {
+    "node": true,
+    "es2020": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module"
+  },
+  "rules": {
+    "no-undef": "error"
+  },
+  "globals": {
+    "console": "readonly",
+    "process": "readonly",
+    "Buffer": "readonly",
+    "setTimeout": "readonly",
+    "setInterval": "readonly",
+    "clearTimeout": "readonly",
+    "clearInterval": "readonly",
+    "__dirname": "readonly",
+    "__filename": "readonly",
+    "URL": "readonly",
+    "URLSearchParams": "readonly",
+    "fetch": "readonly",
+    "AbortController": "readonly",
+    "AbortSignal": "readonly",
+    "TextEncoder": "readonly",
+    "TextDecoder": "readonly",
+    "structuredClone": "readonly",
+    "btoa": "readonly",
+    "atob": "readonly",
+    "crypto": "readonly",
+    "performance": "readonly",
+    "queueMicrotask": "readonly"
+  }
+}

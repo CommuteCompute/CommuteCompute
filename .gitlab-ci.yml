@@ -10,15 +10,20 @@ stages:
 variables:
   NODE_VERSION: "20"
 
-# Stage 1: Syntax validation
+# Stage 1: Syntax validation + ESLint
 lint-job:
   stage: lint
   image: node:${NODE_VERSION}
+  before_script:
+    - npm ci --prefer-offline
   script:
     - echo "Running syntax checks on all JavaScript files..."
     - find api/ src/ -name '*.js' -exec node --check {} +
     - node --check tests/test-redis-kv.js
     - echo "All JavaScript files pass syntax validation."
+    - echo "Running ESLint no-undef checks..."
+    - npx eslint api/ src/
+    - echo "ESLint checks passed."
 
 # Stage 2: Comprehensive compliance audit (240+ checks)
 audit-job:

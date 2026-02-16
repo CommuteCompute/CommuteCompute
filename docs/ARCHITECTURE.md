@@ -78,7 +78,7 @@ Complete mapping of each trademark to its constituent files in the codebase.
 
 | File | Type | Purpose |
 |------|------|---------|
-| `firmware/src/main.cpp` | Core | Primary CCFirmTRMNL firmware (CC-FW-7.6.0) |
+| `firmware/src/main.cpp` | Core | Primary CCFirmTRMNL firmware (CC-FW-7.7.0) |
 | `firmware/kindle/` | Variant | CCFirmKindle for jailbroken Kindles |
 | `firmware/include/config.h` | Config | Build configuration |
 | `firmware/include/prerendered-screens.h` | Asset | Prerendered screens (boot, error) |
