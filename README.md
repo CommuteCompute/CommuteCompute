@@ -176,7 +176,7 @@ Weather-aware lifestyle suggestions and commute stress scoring.
 | | |
 |---|---|
 | **Inputs** | Temperature, weather condition, wind speed, UV index, humidity, time of day, state |
-| **Outputs** | Prioritized suggestions, mindset metrics (commute stress, walk steps, apparent temperature) |
+| **Outputs** | Prioritised suggestions, mindset metrics (commute stress, walk steps, apparent temperature) |
 
 **Example Scenario:**
 
