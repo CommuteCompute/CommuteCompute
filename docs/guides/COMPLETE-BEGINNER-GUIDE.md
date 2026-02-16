@@ -638,6 +638,13 @@ For better address autocomplete:
 - Then run flash command again
 - Ensure USB cable supports data (not charge-only)
 
+### "Server error" (HTTP 500, 401, 403, or timeout)
+
+- **HTTP 500:** Your server cannot connect to its database. In Vercel, check that the `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` environment variables are set. Visit `/api/kv-status` to verify the connection.
+- **HTTP 401 or 403:** Your API token is incorrect or missing. Re-enter it via the Setup Wizard or Admin Panel.
+- **Blank screen in browser:** Open your browser's developer console (press F12) and look for error messages. Check that your Vercel deployment finished successfully.
+- **Connection timeout:** Verify your Vercel project URL is correct and the deployment is active. Visit `/api/status` to confirm the server is responding.
+
 ---
 
 ## Getting Help

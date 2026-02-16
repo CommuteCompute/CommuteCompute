@@ -73,7 +73,7 @@ void loop() {
     if (WiFi.status() != WL_CONNECTED) {
         Serial.println("→ Connecting WiFi...");
         wifiManager.setConfigPortalTimeout(60);
-        if (wifiManager.autoConnect("CommuteCompute-Setup", "transport123")) {
+        if (wifiManager.autoConnect("CommuteCompute-Setup", "setup-password")) {
             Serial.println("✓ WiFi connected");
             Serial.printf("  IP: %s\n", WiFi.localIP().toString().c_str());
         } else {
