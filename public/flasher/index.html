@@ -180,7 +180,7 @@
     </section>
 
     <footer class="cc-system-footer">
-      <div>CCFirm&#8482; <span id="cc-footer-firmware-version">CC-FW-7.6.0</span> | System <span id="cc-footer-system-version">v4.2.0</span> | Build <span id="cc-footer-build-date">--</span></div>
+      <div>CCFirm&#8482; <span id="cc-footer-firmware-version">CC-FW-7.7.0</span> | System <span id="cc-footer-system-version">v4.2.0</span> | Build <span id="cc-footer-build-date">--</span></div>
       <div style="margin-top: 6px;">Data: <a href="https://opendata.transport.vic.gov.au" target="_blank" rel="noopener">Transport Victoria OpenData</a> (CC BY 4.0)</div>
       <div style="margin-top: 6px;">&#169; 2026 Angus Bergman | CommuteCompute&#8482; IP | <a href="/attribution.html" style="color: inherit;">Licensing</a></div>
     </footer>
@@ -310,7 +310,7 @@
       const fw = document.getElementById('cc-footer-firmware-version');
       const sys = document.getElementById('cc-footer-system-version');
       const build = document.getElementById('cc-footer-build-date');
-      if (fw) fw.textContent = v.components?.firmware?.version || 'CC-FW-7.6.0';
+      if (fw) fw.textContent = v.components?.firmware?.version || 'CC-FW-7.7.0';
       if (sys) sys.textContent = 'v' + (v.system?.version || '4.2.0');
       if (build) build.textContent = v.date || new Date().toISOString().split('T')[0];
     }).catch(() => {});

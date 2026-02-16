@@ -1934,6 +1934,17 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     // This is a simplified version - actual compositing would parse BMP
   }
   
+  // leaveIn + formatLeaveIn scoped inside _renderFullScreenCanvas
+  // (previously defined only in renderStatus() — caused ReferenceError)
+  const leaveIn = data.leave_in_minutes ?? data.leave_in ?? data.leaveIn;
+  const formatLeaveIn = (minutes) => {
+    const safe = Math.max(0, Math.floor(minutes || 0));
+    const hours = Math.floor(safe / 60);
+    const mins = safe % 60;
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins} min`;
+  };
+
   // Re-render zones directly to main canvas for preview
   // =========================================================================
   // HEADER (V10 Spec Section 2) - v1.31: Clock at bottom, coffee indicator

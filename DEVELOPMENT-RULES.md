@@ -22,7 +22,7 @@ These rules govern all development on Commute Compute. Compliance is mandatory.
 | **System** | Commute Compute System | Commute Compute / CC | General references |
 | **Repository** | CommuteCompute | — | GitLab repo |
 | **Dashboard Design** | CCDashDesignV15.0 | CCDash | Dashboard specification (UNLOCKED) |
-| **Dashboard Renderer** | CCDash Renderer v1.81 | CCDash | Renders CCDashDesignV15.0 to PNG/BMP |
+| **Dashboard Renderer** | CCDash Renderer v2.1 | CCDash | Renders CCDashDesignV15.0 to PNG/BMP |
 | **Multi-Device Renderer** | CC LiveDash | LiveDash | LiveDash endpoint/service |
 | **Journey Engine** | CommuteCompute | CommuteCompute | Journey + coffee calculations |
 
@@ -47,7 +47,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 | commute-compute-config | cc-config |
 | V10 Dashboard | CCDashDesignV15.0 |
 | V10 spec | CCDashDesignV15.0 spec |
-| v13 renderer | CCDash Renderer v1.81 |
+| v13 renderer | CCDash Renderer v2.1 |
 | zone-renderer-v13.js | ccdash-renderer.js |
 | LiveDash (standalone) | CC LiveDash |
 
@@ -142,7 +142,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 - 5.3 Flashing Procedure
 - 5.4 Critical bb_epaper ESP32-C3 Findings (2026-01-29)
 - 5.5 ESP32-C3 Troubleshooting Guide (2026-01-30)
-- 5.6 **Production Firmware: CC-FW-7.5.0** [LOCKED]
+- 5.6 **Production Firmware: CC-FW-7.7.0** [LOCKED]
 </details>
 
 <details>
@@ -1100,18 +1100,21 @@ The renderer creates a minimal 1-bit BMP in RAM (62-byte header + pixel data), r
 | Display shows garbage | allocBuffer() called | Remove allocBuffer() calls |
 | Text rotated 90° | FONT_12x16 bug | Use FONT_8x8 only |
 
-### 5.6 Production Firmware: CC-FW-7.6.0 (2026-02-09)
+### 5.6 Production Firmware: CC-FW-7.7.0 (2026-02-16)
 
 **[LOCKED] — Production Release**
 
-**Official Name:** `CC-FW-7.6.0`
-**Version:** 7.6.0
+**Official Name:** `CC-FW-7.7.0`
+**Version:** 7.7.0
 **Commit:** (pending)
-**Previous:** `CC-FW-7.5.0`
+**Previous:** `CC-FW-7.6.0`
 **Verified On:** TRMNL OG hardware
-**Status:** [LOCKED] (2026-02-09) — Production Release
+**Status:** [LOCKED] (2026-02-16) — Production Release
 
-**Changes from 7.5.0:**
+**Changes from 7.6.0:**
+- **Version Alignment:** Canonical firmware version declared by founder directive
+
+**Changes from 7.5.0 (inherited via 7.6.0):**
 - **Runtime Factory Reset:** 10-second button hold during normal operation triggers full factory reset (NVS erase, WiFi clear, preferences wipe, BLE re-pair). No unplugging or power cycling required.
 - **Visual Reset Warning:** At 5-second hold, e-ink display shows "KEEP HOLDING FOR FACTORY RESET" with "Release now for safe power-off" option.
 - **VCOM Discharge on Release:** Releasing button after 3-10 seconds triggers VCOM discharge (safe power-off). Only continuous 10s+ hold triggers reset.

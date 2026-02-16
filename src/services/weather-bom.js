@@ -251,7 +251,10 @@ class WeatherBOM {
     }
 
     // Infer from humidity and time of day
-    const hour = new Date().getHours();
+    // Use Melbourne timezone (Vercel runs UTC)
+    const now = new Date();
+    const melbourneTime = new Date(now.toLocaleString('en-US', { timeZone: 'Australia/Melbourne' }));
+    const hour = melbourneTime.getHours();
     const humidity = obs.rel_hum;
 
     // High humidity suggests cloudy/rain
@@ -326,7 +329,10 @@ class WeatherBOM {
    */
   getFallbackWeather() {
     // Melbourne average conditions (reasonable defaults)
-    const hour = new Date().getHours();
+    // Use Melbourne timezone (Vercel runs UTC)
+    const now = new Date();
+    const melbourneTime = new Date(now.toLocaleString('en-US', { timeZone: 'Australia/Melbourne' }));
+    const hour = melbourneTime.getHours();
 
     // Typical Melbourne temperature by time of day
     let temp;
