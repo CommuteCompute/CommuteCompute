@@ -17,6 +17,7 @@ lint-job:
   script:
     - echo "Running syntax checks on all JavaScript files..."
     - find api/ src/ -name '*.js' -exec node --check {} +
+    - node --check tests/test-redis-kv.js
     - echo "All JavaScript files pass syntax validation."
 
 # Stage 2: Comprehensive compliance audit (240+ checks)
@@ -39,6 +40,6 @@ test-job:
   before_script:
     - npm ci --prefer-offline
   script:
-    - echo "Running test suite..."
-    - npm test
+    - echo "Running Redis KV in-memory fallback tests..."
+    - node --test tests/test-redis-kv.js
   allow_failure: false

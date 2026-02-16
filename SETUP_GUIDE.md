@@ -106,7 +106,7 @@ This automatically injects the required environment variables (`UPSTASH_REDIS_RE
 
 ### 2.4 Redeploy
 
-The Redis connection requires a redeploy to take effect (approximately 2 minutes):
+[IMPORTANT] After adding Redis, you **must** redeploy your Vercel project for the environment variables to take effect. Your server will not be able to connect to the database until you complete this step.
 
 1. Go to your project's **Deployments** tab
 2. Click the **...** menu on the latest deployment
@@ -131,13 +131,15 @@ Expected: `"connected": true`
 
 Navigate to: `https://your-project-name.vercel.app/setup-wizard.html`
 
+[NOTE] The Setup Wizard configuration steps (addresses, API keys, preferences) work in any modern browser -- Chrome, Firefox, Safari, or Edge. However, the BLE WiFi provisioning step later (Step 4.2) requires Chrome or Edge specifically. Safari and Firefox do not support Web Bluetooth.
+
 [IMPORTANT] Your admin authentication token will be shown once during this process. Write it down or save it securely.
 
 ### 3.2 Device Selection
 
 Choose your display device:
-- **TRMNL OG** -- 800x480 e-ink (primary)
-- **TRMNL Mini** -- 400x300 e-ink
+- **CC E-Ink BYOS** -- 800x480 e-ink (primary)
+- **CC E-Ink Mini** -- 400x300 e-ink
 - **Kindle** -- Various models (requires jailbreak)
 
 ### 3.3 Google Places API Key (Optional)
@@ -178,6 +180,18 @@ This key is essential for live real-time departure countdowns -- the core featur
 1. Review your configuration
 2. Click **Complete Setup**
 3. Save your admin authentication token securely
+
+**Next:** Verify your dashboard is working before proceeding to device setup.
+
+### 3.8 Verify Dashboard Before Flashing
+
+Before proceeding to flash your device, verify your dashboard is working by visiting your Vercel deployment URL in a browser:
+
+1. Open: `https://your-project-name.vercel.app/api/screen`
+2. You should see a rendered dashboard image (even without live departure data, the layout should be visible)
+3. If you see an error or blank page, check that Redis is connected (`/api/kv-status` shows `"connected": true`) and that your addresses were saved correctly in the Setup Wizard
+
+This confirms your server is correctly configured before you invest time in device flashing. If the dashboard preview works in your browser, it will work on your CC E-Ink display.
 
 **Next:** Proceed to Step 4 to set up your physical device.
 

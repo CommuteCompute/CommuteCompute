@@ -4,7 +4,7 @@
 
 # Attribution
 
-**Last Updated:** 2026-02-15
+**Last Updated:** 2026-02-16
 
 Commute Compute™ uses data and services from the following providers:
 
@@ -55,9 +55,11 @@ Commute Compute™ uses data and services from the following providers:
 - Some icons adapted from public domain sources
 
 ### Fonts
-- System fonts used for e-ink rendering
-
----
+- **Inter** by Rasmus Andersson
+  - **Weights used**: Regular (400), Bold (700)
+  - **Licence**: SIL Open Font Licence 1.1 (OFL-1.1)
+  - **Source**: https://rsms.me/inter/
+  - **Usage**: Bundled TTF files (`Inter-Regular.ttf`, `Inter-Bold.ttf`) for server-side e-ink dashboard rendering (CCDash Renderer); loaded via Google Fonts CDN for the admin panel and web pages
 
 ---
 
