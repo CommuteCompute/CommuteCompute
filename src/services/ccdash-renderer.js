@@ -988,7 +988,7 @@ function getDynamicLegZone(legIndex, totalLegs, legs = null) {
     return { id: `leg${legIndex}`, x: 8, y, w: 784, h: finalHeight };
   }
 
-  // Fallback: equal heights (legacy behavior)
+  // Fallback: equal heights (legacy behaviour)
   const maxLegHeight = 52;
   const legHeight = Math.min(maxLegHeight, Math.floor((availableHeight - (totalLegs - 1) * gap) / totalLegs));
   const y = startY + (legIndex - 1) * (legHeight + gap);
@@ -2647,7 +2647,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       return minsUntilDepart;
     }
 
-    // Otherwise, use cumulative time (legacy behavior)
+    // Otherwise, use cumulative time (legacy behaviour)
     cumulativeMinutes += (leg.minutes || leg.durationMinutes || 0);
     return cumulativeMinutes;
   });

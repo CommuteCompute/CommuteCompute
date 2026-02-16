@@ -6,13 +6,13 @@
 
 **Last Updated:** 2026-02-15
 
-Commute Compute(TM) uses data and services from the following providers:
+Commute Compute™ uses data and services from the following providers:
 
 ## Transport Data
 
 ### Transport for Victoria
 - **Data**: GTFS static and real-time feeds
-- **License**: Creative Commons Attribution 4.0 (CC BY 4.0)
+- **Licence**: Creative Commons Attribution 4.0 (CC BY 4.0)
 - **Source**: https://opendata.transport.vic.gov.au/
 - **Terms**: https://www.ptv.vic.gov.au/footer/data-and-reporting/
 
@@ -29,7 +29,7 @@ Commute Compute(TM) uses data and services from the following providers:
 
 ### OpenStreetMap
 - **Data**: Map data, Nominatim geocoding
-- **License**: Open Database License (ODbL)
+- **Licence**: Open Database License (ODbL)
 - **Attribution**: © OpenStreetMap contributors
 - **Source**: https://www.openstreetmap.org/
 
@@ -45,7 +45,7 @@ Commute Compute(TM) uses data and services from the following providers:
 
 ### Bureau of Meteorology
 - **Data**: Weather observations and forecasts
-- **License**: Creative Commons Attribution 3.0 Australia (CC BY 3.0 AU)
+- **Licence**: Creative Commons Attribution 3.0 Australia (CC BY 3.0 AU)
 - **Source**: https://www.bom.gov.au/
 
 ## Icons & Fonts
@@ -61,6 +61,6 @@ Commute Compute(TM) uses data and services from the following providers:
 
 ---
 
-(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual License
+(c) 2026 Commute Compute™ System by Angus Bergman -- AGPL-3.0 Dual Licence
 
 If you believe any attribution is missing or incorrect, please open an issue.

@@ -7,7 +7,7 @@
 **Version:** 2.0  
 **Last Updated:** 2026-01-30  
 **Status:** Active  
-**Copyright:** © 2026 Angus Bergman — AGPL-3.0 Dual License
+**Copyright:** © 2026 Angus Bergman — AGPL-3.0 Dual Licence
 
 ---
 
@@ -351,7 +351,7 @@ Response:
 | `q` | Yes | Search query (min 3 chars) |
 | `googleKey` | No | Google Places API key |
 
-**Behavior:**
+**Behaviour:**
 1. If `googleKey` provided and validated → Google Places API (New)
 2. Else → OpenStreetMap Nominatim (free, always available)
 
@@ -408,7 +408,7 @@ Response:
 }
 ```
 
-**Behavior:**
+**Behaviour:**
 1. If `googleKey` provided → Search Google Places for cafe at location
 2. Extract business hours
 3. Else → Return default Melbourne cafe hours
@@ -949,7 +949,7 @@ const response = await fetch(baseUrl + '/api/admin/setup-complete', {
 | Cafe hours not cached | No Google key | Falls back to defaults (OK) |
 | Webhook URL too long | Too much data | Minify config structure |
 | API key validation fails | Wrong format | Check state-specific format |
-| "Invalid API key" | Key not authorized | Register key with transit authority |
+| "Invalid API key" | Key not authorised | Register key with transit authority |
 
 ### Debug Commands
 
@@ -1017,4 +1017,4 @@ document.querySelector('.step-content.active');
 
 ---
 
-*Copyright © 2026 Angus Bergman. AGPL-3.0 Dual License*
+*Copyright © 2026 Angus Bergman. AGPL-3.0 Dual Licence*

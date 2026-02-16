@@ -44,7 +44,7 @@ Commute Compute supports multiple e-ink display devices. This guide helps you:
 
 ## Device Comparison
 
-### CC E-Ink OG (Official Platform - TRMNL Hardware)
+### TRMNL OG (Official Platform)
 
 **Pros**:
 - **Plug and play**: No jailbreaking required
@@ -83,7 +83,7 @@ Commute Compute supports multiple e-ink display devices. This guide helps you:
 
 ## Device Specifications
 
-### CC E-Ink OG (TRMNL Hardware)
+### TRMNL OG
 
 **Hardware**:
 - **Display**: 7.5" Waveshare e-paper
@@ -324,7 +324,7 @@ function detectDevice(req) {
     return detectKindleModel(userAgent);
   }
 
-  // Default to CC E-Ink OG
+  // Default to TRMNL OG
   return getDeviceConfig('trmnl-byos');
 }
 ```
@@ -347,7 +347,7 @@ DEVICE_HEIGHT=480
 
 ---
 
-## Setup Guide: CC E-Ink OG (TRMNL Hardware)
+## Setup Guide: TRMNL OG (TRMNL Hardware)
 
 ### 1. Hardware Setup
 
@@ -356,30 +356,30 @@ DEVICE_HEIGHT=480
 3. Wait for boot screen (~30 seconds)
 4. Connect to WiFi network (follow on-screen prompts)
 
-### 2. Flash CC E-Ink Firmware
+### 2. Flash CCFirm™ Firmware
 
-1. Download CC E-Ink firmware from repository
-2. Follow flashing instructions in `/tools/setup-wizard/`
-3. Configure WiFi credentials
-4. Set webhook URL to your Vercel deployment
+1. Connect the TRMNL display to your computer via USB
+2. Use the browser-based flasher at `https://your-project-name.vercel.app/flasher/` (Chrome or Edge required)
+3. Click **Connect**, select your device, and click **Flash**
+4. Wait for "Flash Complete!" message
 
-### 3. Configure Webhook
+### 3. WiFi and Server Provisioning (via BLE)
 
-1. In your CC E-Ink firmware settings
-2. Set webhook URL:
-   ```
-   https://your-server-name.vercel.app/api/screen
-   ```
-3. Set **Refresh Rate**: 15 minutes (900 seconds)
-4. Save configuration
+The webhook URL is automatically configured during BLE setup via the Setup Wizard. No manual firmware configuration is required.
+
+1. Open the **Setup Wizard** in Chrome or Edge at `https://your-project-name.vercel.app/setup-wizard.html`
+2. Click **Connect to Device** and select your TRMNL display from the Bluetooth device list
+3. Enter your WiFi credentials (SSID and password)
+4. Click **Submit** -- the Setup Wizard sends WiFi credentials **and** the webhook URL (`/api/screen`) to the device via BLE
+5. Device connects to WiFi and immediately begins fetching your dashboard
 
 ### 4. Test Display
 
-1. Trigger manual refresh via firmware controls
-2. Wait ~30 seconds
-3. Display shows your transit dashboard
+1. Wait 2-3 minutes for first dashboard fetch
+2. Display shows your personalised transit dashboard
+3. If the device displays a 6-character pairing code instead of the dashboard, enter it in the Setup Wizard -- this is a fallback that activates only if BLE URL delivery did not succeed
 
-**Done!** Device will auto-refresh every 15 minutes.
+**Done!** Device will auto-refresh every 60 seconds (partial) and every 5 minutes (full).
 
 ---
 
@@ -457,7 +457,7 @@ https://your-server-name.vercel.app/api/dashboard?device=kindle-pw3&orientation=
 
 ## Server Endpoints for Different Devices
 
-### CC E-Ink OG Webhook
+### TRMNL OG Webhook
 
 **Endpoint**: `GET /api/screen`
 
@@ -481,7 +481,7 @@ https://your-server-name.vercel.app/api/dashboard?device=kindle-pw3&orientation=
 - `device=kindle-4` - Kindle 4 (non-touch)
 - `orientation=portrait` or `landscape`
 
-**Response**: Optimized HTML for e-ink display
+**Response**: Optimised HTML for e-ink display
 
 **Example URLs**:
 ```
@@ -577,9 +577,9 @@ All outputs follow e-ink best practices:
 4. **Simple Graphics**: No gradients or complex images
 5. **Clear Layout**: Well-spaced elements
 
-### Device-Specific Optimizations
+### Device-Specific Optimisations
 
-**CC E-Ink OG (800×480)**:
+**TRMNL OG (800×480)**:
 - Font sizes: 24-48px
 - 4-6 data cards per screen
 - Landscape orientation
@@ -610,13 +610,13 @@ All outputs follow e-ink best practices:
 
 ## Troubleshooting
 
-### CC E-Ink OG Issues
+### TRMNL OG Issues
 
 **Device not refreshing**:
-- Check webhook URL is correct
-- Verify Render service not sleeping
-- Test webhook directly in browser
-- Check CC E-Ink firmware configuration
+- Verify the server URL was delivered correctly during BLE provisioning (re-run WiFi setup if needed)
+- Verify Vercel deployment is running (check `/api/status`)
+- Test webhook directly in browser at `/api/screen`
+- Check serial output for connection errors
 
 **Image not displaying**:
 - Verify image is 800×480 pixels exactly
@@ -704,7 +704,7 @@ if (device === 'custom-display') {
 Add template in `views/custom-display.html`:
 
 ```html
-<!-- Optimized for your device specs -->
+<!-- Optimised for your device specs -->
 <div style="width: 1200px; height: 825px;">
   <!-- Your custom layout -->
 </div>
@@ -755,7 +755,7 @@ Start Here
 | **Best Quality** | Kindle PW5 ($90-120) | Highest resolution, newer hardware |
 | **Easiest Setup** | TRMNL display ($150-200) | No jailbreaking, hardware support |
 | **Repurpose Old Device** | Your existing Kindle | Free if you already own one |
-| **Future-Proof** | TRMNL display | Purpose-built hardware, CC E-Ink firmware |
+| **Future-Proof** | TRMNL display | Purpose-built hardware, CCFirm™ firmware |
 
 ---
 
@@ -792,7 +792,7 @@ A: Open a GitLab Issue with your device specs. Community may have already tested
 
 ### Official Guides
 - **Commute Compute Kindle Guide**: See `/docs/hardware/KINDLE-SETUP.md`
-- **CC E-Ink Firmware**: See `/tools/setup-wizard/firmware/`
+- **CCFirm™ Firmware**: See `/tools/setup-wizard/firmware/`
 - **TRMNL Hardware Support**: https://discord.gg/trmnl
 
 ### Jailbreaking Resources
@@ -826,4 +826,4 @@ Have a device working? Help others!
 
 **Last Updated**: 2026-01-26
 **Maintained By**: Angus Bergman & Community Contributors
-**License**: AGPL-3.0 Dual License
+**Licence**: AGPL-3.0 Dual Licence

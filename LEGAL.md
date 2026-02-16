@@ -258,7 +258,7 @@ Commute Compute™ is operated by **Angus Bergman** as an individual sole trader
 ### Supply Chain Integrity
 
 - **Dependency verification:** All npm dependencies include cryptographic integrity hashes (`package-lock.json`) to prevent supply chain attacks.
-- **Automated compliance:** 214 automated audit checks enforce security, licensing, and data handling rules across the entire codebase.
+- **Automated compliance:** 240+ automated audit checks enforce security, licensing, and data handling rules across the entire codebase.
 - **AGPL-3.0 source transparency:** The full source code is publicly auditable, providing users with complete visibility into data handling practices.
 
 ### Recommended Additional Protections

@@ -318,7 +318,7 @@ screen /dev/cu.usbmodem* 115200
 - Drain your battery faster
 - See worse image quality
 
-**The 60-second refresh is optimized for transit data freshness, display longevity, and battery life. Do not change it.**
+**The 60-second refresh is optimised for transit data freshness, display longevity, and battery life. Do not change it.**
 
 ---
 
@@ -326,4 +326,4 @@ screen /dev/cu.usbmodem* 115200
 **Applies To:** Commute Compute(TM) v4.2.0+ (CCDashDesignV15.0)
 **Firmware Version:** CC-FW-7.5.0
 
-(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual License
+(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual Licence

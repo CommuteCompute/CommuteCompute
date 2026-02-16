@@ -43,6 +43,7 @@ user-preferences.json
 # Security patterns (private config)
 .cc-secret-patterns
 .cc-security-patterns
+.cc-prohibited-terms.conf
 
 *.log
 *.tgz

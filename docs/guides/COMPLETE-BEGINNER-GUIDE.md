@@ -9,20 +9,20 @@
 **Version:** 3.1
 **Last Updated:** 2026-02-16
 **System Version:** v4.2.0 (CCDashDesignV15.0)
-**License:** AGPL-3.0 Dual License
+**Licence:** AGPL-3.0 Dual Licence
 
 > For detailed technical setup, see [SETUP_GUIDE.md](../../SETUP_GUIDE.md).
 
 ---
 
 > **Key Terms:** Before we start, here are a few terms you will see throughout this guide:
-> - **CC E-Ink** — Your Commute Compute e-ink display device (the physical screen that sits on your desk or wall)
+> - **TRMNL display** — The third-party e-ink display hardware that sits on your desk or wall (manufactured by TRMNL; Commute Compute runs custom firmware on it)
 > - **Redis** — The database that stores your settings (set up automatically via Vercel)
 > - **GTFS-RT** — The live departure data feed from Transport Victoria that powers real-time countdown timers
 > - **Vercel** — The free cloud platform that hosts your Commute Compute server
 > - **Setup Wizard** — The web page where you configure your addresses and preferences
-> - **CCFirm™** — The custom firmware (device software) that runs on your CC E-Ink display
-> - **BLE** — Bluetooth Low Energy, used to pair your display during initial setup
+> - **CCFirm™** — The custom firmware (device software) that runs on your TRMNL display
+> - **BLE** — Bluetooth Low Energy, used to send WiFi credentials and your server URL to your display during initial setup
 >
 > A full glossary is available at the end of this guide.
 
@@ -46,7 +46,7 @@ The display updates automatically every 60 seconds with real-time information.
 
 Commute Compute™ is compatible with the following e-ink displays:
 
-- **CC E-Ink OG** (800x480, 7.5" e-ink) — A purpose-built e-ink display available from the [TRMNL Shop](https://shop.trmnl.com). The hardware is manufactured by TRMNL; Commute Compute™ runs custom CCFirm™ firmware on it. Commute Compute is not affiliated with or endorsed by TRMNL.
+- **TRMNL OG** (800x480, 7.5" e-ink) — A purpose-built e-ink display available from the [TRMNL Shop](https://shop.trmnl.com). The hardware is manufactured by TRMNL; Commute Compute™ runs custom CCFirm™ firmware on it. Commute Compute is not affiliated with or endorsed by TRMNL.
 - **Jailbroken Kindle** — Various Kindle models (Paperwhite 3/4/5, Kindle 4) can be repurposed as Commute Compute displays. Requires jailbreaking the device.
 
 For detailed specifications, setup instructions, and a full list of supported devices, see the [Device Compatibility Guide](../hardware/DEVICE-COMPATIBILITY.md).
@@ -61,7 +61,7 @@ Before starting, gather these items and information:
 
 | Item | Description | Cost |
 |------|-------------|------|
-| **CC E-Ink display** | E-ink display device (e.g. CC E-Ink OG from the TRMNL Shop) | ~$150 AUD |
+| **TRMNL display** | E-ink display device (e.g. TRMNL OG from the [TRMNL Shop](https://shop.trmnl.com)) | ~$150 AUD |
 | **Computer** | Desktop or laptop for initial setup (not iPhone/iPad) | — |
 | **USB Cable** | USB-C cable for connecting display to computer | Usually included |
 | **WiFi Network** | 2.4 GHz network (5 GHz not supported) | — |
@@ -304,27 +304,23 @@ Click **Next** to continue.
 [TIME] Less than 1 minute.
 
 Choose your display device type:
-- **CC E-Ink OG** -- Select this for the standard 800x480 CC E-Ink display
-- **CC E-Ink Mini** -- For smaller 400x300 displays
+- **TRMNL OG** -- Select this for the standard 800x480 TRMNL display
+- **TRMNL Mini** -- For smaller 400x300 displays
 - **Kindle** -- For jailbroken Kindle devices
 
 Click **Complete Setup** to finish configuration.
 
-### Step 2.8: Save Your Pairing Code and Admin Token
+### Step 2.8: Save Your Admin Token
 
 [TIME] Less than 1 minute.
 
-The wizard now shows two critical pieces of information:
+The wizard now shows your admin authentication token:
 
-1. **Pairing Code:** A 6-character code (like `ABC123`)
-   - Write this down -- you'll enter it on your device in Part 3
-   - This code expires after 10 minutes
-
-2. **Admin Token:** A longer authentication code
+1. **Admin Token:** A longer authentication code
    - Save this securely -- you'll need it to access the Admin Panel later
    - This token does not expire
 
-[IMPORTANT] Write both of these down before closing the page. The admin token is shown only once.
+[IMPORTANT] Write this down before closing the page. The admin token is shown only once.
 
 **Next:** Proceed to Part 3 to set up your physical display device.
 
@@ -334,7 +330,7 @@ The wizard now shows two critical pieces of information:
 
 [TIME] This part takes approximately 15-20 minutes total.
 
-### Step 3.1: Unbox Your CC E-Ink Display
+### Step 3.1: Unbox Your TRMNL Display
 
 [TIME] Approximately 1 minute.
 
@@ -348,7 +344,7 @@ The wizard now shows two critical pieces of information:
 
 [TIME] Approximately 5-7 minutes including connection time.
 
-You have two options to flash CCFirm™ firmware to your CC E-Ink display. The browser flasher is the easiest method and requires no software installation.
+You have two options to flash CCFirm™ firmware to your TRMNL display. The browser flasher is the easiest method and requires no software installation.
 
 **What is flashing?** "Flashing" means installing the Commute Compute firmware (device software) onto your display's memory chip. This is a one-time process.
 
@@ -356,7 +352,7 @@ You have two options to flash CCFirm™ firmware to your CC E-Ink display. The b
 
 [TIME] Approximately 5 minutes.
 
-The easiest way to flash your CC E-Ink display is using the built-in browser flasher.
+The easiest way to flash your TRMNL display is using the built-in browser flasher.
 
 **Requirements:**
 - Chrome or Edge desktop browser (Safari/Firefox not supported for Web Serial)
@@ -370,7 +366,7 @@ The easiest way to flash your CC E-Ink display is using the built-in browser fla
 3. Go to: `https://YOUR-PROJECT-NAME.vercel.app/flasher/`
    - Replace `YOUR-PROJECT-NAME` with your actual Vercel project name
 4. Click **Connect** button
-5. A pop-up appears showing available USB devices -- select your CC E-Ink display
+5. A pop-up appears showing available USB devices -- select your TRMNL display
 6. Click **Flash** button
 7. Wait for completion (takes approximately 2 minutes)
 8. You'll see "Flash Complete!" when done
@@ -423,41 +419,49 @@ pio run -e trmnl -t upload
 
 Wait for "SUCCESS" message (takes approximately 30-60 seconds).
 
-### Step 3.3: Connect Device to WiFi
+### Step 3.3: Connect Device to WiFi and Server
 
 [TIME] Approximately 2-3 minutes.
 
 [NOTE] Have your WiFi network name (SSID) and password ready. Your network must be 2.4 GHz -- the display does not support 5 GHz networks.
 
-**What you'll see:** After flashing completes, your CC E-Ink display reboots and shows a Bluetooth pairing screen with device name `CC-XXXXXX`.
+**What you'll see:** After flashing completes, your TRMNL display reboots and shows a Bluetooth setup screen with device name `CC-XXXXXX`.
+
+**What is BLE provisioning?** During this step, the Setup Wizard sends three things to your device over Bluetooth: your WiFi network name, your WiFi password, and your server URL (so the device knows where to fetch dashboard data). This means no manual server configuration is needed.
 
 **Steps:**
 
-1. Your CC E-Ink display shows "Ready for WiFi setup via Bluetooth" or similar message
-2. On your computer, open Chrome or Edge browser (Safari/Firefox not supported for Web Bluetooth)
-3. Go to your Setup Wizard or Admin Panel
+1. Your TRMNL display shows "Ready for WiFi setup via Bluetooth" or similar message
+2. On your computer, open **Chrome or Edge** browser (Safari and Firefox do not support Web Bluetooth; iPhone does not support Web Bluetooth -- use a desktop or laptop computer)
+3. Go to your Setup Wizard at `https://YOUR-PROJECT-NAME.vercel.app/setup-wizard.html`
 4. Click **Connect to Device** or **WiFi Setup**
 5. Browser will scan for nearby Bluetooth devices
 6. Select device named `CC-XXXXXX` from the list
 7. When prompted, enter your WiFi credentials:
    - **Network name (SSID):** Your WiFi network name (e.g., "HomeWiFi")
    - **Password:** Your WiFi password (case-sensitive)
-8. Click **Submit** or **Connect**
-9. Display will reboot and connect to WiFi (takes 30-60 seconds)
+8. Click **Submit** -- the Setup Wizard automatically sends your WiFi credentials **and** your server URL to the device via Bluetooth
+9. Display connects to WiFi and immediately begins fetching your dashboard (takes 30-60 seconds)
+
+The Setup Wizard automatically works out your server URL from its own web address (e.g., `https://your-project-name.vercel.app/api/screen`). You do not need to enter or configure it manually.
 
 [TIP] If WiFi scanning does not show your network, ensure your router's 2.4 GHz band is enabled. Some dual-band routers disable 2.4 GHz when only 5 GHz is active.
 
 [TIP] If selecting a scanned network does not populate the SSID field in the browser, try typing your network name manually instead.
 
-**What you'll see next:** Display shows "Connected to WiFi" with an IP address, then shows a 6-character pairing code.
+**What you'll see next:** Display shows "Connecting to WiFi..." followed by "WiFi connected!" and then begins fetching your dashboard.
 
-### Step 3.4: Enter Pairing Code
+### Step 3.4: Pairing Code (Optional -- Most Devices Skip This)
 
-[TIME] Approximately 1-2 minutes.
+[TIME] Most devices skip this step entirely and go straight to showing the dashboard. If needed, approximately 1-2 minutes.
 
-**What is pairing?** Pairing links your physical display to your specific Commute Compute server so it knows where to fetch dashboard data.
+Your device may display a 6-character pairing code. If it does, enter it in the Setup Wizard. If the device goes straight to showing your commute dashboard, the pairing code was not needed.
 
-1. The display now shows a 6-character pairing code (like `ABC123`)
+**What is the pairing code?** It is a fallback mechanism that activates only if the server URL could not be delivered via Bluetooth during the WiFi setup step. Most devices receive the server URL successfully via BLE and skip this step entirely.
+
+**If your device displays a pairing code:**
+
+1. Note the 6-character code shown on your display (like `ABC123`)
 2. In your browser, go to the Setup Wizard or Admin Panel
 3. Find the "Device Pairing" or "Enter Pairing Code" section
 4. Type the 6-character code shown on your display
@@ -469,12 +473,11 @@ Wait for "SUCCESS" message (takes approximately 30-60 seconds).
 
 [TIME] Approximately 2-3 minutes.
 
-After pairing succeeds:
+After WiFi provisioning succeeds (or after entering a pairing code, if one was displayed):
 
-1. Display shows "Pairing successful!" or similar confirmation
-2. Display begins fetching dashboard data from your server
-3. Screen may appear blank during initial fetch -- this is normal
-4. First dashboard image appears after 2-3 minutes
+1. Display begins fetching dashboard data from your server
+2. Screen may appear blank during initial fetch -- this is normal
+3. First dashboard image appears after 2-3 minutes
 
 [IMPORTANT] Do not power off or reset the display during initial connection. The first load takes longer than subsequent refreshes.
 
@@ -565,13 +568,15 @@ For better address autocomplete:
 
 ### "Display won't connect to WiFi"
 
-- Ensure your router broadcasts on 2.4 GHz. The ESP32-C3 chip in the CC E-Ink display does not support 5 GHz networks.
+- Ensure your router broadcasts on 2.4 GHz. The ESP32-C3 chip in the TRMNL display does not support 5 GHz networks.
 - If WiFi scanning does not show your network, check that your router's 2.4 GHz band is enabled (some routers disable it when a 5 GHz band is active).
 - If selecting a scanned network does not populate the SSID field, try typing the network name manually.
 - Check the password is correct.
 - Move the display closer to your router during initial setup.
 
 ### "Pairing code expired"
+
+[NOTE] The pairing code is an optional fallback. Most devices receive their server URL via BLE during WiFi setup and do not display a pairing code at all.
 
 - Codes expire after 10 minutes
 - Open Setup Wizard and generate a new code
@@ -620,17 +625,17 @@ If you're stuck:
 
 | Term | Meaning |
 |------|---------|
-| **CC E-Ink** | The Commute Compute e-ink display — the physical screen that shows your dashboard |
-| **CCFirm™** | The custom firmware (device software) that runs on your CC E-Ink display |
+| **TRMNL display** | The third-party e-ink display hardware — the physical screen that shows your dashboard |
+| **CCFirm™** | The custom firmware (device software) that runs on your TRMNL display |
 | **Vercel** | Free cloud hosting service that runs your Commute Compute server |
 | **Redis** | Database for your settings, installed via the Vercel Marketplace (powered by Upstash) |
 | **PlatformIO** | Software tool used to program (flash) firmware onto devices |
-| **Firmware** | Software that runs directly on your CC E-Ink display hardware |
+| **Firmware** | Software that runs directly on your TRMNL display hardware |
 | **GTFS-RT** | Real-time transit data feed (General Transit Feed Specification — Realtime) from Transport Victoria |
-| **BLE** | Bluetooth Low Energy — the wireless protocol used to pair your display during initial setup |
+| **BLE** | Bluetooth Low Energy — the wireless protocol used to send WiFi credentials and server URL to your display during initial setup |
 | **Setup Wizard** | The web page where you configure your addresses, API keys, and preferences |
 | **Admin Panel** | The web page where you can view and change your settings after initial setup |
 
 ---
 
-Copyright (c) 2026 Commute Compute™ System by Angus Bergman — AGPL-3.0 Dual License
+Copyright (c) 2026 Commute Compute™ System by Angus Bergman — AGPL-3.0 Dual Licence

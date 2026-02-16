@@ -15,7 +15,7 @@
 <br>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0_Dual_License-blue.svg?style=for-the-badge" alt="License: AGPL-3.0 Dual License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/Licence-AGPL--3.0_Dual_Licence-blue.svg?style=for-the-badge" alt="Licence: AGPL-3.0 Dual Licence"></a>
   &nbsp;
   <img src="https://img.shields.io/badge/Spec-CCDash%20V15.0-purple.svg?style=for-the-badge" alt="Spec: CCDash V15.0">
   &nbsp;
@@ -23,7 +23,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Platform-CC%20E--Ink%20%7C%20Kindle%20%7C%20Inkplate-orange.svg?style=flat-square" alt="Platform: CC E-Ink | Kindle | Inkplate">
+  <img src="https://img.shields.io/badge/Platform-TRMNL%20%7C%20Kindle%20%7C%20Inkplate-orange.svg?style=flat-square" alt="Platform: TRMNL | Kindle | Inkplate">
   &nbsp;
   <img src="https://img.shields.io/badge/VIC%20(Live%20GTFS--RT)%20%7C%207%20States%20(Timetable)-yellow.svg?style=flat-square" alt="VIC (Live) | 7 States (Timetable)">
   &nbsp;
@@ -58,7 +58,7 @@ Here is what no other commuter tool provides:
 
 - **Graceful offline degradation.** When APIs are unreachable, the system falls back to cached data and static timetables. The display always shows something useful.
 
-- **Fully open source under AGPL-3.0 (dual-licensed).** The complete system -- engines, renderer, firmware, setup wizard -- is available for inspection, modification, and self-hosting. A commercial license is also available for proprietary use.
+- **Fully open source under AGPL-3.0 (dual-licensed).** The complete system -- engines, renderer, firmware, setup wizard -- is available for inspection, modification, and self-hosting. A commercial licence is also available for proprietary use.
 
 <br>
 
@@ -95,7 +95,7 @@ Status timing follows user-intent logic: when departure is still far away (>120 
                                       |
                             +------------------------+
                             |                        |
-                            |  CC E-Ink (ESP32-C3)   |
+                            |  TRMNL (ESP32-C3)      |
                             |  Kindle E-Reader       |
                             |  Inkplate 6/10         |
                             |  Web Browser           |
@@ -316,7 +316,7 @@ This makes Commute Compute&#8482; one of the first commuter tools to fully suppo
 2. **Data Sources** are polled on each request: GTFS-RT for live transit (30s cache), BOM for weather (5min cache), Google Places for cafe status.
 3. **Five Intelligence Engines** process the combined data into a unified journey model.
 4. **CCDash&#8482; Renderer** converts the data model into an 800x480 1-bit BMP image optimised for e-ink.
-5. **The device** (CC E-Ink, Kindle, Inkplate, or browser) fetches the rendered image over HTTPS on a 60-second refresh cycle.
+5. **The device** (TRMNL, Kindle, Inkplate, or browser) fetches the rendered image over HTTPS on a 60-second refresh cycle.
 
 ### Caching Strategy
 
@@ -352,13 +352,13 @@ Vercel Dashboard > Integrations > Browse Marketplace > **Redis** (Upstash) > Ins
 
 Open `https://your-project.vercel.app/setup-wizard.html` and follow the guided configuration (home, work, arrival time, API keys).
 
-### 4. Flash Device (CC E-Ink)
+### 4. Flash Device (TRMNL)
 
 **Option A: Browser Flasher (Recommended)**
 
 Use the hosted browser flasher at `https://your-project.vercel.app/flasher/` (Chrome/Edge desktop required):
 
-- CC E-Ink / ESP32-C3 firmware flashing via Web Serial
+- TRMNL / ESP32-C3 firmware flashing via Web Serial
 - Kindle package install (jailbroken + KUAL) to `extensions/commute-compute`
 
 **Option B: PlatformIO CLI**
@@ -417,8 +417,8 @@ See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed step-by-step instructions 
 
 | Device | Resolution | Status |
 |:-------|:-----------|:-------|
-| CC E-Ink OG (ESP32-C3) | 800 x 480 | Primary target -- requires CCFirm&#8482; firmware |
-| CC E-Ink Mini | 400 x 300 | Supported |
+| TRMNL OG (ESP32-C3) | 800 x 480 | Primary target -- requires CCFirm&#8482; firmware |
+| TRMNL Mini | 400 x 300 | Supported |
 | Kindle Paperwhite 3/4/5 | 1072 x 1448 | Supported -- requires jailbreak |
 | Kindle Basic 10/11 | 600 x 800 | Supported -- requires jailbreak |
 | Inkplate 6 | 800 x 600 | Supported |
@@ -429,12 +429,12 @@ See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed step-by-step instructions 
 
 | Device | Source | Notes |
 |:-------|:-------|:------|
-| **CC E-Ink OG (ESP32-C3)** | [TRMNL Shop](https://shop.trmnl.com) | Primary supported hardware. Approximately AU$120-150 shipped to Australia. |
-| **ESP32-C3 + E-Ink DIY Kit** | [Seeed Studio](https://www.seeedstudio.com) | Build your own CC E-Ink display from components. Requires soldering and case assembly. |
+| **TRMNL OG (ESP32-C3)** | [TRMNL Shop](https://shop.trmnl.com) | Primary supported hardware. Approximately AU$120-150 shipped to Australia. |
+| **ESP32-C3 + E-Ink DIY Kit** | [Seeed Studio](https://www.seeedstudio.com) | Build your own e-ink display from components. Requires soldering and case assembly. |
 | **Kindle Paperwhite / Basic** | Amazon or second-hand | Requires jailbreak. Older models (PW3/PW4) recommended for jailbreak compatibility. |
 | **Inkplate 6 / 10** | [Soldered Electronics](https://soldered.com) | Open-hardware ESP32 e-ink boards. |
 
-The CC E-Ink OG display is the primary supported device and provides the best experience with CCFirm&#8482; firmware and BLE provisioning.
+The TRMNL OG display is the primary supported device and provides the best experience with CCFirm&#8482; firmware and BLE provisioning.
 
 <br>
 
@@ -450,7 +450,7 @@ The CC E-Ink OG display is the primary supported device and provides the best ex
 | Lines of Code | 112,000+ |
 | Intelligence Engines | 5 |
 | Development Rules Sections | 24 |
-| Automated Compliance Checks | 214 |
+| Automated Compliance Checks | 240+ |
 | Australian Coverage | VIC (Live GTFS-RT), 7 States/Territories (timetable) |
 
 <br>
@@ -479,7 +479,7 @@ The CC E-Ink OG display is the primary supported device and provides the best ex
 
 ## Data Attribution
 
-| Source | License | Usage |
+| Source | Licence | Usage |
 |:-------|:--------|:------|
 | Transport Victoria OpenData | CC BY 4.0 | Real-time and static transit data |
 | Bureau of Meteorology | CC BY 3.0 AU | Weather observations and forecasts |
@@ -514,20 +514,20 @@ Commute Compute&#8482; is developed and maintained by **Angus Bergman** as an op
 
 <br>
 
-## License
+## Licence
 
-**AGPL-3.0 Dual License** -- [GNU Affero General Public License v3.0](LICENSE)
+**AGPL-3.0 Dual Licence** -- [GNU Affero General Public License v3.0](LICENSE)
 
 Copyright (c) 2026 Angus Bergman. All rights reserved.
 
 This project is dual-licensed:
 
-| License | Terms |
+| Licence | Terms |
 |:--------|:------|
 | **Open Source (AGPL-3.0)** | Free to use, modify, and distribute. All modifications and network-accessible deployments must release source code under AGPL-3.0. |
-| **Commercial License** | For proprietary/closed-source use without AGPL obligations. Contact for terms. |
+| **Commercial Licence** | For proprietary/closed-source use without AGPL obligations. Contact for terms. |
 
-For commercial licensing inquiries: **commutecompute.licensing@gmail.com**
+For commercial licensing enquiries: **commutecompute.licensing@gmail.com**
 
 <br>
 

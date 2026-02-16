@@ -879,7 +879,7 @@ const firmwareAudits = {
   async serialOutputAnalysis() {
     const result = {
       name: 'Live Serial Output Analysis',
-      spec: 'Runtime Behavior Verification',
+      spec: 'Runtime Behaviour Verification',
       priority: 'HIGH',
       passed: true,
       details: [],

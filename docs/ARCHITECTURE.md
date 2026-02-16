@@ -10,7 +10,7 @@
 **Specification:** CCDash(TM) V15.0 (UNLOCKED)
 **Development Rules:** v1.28
 **Metro Tunnel Compliance:** Effective 2026-02-01
-**Copyright:** (c) 2026 Angus Bergman -- AGPL-3.0 Dual License
+**Copyright:** (c) 2026 Angus Bergman -- AGPL-3.0 Dual Licence
 
 ---
 
@@ -1653,7 +1653,7 @@ Example: A3B7K9
 Characters: A-Z, 0-9 (excluding ambiguous: 0, O, 1, I, L)
 ```
 
-### 19.8 Device Polling Behavior (Phase 2)
+### 19.8 Device Polling Behaviour (Phase 2)
 
 1. Device connects to WiFi (credentials from BLE Phase 1)
 2. Device generates random 6-character code
@@ -2061,7 +2061,7 @@ The repository MUST be completely **turnkey** -- any user can fork/clone and dep
 
 | Allowed | Example | Reason |
 |---------|---------|--------|
-| City center coordinates | Melbourne CBD: -37.8136, 144.9631 | Generic fallback |
+| City centre coordinates | Melbourne CBD: -37.8136, 144.9631 | Generic fallback |
 | Public infrastructure names | South Yarra, Parliament, Collins St | Official PTV names |
 | Example addresses in comments | "e.g., 123 Example St" | Documentation only |
 | Sample config template | `config/sample-journey.json` | Clearly marked sample |
@@ -2107,4 +2107,4 @@ grep -rn "Clara\|Toorak\|Norman" src/ api/ --include="*.js" \
 
 **Document Version:** 6.0
 **Development Rules:** v1.28
-**Copyright (c) 2026 Commute Compute System(TM) by Angus Bergman -- AGPL-3.0 Dual License**
+**Copyright (c) 2026 Commute Compute System(TM) by Angus Bergman -- AGPL-3.0 Dual Licence**

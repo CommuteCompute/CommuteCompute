@@ -12,7 +12,7 @@
 
 **Version:** 1.0
 **Effective Date:** 16 February 2026
-**Project:** Commute Compute™ (https://github.com/angusbergman/CommuteCompute)
+**Project:** Commute Compute™ (https://gitlab.com/angusbergman/commute-compute-system)
 **Licensor:** Angus Bergman (ABN 59 402 869 395)
 
 ---

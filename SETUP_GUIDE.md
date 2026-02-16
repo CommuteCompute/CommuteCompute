@@ -9,7 +9,7 @@
 **Version:** 4.1
 **Last Updated:** 2026-02-16
 **System Version:** v4.2.0 (CCDashDesignV15.0)
-**License:** AGPL-3.0 Dual License (see [LICENSE](LICENSE))
+**Licence:** AGPL-3.0 Dual Licence (see [LICENSE](LICENSE))
 
 > New to Commute Compute? Start with our [Complete Beginner Guide](docs/guides/COMPLETE-BEGINNER-GUIDE.md) for a friendlier walkthrough with no technical background required.
 
@@ -22,7 +22,7 @@ Setting up Commute Compute involves four steps:
 1. **Deploy** -- Host the server on Vercel (one click)
 2. **Storage** -- Add Redis via Vercel Marketplace
 3. **Configure** -- Run the Setup Wizard (addresses, API keys, preferences)
-4. **Pair** -- Flash and pair your CC E-Ink display
+4. **Connect** -- Flash and connect your TRMNL display
 
 **Time required:** ~60-90 minutes (first-time setup; includes API key registration and approval wait times)
 
@@ -35,15 +35,15 @@ Before starting setup, gather these items:
 | Requirement | Description |
 |-------------|-------------|
 | Vercel account | Free tier works perfectly -- sign up at [vercel.com](https://vercel.com) |
-| CC E-Ink display | Or jailbroken Kindle |
+| TRMNL display | Or jailbroken Kindle |
 | WiFi network details | Network name (SSID) and password -- must be 2.4 GHz network (5 GHz not supported) |
-| Modern web browser | Chrome or Edge required for device flashing (Web Serial API). Admin Panel and Setup Wizard work with Chrome, Firefox, Safari, or Edge. Internet Explorer is not supported. |
+| Modern web browser | Chrome or Edge required for device flashing (Web Serial API) and BLE WiFi provisioning (Web Bluetooth API). Admin Panel and Setup Wizard work with Chrome, Firefox, Safari, or Edge. Internet Explorer is not supported. |
 | Transport Victoria API key | Required for live departure data -- register at [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/). Approval may take up to 48 hours. |
 | Google Places API key | Optional -- for address autocomplete in Setup Wizard |
 
 [IMPORTANT] Your admin authentication token is shown only once during setup. Write it down or save it securely before proceeding.
 
-[NOTE] Keep your WiFi network details handy -- you'll need them during device pairing (Step 4.2).
+[NOTE] Keep your WiFi network details handy -- you'll need them during device provisioning (Step 4.2).
 
 ---
 
@@ -136,8 +136,8 @@ Navigate to: `https://your-project-name.vercel.app/setup-wizard.html`
 ### 3.2 Device Selection
 
 Choose your display device:
-- **CC E-Ink OG** -- 800x480 e-ink (primary)
-- **CC E-Ink Mini** -- 400x300 e-ink
+- **TRMNL OG** -- 800x480 e-ink (primary)
+- **TRMNL Mini** -- 400x300 e-ink
 - **Kindle** -- Various models (requires jailbreak)
 
 ### 3.3 Google Places API Key (Optional)
@@ -177,8 +177,7 @@ This key is essential for live real-time departure countdowns -- the core featur
 
 1. Review your configuration
 2. Click **Complete Setup**
-3. Write down your pairing code (6 characters) -- you'll need it in Step 4.3
-4. Save your admin authentication token securely
+3. Save your admin authentication token securely
 
 **Next:** Proceed to Step 4 to set up your physical device.
 
@@ -186,9 +185,9 @@ This key is essential for live real-time departure countdowns -- the core featur
 
 ## Step 4: Device Setup
 
-[TIME] This step takes approximately 15-20 minutes total (5 minutes flashing, 2-3 minutes WiFi setup, 2-3 minutes pairing, 5-10 minutes first dashboard load).
+[TIME] This step takes approximately 15-20 minutes total (5 minutes flashing, 2-3 minutes WiFi and server provisioning via BLE, 5-10 minutes first dashboard load).
 
-### For CC E-Ink Displays
+### For TRMNL Displays
 
 #### 4.1 Flash Firmware
 
@@ -198,7 +197,7 @@ This key is essential for live real-time departure countdowns -- the core featur
 
 Use the browser-based flasher at `/flasher/` (Chrome or Edge required for Web Serial API):
 
-1. Connect your CC E-Ink display via USB to your computer
+1. Connect your TRMNL display via USB to your computer
 2. Navigate to: `https://your-project-name.vercel.app/flasher/`
 3. Click **Connect** and select your device from the pop-up
 4. Click **Flash** and wait for completion (approximately 2 minutes)
@@ -208,7 +207,7 @@ Use the browser-based flasher at `/flasher/` (Chrome or Edge required for Web Se
 **Requirements:**
 - PlatformIO installed
 - USB cable
-- CC E-Ink display
+- TRMNL display
 
 ```bash
 cd firmware
@@ -217,34 +216,46 @@ pio run -e trmnl -t upload --upload-port /dev/cu.usbmodem*
 
 **Windows:** Use `COM3` or similar instead of `/dev/cu.usbmodem*`
 
-#### 4.2 WiFi Provisioning (Phase 1)
+#### 4.2 WiFi and Server Provisioning (via BLE)
 
 [TIME] Approximately 2-3 minutes.
 
 [NOTE] Have your WiFi network name (SSID) and password ready. Your network must be 2.4 GHz (5 GHz networks are not supported by the ESP32-C3 chipset).
 
-1. Device displays BLE setup screen
-2. Connect to device via Bluetooth:
-   - Device name: `CC-XXXXXX`
-3. Send WiFi credentials:
+[NOTE] You must use **Chrome or Edge** for this step. Safari and Firefox do not support Web Bluetooth. iPhone does not support Web Bluetooth -- use a desktop or laptop computer.
+
+1. Device displays BLE setup screen with device name `CC-XXXXXX`
+2. Open the **Setup Wizard** in Chrome or Edge on your computer
+3. Click **Connect to Device** -- your browser scans for nearby Bluetooth devices
+4. Select your TRMNL display from the list
+5. Enter your WiFi credentials:
    - **SSID:** Your network name (e.g., "HomeWiFi")
    - **Password:** Your network password
-4. Device connects to WiFi and reboots
+6. Click **Submit** -- the Setup Wizard automatically sends your WiFi credentials **and** your server URL (webhook endpoint) to the device via BLE
+7. Device connects to WiFi and immediately begins fetching your dashboard
+
+The Setup Wizard derives your server URL automatically from its own address (e.g., `https://your-project-name.vercel.app/api/screen`). No manual server URL configuration is required.
 
 [TIP] If WiFi scanning does not show your network, ensure your router's 2.4 GHz band is enabled. Some dual-band routers disable 2.4 GHz when 5 GHz is active.
 
 [TIP] If selecting a scanned network does not populate the SSID field, try typing the network name manually instead of selecting from the scan results.
 
-#### 4.3 Pairing (Phase 2)
+#### 4.3 Pairing Code (Optional Fallback)
 
-[TIME] Approximately 2-3 minutes, then 5-10 minutes for first dashboard load.
+[TIME] Most devices skip this step entirely. If needed, approximately 1-2 minutes.
 
-1. Device displays 6-character pairing code on screen
-2. In Setup Wizard (or Admin Panel), enter the code from your device
+If your device shows a 6-character pairing code after WiFi setup, enter it in the Setup Wizard or Admin Panel. Most devices will skip this step and proceed directly to displaying the dashboard.
+
+The pairing code is a fallback mechanism that activates only if BLE URL delivery did not succeed. If your device goes straight to fetching and displaying the dashboard after WiFi provisioning, the pairing code was not needed.
+
+**If a pairing code is displayed:**
+
+1. Note the 6-character code shown on your device screen
+2. In the Setup Wizard (or Admin Panel), enter the code
 3. Click **Pair Device**
-4. Device receives configuration and begins fetching dashboard data
+4. Device receives its server URL and begins fetching dashboard data
 
-[IMPORTANT] After pairing, allow 2-3 minutes for the device to connect to WiFi and fetch its first dashboard image. The first load takes longer than subsequent refreshes. Do not power off or reset the device during this time.
+[IMPORTANT] After WiFi provisioning (or pairing, if required), allow 2-3 minutes for the device to fetch its first dashboard image. The first load takes longer than subsequent refreshes. Do not power off or reset the device during this time.
 
 [NOTE] The screen will remain blank during initial connection. This is normal. Wait at least 3 minutes before troubleshooting.
 
@@ -264,11 +275,31 @@ You should see your personalised dashboard image.
 
 ### Check Device
 
-Your CC E-Ink display should show:
+Your TRMNL display should show:
 - Current time and journey legs
 - Live departure countdowns
 - Weather and lifestyle suggestions
 - CoffeeDecision recommendation
+
+---
+
+## What Data Does My Device Fetch?
+
+Once configured, your TRMNL display periodically fetches a dashboard image from your personal Commute Compute™ server deployment.
+
+**Endpoint:** Your device connects to `/api/screen` on your Vercel deployment (e.g., `https://your-project.vercel.app/api/screen`). This URL was automatically configured during BLE setup.
+
+**What the dashboard contains:**
+- Live departure times for your configured transit stops
+- Your commute route summary (suburb names, not full street addresses)
+- CoffeeDecision suggestions based on your schedule
+- Current time and weather context
+
+**Refresh interval:** Every 60 seconds.
+
+**Privacy:** The dashboard image is generated server-side from your Redis-stored preferences. Your device does not send personal data to the server — it only receives the rendered image. Your WiFi credentials never leave the device.
+
+**Security:** Treat your deployment URL as a sensitive credential. Anyone with access to your `/api/screen` URL can view your dashboard image. Use a custom domain or keep your Vercel subdomain private.
 
 ---
 
@@ -333,13 +364,15 @@ This is normal behaviour during initial setup:
 
 ### Pairing code not working
 
+[NOTE] The pairing code is an optional fallback. Most devices receive their server URL via BLE during WiFi provisioning and do not require a pairing code.
+
 1. Codes expire after 10 minutes
-2. Generate a new code from Setup Wizard
+2. Generate a new code from the Setup Wizard
 3. Ensure device and server are on the same network
 
 ### Display shows error
 
-1. Verify server URL is correct in firmware config
+1. Verify the server URL was delivered correctly during BLE provisioning (re-run WiFi setup if needed)
 2. Check network connectivity
 3. Review Vercel function logs for errors
 
@@ -355,9 +388,9 @@ This is normal behaviour during initial setup:
 
 ### Change Server/Preferences
 
-1. Generate new pairing code in Setup Wizard
-2. Enter code on device
-3. Device updates configuration
+1. Factory reset device (hold button 10 seconds)
+2. Re-provision via BLE -- the Setup Wizard sends the new server URL alongside WiFi credentials
+3. If the device shows a pairing code, enter it in the Setup Wizard
 
 ### Change API Keys
 
@@ -399,4 +432,4 @@ See [INSTALL.md](INSTALL.md) for detailed instructions on alternative hosting op
 
 ---
 
-Copyright (c) 2026 Angus Bergman -- AGPL-3.0 Dual License
+Copyright (c) 2026 Angus Bergman -- AGPL-3.0 Dual Licence

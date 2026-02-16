@@ -1,4 +1,4 @@
-Commute Compute System — Dual License
+Commute Compute System — Dual Licence
 Copyright (c) 2026 Angus Bergman
 
 DUAL LICENSING
@@ -11,10 +11,10 @@ This software is available under two licensing options:
    modifications and derivative works are also released under AGPL-3.0,
    and network users are given access to the corresponding source code.
 
-2. COMMERCIAL LICENSE
+2. COMMERCIAL LICENCE
    For commercial or proprietary use without AGPL-3.0 obligations
    (e.g., closed-source products, SaaS without source disclosure),
-   a separate commercial license is available.
+   a separate commercial licence is available.
 
    Contact: commutecompute.licensing@gmail.com
    Governing Law: Laws of the State of Victoria, Australia
@@ -669,7 +669,7 @@ state the exclusion of warranty; and each file should have at least
 the "copyright" line and a pointer to where the full notice is found.
 
     <one line to give the program's name and a brief idea of what it does.>
-    Copyright (C) 2026  Angus  Bergman
+    Copyright (C) 2026 Angus Bergman
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published

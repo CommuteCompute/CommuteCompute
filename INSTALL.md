@@ -8,7 +8,7 @@
 
 **Version:** 3.0
 **Last Updated:** 2026-02-14
-**License:** AGPL-3.0 Dual License (see [LICENSE](LICENSE))
+**Licence:** AGPL-3.0 Dual Licence (see [LICENSE](LICENSE))
 
 ---
 
@@ -152,7 +152,7 @@ Redis (via Vercel Marketplace) is **required** for persistent storage. The syste
 1. From your Render dashboard, click **New +**
 2. Select **Web Service**
 3. Click **Connect a repository**
-4. If prompted, authorize Render to access your repositories
+4. If prompted, authorise Render to access your repositories
 5. Find and select your forked repository: `YOUR-USERNAME/commute-compute`
 6. Click **Connect**
 
@@ -221,7 +221,7 @@ Environment variables provide **the most secure way** to store API keys on Rende
 
 | Variable | Value | Purpose |
 |----------|-------|---------|
-| `NODE_ENV` | `production` | Enables production optimizations |
+| `NODE_ENV` | `production` | Enables production optimisations |
 
 ### 4.4 Recommended: Google Places API (for accurate address finding)
 
@@ -391,7 +391,7 @@ Data Sources:
 
 | Field | Example | Notes |
 |-------|---------|-------|
-| **Favorite Cafe** | `Seven Seeds Coffee Roasters` | For coffee stop recommendations |
+| **Favourite Cafe** | `Seven Seeds Coffee Roasters` | For coffee stop recommendations |
 | **Include Coffee Time** | Checked | Adds 5 minutes for coffee |
 | **Google Places API Key** | `AIza...` | Enhances address search (optional) |
 
@@ -773,4 +773,4 @@ After installation, verify each component:
 
 ---
 
-© 2026 Commute Compute System by Angus Bergman — AGPL-3.0 Dual License
+© 2026 Commute Compute System by Angus Bergman — AGPL-3.0 Dual Licence
