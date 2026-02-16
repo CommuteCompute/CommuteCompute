@@ -4,7 +4,7 @@
 
 # Commute Compute System™ — Legal & Intellectual Property
 
-**Document Version:** 1.5
+**Document Version:** 1.6
 **Last Updated:** 2026-02-16
 **Owner:** Angus Bergman
 
@@ -239,6 +239,37 @@ Liability, warranty, and indemnification terms for commercial licensees will be 
 
 ---
 
+## Sole Trader Structure & Liability Mitigation
+
+Commute Compute™ is operated by **Angus Bergman** as an individual sole trader under ABN 59 402 869 395. The following measures are employed to mitigate liability exposure under this structure:
+
+### Privacy & Data Protection
+
+- **Self-hosted architecture:** Each user deploys and controls their own instance. The project maintainer does not collect, access, or store any user data. This structural isolation limits the scope of potential privacy claims.
+- **Independent deployment liability:** Each user who deploys Commute Compute™ creates their own independent Vercel instance and Redis database integration. Users assume independent responsibility for the security and privacy of their own deployment, including compliance with applicable privacy laws in their jurisdiction.
+- **Privacy Act compliance:** PRIVACY.md addresses all 13 Australian Privacy Principles (APPs) under the *Privacy Act 1988* (Cth) as amended, including APP 8 cross-border data flows, APP 1.8 automated decision-making transparency, and Notifiable Data Breaches scheme preparedness (see [SECURITY.md](SECURITY.md)).
+- **Data minimisation:** Only data necessary for commute calculations is collected. No analytics, telemetry, or behavioural tracking.
+
+### Consumer Law Compliance
+
+- **Australian Consumer Law (ACL):** Non-excludable consumer guarantees under Schedule 2 of the *Competition and Consumer Act 2010* (Cth) are expressly preserved (see Limitation of Liability above). Liability for breach of non-excludable conditions is limited to the remedies permitted under s 64A of the ACL.
+- **No misleading claims:** All documentation accurately represents the system's capabilities and limitations. Live data is sourced exclusively from GTFS-RT feeds and is clearly labelled.
+
+### Supply Chain Integrity
+
+- **Dependency verification:** All npm dependencies include cryptographic integrity hashes (`package-lock.json`) to prevent supply chain attacks.
+- **Automated compliance:** 214 automated audit checks enforce security, licensing, and data handling rules across the entire codebase.
+- **AGPL-3.0 source transparency:** The full source code is publicly auditable, providing users with complete visibility into data handling practices.
+
+### Recommended Additional Protections
+
+Users considering commercial deployment or handling sensitive personal information should consider:
+- Professional indemnity insurance appropriate to their risk profile
+- Independent legal advice on their obligations under the *Privacy Act 1988* (Cth) and state consumer protection laws
+- The commercial licence option for deployments requiring additional warranty or support terms
+
+---
+
 ## Third-Party Components
 
 The Commute Compute System incorporates third-party components with their own licences:
@@ -339,6 +370,7 @@ For security vulnerability reporting, see our [Responsible Disclosure Policy](SE
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.6 | 2026-02-16 | Added Sole Trader Structure & Liability Mitigation section, supply chain integrity documentation, enhanced consumer law compliance disclosure |
 | 1.5 | 2026-02-16 | Added SECURITY.md cross-reference for responsible disclosure, added email to Contact section, corrected "inquiries" to "enquiries" (Australian English) |
 | 1.4 | 2026-02-15 | Added IP Australia TM 2627709/2627710 applications, updated trademark heading for registration-pending status |
 | 1.3 | 2026-02-14 | Added Governing Law & Jurisdiction (Victoria, Australia), Copyright Act 1968 (Cth) references, moral rights assertion, Commercial Licence Framework (bespoke per-licensee terms), Limitation of Liability with ACL compliance |
