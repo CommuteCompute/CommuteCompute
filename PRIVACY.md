@@ -10,9 +10,22 @@
 
 ---
 
+## Key Points Summary
+
+**What you need to know:**
+
+- **Your data stays in YOUR database** — Commute Compute™ is self-hosted on your own Vercel account. Each deployment is completely isolated. The project maintainer has no access to your preferences, addresses, or commute patterns.
+- **You control what data is stored and can delete it at any time** — Use the admin panel to view, update, or delete all your stored data. You can export everything as JSON or reset the entire system with one click.
+- **Some services (Vercel, Google) may process data outside Australia** — While your database can be hosted in Sydney, services like Vercel's hosting infrastructure may process data in the United States. See Section 4 for details.
+- **No analytics, tracking, or telemetry** — Zero phone-home code. No Google Analytics, no usage tracking, no behavioural profiling. The source code is fully open and auditable.
+- **If you set this up for someone else, you must inform them** — You become responsible for privacy compliance on that deployment. Make sure they know what data is collected and how to delete it.
+- **This is free, open-source software** — No payment required. The entire system runs on free-tier services (Vercel, Transport Victoria OpenData, Bureau of Meteorology, OpenStreetMap).
+
+---
+
 ## 1. Introduction
 
-Commute Compute™ is a self-hosted, open-source commute intelligence system licensed under [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html) (dual license available — see [LEGAL.md](LEGAL.md)).
+Commute Compute™ is a self-hosted, open-source commute intelligence system licensed under [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html) (an open-source software licence that allows free use but requires sharing modifications) — dual licence available, see [LEGAL.md](LEGAL.md).
 
 This policy describes what data the system collects, how it is stored, what third-party services receive data, and how you can delete your data.
 
@@ -26,14 +39,14 @@ The following data is collected when you configure and use Commute Compute™:
 
 | Category | Data | Purpose | Storage |
 |:---------|:-----|:--------|:--------|
-| **Addresses** | Home, work, and cafe addresses (text) | Journey calculation, geocoding to coordinates | Redis (`cc:preferences`) |
+| **Addresses** | Home, work, and cafe addresses (text) | Journey calculation, geocoding to coordinates | Redis (the database where your preferences and settings are stored) — `cc:preferences` |
 | **Coordinates** | Latitude and longitude (from geocoding) | Distance and walking time calculations | Redis (`cc:preferences`) |
-| **API Keys** | Transport Victoria OpenData key, Google Places key | Authenticate with transit and geocoding providers | Redis (`cc:api:transit_key`, `cc:api:google_key`) |
+| **API Keys** | Transport Victoria OpenData key, Google Places key (a unique code that identifies your application when requesting data from a service) | Authenticate with transit and geocoding providers | Redis (`cc:api:transit_key`, `cc:api:google_key`) |
 | **Preferences** | Target arrival time, coffee preference, transit mode preferences, walking time estimates, Australian state/territory | Dashboard personalisation and journey calculation | Redis (`cc:preferences`) |
 | **Device Status** | Battery percentage, battery voltage, device ID, last-seen timestamp | Device health monitoring in admin panel | Redis (`cc:device:status`) |
 | **Journey Profiles** | Named route configurations (addresses, arrival time, preferences) | Quick switching between saved commute routes | Redis (`cc-profiles`) |
 
-All data listed above is stored exclusively in your own Redis instance, encrypted at rest by Upstash (AES-256).
+All data listed above is stored exclusively in your own Redis instance, encrypted at rest by Upstash (AES-256 — a widely-used encryption standard that scrambles data so it cannot be read without the correct key).
 
 ---
 
@@ -60,7 +73,7 @@ Commute Compute™ communicates with the following external services to provide 
 
 | Service | Data Sent to Service | Purpose | Required? | Their Privacy Policy |
 |:--------|:--------------------|:--------|:----------|:--------------------|
-| [Transport Victoria OpenData API](https://opendata.transport.vic.gov.au) | API key in request header only — **no personal data** | Real-time train and tram departures, service alerts | Yes (VIC users) | [Transport Victoria Privacy](https://www.ptv.vic.gov.au/footer/legal-and-policies/privacy-policy/) |
+| [Transport Victoria OpenData API](https://opendata.transport.vic.gov.au) | API key (a unique code that identifies your application when requesting data from a service) in request header only — **no personal data** | Real-time train and tram departures, service alerts | Yes (VIC users) | [Transport Victoria Privacy](https://www.ptv.vic.gov.au/footer/legal-and-policies/privacy-policy/) |
 | [Google Places API (New)](https://developers.google.com/maps/documentation/places/web-service) | Address search queries, Melbourne location bias | Geocoding and place autocomplete | Optional — free OpenStreetMap fallback available | [Google Privacy Policy](https://policies.google.com/privacy) |
 | [Bureau of Meteorology](https://www.bom.gov.au) | None (unauthenticated public GET request) | Weather observations (temperature, conditions, wind) | Yes | [BOM Privacy](https://www.bom.gov.au/other/privacy.shtml) |
 | [OpenStreetMap Nominatim](https://nominatim.openstreetmap.org) | Address search queries | Geocoding fallback when Google Places is not configured | Fallback only | [OSM Privacy Policy](https://wiki.osmfoundation.org/wiki/Privacy_Policy) |
@@ -70,7 +83,7 @@ Commute Compute™ communicates with the following external services to provide 
 
 ### Cross-Border Data Flows (APP 8)
 
-**Cross-border data flows:** Some third-party services process data outside Australia (Vercel and Upstash infrastructure is located in the United States). We take reasonable steps to protect your personal information when disclosed to overseas recipients by: (1) selecting providers with SOC 2 Type II or equivalent certification, (2) using encryption in transit (HTTPS/TLS 1.3) and at rest (AES-256), and (3) reviewing third-party privacy policies for compliance with international privacy standards. For Upstash security practices and certifications, see the [Upstash Security Page](https://upstash.com/docs/common/security). We recommend selecting the Sydney (Australia) region when creating your Redis database to minimise cross-border data transfers.
+**Cross-border data flows:** Some third-party services process data outside Australia (Vercel and Upstash infrastructure is located in the United States). We take reasonable steps to protect your personal information when disclosed to overseas recipients by: (1) selecting providers with SOC 2 Type II or equivalent certification, (2) using encryption in transit (HTTPS/TLS 1.3 — secure communication protocols that encrypt data sent between your browser and servers, indicated by the padlock icon in your browser) and at rest (AES-256), and (3) reviewing third-party privacy policies for compliance with international privacy standards. For Upstash security practices and certifications, see the [Upstash Security Page](https://upstash.com/docs/common/security). We recommend selecting the Sydney (Australia) region when creating your Redis database to minimise cross-border data transfers.
 
 ---
 
@@ -85,7 +98,7 @@ Commute Compute™ communicates with the following external services to provide 
 
 ### Security Measures
 
-- All external API communication uses HTTPS/TLS
+- All external API communication uses HTTPS/TLS (secure communication protocols that encrypt data sent between your browser and servers — indicated by the padlock icon in your browser)
 - Zero-config architecture: no `.env` files, no hardcoded secrets in source code
 - All user input is sanitised before display to prevent cross-site scripting (XSS)
 - Admin endpoints are protected by bearer token authentication (`CC_ADMIN_TOKEN`)
@@ -96,7 +109,7 @@ For our full security policy, responsible disclosure process, and data breach re
 
 ### Config Token Security
 
-Dashboard device URLs contain Base64URL-encoded configuration tokens. These tokens include your minified preferences (addresses, API keys, coordinates). Tokens are **encoded, not encrypted**.
+Dashboard device URLs contain Base64URL-encoded configuration tokens (a method of encoding data into text characters — similar to how a barcode represents a product number). These tokens include your minified preferences (addresses, API keys, coordinates). Tokens are **encoded, not encrypted**.
 
 **Treat your device webhook URL as sensitive — like a password.** Do not share it publicly.
 
@@ -149,7 +162,7 @@ Google Places API is optional. If not configured, the system uses free OpenStree
 
 ## 9. Open Source Transparency
 
-- Licensed under AGPL-3.0 (dual license available — see [LEGAL.md](LEGAL.md))
+- Licensed under AGPL-3.0 (an open-source software licence that allows free use but requires sharing modifications) — dual licence available, see [LEGAL.md](LEGAL.md)
 - All data flows are visible and auditable in the source code
 - No hidden telemetry, phone-home, or data exfiltration code
 - Repository includes automated compliance auditing with 214 checks across 25 rule sections

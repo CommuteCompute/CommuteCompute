@@ -132,8 +132,10 @@
             margin-bottom: 8px;
         }
         .sidebar-nav li { margin-bottom: 2px; }
-        .sidebar-nav a {
+        .sidebar-nav a,
+        .sidebar-nav button {
             display: block;
+            width: 100%;
             padding: 8px 12px;
             color: var(--text-secondary);
             text-decoration: none;
@@ -141,12 +143,18 @@
             font-size: 13px;
             transition: background 0.15s, color 0.15s;
             cursor: pointer;
+            background: none;
+            border: none;
+            font-family: inherit;
+            text-align: left;
         }
-        .sidebar-nav a:hover {
+        .sidebar-nav a:hover,
+        .sidebar-nav button:hover {
             background: rgba(79, 178, 142, 0.1);
             color: var(--text-primary);
         }
-        .sidebar-nav a.active {
+        .sidebar-nav a.active,
+        .sidebar-nav button.active {
             background: rgba(79, 178, 142, 0.15);
             color: var(--accent);
             font-weight: 500;
@@ -1835,19 +1843,19 @@
         <aside class="sidebar" role="navigation" aria-label="Sidebar navigation">
             <div class="sidebar-title">Dashboard</div>
             <ul class="sidebar-nav">
-                <li><a href="#" data-section="live" class="active" onclick="showTab('live', null); updateSidebarActive(this); return false;">Live Data</a></li>
-                <li><a href="#" data-section="setup" onclick="showTab('setup', null); updateSidebarActive(this); return false;">Today's Journey</a></li>
-                <li><a href="#" data-section="architecture" onclick="showTab('architecture', null); updateSidebarActive(this); return false;">Architecture</a></li>
+                <li><button data-section="live" class="active" onclick="showTab('live', null); updateSidebarActive(this);">Live Data</button></li>
+                <li><button data-section="setup" onclick="showTab('setup', null); updateSidebarActive(this);">Today's Journey</button></li>
+                <li><button data-section="architecture" onclick="showTab('architecture', null); updateSidebarActive(this);">Architecture</button></li>
             </ul>
             <div class="sidebar-title">Settings</div>
             <ul class="sidebar-nav">
-                <li><a href="#" data-section="config" onclick="showTab('config', null); updateSidebarActive(this); return false;">Configuration</a></li>
-                <li><a href="#" data-section="api" onclick="showTab('api', null); updateSidebarActive(this); return false;">Transit API</a></li>
+                <li><button data-section="config" onclick="showTab('config', null); updateSidebarActive(this);">Configuration</button></li>
+                <li><button data-section="api" onclick="showTab('api', null); updateSidebarActive(this);">Transit API</button></li>
             </ul>
             <div class="sidebar-title">System</div>
             <ul class="sidebar-nav">
-                <li><a href="#" data-section="system" onclick="showTab('system', null); updateSidebarActive(this); return false;">System & Support</a></li>
-                <li><a href="#" data-section="legal" onclick="showTab('legal', null); updateSidebarActive(this); return false;">Legal</a></li>
+                <li><button data-section="system" onclick="showTab('system', null); updateSidebarActive(this);">System & Support</button></li>
+                <li><button data-section="legal" onclick="showTab('legal', null); updateSidebarActive(this);">Legal</button></li>
             </ul>
         </aside>
 
@@ -5132,13 +5140,13 @@
             }
 
             // Update sidebar active state
-            const sidebarLink = document.querySelector(`.sidebar-nav a[data-section="${tabId}"]`);
+            const sidebarLink = document.querySelector(`.sidebar-nav button[data-section="${tabId}"]`);
             if (sidebarLink) updateSidebarActive(sidebarLink);
         }
 
         // Update sidebar active state
         function updateSidebarActive(el) {
-            document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+            document.querySelectorAll('.sidebar-nav button').forEach(btn => btn.classList.remove('active'));
             if (el) el.classList.add('active');
         }
 

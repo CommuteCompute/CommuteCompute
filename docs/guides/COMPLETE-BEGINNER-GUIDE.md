@@ -55,201 +55,363 @@ For detailed specifications, setup instructions, and a full list of supported de
 
 ## What You'll Need
 
-### Required
+Before starting, gather these items and information:
+
+### Required Hardware
 
 | Item | Description | Cost |
 |------|-------------|------|
 | **CC E-Ink display** | E-ink display device (e.g. CC E-Ink OG from the TRMNL Shop) | ~$150 AUD |
-| **Computer** | For initial setup | — |
-| **WiFi Network** | 2.4GHz (not 5GHz) | — |
-| **Vercel Account** | Free hosting service | Free |
+| **Computer** | Desktop or laptop for initial setup (not iPhone/iPad) | — |
+| **USB Cable** | USB-C cable for connecting display to computer | Usually included |
+| **WiFi Network** | 2.4 GHz network (5 GHz not supported) | — |
 
-### Required for Live Data
+### Required Online Accounts
 
-| Item | Description | Benefit |
-|------|-------------|---------|
-| **Transport Victoria API Key** | Required for live departure data | Powers the core feature — live departure countdowns |
+| Item | Description | Cost |
+|------|-------------|------|
+| **Vercel Account** | Free cloud hosting service for your server | Free |
+| **GitLab Account** | Code repository account (connects to Vercel) | Free |
+
+### Required for Live Departure Data
+
+| Item | Description | Benefit | Approval Time |
+|------|-------------|---------|---------------|
+| **Transport Victoria API Key** | Required for live departure data | Powers the core feature -- live departure countdowns | Up to 48 hours |
+
+[IMPORTANT] Register for your Transport Victoria API key first at [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/). Approval can take up to 48 hours, so apply early.
 
 ### Optional (Recommended)
 
 | Item | Description | Benefit |
 |------|-------------|---------|
-| **Google Places API Key** | Address autocomplete | Easier setup |
+| **Google Places API Key** | Address autocomplete in Setup Wizard | Makes address entry much easier |
+
+### Information You'll Need
+
+Before starting setup, have these details ready:
+- **WiFi network name (SSID)** -- must be 2.4 GHz
+- **WiFi password** -- case-sensitive
+- **Home address** -- full street address including suburb and postcode
+- **Work address** -- full street address including suburb and postcode
+- **Target arrival time** -- when you need to arrive at work (e.g., 9:00 AM)
 
 ---
 
-**Total time:** approximately 60–90 minutes for first-time setup (15–20 minutes active work, plus API key approval wait time which may take up to 48 hours).
+**Total time:** Approximately 60-90 minutes for first-time setup:
+- Active work: 15-20 minutes
+- Waiting for deployments: 10-15 minutes
+- First device connection: 2-3 minutes
+- API key approval wait time: Up to 48 hours (if not already registered)
 
 ---
 
 ## Part 1: Create Your Server
 
-Your Commute Compute server runs in the cloud for free on Vercel.
+[TIME] This entire part takes approximately 10-15 minutes.
+
+Your Commute Compute server runs in the cloud for free on Vercel. "The cloud" simply means the server runs on someone else's computer (Vercel's) instead of yours.
 
 ### Step 1.1: Create Vercel Account
 
-1. Go to [vercel.com](https://vercel.com)
-2. Click **Sign Up**
+[TIME] Approximately 2-3 minutes.
+
+[NOTE] Vercel is a free cloud hosting platform. You will not need to enter payment information for the free tier.
+
+1. Go to [vercel.com](https://vercel.com) in your web browser
+2. Click **Sign Up** (top-right corner)
 3. Choose **Continue with GitLab** (recommended)
-4. If you don't have GitLab, create one at [gitlab.com](https://gitlab.com)
+4. If you don't have a GitLab account, click "Create one" and follow the registration steps at [gitlab.com](https://gitlab.com)
+
+**What is GitLab?** GitLab is a code hosting platform. Vercel needs to connect to it to access the Commute Compute code.
 
 ### Step 1.2: Deploy Commute Compute
 
-1. Go to the Commute Compute repository
-2. Click the **Deploy to Vercel** button
-3. Click **Create** when prompted
-4. Wait 2–3 minutes for deployment
+[TIME] Approximately 3-5 minutes (mostly automated waiting).
 
-**Success!** You'll see a green checkmark and a URL like `your-project.vercel.app`
+[NOTE] "Deploy" means to copy the Commute Compute code to Vercel's servers and start it running.
+
+1. Go to the Commute Compute repository on GitLab
+2. Click the **Deploy to Vercel** button in the README
+3. Click **Create** when prompted by Vercel
+4. Wait while Vercel builds and deploys your server (takes 2-3 minutes)
+
+**Success!** You'll see a green checkmark and a deployment URL like `your-project-name.vercel.app`
+
+[IMPORTANT] Write down this URL -- you'll use it throughout setup. This is your personal Commute Compute server address.
 
 ### Step 1.3: Create Database
 
-Your server needs a database (Redis) to remember your settings.
+[TIME] Approximately 4-6 minutes.
 
-1. In Vercel, click your project name
-2. Click the **Integrations** tab
-3. Click **Browse Marketplace**
-4. Search for **Redis** and select the Upstash provider
-5. Click **Install** and select the **Free** plan
-6. Name: `commute-compute-redis`, Region: **Sydney, Australia**
-7. Click **Create**
+Your server needs a database to store your settings (addresses, API keys, preferences). We'll use Redis, a free database service.
 
-### Step 1.4: Verify Database Connection
+**What is Redis?** Redis is a storage system that remembers your configuration even when the server restarts.
 
-Redis installed via the Marketplace is automatically connected to your project.
+1. In Vercel dashboard, click your project name (e.g., "commute-compute")
+2. Click the **Integrations** tab in the navigation menu
+3. Click **Browse Marketplace** button
+4. In the search box, type **Redis** and press Enter
+5. Select the **Upstash** provider (the official Redis provider for Vercel)
+6. Click **Install** button
+7. Select the **Free** plan (256 MB storage -- more than sufficient)
+8. Configure the database:
+   - **Name:** `commute-compute-redis`
+   - **Region:** Select **Sydney, Australia** (closest to Victoria for best speed)
+9. Click **Create** and wait for provisioning (takes 30-60 seconds)
 
-1. Go to your project **Settings** > **Environment Variables**
-2. Confirm `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are listed
-3. Go to **Deployments** tab
-4. Click the **...** menu > **Redeploy** to pick up the new environment variables
+### Step 1.4: Connect Database to Your Project
+
+[TIME] Approximately 2-3 minutes.
+
+Redis installed via the Marketplace needs to be linked to your Commute Compute project.
+
+1. After database creation, you'll see a **Projects** tab
+2. Click **Connect Project**
+3. Select your Commute Compute project from the list
+4. Click **Connect**
+
+**What just happened?** Vercel automatically added two "environment variables" (configuration settings) to your project so it knows how to access the database.
+
+### Step 1.5: Restart Your Server
+
+[TIME] Approximately 2 minutes.
+
+Your server needs to restart to recognise the new database connection.
+
+1. Go to your project **Deployments** tab
+2. Find the most recent deployment (top of the list)
+3. Click the **...** menu (three dots) on the right side
+4. Click **Redeploy**
+5. Confirm by clicking **Redeploy** again
+6. Wait for deployment to complete (shows green checkmark when done)
+
+### Step 1.6: Verify Database Connection
+
+[TIME] Less than 1 minute.
+
+Let's confirm everything is working correctly.
+
+1. Open a new browser tab
+2. Go to: `https://YOUR-PROJECT-NAME.vercel.app/api/kv-status`
+   (Replace `YOUR-PROJECT-NAME` with your actual project name)
+3. You should see text that includes `"connected": true`
+
+**Success!** Your server and database are now connected and running.
 
 ---
 
 ## Part 2: Configure Your Journey
 
-Now tell the system about your commute.
+[TIME] This part takes approximately 10-15 minutes (plus API key registration if needed).
+
+Now you'll tell the system about your commute: where you live, where you work, and when you need to arrive.
 
 ### Step 2.1: Open Setup Wizard
 
-1. Open your browser
-2. Go to: `https://YOUR-PROJECT.vercel.app/setup-wizard.html`
-   - Replace `YOUR-PROJECT` with your actual Vercel project name
+[TIME] Less than 1 minute.
+
+1. Open your web browser (any browser works: Chrome, Firefox, Safari, Edge)
+2. Go to: `https://YOUR-PROJECT-NAME.vercel.app/setup-wizard.html`
+   - Replace `YOUR-PROJECT-NAME` with your actual Vercel project name
+   - Example: `https://my-commute.vercel.app/setup-wizard.html`
+
+**What is the Setup Wizard?** It's a web form that walks you through configuring your journey settings step-by-step.
+
+[IMPORTANT] Your admin authentication token will be shown once during setup. Write it down or save it securely -- you'll need it to access the Admin Panel later.
 
 ### Step 2.2: Enter Your Home Address
 
-1. Type your home address in the search box
-2. Include suburb and state (e.g., "123 Example St, Brunswick VIC 3056")
-3. Click on the correct suggestion
-4. Verify the pin on the map
-5. Click **Next**
+[TIME] Approximately 1-2 minutes.
+
+1. In the "Home Address" field, type your complete home address
+2. Include street number, street name, suburb, state, and postcode
+3. **Example:** "123 Example Street, Brunswick VIC 3056"
+4. If you added a Google Places API key earlier, suggestions will appear as you type -- click the correct one
+5. Verify the red pin on the map shows your correct location
+6. Click **Next** to continue
+
+[TIP] Be as specific as possible. "123 Smith St" is better than just "Smith St".
 
 ### Step 2.3: Enter Your Work Address
 
-1. Type your work/destination address
-2. Select from suggestions
-3. Verify on map
-4. Click **Next**
+[TIME] Approximately 1-2 minutes.
+
+1. In the "Work Address" field, type your destination address
+2. Include full details: street number, street name, suburb, state, postcode
+3. Select from autocomplete suggestions (if Google Places API enabled)
+4. Verify the location on the map
+5. Click **Next** to continue
 
 ### Step 2.4: Add a Cafe (Optional)
 
-If you want coffee recommendations:
+[TIME] Approximately 1 minute, or skip entirely.
 
-1. Type your favourite cafe name and address
-2. Select from suggestions
-3. Click **Next**
+If you want CoffeeDecision recommendations (whether you have time for coffee before work):
 
-Or click **Skip** to continue without coffee stops.
+1. Type your favourite cafe's name and address
+2. Select from autocomplete suggestions
+3. Verify location on map
+4. Click **Next**
+
+**Or skip this step:** Click **Skip** if you don't want coffee recommendations. You can always add this later via the Admin Panel.
 
 ### Step 2.5: API Keys
 
+[TIME] 2-3 minutes if you already have keys; up to 48 hours if registering for Transport Victoria key.
+
 **Transport Victoria API Key (Required for live departure data):**
 
-This key powers the live departure countdowns, which is the core feature of Commute Compute™. Without it, transit legs will not be shown on your dashboard.
+This key powers the live real-time departure countdowns, which is the core feature of Commute Compute™. Without this key, transit legs (trams, trains, buses) will not appear on your dashboard.
 
-1. If you already have a key, enter it here
-2. If you don't have one yet, see **Part 5** below for how to get one — you can come back to the Setup Wizard later to add it via the Admin Panel
+**If you already have a key:**
+1. Paste the key into the "Transport Victoria API Key" field
+2. Click **Next**
+
+**If you don't have a key yet:**
+1. Click the link to [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/)
+2. Create an account and request an API key
+3. Wait for approval (can take up to 48 hours)
+4. Come back to this step or add the key later via Admin Panel
+5. Click **Skip** for now to continue setup
+
+[NOTE] You can complete setup without this key, but your dashboard won't show live departure times until you add it.
 
 **Google Places Key (Optional):**
 
-If you entered one earlier, address search will be easier.
+This makes address entry easier with autocomplete suggestions.
+
+**If you have a key:**
+1. Paste it into the "Google Places API Key" field
+2. You should have already noticed autocomplete working in previous address steps
+
+**If you don't have a key:**
+- Click **Skip** -- you can add it later if needed
+
+### Step 2.6: Journey Preferences
+
+[TIME] Less than 1 minute.
+
+1. **Target arrival time:** Enter the time you need to arrive at work (e.g., 9:00 AM)
+   - The system uses this to calculate when you should leave home
+2. **CoffeeDecision:** Enable if you want coffee stop recommendations
+   - The system will tell you if you have time for coffee before work
 
 Click **Next** to continue.
 
-### Step 2.6: Select Your Device
+### Step 2.7: Select Your Device
 
-Choose **CC E-Ink OG** for the standard CC E-Ink display.
+[TIME] Less than 1 minute.
 
-Click **Complete Setup**
+Choose your display device type:
+- **CC E-Ink OG** -- Select this for the standard 800x480 CC E-Ink display
+- **CC E-Ink Mini** -- For smaller 400x300 displays
+- **Kindle** -- For jailbroken Kindle devices
 
-### Step 2.7: Note Your Pairing Code
+Click **Complete Setup** to finish configuration.
 
-The wizard shows a **6-character code** (like `ABC123`).
+### Step 2.8: Save Your Pairing Code and Admin Token
 
-**Write this down!** You'll need it for your device.
+[TIME] Less than 1 minute.
+
+The wizard now shows two critical pieces of information:
+
+1. **Pairing Code:** A 6-character code (like `ABC123`)
+   - Write this down -- you'll enter it on your device in Part 3
+   - This code expires after 10 minutes
+
+2. **Admin Token:** A longer authentication code
+   - Save this securely -- you'll need it to access the Admin Panel later
+   - This token does not expire
+
+[IMPORTANT] Write both of these down before closing the page. The admin token is shown only once.
+
+**Next:** Proceed to Part 3 to set up your physical display device.
 
 ---
 
 ## Part 3: Set Up Your Device
 
+[TIME] This part takes approximately 15-20 minutes total.
+
 ### Step 3.1: Unbox Your CC E-Ink Display
 
+[TIME] Approximately 1 minute.
+
 1. Remove the display from packaging
-2. Connect USB-C cable to computer
-3. The device screen may be blank — that's normal
+2. Connect USB-C cable between display and computer
+3. The device screen may be blank or show shipping/test content -- this is normal
+
+[NOTE] Keep the USB cable connected throughout the flashing process (Step 3.2).
 
 ### Step 3.2: Flash Firmware to Your Device
 
+[TIME] Approximately 5-7 minutes including connection time.
+
 You have two options to flash CCFirm™ firmware to your CC E-Ink display. The browser flasher is the easiest method and requires no software installation.
 
-### Option A: Browser Flasher (Recommended — No Software Install Required)
+**What is flashing?** "Flashing" means installing the Commute Compute firmware (device software) onto your display's memory chip. This is a one-time process.
 
-The easiest way to flash your CC E-Ink display is using the built-in browser flasher at `your-vercel-url.app/flasher`.
+### Option A: Browser Flasher (Recommended -- No Software Install Required)
+
+[TIME] Approximately 5 minutes.
+
+The easiest way to flash your CC E-Ink display is using the built-in browser flasher.
 
 **Requirements:**
-- Chrome or Edge desktop browser (Safari/Firefox not supported)
-- USB connection to your CC E-Ink display
+- Chrome or Edge desktop browser (Safari/Firefox not supported for Web Serial)
+- USB connection from display to computer
+- Desktop or laptop computer (not iPhone/iPad -- they don't support Web Serial)
 
 **Steps:**
-1. Connect the display via USB to your computer
-2. Go to your deployment's `/flasher` page: `https://YOUR-PROJECT.vercel.app/flasher`
-3. Click **Connect** and select your device from the pop-up
-4. Click **Flash** and wait for completion (approximately 2 minutes)
 
-**Note:** iPhone and Safari do not support Web Serial/Web Bluetooth. You must use Chrome or Edge on a desktop/laptop computer.
+1. Ensure display is connected via USB to your computer
+2. Open Chrome or Edge browser
+3. Go to: `https://YOUR-PROJECT-NAME.vercel.app/flasher/`
+   - Replace `YOUR-PROJECT-NAME` with your actual Vercel project name
+4. Click **Connect** button
+5. A pop-up appears showing available USB devices -- select your CC E-Ink display
+6. Click **Flash** button
+7. Wait for completion (takes approximately 2 minutes)
+8. You'll see "Flash Complete!" when done
 
-### Option B: PlatformIO CLI (Advanced)
+[IMPORTANT] Do not disconnect USB cable during flashing. Wait for "Flash Complete!" message.
+
+[NOTE] If you see "No compatible devices found", try a different USB cable or USB port. Some cables are charge-only and don't support data transfer.
+
+### Option B: PlatformIO CLI (Advanced -- For Technical Users)
+
+[TIME] Approximately 10-15 minutes including software installation.
 
 If you prefer command-line tools or the browser flasher doesn't work, you can use PlatformIO.
 
 **Step 1: Install PlatformIO**
 
-**On Mac:**
+**On macOS:**
 ```bash
+# Open Terminal (Applications > Utilities > Terminal)
 pip3 install platformio
 ```
 
 **On Windows:**
-1. Download [Python](https://python.org)
-2. Open Command Prompt
+1. Download and install [Python](https://python.org) if not already installed
+2. Open Command Prompt (search "cmd" in Start menu)
 3. Run: `pip install platformio`
 
-**Step 2: Download Firmware**
+**Step 2: Download Firmware Code**
 
-1. Download the Commute Compute code:
-   - Go to the GitLab repository
-   - Click **Code** > **Download ZIP**
-   - Extract the ZIP file
-
-2. Open Terminal (Mac) or Command Prompt (Windows)
-
-3. Navigate to the firmware folder:
+1. Go to the Commute Compute GitLab repository in your browser
+2. Click **Code** dropdown button > **Download ZIP**
+3. Extract the ZIP file to your Downloads folder
+4. Open Terminal (macOS) or Command Prompt (Windows)
+5. Navigate to the firmware folder:
    ```bash
    cd Downloads/commute-compute-main/firmware
    ```
 
-**Step 3: Flash Firmware**
+**Step 3: Flash Firmware to Device**
 
-**On Mac:**
+**On macOS:**
 ```bash
 ~/.platformio/penv/bin/pio run -e trmnl -t upload
 ```
@@ -259,26 +421,70 @@ pip3 install platformio
 pio run -e trmnl -t upload
 ```
 
-Wait for "SUCCESS" message (about 30 seconds).
+Wait for "SUCCESS" message (takes approximately 30-60 seconds).
 
-### Step 3.5: Connect Device to WiFi
+### Step 3.3: Connect Device to WiFi
 
-1. Your CC E-Ink display shows a Bluetooth setup screen
-2. On your phone, open Bluetooth settings
-3. Look for a device named `CC-XXXXXX`
-4. Connect to it
-5. When prompted, enter your WiFi:
-   - Network name (SSID)
-   - Password
+[TIME] Approximately 2-3 minutes.
 
-### Step 3.6: Enter Pairing Code
+[NOTE] Have your WiFi network name (SSID) and password ready. Your network must be 2.4 GHz -- the display does not support 5 GHz networks.
 
-1. The display now shows a 6-character pairing code
-2. In your browser, open the Setup Wizard
-3. Enter the code from your display
-4. Click **Pair Device**
+**What you'll see:** After flashing completes, your CC E-Ink display reboots and shows a Bluetooth pairing screen with device name `CC-XXXXXX`.
 
-**Success!** Your device will show your personalised dashboard within 30 seconds.
+**Steps:**
+
+1. Your CC E-Ink display shows "Ready for WiFi setup via Bluetooth" or similar message
+2. On your computer, open Chrome or Edge browser (Safari/Firefox not supported for Web Bluetooth)
+3. Go to your Setup Wizard or Admin Panel
+4. Click **Connect to Device** or **WiFi Setup**
+5. Browser will scan for nearby Bluetooth devices
+6. Select device named `CC-XXXXXX` from the list
+7. When prompted, enter your WiFi credentials:
+   - **Network name (SSID):** Your WiFi network name (e.g., "HomeWiFi")
+   - **Password:** Your WiFi password (case-sensitive)
+8. Click **Submit** or **Connect**
+9. Display will reboot and connect to WiFi (takes 30-60 seconds)
+
+[TIP] If WiFi scanning does not show your network, ensure your router's 2.4 GHz band is enabled. Some dual-band routers disable 2.4 GHz when only 5 GHz is active.
+
+[TIP] If selecting a scanned network does not populate the SSID field in the browser, try typing your network name manually instead.
+
+**What you'll see next:** Display shows "Connected to WiFi" with an IP address, then shows a 6-character pairing code.
+
+### Step 3.4: Enter Pairing Code
+
+[TIME] Approximately 1-2 minutes.
+
+**What is pairing?** Pairing links your physical display to your specific Commute Compute server so it knows where to fetch dashboard data.
+
+1. The display now shows a 6-character pairing code (like `ABC123`)
+2. In your browser, go to the Setup Wizard or Admin Panel
+3. Find the "Device Pairing" or "Enter Pairing Code" section
+4. Type the 6-character code shown on your display
+5. Click **Pair Device** button
+
+[NOTE] Pairing codes expire after 10 minutes. If your code expires, the display will generate a new one automatically.
+
+### Step 3.5: Wait for First Dashboard Load
+
+[TIME] Approximately 2-3 minutes.
+
+After pairing succeeds:
+
+1. Display shows "Pairing successful!" or similar confirmation
+2. Display begins fetching dashboard data from your server
+3. Screen may appear blank during initial fetch -- this is normal
+4. First dashboard image appears after 2-3 minutes
+
+[IMPORTANT] Do not power off or reset the display during initial connection. The first load takes longer than subsequent refreshes.
+
+**Success!** Your device will show your personalised Commute Compute™ dashboard with:
+- Current time and date
+- When to leave home
+- Journey legs (walk, tram/train, walk)
+- Live departure countdowns (if Transport Victoria API key configured)
+- Weather and service status
+- CoffeeDecision recommendation (if enabled)
 
 ---
 

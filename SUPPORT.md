@@ -6,6 +6,8 @@
 
 **System Version:** v4.2.0
 
+> **Looking for technical help?** See the [Setup Guide](SETUP_GUIDE.md), [Complete Beginner Guide](docs/guides/COMPLETE-BEGINNER-GUIDE.md#troubleshooting), or open a [GitLab Issue](https://gitlab.com/angusbergman/commute-compute-system/issues).
+
 Thank you for considering supporting Commute Compute™! This project is developed and maintained by **Angus Bergman** as a passion project to make Australian public transport more accessible.
 
 ---

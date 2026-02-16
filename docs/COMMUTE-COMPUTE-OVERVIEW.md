@@ -71,7 +71,7 @@ All trademarks © 2026 Angus Bergman.
 
 ### Primary: Australian Capital City Commuters
 - Daily train/tram/bus commuters in Melbourne, Sydney, Brisbane
-- Want to optimize their morning routine
+- Want to optimise their morning routine
 - Value knowing exactly when to leave
 - Appreciate the "coffee time" calculation
 
@@ -283,7 +283,7 @@ The following images demonstrate how the CommuteCompute™ engine handles variou
 - Train is delayed +8 minutes
 - Arrival pushed to 9:18 (+8 min late)
 - [WARNING] Coffee SKIPPED -- "Running late"
-- Engine automatically removed coffee to minimize delay
+- Engine automatically removed coffee to minimise delay
 
 **Visual elements:**
 - Dashed border on coffee leg = SKIP state
