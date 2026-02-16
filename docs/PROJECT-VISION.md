@@ -82,7 +82,7 @@ Create a **"set and forget"** smart transit display that tells you exactly when 
 
 ### Primary: Australian Capital City Commuters
 - Daily train/tram/bus commuters in Melbourne, Sydney, Brisbane
-- Want to optimize morning routine
+- Want to optimise morning routine
 - Value knowing exactly when to leave
 - Appreciate "coffee time" calculation
 

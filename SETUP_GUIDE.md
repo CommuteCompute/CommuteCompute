@@ -28,28 +28,39 @@ Setting up Commute Compute involves four steps:
 
 ---
 
-## Prerequisites
+## Before You Begin
+
+Before starting setup, gather these items:
 
 | Requirement | Description |
 |-------------|-------------|
-| Vercel account | Free tier works perfectly |
+| Vercel account | Free tier works perfectly -- sign up at [vercel.com](https://vercel.com) |
 | CC E-Ink display | Or jailbroken Kindle |
-| Transport Victoria API key | Required for live departure data -- register at [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/) |
-| Google Places API key | Optional -- for address autocomplete |
-| Modern web browser | The Admin Panel, Setup Wizard, and browser-based flasher require a modern web browser (Chrome, Firefox, Safari, or Edge). Internet Explorer is not supported. The browser-based flasher requires Chrome or Edge (Web Serial API). |
+| WiFi network details | Network name (SSID) and password -- must be 2.4 GHz network (5 GHz not supported) |
+| Modern web browser | Chrome or Edge required for device flashing (Web Serial API). Admin Panel and Setup Wizard work with Chrome, Firefox, Safari, or Edge. Internet Explorer is not supported. |
+| Transport Victoria API key | Required for live departure data -- register at [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/). Approval may take up to 48 hours. |
+| Google Places API key | Optional -- for address autocomplete in Setup Wizard |
+
+[IMPORTANT] Your admin authentication token is shown only once during setup. Write it down or save it securely before proceeding.
+
+[NOTE] Keep your WiFi network details handy -- you'll need them during device pairing (Step 4.2).
 
 ---
 
 ## Step 1: Deploy to Vercel
+
+[TIME] This step takes approximately 3-5 minutes.
 
 ### 1.1 One-Click Deploy (Recommended)
 
 1. Click the **Deploy with Vercel** button in the repository README
 2. Connect your GitLab account when prompted
 3. Click **Deploy**
-4. Wait for deployment to complete (~2 minutes)
+4. Wait for deployment to complete (approximately 2 minutes)
 
 Your server URL will be: `https://your-project-name.vercel.app`
+
+[NOTE] Write down your server URL -- you'll need it throughout setup.
 
 ### 1.2 Verify Deployment
 
@@ -57,9 +68,13 @@ Open: `https://your-project-name.vercel.app/api/status`
 
 You should see a JSON response confirming the server is running.
 
+**Next:** Proceed to Step 2 to add persistent storage.
+
 ---
 
 ## Step 2: Add Redis (Persistent Storage)
+
+[TIME] This step takes approximately 5-7 minutes.
 
 Redis provides persistent storage for your configuration, API keys, and device pairing codes. This is required for Commute Compute to function across serverless invocations.
 
@@ -78,7 +93,7 @@ Redis provides persistent storage for your configuration, API keys, and device p
    - **Name:** `commute-compute-redis`
    - **Region:** Sydney, Australia (for best Australian latency)
    - **Plan:** Free (256MB storage, 500K commands/month -- more than sufficient)
-3. Click **Create**
+3. Click **Create** (takes approximately 30 seconds)
 
 ### 2.3 Connect to Project
 
@@ -91,11 +106,12 @@ This automatically injects the required environment variables (`UPSTASH_REDIS_RE
 
 ### 2.4 Redeploy
 
-The Redis connection requires a redeploy to take effect:
+The Redis connection requires a redeploy to take effect (approximately 2 minutes):
 
 1. Go to your project's **Deployments** tab
 2. Click the **...** menu on the latest deployment
 3. Click **Redeploy**
+4. Wait for deployment to complete
 
 ### 2.5 Verify Connection
 
@@ -103,13 +119,19 @@ Open: `https://your-project-name.vercel.app/api/kv-status`
 
 Expected: `"connected": true`
 
+**Next:** Proceed to Step 3 to configure your journey settings.
+
 ---
 
 ## Step 3: Run Setup Wizard
 
+[TIME] This step takes approximately 10-15 minutes (plus API key approval wait time if you haven't registered yet).
+
 ### 3.1 Open Setup Wizard
 
 Navigate to: `https://your-project-name.vercel.app/setup-wizard.html`
+
+[IMPORTANT] Your admin authentication token will be shown once during this process. Write it down or save it securely.
 
 ### 3.2 Device Selection
 
@@ -124,20 +146,27 @@ If you have a Google Places API key, enter it first for better address autocompl
 - Get a key from [Google Cloud Console](https://console.cloud.google.com/)
 - Enable **Places API (New)**
 
+[NOTE] This is optional but makes address entry much easier in the next step.
+
 ### 3.4 Home and Work Addresses
 
 Enter your home and work addresses:
 - Type the full address including suburb and state
-- Select from the autocomplete suggestions
+- Select from the autocomplete suggestions (if you entered a Google Places key)
+- Verify the location on the map
 
 **Example:** `123 Example Street, Suburb VIC 3000`
 
 ### 3.5 Transport Victoria API Key (Required for live departure data)
 
 This key is essential for live real-time departure countdowns -- the core feature of Commute Compute™:
+
 1. Go to [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/)
 2. Create an account and request an API key
-3. Enter the key in the wizard
+3. Wait for approval (may take up to 48 hours)
+4. Enter the key in the wizard
+
+[NOTE] You can complete setup without this key, but transit legs will not appear on your dashboard until you add it via the Admin Panel.
 
 ### 3.6 Journey Settings
 
@@ -148,15 +177,33 @@ This key is essential for live real-time departure countdowns -- the core featur
 
 1. Review your configuration
 2. Click **Complete Setup**
-3. Note your pairing code (6 characters) for device pairing
+3. Write down your pairing code (6 characters) -- you'll need it in Step 4.3
+4. Save your admin authentication token securely
+
+**Next:** Proceed to Step 4 to set up your physical device.
 
 ---
 
 ## Step 4: Device Setup
 
+[TIME] This step takes approximately 15-20 minutes total (5 minutes flashing, 2-3 minutes WiFi setup, 2-3 minutes pairing, 5-10 minutes first dashboard load).
+
 ### For CC E-Ink Displays
 
 #### 4.1 Flash Firmware
+
+[TIME] Approximately 5 minutes including connection time.
+
+**Browser-Based Flasher (Recommended):**
+
+Use the browser-based flasher at `/flasher/` (Chrome or Edge required for Web Serial API):
+
+1. Connect your CC E-Ink display via USB to your computer
+2. Navigate to: `https://your-project-name.vercel.app/flasher/`
+3. Click **Connect** and select your device from the pop-up
+4. Click **Flash** and wait for completion (approximately 2 minutes)
+
+**Command-Line Flasher (Advanced):**
 
 **Requirements:**
 - PlatformIO installed
@@ -170,24 +217,36 @@ pio run -e trmnl -t upload --upload-port /dev/cu.usbmodem*
 
 **Windows:** Use `COM3` or similar instead of `/dev/cu.usbmodem*`
 
-Or use the browser-based flasher at `/flasher/` (Chrome/Edge, Web Serial).
-
 #### 4.2 WiFi Provisioning (Phase 1)
+
+[TIME] Approximately 2-3 minutes.
+
+[NOTE] Have your WiFi network name (SSID) and password ready. Your network must be 2.4 GHz (5 GHz networks are not supported by the ESP32-C3 chipset).
 
 1. Device displays BLE setup screen
 2. Connect to device via Bluetooth:
    - Device name: `CC-XXXXXX`
 3. Send WiFi credentials:
-   - SSID (network name)
-   - Password
-4. Device connects to WiFi
+   - **SSID:** Your network name (e.g., "HomeWiFi")
+   - **Password:** Your network password
+4. Device connects to WiFi and reboots
+
+[TIP] If WiFi scanning does not show your network, ensure your router's 2.4 GHz band is enabled. Some dual-band routers disable 2.4 GHz when 5 GHz is active.
+
+[TIP] If selecting a scanned network does not populate the SSID field, try typing the network name manually instead of selecting from the scan results.
 
 #### 4.3 Pairing (Phase 2)
 
-1. Device displays 6-character pairing code
-2. In Setup Wizard, enter the code
+[TIME] Approximately 2-3 minutes, then 5-10 minutes for first dashboard load.
+
+1. Device displays 6-character pairing code on screen
+2. In Setup Wizard (or Admin Panel), enter the code from your device
 3. Click **Pair Device**
-4. Device receives configuration and displays dashboard
+4. Device receives configuration and begins fetching dashboard data
+
+[IMPORTANT] After pairing, allow 2-3 minutes for the device to connect to WiFi and fetch its first dashboard image. The first load takes longer than subsequent refreshes. Do not power off or reset the device during this time.
+
+[NOTE] The screen will remain blank during initial connection. This is normal. Wait at least 3 minutes before troubleshooting.
 
 ### For Kindle Devices
 
@@ -239,18 +298,32 @@ Access the admin panel at: `https://your-project-name.vercel.app/admin.html`
 
 ### Display blank after flashing
 
-- This is normal. After flashing, allow 2--3 minutes for the device to connect to WiFi and fetch its first dashboard image.
-- The first load takes longer than subsequent refreshes. Do not power off or reset during this time.
+This is normal behaviour during initial setup:
 
-### Device not connecting
+1. After flashing, the device must complete several steps before showing content:
+   - Boot and initialise hardware (30 seconds)
+   - Connect to WiFi (30-60 seconds)
+   - Pair with server (10-30 seconds)
+   - Fetch first dashboard image (60-90 seconds)
 
-1. Ensure your router broadcasts on 2.4 GHz (the ESP32-C3 does not support 5 GHz networks)
-2. If WiFi scanning does not show your network, check that your router's 2.4 GHz band is enabled
-3. If selecting a scanned network does not populate the SSID field, try typing the network name manually
-4. Ensure WiFi credentials are correct
-5. Check device is within WiFi range
-6. Verify Vercel deployment is successful
-7. Check `/api/status` endpoint
+2. **Total expected wait time:** 2-3 minutes from power-on to first image
+
+3. If the display remains blank after 5 minutes:
+   - Check serial output for error messages (see firmware/QUICK_START.md)
+   - Verify WiFi credentials are correct
+   - Ensure device is within WiFi range
+   - Check `/api/status` endpoint is responding
+
+[IMPORTANT] Do not power off or reset the device during the initial 3-minute connection period.
+
+### Device not connecting to WiFi
+
+1. **Network frequency:** Ensure your router broadcasts on 2.4 GHz (the ESP32-C3 does not support 5 GHz networks)
+2. **Network visibility:** If WiFi scanning does not show your network, check that your router's 2.4 GHz band is enabled
+3. **Manual entry:** If selecting a scanned network does not populate the SSID field, try typing the network name manually
+4. **Credentials:** Verify WiFi password is correct (passwords are case-sensitive)
+5. **Signal strength:** Check device is within WiFi range (try moving closer to router)
+6. **Server status:** Verify Vercel deployment is successful by checking `/api/status` endpoint
 
 ### No departure data
 
