@@ -81,6 +81,94 @@
         .step-tab.active { background: #4fb28e; color: #0f172a; }
         .step-tab.completed { background: #22c55e; color: #0f172a; }
 
+        /* Compliance Gate */
+        .compliance-gate {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: #0f172a; z-index: 10000;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px; overflow-y: auto;
+        }
+        .compliance-gate.hidden { display: none; }
+        .compliance-card {
+            max-width: 680px; width: 100%;
+            background: rgba(30, 41, 59, 0.95);
+            border-left: 4px solid #4fb28e;
+            border-radius: 12px; padding: 36px;
+            color: #f1f5f9;
+        }
+        .compliance-card h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; text-align: center; }
+        .compliance-card .subtitle { font-size: 13px; color: #94a3b8; text-align: center; margin-bottom: 24px; }
+        .compliance-section {
+            background: rgba(15, 23, 42, 0.6); border: 1px solid #3d5278;
+            border-radius: 8px; padding: 16px; margin-bottom: 12px;
+        }
+        .compliance-section h3 {
+            font-size: 14px; font-weight: 600; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .compliance-check {
+            display: flex; align-items: flex-start; gap: 10px;
+            cursor: pointer; padding: 8px 0;
+        }
+        .compliance-check input[type="checkbox"] {
+            appearance: none; -webkit-appearance: none;
+            width: 20px; height: 20px; min-width: 20px;
+            border: 2px solid #4fb28e; border-radius: 4px;
+            background: transparent; cursor: pointer;
+            margin-top: 2px; position: relative;
+        }
+        .compliance-check input[type="checkbox"]:checked {
+            background: #4fb28e;
+        }
+        .compliance-check input[type="checkbox"]:checked::after {
+            content: ''; position: absolute;
+            left: 5px; top: 1px; width: 6px; height: 12px;
+            border: solid #0f172a; border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        .compliance-check input[type="checkbox"]:focus-visible {
+            outline: 2px solid #667eea; outline-offset: 2px;
+        }
+        .compliance-check label {
+            font-size: 13px; color: #e2e8f0; line-height: 1.5; cursor: pointer;
+        }
+        .compliance-check label a {
+            color: #4fb28e; text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        .compliance-check label a:hover { color: #6ec9a8; }
+        .compliance-check label a:focus-visible {
+            outline: 2px solid #4fb28e; outline-offset: 2px; border-radius: 2px;
+        }
+        .compliance-continue {
+            display: block; width: 100%; padding: 14px;
+            background: #3d5278; color: #64748b;
+            border: none; border-radius: 8px;
+            font-size: 15px; font-weight: 600;
+            cursor: not-allowed; margin-top: 20px;
+            transition: background 0.2s, color 0.2s, cursor 0.2s;
+        }
+        .compliance-continue.enabled {
+            background: #4fb28e; color: #0f172a;
+            cursor: pointer;
+        }
+        .compliance-continue.enabled:hover { background: #3da07c; }
+        .compliance-continue.enabled:focus-visible {
+            outline: 2px solid #667eea; outline-offset: 2px;
+        }
+        .compliance-links {
+            display: flex; justify-content: center; gap: 16px;
+            margin-top: 16px; flex-wrap: wrap;
+        }
+        .compliance-links a {
+            font-size: 12px; color: #94a3b8; text-decoration: none;
+            padding: 4px 8px; border: 1px solid #3d5278; border-radius: 4px;
+        }
+        .compliance-links a:hover { color: #4fb28e; border-color: #4fb28e; }
+        .compliance-links a:focus-visible {
+            outline: 2px solid #4fb28e; outline-offset: 2px;
+        }
+
         .step-content { display: none; }
         .step-content.active { display: block; animation: fadeIn 0.3s; }
 
@@ -318,10 +406,77 @@
         <symbol id="icon-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 12h14M12 5l7 7-7 7"/>
         </symbol>
+        <symbol id="icon-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </symbol>
     </svg>
 
     <!-- Screen reader announcements -->
     <div id="step-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- ========== LEGAL COMPLIANCE GATE (Must be acknowledged before setup) ========== -->
+    <div id="compliance-gate" class="compliance-gate" role="dialog" aria-modal="true" aria-labelledby="compliance-title" aria-describedby="compliance-desc">
+        <div class="compliance-card">
+            <img src="/assets/brand/cc-logo-512.png" alt="Commute Compute" style="display: block; margin: 0 auto 16px; width: 200px; height: auto;">
+            <h1 id="compliance-title">Legal &amp; Privacy Acknowledgment</h1>
+            <p id="compliance-desc" class="subtitle">Please review and acknowledge the following before setting up Commute Compute&#8482;. Your acknowledgment is required to proceed.</p>
+
+            <div class="compliance-section">
+                <h3><svg class="icon-sm"><use href="#icon-shield"/></svg> Privacy &amp; Data Protection</h3>
+                <div class="compliance-check">
+                    <input type="checkbox" id="ack-privacy" aria-labelledby="ack-privacy-label">
+                    <label for="ack-privacy" id="ack-privacy-label">I have read and understand the <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. I understand this is a self-hosted system where all data is stored in my own Redis database. The project maintainer does not collect, access, or store any of my data.</label>
+                </div>
+                <div class="compliance-check">
+                    <input type="checkbox" id="ack-data-controller" aria-labelledby="ack-data-controller-label">
+                    <label for="ack-data-controller" id="ack-data-controller-label">I understand I am the <strong>data controller</strong> for my deployment and am responsible for its compliance with applicable privacy laws in my jurisdiction. If I configure this system for another person, I will inform them about data collection and their right to request deletion.</label>
+                </div>
+                <div class="compliance-check">
+                    <input type="checkbox" id="ack-cross-border" aria-labelledby="ack-cross-border-label">
+                    <label for="ack-cross-border" id="ack-cross-border-label">I understand that some third-party services (Vercel, Upstash Redis, Google Places API) may process data outside Australia. I have reviewed the <a href="/privacy.html#third-party-services" target="_blank" rel="noopener">Third-Party Services</a> section of the Privacy Policy.</label>
+                </div>
+            </div>
+
+            <div class="compliance-section">
+                <h3><svg class="icon-sm"><use href="#icon-lock"/></svg> Licensing &amp; Attribution</h3>
+                <div class="compliance-check">
+                    <input type="checkbox" id="ack-licence" aria-labelledby="ack-licence-label">
+                    <label for="ack-licence" id="ack-licence-label">I understand this software is licensed under <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a> with <a href="/legal.html#dual-licence" target="_blank" rel="noopener">dual licensing</a> available for commercial use. If I modify and deploy this software over a network, I must provide source code access to users.</label>
+                </div>
+                <div class="compliance-check">
+                    <input type="checkbox" id="ack-attribution" aria-labelledby="ack-attribution-label">
+                    <label for="ack-attribution" id="ack-attribution-label">I will maintain all required <a href="/attribution.html" target="_blank" rel="noopener">third-party attributions</a> including Transport Victoria OpenData (CC BY 4.0), Bureau of Meteorology (CC BY 3.0 AU), and OpenStreetMap (ODbL).</label>
+                </div>
+            </div>
+
+            <div class="compliance-section">
+                <h3><svg class="icon-sm"><use href="#icon-warning"/></svg> Liability &amp; Warranty</h3>
+                <div class="compliance-check">
+                    <input type="checkbox" id="ack-liability" aria-labelledby="ack-liability-label">
+                    <label for="ack-liability" id="ack-liability-label">I understand this software is provided &ldquo;AS IS&rdquo; with <strong>no warranty</strong> of any kind. Subject to Australian Consumer Law non-excludable guarantees, liability is limited as described in the <a href="/legal.html#liability" target="_blank" rel="noopener">Legal Terms</a>.</label>
+                </div>
+            </div>
+
+            <div class="compliance-section">
+                <h3><svg class="icon-sm"><use href="#icon-lock"/></svg> Security</h3>
+                <div class="compliance-check">
+                    <input type="checkbox" id="ack-security" aria-labelledby="ack-security-label">
+                    <label for="ack-security" id="ack-security-label">I understand that device webhook URLs and admin tokens should be treated as sensitive credentials. I will secure my deployment by using a strong admin token and keeping my Redis credentials private.</label>
+                </div>
+            </div>
+
+            <button id="compliance-continue-btn" class="compliance-continue" disabled aria-disabled="true">
+                Acknowledge all items above to continue
+            </button>
+
+            <div class="compliance-links">
+                <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>
+                <a href="/legal.html" target="_blank" rel="noopener">Legal Terms</a>
+                <a href="/attribution.html" target="_blank" rel="noopener">Attributions</a>
+                <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0 Licence</a>
+            </div>
+        </div>
+    </div>
 
     <div class="container" id="wizard-main" role="main">
         <div class="wizard-card">
@@ -745,6 +900,14 @@
                    style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: rgba(30, 41, 59, 0.8); color: #94a3b8; border: 1px solid #3d5278; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 13px;">
                     Privacy
                 </a>
+                <a href="/legal.html"
+                   style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: rgba(30, 41, 59, 0.8); color: #94a3b8; border: 1px solid #3d5278; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 13px;">
+                    Legal
+                </a>
+                <a href="/attribution.html"
+                   style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: rgba(30, 41, 59, 0.8); color: #94a3b8; border: 1px solid #3d5278; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 13px;">
+                    Attributions
+                </a>
             </div>
             <div class="cc-footer-attribution" id="cc-footer-attributions">
                 &#169; 2026 Angus Bergman &#8226; <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0 (Dual Licence)</a>
@@ -783,6 +946,65 @@
 
     <!-- Main Wizard Script -->
     <script type="module">
+    // ============================================
+    // COMPLIANCE GATE
+    // ============================================
+    (function initComplianceGate() {
+        const accepted = localStorage.getItem('cc-terms-accepted');
+        const gate = document.getElementById('compliance-gate');
+        if (accepted && gate) {
+            gate.classList.add('hidden');
+            gate.setAttribute('aria-hidden', 'true');
+            return;
+        }
+
+        // Hide wizard content while gate is active
+        const wizardMain = document.getElementById('wizard-main');
+        if (wizardMain) wizardMain.setAttribute('aria-hidden', 'true');
+
+        const checkboxes = gate.querySelectorAll('input[type="checkbox"]');
+        const continueBtn = document.getElementById('compliance-continue-btn');
+
+        function updateContinueState() {
+            const allChecked = Array.from(checkboxes).every(function(cb) { return cb.checked; });
+            if (allChecked) {
+                continueBtn.disabled = false;
+                continueBtn.setAttribute('aria-disabled', 'false');
+                continueBtn.classList.add('enabled');
+                continueBtn.textContent = 'I Acknowledge \u2014 Continue to Setup';
+            } else {
+                continueBtn.disabled = true;
+                continueBtn.setAttribute('aria-disabled', 'true');
+                continueBtn.classList.remove('enabled');
+                var remaining = Array.from(checkboxes).filter(function(cb) { return !cb.checked; }).length;
+                continueBtn.textContent = remaining + ' item' + (remaining !== 1 ? 's' : '') + ' remaining';
+            }
+        }
+
+        checkboxes.forEach(function(cb) {
+            cb.addEventListener('change', updateContinueState);
+        });
+
+        continueBtn.addEventListener('click', function() {
+            if (continueBtn.disabled) return;
+            var timestamp = new Date().toISOString();
+            localStorage.setItem('cc-terms-accepted', timestamp);
+            gate.classList.add('hidden');
+            gate.setAttribute('aria-hidden', 'true');
+            if (wizardMain) wizardMain.removeAttribute('aria-hidden');
+            // Focus the wizard heading
+            var heading = document.querySelector('.wizard-header h1');
+            if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus(); }
+            // Announce to screen readers
+            var announcer = document.getElementById('step-announcer');
+            if (announcer) announcer.textContent = 'Legal acknowledgment complete. Setup wizard is now available.';
+        });
+
+        // Focus first checkbox on load
+        if (checkboxes.length > 0) checkboxes[0].focus();
+        updateContinueState();
+    })();
+
     // ============================================
     // STATE
     // ============================================

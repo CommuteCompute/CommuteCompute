@@ -17,7 +17,7 @@
 | `src/engines/commute-compute.js` | 838 | Multi-state engine, GTFS-RT, weather | api/commutecompute.js, livedash.js |
 | `src/core/smart-journey-engine.js` | 706 | Route discovery, journey display | api/zones.js, api/screen.js, server.js |
 | `src/services/journey-planner.js` | 1,131 | Route segment building | server.js, route-planner.js |
-| `src/services/smart-route-recommender.js` | 853 | Route optimization | commute-compute.js, journey-planner.js |
+| `src/services/smart-route-recommender.js` | 853 | Route optimisation | commute-compute.js, journey-planner.js |
 | `src/services/smart-journey-integration.js` | 364 | Integration layer | (unused?) |
 
 **Problem:** Two parallel engines doing similar things, causing confusion and maintenance burden.
@@ -61,7 +61,7 @@ BEFORE (5 files, 3,892 lines)          AFTER (3 files, ~1,800 lines)
 │ (706) - MERGE & DELETE  │     │      ┌─────────────────────────────┐
 │ - Route discovery       │─────┘      │ smart-route-recommender.js  │
 │ - Journey display       │            │ (~850) - KEEP AS-IS         │
-└─────────────────────────┘            │ - Route optimization        │
+└─────────────────────────┘            │ - Route optimisation        │
                                        │ - Pattern matching          │
 ┌─────────────────────────┐            └─────────────────────────────┘
 │ journey-planner.js      │

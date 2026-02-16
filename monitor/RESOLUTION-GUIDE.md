@@ -192,7 +192,7 @@ Comprehensive troubleshooting guide for all monitored endpoints, pages, and data
 
 2. **Large file considerations:**
    - May timeout on slow connections
-   - Consider code splitting for optimization
+   - Consider code splitting for optimisation
 
 3. **Test locally:**
    ```bash
@@ -402,7 +402,7 @@ Comprehensive troubleshooting guide for all monitored endpoints, pages, and data
 **Resolution:**
 1. Check function memory in `vercel.json`
 2. Increase to 1024MB or 3008MB (max)
-3. Optimize canvas operations
+3. Optimise canvas operations
 4. Add memory profiling
 
 ### Build Failures

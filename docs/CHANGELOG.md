@@ -98,7 +98,7 @@ All notable changes to this project are documented here.
 ## [Unreleased]
 
 ### Planned
-- Partial refresh optimization (zone-based updates working on hardware)
+- Partial refresh optimisation (zone-based updates working on hardware)
 - Additional Australian state support (NSW, QLD in testing)
 
 ---

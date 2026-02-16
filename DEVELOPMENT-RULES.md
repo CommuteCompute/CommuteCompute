@@ -2654,7 +2654,7 @@ function safePath(userInput, baseDir) {
 | **Lock dependencies** | Always commit `package-lock.json` | Every install |
 | **Audit regularly** | Run `npm audit` | Before every deploy |
 | **Review updates** | Check changelogs before updating | Each update |
-| **Minimize deps** | Remove unused dependencies | Monthly |
+| **Minimise deps** | Remove unused dependencies | Monthly |
 | **Pin versions** | Use exact versions for critical deps | As needed |
 
 #### 17.7.2 Pre-Deploy Audit
@@ -3195,7 +3195,7 @@ The following require **explicit approval** before modification:
 | Zone layout positions | CCDashDesignV15.0 | UI consistency |
 | Status bar variants | CCDashDesignV15.0 | User expectations |
 | Leg states | CCDashDesignV15.0 | Visual language |
-| Color palette | CCDashDesignV15.0 | E-ink optimization |
+| Colour palette | CCDashDesignV15.0 | E-ink optimisation |
 | Mode icons | CCDashDesignV15.0 | Brand consistency |
 | CoffeeDecision logic | CCDashDesignV15.0 | Core feature |
 | Anti-brick rules | This document | Device safety |

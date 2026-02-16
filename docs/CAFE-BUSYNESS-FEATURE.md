@@ -639,7 +639,7 @@ Check console logs when calculating route:
 
 **Rate limiting**:
 - Google Places: 1000 requests/day (free tier)
-- System uses cache to minimize calls
+- System uses cache to minimise calls
 - Falls back gracefully if quota exceeded
 
 ### Response Times

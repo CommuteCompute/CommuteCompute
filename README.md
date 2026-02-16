@@ -336,6 +336,10 @@ This makes Commute Compute&#8482; one of the first commuter tools to fully suppo
 
 ## Quick Start
 
+### Prerequisites
+
+- Review [PRIVACY.md](PRIVACY.md) to understand data handling practices
+
 ### 1. Deploy to Vercel
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://gitlab.com/angusbergman/commute-compute-system)
