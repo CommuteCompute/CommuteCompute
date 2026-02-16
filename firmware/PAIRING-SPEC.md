@@ -4,18 +4,18 @@
 
 # CCFirm™ Device Pairing Specification
 
-**Version:** 2.0 (Hybrid BLE + Pairing)
-**Last Updated:** 2026-02-01
-**Copyright:** (c) 2026 Angus Bergman — AGPL-3.0 Dual License
+**Version:** 2.1 (Hybrid BLE + Pairing Code Fallback)
+**Last Updated:** 2026-02-16
+**Copyright:** (c) 2026 Angus Bergman — AGPL-3.0 Dual Licence
 
 ---
 
 ## Overview
 
-This document specifies the **hybrid two-phase provisioning flow** for CCFirm firmware:
+This document specifies the **hybrid provisioning flow** for CCFirm™ firmware:
 
-1. **Phase 1 (BLE):** WiFi credentials sent via Bluetooth Low Energy
-2. **Phase 2 (Pairing Code):** Server configuration via 6-character code
+1. **Phase 1 (BLE):** WiFi credentials AND webhook URL sent via Bluetooth Low Energy (SSID + password + server URL)
+2. **Phase 2 (Pairing Code):** FALLBACK ONLY — if BLE URL delivery fails, device displays a 6-character pairing code for server-side URL retrieval
 
 This architecture avoids WiFiManager/captive portal which crashes ESP32-C3.
 
@@ -26,18 +26,19 @@ This architecture avoids WiFiManager/captive portal which crashes ESP32-C3.
 | Approach | Problem |
 |----------|---------|
 | WiFiManager / Captive Portal | **CRASHES** ESP32-C3 with 0xbaad5678 Guru Meditation |
-| BLE sends everything | Works, but couples WiFi and server config |
-| **Hybrid (BLE + Pairing)** | [YES] Clean separation, no crashes, re-configurable |
+| BLE WiFi only + Pairing Code | Works, but requires two-phase setup with polling |
+| **BLE sends WiFi + Webhook URL** | **[YES]** Single-phase, no crashes, no hardcoded URLs, pairing code as fallback |
 
 **Benefits:**
 - No captive portal crashes
-- Minimal BLE payload (WiFi only)
-- Rich server config via pairing
-- Re-configurable without BLE
+- Single-phase provisioning — SSID + password + webhook URL all via BLE
+- No hardcoded server URLs — webhook URL comes from Setup Wizard
+- Pairing code retained as fallback if BLE URL delivery fails
+- Re-configurable via factory reset + BLE reprovisioning
 
 ---
 
-## Phase 1: BLE WiFi Provisioning
+## Phase 1: BLE Provisioning (WiFi + Webhook URL)
 
 ### User Flow
 
@@ -47,21 +48,25 @@ This architecture avoids WiFiManager/captive portal which crashes ESP32-C3.
 4. User clicks "Connect Device"
 5. Browser shows Bluetooth device picker
 6. User selects "CommuteCompute-XXXX"
-7. Wizard reads available WiFi networks
+7. Wizard reads available WiFi networks via BLE (CC000006)
 8. User selects network and enters password
-9. Wizard sends SSID + password via BLE
-10. Device saves credentials and connects to WiFi
+9. User completes journey configuration (addresses, preferences)
+10. Wizard sends SSID + password + webhook URL via BLE (3 characteristics)
+11. Device saves all three to NVS and connects to WiFi
+12. Device proceeds directly to dashboard
 
 ### BLE Characteristics
 
-| UUID | Name | Direction | Purpose |
-|------|------|-----------|---------|
-| `CC000002-0000-1000-8000-00805F9B34FB` | SSID | Write | WiFi network name |
-| `CC000003-0000-1000-8000-00805F9B34FB` | Password | Write | WiFi password |
-| `CC000005-0000-1000-8000-00805F9B34FB` | Status | Read/Notify | Connection status |
-| `CC000006-0000-1000-8000-00805F9B34FB` | WiFiList | Read | Available networks (CSV) |
+| UUID | Name | Direction | Purpose | Max Size |
+|------|------|-----------|---------|----------|
+| `CC000001-0000-1000-8000-00805F9B34FB` | Service | — | BLE service UUID | — |
+| `CC000002-0000-1000-8000-00805F9B34FB` | SSID | Write | WiFi network name | 32 bytes |
+| `CC000003-0000-1000-8000-00805F9B34FB` | Password | Write | WiFi password | 64 bytes |
+| `CC000004-0000-1000-8000-00805F9B34FB` | Webhook URL | Write | Server webhook URL | 1023 bytes |
+| `CC000005-0000-1000-8000-00805F9B34FB` | Status | Read/Notify | Connection status | — |
+| `CC000006-0000-1000-8000-00805F9B34FB` | WiFiList | Read | Available networks (CSV) | — |
 
-**[PROHIBITED] NO URL CHARACTERISTIC** — Server URL comes via pairing code in Phase 2.
+**Three write characteristics (CC000002, CC000003, CC000004)** deliver WiFi credentials and webhook URL in a single BLE session. The webhook URL is constructed by the Setup Wizard as `window.location.origin + '/api/screen'`.
 
 ### BLE Setup Screen
 
@@ -87,7 +92,9 @@ This architecture avoids WiFiManager/captive portal which crashes ESP32-C3.
 
 ---
 
-## Phase 2: Pairing Code Server Config
+## Phase 2: Pairing Code (FALLBACK)
+
+**This phase is a fallback mechanism.** If BLE URL delivery (CC000004) fails or is unavailable, the device falls back to pairing code mode for server-side URL retrieval.
 
 ### Prerequisite
 
@@ -217,22 +224,23 @@ Setup wizard sends config to this endpoint.
 STATE_INIT
     │
     ▼
-STATE_CHECK_CREDENTIALS ──── Has WiFi? ──── Yes ───► STATE_WIFI_CONNECT
-    │                                                      │
-    No                                                     │
-    ▼                                                      │
-STATE_BLE_PROVISION                                        │
-    │ Advertise BLE                                        │
-    │ Wait for SSID + Password                             │
-    │ Save to Preferences                                  │
-    ▼                                                      │
-STATE_WIFI_CONNECT ◄───────────────────────────────────────┘
+STATE_CHECK_CREDENTIALS ──── Has WiFi + URL? ──── Yes ───► STATE_WIFI_CONNECT
+    │                                                            │
+    No (missing any of: SSID, password, URL)                     │
+    ▼                                                            │
+STATE_BLE_SETUP                                                  │
+    │ Advertise BLE                                              │
+    │ Receive SSID (CC000002) + Password (CC000003)              │
+    │ + Webhook URL (CC000004)                                   │
+    │ Save all 3 to NVS                                          │
+    ▼                                                            │
+STATE_WIFI_CONNECT ◄─────────────────────────────────────────────┘
     │ Connect to WiFi
     │
     ▼
 STATE_CHECK_SERVER_URL ──── Has URL? ──── Yes ───► STATE_FETCH_ZONES
     │
-    No
+    No (BLE URL delivery failed — FALLBACK)
     ▼
 STATE_PAIRING_MODE
     │ Generate 6-char code
@@ -242,6 +250,9 @@ STATE_PAIRING_MODE
     ▼
 STATE_FETCH_ZONES → STATE_RENDER → STATE_IDLE
 ```
+
+**Primary path:** BLE delivers all three values (SSID + password + URL) → device connects and fetches dashboard directly.
+**Fallback path:** If BLE URL delivery fails, device enters pairing mode for server-side URL retrieval via polling.
 
 ---
 
@@ -260,9 +271,9 @@ STATE_FETCH_ZONES → STATE_RENDER → STATE_IDLE
 
 | Scenario | Action |
 |----------|--------|
-| Change WiFi network | Factory reset → Re-provision via BLE |
-| Change server/preferences | New pairing code (no BLE needed) |
-| Move to new home | Factory reset → Full re-provision |
+| Change WiFi network | Factory reset → Re-provision via BLE (sends WiFi + URL) |
+| Change server/preferences | Factory reset → Re-provision via BLE, or use optional pairing code fallback |
+| Move to new home | Factory reset → Full re-provision via BLE |
 
 ---
 
@@ -274,15 +285,15 @@ Factory reset clears:
 - Server URL
 - All preferences
 
-Device returns to `STATE_BLE_PROVISION` and displays BLE setup screen.
+Device returns to `STATE_BLE_SETUP` and displays BLE setup screen.
 
 ---
 
 ## Security Notes
 
-- BLE credentials: WiFi password only, not server config
-- Pairing codes: Single-use, expire after 10 minutes
-- Vercel KV: Required for serverless persistence
+- BLE credentials: WiFi password and webhook URL transmitted via BLE (short-range, requires physical proximity)
+- Pairing codes: Single-use, expire after 10 minutes (fallback only)
+- Redis: Required for serverless persistence of pairing codes
 - HTTPS: Required for all server communication
 
 ---

@@ -147,7 +147,7 @@ Commute Compute™ stores the following categories of data in each user's own Re
 - No `.env` files are used — all secrets are stored in Redis via the Setup Wizard
 - No hardcoded API keys, personal addresses, or credentials exist in source code
 - The source code is fully auditable under AGPL-3.0
-- Compliance is verified by 214 automated audit checks (see [DEVELOPMENT-RULES.md](DEVELOPMENT-RULES.md))
+- Compliance is verified by 240+ automated audit checks (see [DEVELOPMENT-RULES.md](DEVELOPMENT-RULES.md))
 
 ### Logging
 

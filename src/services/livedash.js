@@ -3,7 +3,7 @@
  * Part of the Commute Compute System™
  * 
  * Renders CommuteCompute™ output as a live dashboard image
- * optimized for different e-ink device variants.
+ * optimised for different e-ink device variants.
  * 
  * Supported devices:
  * - CC E-Ink OG (800×480 landscape)
@@ -229,7 +229,7 @@ export class LiveDash {
   }
 
   /**
-   * Render dashboard optimized for the selected device
+   * Render dashboard optimised for the selected device
    */
   renderForDevice(data) {
     const { width, height, scale } = this.deviceConfig;

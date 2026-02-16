@@ -97,4 +97,4 @@ be regenerated from the branding sources without explicit approval.
 - Canonical source: `cc-logo-square.png` (900x900) -- all size variants derived from this
 
 ---
-*Commute Compute(TM) System -- Copyright (c) 2026 Angus Bergman -- AGPL-3.0 Dual License*
+*Commute Compute(TM) System -- Copyright (c) 2026 Angus Bergman -- AGPL-3.0 Dual Licence*

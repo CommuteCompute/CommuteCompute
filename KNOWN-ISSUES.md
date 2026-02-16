@@ -19,11 +19,11 @@
 
 When using the `bbep.begin(EPD_TRMNL_OG)` preset with the `FONT_12x16` font size, all text renders rotated 90 degrees counter-clockwise, making the e-ink display unreadable.
 
-**What this means for you:** If you are building or modifying the firmware yourself, using a larger font size on your CC E-Ink display can cause all the text to appear sideways. The standard firmware already avoids this problem — you only need to worry about it if you are customising the firmware code.
+**What this means for you:** If you are building or modifying the firmware yourself, using a larger font size on your TRMNL display can cause all the text to appear sideways. The standard firmware already avoids this problem — you only need to worry about it if you are customising the firmware code.
 
 ### Affected Configuration
 
-- Hardware: CC E-Ink OG (TRMNL OG hardware — ESP32-C3 chip + 7.5" Waveshare e-ink panel)
+- Hardware: TRMNL OG (ESP32-C3 chip + 7.5" Waveshare e-ink panel)
 - Library: bb_epaper v2.0.3+
 - Preset: `EPD_TRMNL_OG`
 - Font: `FONT_12x16` (and possibly other larger fonts)
@@ -55,7 +55,7 @@ bbep.setFont(FONT_8x8);     // ONLY use 8x8 font
 
 ### Golden Rule
 
-**Rule:** On CC E-Ink hardware (TRMNL OG), use ONLY `FONT_8x8`. Larger fonts have rendering bugs that cause 90-degree rotation.
+**Rule:** On TRMNL OG hardware, use ONLY `FONT_8x8`. Larger fonts have rendering bugs that cause 90-degree rotation.
 
 **What this means for you:** The standard CCFirm™ firmware already uses the correct font. If you ever modify the firmware code, stick to `FONT_8x8` — do not switch to larger font sizes, or text will appear rotated on screen.
 
@@ -108,4 +108,4 @@ These details are relevant for firmware developers only:
 
 ---
 
-(c) 2026 Commute Compute™ System by Angus Bergman -- AGPL-3.0 Dual License
+(c) 2026 Commute Compute™ System by Angus Bergman -- AGPL-3.0 Dual Licence

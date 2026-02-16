@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
 CCFirm Visual Monitor
-Captures images of the e-ink display, analyzes layout, and provides feedback
+Captures images of the e-ink display, analyses layout, and provides feedback
 for iterative firmware development.
 
 Usage:
     python3 visual-monitor.py --capture     # Capture single image
     python3 visual-monitor.py --monitor     # Continuous monitoring mode
-    python3 visual-monitor.py --analyze IMG.jpg  # Analyze specific image
+    python3 visual-monitor.py --analyze IMG.jpg  # Analyse specific image
 """
 
 import cv2
@@ -324,7 +324,7 @@ class DisplayMonitor:
     def monitor_loop(self, interval=5):
         """
         Continuous monitoring loop
-        Captures and analyzes display every N seconds
+        Captures and analyses display every N seconds
         """
         print(f"🔄 Starting monitoring loop (interval: {interval}s)")
         print("Press Ctrl+C to stop")
@@ -343,7 +343,7 @@ class DisplayMonitor:
                 image_path = self.save_capture(frame, prefix=f"monitor_{iteration:03d}")
 
                 # Analyze
-                print("🔍 Analyzing...")
+                print("🔍 Analysing...")
                 analysis = self.analyze_layout(image_path)
 
                 # Save analysis
@@ -378,7 +378,7 @@ def main():
     parser = argparse.ArgumentParser(description="CCFirm Visual Monitor")
     parser.add_argument("--capture", action="store_true", help="Capture single image")
     parser.add_argument("--monitor", action="store_true", help="Continuous monitoring mode")
-    parser.add_argument("--analyze", type=str, help="Analyze specific image file")
+    parser.add_argument("--analyze", type=str, help="Analyse specific image file")
     parser.add_argument("--interval", type=int, default=5, help="Monitoring interval (seconds)")
 
     args = parser.parse_args()
@@ -391,7 +391,7 @@ def main():
         frame = monitor.capture_frame()
         image_path = monitor.save_capture(frame)
 
-        print("🔍 Analyzing...")
+        print("🔍 Analysing...")
         analysis = monitor.analyze_layout(image_path)
 
         report = monitor.generate_report(analysis)
@@ -411,13 +411,13 @@ def main():
         monitor.monitor_loop(interval=args.interval)
 
     elif args.analyze:
-        # Analyze existing image
+        # Analyse existing image
         image_path = Path(args.analyze)
         if not image_path.exists():
             print(f"❌ Image not found: {image_path}")
             sys.exit(1)
 
-        print(f"🔍 Analyzing {image_path}...")
+        print(f"🔍 Analysing {image_path}...")
         analysis = monitor.analyze_layout(image_path)
 
         report = monitor.generate_report(analysis)

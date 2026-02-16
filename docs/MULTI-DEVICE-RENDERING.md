@@ -7,7 +7,7 @@
 **How the V13 Dashboard Specification Adapts to Different Screens**
 
 Last Updated: 2026-01-29  
-Copyright (c) 2025-2026 Angus Bergman — AGPL-3.0 Dual License
+Copyright (c) 2025-2026 Angus Bergman — AGPL-3.0 Dual Licence
 
 ---
 
@@ -386,4 +386,4 @@ User Request
 ---
 
 **Maintained By**: Angus Bergman  
-**License**: AGPL-3.0 Dual License
+**Licence**: AGPL-3.0 Dual Licence

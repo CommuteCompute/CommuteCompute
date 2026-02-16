@@ -582,7 +582,7 @@ Vercel serverless cold start:
 
 ## Known Limitations
 
-**Expected Behavior (Not Bugs)**:
+**Expected Behaviour (Not Bugs)**:
 - [CAUTION] Vercel serverless cold starts (< 5s)
 - [CAUTION] 60-second minimum refresh interval (firmware locked)
 - [CAUTION] Redis required for API key storage
@@ -619,4 +619,4 @@ _________________________________________________________________
 
 **Document Status**: ACTIVE  
 **Compliance**: DEVELOPMENT-RULES.md v1.22  
-**Copyright**: © 2026 Commute Compute System by Angus Bergman — AGPL-3.0 Dual License
+**Copyright**: © 2026 Commute Compute System by Angus Bergman — AGPL-3.0 Dual Licence

@@ -20,7 +20,7 @@ export const RoutePatterns = {
   COFFEE_AT_DESTINATION: 'coffee-at-destination',           // Cafe is near work
   COFFEE_NEAR_TRANSFER: 'coffee-near-transfer',             // Alias for COFFEE_AT_INTERCHANGE
   DIRECT_TRANSIT: 'direct-transit',                         // No cafe, direct to station
-  MULTI_MODAL_OPTIMIZED: 'multi-modal-optimized'            // Optimized multi-leg journey
+  MULTI_MODAL_OPTIMIZED: 'multi-modal-optimized'            // Optimised multi-leg journey
 };
 
 /**
@@ -215,7 +215,7 @@ export class SmartRouteRecommender {
     
     return {
       type: RoutePatterns.DIRECT_TRANSIT,
-      reason: 'Default pattern - no special optimizations detected',
+      reason: 'Default pattern - no special optimisations detected',
       confidence: 0.5
     };
   }

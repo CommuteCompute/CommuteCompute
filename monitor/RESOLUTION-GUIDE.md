@@ -25,7 +25,7 @@ Comprehensive troubleshooting guide for all monitored endpoints, pages, and data
 
 ### `/api/health` - System Health Check
 
-**Expected behavior:** Returns 200 with JSON `{ status: "ok" }`
+**Expected behaviour:** Returns 200 with JSON `{ status: "ok" }`
 
 **Failure symptoms:**
 - 500 Internal Server Error
@@ -61,7 +61,7 @@ Comprehensive troubleshooting guide for all monitored endpoints, pages, and data
 
 ### `/api/screen` - Full Dashboard PNG Render
 
-**Expected behavior:** Returns 200 with `image/png` content type, 800×480 PNG image
+**Expected behaviour:** Returns 200 with `image/png` content type, 800×480 PNG image
 
 **Critical endpoint** - This is what TRMNL devices fetch
 
@@ -119,7 +119,7 @@ Comprehensive troubleshooting guide for all monitored endpoints, pages, and data
 
 ### `/api/zones` - Zone-Based Partial Refresh
 
-**Expected behavior:** Returns JSON with zone metadata and 1-bit BMP data
+**Expected behaviour:** Returns JSON with zone metadata and 1-bit BMP data
 
 **Failure symptoms:**
 - Zone boundaries incorrect
@@ -139,13 +139,13 @@ Comprehensive troubleshooting guide for all monitored endpoints, pages, and data
 
 3. **Change detection failing**
    - Review zone diff logic in `src/journey-display/diff.js`
-   - Check caching behavior
+   - Check caching behaviour
 
 ---
 
 ### `/api/address-search` - Geocoding Service
 
-**Expected behavior:** Returns geocoded addresses with coordinates
+**Expected behaviour:** Returns geocoded addresses with coordinates
 
 **Uses cascading fallbacks:** Google → Mapbox → HERE → Foursquare → LocationIQ → Nominatim
 
@@ -253,7 +253,7 @@ Comprehensive troubleshooting guide for all monitored endpoints, pages, and data
    - System falls back to static timetables
    - Check PTV Twitter for service announcements
 
-4. **Fallback behavior:**
+4. **Fallback behaviour:**
    - When API unavailable, `fallback-timetables.js` provides static data
    - Dashboard shows "Scheduled" instead of "Live"
 
@@ -479,4 +479,4 @@ If all external APIs fail:
 
 ---
 
-(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual License
+(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual Licence

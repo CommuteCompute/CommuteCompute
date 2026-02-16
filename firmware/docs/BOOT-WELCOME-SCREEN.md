@@ -4,10 +4,10 @@
 
 # Boot Welcome Screen Specification
 
-**Firmware Display Behavior During First Boot and Setup**
+**Firmware Display Behaviour During First Boot and Setup**
 
 **Copyright (c) 2026 Angus Bergman**
-**AGPL-3.0 Dual License**
+**AGPL-3.0 Dual Licence**
 
 ---
 
@@ -50,7 +50,7 @@ Displayed when device has no WiFi credentials.
 
 **Implementation Notes:**
 - Use FONT_8x8 only (FONT_12x16 causes rotation bug)
-- Center text horizontally
+- Centre text horizontally
 - Keep layout simple for e-ink readability
 - Refresh once, then deep sleep until WiFi config received
 
@@ -458,4 +458,4 @@ app.get('/api/setup-status', (req, res) => {
 ---
 
 **Copyright (c) 2026 Angus Bergman**
-**AGPL-3.0 Dual License**
+**AGPL-3.0 Dual Licence**

@@ -7,7 +7,7 @@
 **Version:** 1.0  
 **Last Updated:** 2026-01-30  
 **Status:** Active  
-**Copyright:** © 2026 Angus Bergman — AGPL-3.0 Dual License
+**Copyright:** © 2026 Angus Bergman — AGPL-3.0 Dual Licence
 
 ---
 
@@ -413,4 +413,4 @@ START
 
 ---
 
-*Copyright © 2026 Angus Bergman — AGPL-3.0 Dual License*
+*Copyright © 2026 Angus Bergman — AGPL-3.0 Dual Licence*

@@ -7,7 +7,7 @@
 Cross-platform tool for device firmware flashing and deployment setup.
 
 **Copyright © 2026 Angus Bergman**
-AGPL-3.0 Dual License
+AGPL-3.0 Dual Licence
 
 ---
 
@@ -278,9 +278,9 @@ See `docs/development/CONTRIBUTING.md` for guidelines.
 
 Ensure all changes comply with Development Rules v1.0.17.
 
-## License
+## Licence
 
-AGPL-3.0 Dual License
+AGPL-3.0 Dual Licence
 Copyright © 2026 Angus Bergman
 https://www.gnu.org/licenses/agpl-3.0.html
 

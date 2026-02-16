@@ -43,7 +43,7 @@
   ],
   "author": "Angus Bergman",
   "license": "AGPL-3.0-or-later",
-  "licenseNote": "Dual-licensed: AGPL-3.0 for open source, commercial license available — see LICENSE",
+  "licenseNote": "Dual-licensed: AGPL-3.0 for open source, commercial licence available — see LICENSE",
   "devDependencies": {
     "md-to-pdf": "5.2.5",
     "puppeteer": "24.36.1"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 CCFirm Auto-Iteration System
-Automatically captures display, analyzes layout, modifies firmware, and reflashes
+Automatically captures display, analyses layout, modifies firmware, and reflashes
 until the dashboard matches expected design.
 
 Usage:
@@ -51,21 +51,21 @@ class AutoIterator:
             json.dump(self.log, f, indent=2)
 
     def capture_and_analyze(self):
-        """Capture current display state and analyze"""
+        """Capture current display state and analyse"""
         print("\n" + "="*60)
         print(f"📸 ITERATION {self.iteration}: CAPTURE & ANALYSIS")
         print("="*60)
 
         # Wait for display to stabilize
-        print("⏳ Waiting 3 seconds for display to stabilize...")
+        print("⏳ Waiting 3 seconds for display to stabilise...")
         time.sleep(3)
 
         # Capture
         frame = self.monitor.capture_frame()
         image_path = self.monitor.save_capture(frame, prefix=f"iter{self.iteration:03d}")
 
-        # Analyze
-        print("🔍 Analyzing layout...")
+        # Analyse
+        print("🔍 Analysing layout...")
         analysis = self.monitor.analyze_layout(image_path)
 
         # Generate report
@@ -290,7 +290,7 @@ class AutoIterator:
             "status": "started"
         }
 
-        # Capture and analyze
+        # Capture and analyse
         analysis = self.capture_and_analyze()
         iteration_data["analysis"] = analysis
 

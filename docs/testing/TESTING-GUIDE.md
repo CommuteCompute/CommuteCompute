@@ -109,7 +109,7 @@
 **Author**: Development Team
 **Approved By**: Angus Bergman
 **Date**: 2026-01-28
-**License**: AGPL-3.0 Dual License
+**Licence**: AGPL-3.0 Dual Licence
 
 ---
 

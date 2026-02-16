@@ -20,7 +20,7 @@ The Cafe Busy-ness Detection system dynamically adjusts coffee purchase times ba
 **Live data integration**: Google Places API for real-time busy-ness
 **Peak time detection**: Automatic fallback for morning/lunch rushes
 **Dynamic time adjustment**: Coffee wait time scales from 2-8 minutes
-**Visual indicators**: Color-coded busy-ness display in admin UI
+**Visual indicators**: Colour-coded busy-ness display in admin UI
 **Graceful degradation**: Works without API keys using time-based estimates
 **Smart caching**: 5-minute cache to avoid excessive API calls
 **Multiple peak periods**: Morning rush (7-9am), lunch (12-2pm), afternoon (4-5pm)
@@ -45,7 +45,7 @@ The Cafe Busy-ness Detection system dynamically adjusts coffee purchase times ba
 
 ### Busy-ness Levels
 
-| Level | Icon | Description | Coffee Time | Color |
+| Level | Icon | Description | Coffee Time | Colour |
 |-------|------|-------------|-------------|-------|
 | **Low** | LOW | Quiet - Minimal wait | 3 min | Green (#48bb78) |
 | **Medium** | MEDIUM | Moderate - Some wait | 4-5 min | Orange (#ed8936) |
@@ -206,7 +206,7 @@ Check busy-ness for a specific cafe address.
 **Request**:
 ```json
 {
-  "address": "Your Favorite Cafe",
+  "address": "Your Favourite Cafe",
   "lat": -37.8408,  // Optional
   "lon": 145.0002   // Optional
 }
@@ -335,7 +335,7 @@ npm start
 2. Scroll to **Smart Route Planner**
 3. Enter addresses:
    - Home: `123 Main St, Your Suburb`
-   - Coffee: `Your Favorite Cafe`
+   - Coffee: `Your Favourite Cafe`
    - Work: `456 Central Ave, Your City`
 4. Set arrival time
 5. Click **Calculate Route**
@@ -351,7 +351,7 @@ Check the results for:
 
 **In Summary Stats**:
 - "Wait Time" shows adjusted coffee time with icon
-- Color-coded: Green (low), Orange (medium), Red (high)
+- Colour-coded: Green (low), Orange (medium), Red (high)
 
 **In Busy-ness Info Panel**:
 - Cafe Busy-ness level
@@ -382,7 +382,7 @@ Test at different times to see peak detection:
 curl -X POST https://your-server-name.vercel.app/admin/cafe/busyness \
   -H "Content-Type: application/json" \
   -d '{
-    "address": "Your Favorite Cafe"
+    "address": "Your Favourite Cafe"
   }'
 
 # Get peak times info
@@ -562,7 +562,7 @@ Check console logs when calculating route:
 ```
 2.5. Checking cafe busy-ness...
   Got busy-ness from Google Places API
-  Cafe: Your Favorite Cafe
+  Cafe: Your Favourite Cafe
   Busy Level: MEDIUM Moderate (Live Data)
 ```
 
@@ -614,7 +614,7 @@ Check console logs when calculating route:
 
 ### Short-term
 
-1. **User preferences**: Allow customizing peak times per cafe
+1. **User preferences**: Allow customising peak times per cafe
 2. **Historical data**: Track actual wait times and learn
 3. **Manual overrides**: Let users set busy level manually
 4. **More granular times**: 15-minute intervals instead of hourly
@@ -713,4 +713,4 @@ open https://your-server-name.vercel.app/admin
 
 Get that coffee!
 
-(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual License
+(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual Licence

@@ -90,4 +90,4 @@ ESP32-C3 crashes with `0xbaad5678` error when WiFiManager/captive portal is used
 ---
 
 **Maintained by:** Angus Bergman  
-**License:** AGPL-3.0 Dual License
+**Licence:** AGPL-3.0 Dual Licence
