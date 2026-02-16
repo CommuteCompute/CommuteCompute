@@ -2473,7 +2473,7 @@ app.post('/admin/smart-journey/calculate', async (req, res) => {
       res.json({
         success: true,
         journey: result.journey,
-        options: result.options  // Include stop options for customization
+        options: result.options  // Include stop options for customisation
       });
     } else {
       res.status(500).json({
@@ -6663,7 +6663,7 @@ app.get('/preview', requireConfiguration, async (req, res) => {
             </li>
             <li>
               <a href="/api/dashboard">/api/dashboard</a>
-              <span class="endpoint-description">HTML Dashboard - 800×480 optimized display</span>
+              <span class="endpoint-description">HTML Dashboard - 800×480 optimised display</span>
             </li>
             <li>
               <a href="/api/status">/api/status</a>

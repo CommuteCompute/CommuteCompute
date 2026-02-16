@@ -14,7 +14,7 @@
 
 ## Why Use Google Places API?
 
-### Current Behavior (Without Google API Key)
+### Current Behaviour (Without Google API Key)
 
 **Uses**: OpenStreetMap Nominatim API (free, no key needed)
 
@@ -24,16 +24,16 @@
 - [OK] General geocoding
 
 **Limited For**:
-- [Limited] Cafe and business names (e.g., "Your Favorite Cafe")
+- [Limited] Cafe and business names (e.g., "Your Favourite Cafe")
 - [Limited] POI (Points of Interest) search
 - [Limited] Current/popular businesses
 
-### Enhanced Behavior (With Google API Key)
+### Enhanced Behaviour (With Google API Key)
 
 **Uses**: Google Places Autocomplete API (paid, requires key, free tier available)
 
 **Excellent For**:
-- [OK] Cafe and business names (e.g., "Your Favorite Cafe")
+- [OK] Cafe and business names (e.g., "Your Favourite Cafe")
 - [OK] Street addresses with numbers
 - [OK] POI search (parks, stations, landmarks)
 - [OK] Current business listings
@@ -46,10 +46,10 @@
 
 | Without Google | With Google |
 |----------------|-------------|
-| [OSM] Market St, Your City | [Google] Your Favorite Cafe |
-| [OSM] Market Lane, Your Suburb | [Google] Your Favorite Cafe, Central Ave |
-| [OSM] (Generic streets only) | [Google] Your Favorite Cafe, Side St |
-|  | [Google] Your Favorite Cafe, multiple locations |
+| [OSM] Market St, Your City | [Google] Your Favourite Cafe |
+| [OSM] Market Lane, Your Suburb | [Google] Your Favourite Cafe, Central Ave |
+| [OSM] (Generic streets only) | [Google] Your Favourite Cafe, Side St |
+|  | [Google] Your Favourite Cafe, multiple locations |
 
 ---
 
@@ -233,8 +233,8 @@ curl "https://your-server-name.vercel.app/admin/address/search?query=market+lane
   "success": true,
   "results": [
     {
-      "display_name": "Your Favorite Cafe",
-      "address": "Your Favorite Cafe",
+      "display_name": "Your Favourite Cafe",
+      "address": "Your Favourite Cafe",
       "full_address": "Shop 14/436 Main St, Your City, Australia",
       "lat": -37.8136,
       "lon": 144.9631,
@@ -359,7 +359,7 @@ Every 6-12 months:
 
 ---
 
-## Fallback Behavior
+## Fallback Behaviour
 
 **System is designed to work without Google API key!**
 
@@ -438,4 +438,4 @@ Every 6-12 months:
 **Status**: Production Ready
 **Optional**: Yes (system works without it)
 
-(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual License
+(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual Licence

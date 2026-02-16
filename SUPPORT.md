@@ -35,7 +35,7 @@ Thank you for considering supporting Commute Compute™! This project is develop
 
 ### Development
 - **More transit authorities** -- expanding beyond Victoria to all Australian states
-- **New device support** -- more CC E-Ink variants, more Kindle models, custom hardware
+- **New device support** -- more TRMNL variants, more Kindle models, custom hardware
 - **International expansion** -- potential support for transit systems worldwide
 - **Performance improvements** -- faster refresh, better reliability
 

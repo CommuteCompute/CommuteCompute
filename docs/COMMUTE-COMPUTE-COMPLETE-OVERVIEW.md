@@ -9,7 +9,7 @@
 **Version:** 1.1  
 **Date:** January 2026  
 **Author:** Angus Bergman
-**License:** AGPL-3.0 Dual License
+**Licence:** AGPL-3.0 Dual Licence
 
 ---
 
@@ -94,7 +94,7 @@ I wanted a single glance at an e-ink display to answer all of these.
 
 E-ink displays have severe limitations:
 
-- 1-bit color only (pure black and white)
+- 1-bit colour only (pure black and white)
 - Slow refresh (2-3 seconds full refresh)
 - Ghosting from previous images
 - No anti-aliasing possible
@@ -926,4 +926,4 @@ The system succeeds when a commuter can glance at their e-ink display, see "LEAV
 **Built with coffee in Melbourne**
 
 *Copyright 2025-2026 Angus Bergman*  
-*AGPL-3.0 Dual License*
+*AGPL-3.0 Dual Licence*

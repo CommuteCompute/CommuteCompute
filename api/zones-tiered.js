@@ -1,7 +1,7 @@
 /**
  * /api/zones-tiered - Tiered Refresh Zone API
  * 
- * Supports per-tier zone fetching for optimized refresh intervals:
+ * Supports per-tier zone fetching for optimised refresh intervals:
  * - Tier 1 (1 min): Time-critical (clock, duration boxes, departures)
  * - Tier 2 (2 min): Content (weather, leg details) - only if changed
  * - Tier 3 (5 min): Static (location bar)

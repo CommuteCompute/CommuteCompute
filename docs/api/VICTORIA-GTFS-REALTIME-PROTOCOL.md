@@ -597,4 +597,4 @@ app.get('/api/victoria/realtime', async (req, res) => {
 
 **Status**: VERIFIED & PRODUCTION READY
 
-(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual License
+(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual Licence

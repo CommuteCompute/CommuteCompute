@@ -1,5 +1,5 @@
 #!/bin/bash
-# Watch Downloads folder for new images and automatically analyze them
+# Watch Downloads folder for new images and automatically analyse them
 
 DOWNLOADS_DIR="${HOME}/Downloads"
 CAPTURES_DIR="${HOME}/commute-compute/firmware/captures"
@@ -7,7 +7,7 @@ TOOLS_DIR="${HOME}/commute-compute/firmware/tools"
 LAST_FILE=""
 
 echo "========================================"
-echo "CCFirm Image Watch & Analyze"
+echo "CCFirm Image Watch & Analyse"
 echo "========================================"
 echo "Watching: $DOWNLOADS_DIR"
 echo "Press Ctrl+C to stop"
@@ -36,7 +36,7 @@ while true; do
             ANALYZE_FILE="$CAPTURES_DIR/latest_display.jpg"
         fi
 
-        # Analyze with visual monitor
+        # Analyse with visual monitor
         echo ""
         python3 "$TOOLS_DIR/visual-monitor.py" --analyze "$ANALYZE_FILE"
         echo ""

@@ -5,8 +5,8 @@
     Version: 3.0 (Rebuilt for firmware pairing protocol compliance)
 
     HYBRID PROVISIONING (see DEVELOPMENT-RULES.md Section 21.7):
-      Phase 1 (BLE): WiFi credentials only (SSID + password)
-      Phase 2 (Pairing Code): Server config via 6-character code (Step 6)
+      Phase 1 (BLE): WiFi credentials AND webhook URL (SSID + password + server URL)
+      Phase 2 (Pairing Code): FALLBACK — if BLE URL delivery fails, 6-character code poll (Step 6)
 
     Copyright (c) 2026 Angus Bergman
     SPDX-License-Identifier: AGPL-3.0-or-later
@@ -717,7 +717,7 @@
                     <div id="work-address-error" class="form-error" role="alert"></div>
                 </div>
                 <div class="form-group" style="position: relative;">
-                    <label for="cafe-address" class="form-label"><svg class="icon-sm"><use href="#icon-coffee"/></svg> Favorite Cafe (Optional)</label>
+                    <label for="cafe-address" class="form-label"><svg class="icon-sm"><use href="#icon-coffee"/></svg> Favourite Cafe (Optional)</label>
                     <input type="text" id="cafe-address" class="form-input" placeholder="Your go-to coffee spot..." autocomplete="off" inputmode="text">
                     <div id="cafe-suggestions" class="autocomplete-dropdown" role="listbox" aria-label="Cafe suggestions"></div>
                 </div>

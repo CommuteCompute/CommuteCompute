@@ -18,6 +18,27 @@ import { getClient } from '../../src/data/kv-preferences.js';
 // In-memory fallback for local development
 const localStore = global.pairingStore || (global.pairingStore = new Map());
 
+// Simple rate limiter — 20 requests per minute per IP
+// Acceptable for serverless: each cold start resets, but catches burst/brute-force
+// attacks within a single instance lifecycle.
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const RATE_LIMIT_MAX = 20;
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now - entry.start > RATE_LIMIT_WINDOW) {
+    rateLimitMap.set(ip, { start: now, count: 1 });
+    return true;
+  }
+  entry.count++;
+  if (entry.count > RATE_LIMIT_MAX) {
+    return false;
+  }
+  return true;
+}
+
 /**
  * Get pairing data from Redis or local store
  */
@@ -74,8 +95,14 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  // Rate limiting — protect against brute-force pairing code guessing
+  const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+  if (!checkRateLimit(clientIp)) {
+    return res.status(429).json({ error: 'Too many requests. Try again in one minute.' });
+  }
+
   const { code } = req.query;
-  
+
   if (!code || code.length < 4 || code.length > 8) {
     return res.status(400).json({ 
       success: false, 

@@ -1,7 +1,7 @@
 /**
  * /api/fullscreen - Returns full screen as 1-bit BMP
  * 
- * Optimized for ESP32 memory constraints.
+ * Optimised for ESP32 memory constraints.
  * Returns raw binary BMP data, not base64 encoded JSON.
  * 
  * Query params:

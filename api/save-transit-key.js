@@ -176,7 +176,7 @@ export default async function handler(req, res) {
     // Step 2: Test the API key first
     const testResult = await testApiKey(apiKey, state);
 
-    // Step 3: Only save if validation passed (consistent with Google key behavior)
+    // Step 3: Only save if validation passed (consistent with Google key behaviour)
     if (!testResult.success) {
       return res.status(200).json({
         success: false,

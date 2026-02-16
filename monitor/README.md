@@ -197,6 +197,6 @@ WantedBy=multi-user.target
 ### External Alerting
 The JSON reports can be parsed by external systems (Slack, Discord, PagerDuty, etc.) for alerting.
 
-## License
+## Licence
 
-AGPL-3.0 Dual License - Part of the Commute Compute System™
+AGPL-3.0 Dual Licence - Part of the Commute Compute System™

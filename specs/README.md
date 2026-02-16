@@ -15,7 +15,7 @@ These OpenAPI specification files are provided by:
 **Source**: Victorian Department of Transport and Planning
 **Portal**: OpenData Transport Victoria
 **URL**: https://opendata.transport.vic.gov.au/
-**License**: CC BY 4.0 (Creative Commons Attribution 4.0 International)
+**Licence**: CC BY 4.0 (Creative Commons Attribution 4.0 International)
 
 ## Files Included
 
@@ -60,12 +60,12 @@ These specification files are used for:
 
 No modifications have been made to these files. They are preserved in their original form as provided by Transport Victoria.
 
-## License Compliance
+## Licence Compliance
 
 Per CC BY 4.0 requirements:
 - [YES] Attribution provided (this file)
 - [YES] Source clearly identified (Victorian Department of Transport and Planning)
-- [YES] Link to license included
+- [YES] Link to licence included
 - [YES] No modifications made
 - [YES] Files clearly marked as external content (prefix: `_published_`)
 

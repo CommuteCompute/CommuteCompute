@@ -14,7 +14,7 @@
 import { getDepartures, getDisruptions, getWeather } from '../src/services/opendata-client.js';
 import CommuteCompute from '../src/engines/commute-compute.js';
 import { GTFS_STOP_NAMES, getStopNameById, MELBOURNE_STOP_IDS, detectStopIdsFromAddress } from '../src/data/gtfs-stop-names.js';
-import { getTransitApiKey, getPreferences, getUserState, setDeviceStatus } from '../src/data/kv-preferences.js';
+import { getTransitApiKey, getPreferences, getUserState, setDeviceStatus, getClient } from '../src/data/kv-preferences.js';
 import { renderFullDashboard, renderFullScreenBMP } from '../src/services/ccdash-renderer.js';
 import { getScenario, getScenarioNames } from '../src/services/journey-scenarios.js';
 import DepartureConfidence from '../src/engines/departure-confidence.js';
@@ -1187,7 +1187,7 @@ function generateRandomJourney(targetLegs = null) {
     includeCoffee = targetLegs >= 5;
     includeTransfer = targetLegs >= 7;
   } else {
-    // Random (original behavior)
+    // Random (original behaviour)
     includeCoffee = Math.random() > 0.25; // 75% chance of coffee
     includeTransfer = Math.random() > 0.6; // 40% chance of transfer
   }
@@ -1514,15 +1514,35 @@ async function handleDemoMode(req, res, scenarioName) {
  */
 export default async function handler(req, res) {
   // CORS headers - required for admin panel preview
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Configurable origin restriction — defaults to '*' for backwards compatibility
+  const allowedOrigin = process.env.CC_ALLOWED_ORIGIN || '*';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Device-Token');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
   try {
+    // Device authentication — optional, enabled via Redis preference
+    // Backwards-compatible: existing devices without tokens continue to work unless
+    // the operator explicitly sets cc:device-auth-required to 'true' in Redis.
+    const kvClient = await getClient();
+    if (kvClient) {
+      const deviceAuthRequired = await kvClient.get('cc:device-auth-required');
+      if (deviceAuthRequired === 'true') {
+        const deviceToken = req.headers['x-device-token'] || req.query.token;
+        if (!deviceToken) {
+          return res.status(401).json({ error: 'Device authentication required. Set X-Device-Token header or ?token= parameter.' });
+        }
+        const storedToken = await kvClient.get('cc:device-token');
+        if (!storedToken || deviceToken !== storedToken) {
+          return res.status(403).json({ error: 'Invalid device token.' });
+        }
+      }
+    }
+
     // Check for random mode - generates dynamic journey using SmartJourney patterns
     if (req.query?.random === '1' || req.query?.random === 'true') {
       return handleRandomJourney(req, res);

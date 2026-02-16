@@ -19,7 +19,7 @@
 | Setup Detection | Automatic setup required screen when not configured |
 | BYOS Support | Full TRMNL BYOS webhook URL compatibility |
 | Zone Rendering | Compatible with server-side zone-based updates |
-| Partial/Full Refresh | Battery-optimized refresh strategy |
+| Partial/Full Refresh | Battery-optimised refresh strategy |
 | Legacy Support | Backwards compatible with old config variables |
 
 ---
@@ -244,7 +244,7 @@ export CC_REFRESH=300  # 5 minutes instead of 60 seconds
 ```
 GET /api/device/{token}
 
-Response: PNG image optimized for device resolution
+Response: PNG image optimised for device resolution
 Headers:
   X-Device-Mac: MAC address
   X-Device-Model: Device model
@@ -312,8 +312,8 @@ This firmware is fully compatible with TRMNL's BYOS (Bring Your Own Server) syst
 
 ---
 
-## License
+## Licence
 
-Copyright (c) 2026 Angus Bergman  
-AGPL-3.0 Dual License
+Copyright (c) 2026 Angus Bergman
+AGPL-3.0 Dual Licence
 See LICENSE file for full terms.

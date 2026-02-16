@@ -243,7 +243,7 @@
           const vendor = usbVendors[info.usbVendorId] || ('Vendor 0x' + (info.usbVendorId || 0).toString(16));
           setStatus(detectStatus, 'Detected ESP-class serial adapter: ' + vendor + '. Ready to flash.', 'ok');
         } catch (err) {
-          setStatus(detectStatus, 'Serial detection canceled or failed. You can still flash manually.', 'warn');
+          setStatus(detectStatus, 'Serial detection cancelled or failed. You can still flash manually.', 'warn');
         }
         return;
       }
@@ -257,7 +257,7 @@
         await navigator.usb.requestDevice({ filters: [{ vendorId: 0x1949 }] });
         setStatus(detectStatus, 'Detected Amazon USB device. Confirm model selection, then install.', 'ok');
       } catch (err) {
-        setStatus(detectStatus, 'Kindle USB detection canceled. Continue with manual model selection.', 'warn');
+        setStatus(detectStatus, 'Kindle USB detection cancelled. Continue with manual model selection.', 'warn');
       }
     }
 

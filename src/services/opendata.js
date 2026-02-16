@@ -39,7 +39,7 @@ const ENDPOINTS = {
 
 /**
  * Send API Key in headers for OpenData Transport Victoria authentication
- * Per actual API behavior: Uses "KeyId" header with UUID format API key
+ * Per actual API behaviour: Uses "KeyId" header with UUID format API key
  */
 function makeHeaders(apiKey) {
   const headers = {
