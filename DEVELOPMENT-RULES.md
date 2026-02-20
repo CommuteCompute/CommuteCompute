@@ -874,7 +874,7 @@ Commute Compute is designed for TRMNL e-ink display hardware with custom firmwar
 | Display | 7.5" E-ink, 800×480 pixels, 1-bit depth |
 | Connectivity | WiFi 802.11 b/g/n (2.4GHz) |
 | Memory | 400KB SRAM, 4MB Flash |
-| Power | USB-C required (battery mode under development) |
+| Power | USB-C recommended; battery supported (several days) |
 | Refresh | Partial refresh supported |
 
 ### 5.2 Custom Firmware Requirements
@@ -1171,7 +1171,7 @@ The renderer creates a minimal 1-bit BMP in RAM (62-byte header + pixel data), r
 1. Clear display to WHITE (full refresh)
 2. Flash to BLACK briefly (100ms)
 3. Return to WHITE (full refresh)
-4. Enter light sleep mode
+4. Enter idle mode (battery operation supported; lasts several days)
 5. Serial output: `[VCOM] Discharge complete - safe to power off`
 
 **Factory Reset Sequence** (triggered on 10s continuous hold):
@@ -3271,7 +3271,7 @@ Non-compliance with these obligations constitutes copyright infringement under t
 
 ### 20.2 Trademarks
 
-The following are **unregistered trademarks (™)** owned by **Angus Bergman**, with all associated copyrights:
+The following are **trade mark applications (™, registration pending)** owned by **Angus Bergman**, with all associated copyrights:
 
 | Mark | Description | Copyright Owner |
 |------|-------------|-----------------|

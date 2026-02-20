@@ -88,9 +88,9 @@ Commute Compute™ supports multiple e-ink display devices. This guide helps you
 **Hardware**:
 - **Display**: 7.5" Waveshare e-paper
 - **Resolution**: 800×480 pixels (landscape)
-- **Refresh Rate**: Currently fixed at 60-second partial / 5-minute full (configurable refresh planned for future battery mode)
+- **Refresh Rate**: Currently fixed at 60-second partial / 5-minute full (configurable refresh planned for future firmware)
 - **Connectivity**: WiFi (2.4 GHz)
-- **Power**: USB-C, wall adapter included
+- **Power**: USB-C recommended for continuous use; battery supported (several days), wall adapter included
 - **Platform**: BYOS (Bring Your Own Screen)
 
 **Server Configuration**:
@@ -123,9 +123,9 @@ const TRMNL_BYOS = {
 **Hardware**:
 - **Display**: 4.2" Waveshare e-paper
 - **Resolution**: 400×300 pixels (landscape)
-- **Refresh Rate**: Currently fixed at 60-second partial / 5-minute full (configurable refresh planned for future battery mode)
+- **Refresh Rate**: Currently fixed at 60-second partial / 5-minute full (configurable refresh planned for future firmware)
 - **Connectivity**: WiFi (2.4 GHz)
-- **Power**: USB-C
+- **Power**: USB-C recommended; battery supported (several days)
 - **Platform**: TRMNL Mini
 
 **Server Configuration**:
@@ -331,7 +331,7 @@ function detectDevice(req) {
 
 ### Device Configuration
 
-Add to your Render environment variables:
+Add to your Vercel environment variables:
 
 ```bash
 # Device Type (optional - auto-detects if not set)
@@ -646,7 +646,7 @@ All outputs follow e-ink best practices:
 - Check WiFi connection
 - Verify URL is correct
 - Try simpler URL (no query params)
-- Check Render service is awake
+- Check Vercel deployment is running
 
 **Display not auto-refreshing**:
 - Verify auto-refresh script installed
@@ -782,7 +782,7 @@ A: Maybe! Check if it has WiFi and can run custom software. Post specs in GitLab
 
 **Q: How long does battery last?**
 A: Kindle: 2-4 weeks (refreshing every 15 min, WiFi on)
-TRMNL display: USB-C power required. Battery mode is under development.
+TRMNL display: USB-C recommended for continuous use. Battery operation supported but lasts only several days.
 
 **Q: Can I rotate the display?**
 A: Yes! Use `?orientation=landscape` or `portrait` parameter.

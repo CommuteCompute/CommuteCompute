@@ -264,7 +264,7 @@ RAM:         320KB
 Display:     7.5" e-ink (800x480)
 WiFi:        2.4GHz 802.11 b/g/n
 Update Rate: 1 min (partial), 5 min (full)
-Power:       USB-C required (battery mode under development)
+Power:       USB-C recommended; battery supported (several days)
 ```
 
 ---
@@ -279,9 +279,9 @@ Your TRMNL display has been configured with:
 This is **required** for ESP32-C3. Do not change these settings.
 
 ### Power Requirements
-- **USB-C power is required** for continuous operation
-- Battery-powered operation is under active development (deep sleep, battery monitoring, and configurable refresh intervals are planned features)
-- Ensure the device remains connected to USB-C power at all times
+- **USB-C power recommended** for continuous, always-on operation
+- Battery-powered operation is supported but lasts only several days (deep sleep and configurable refresh intervals are planned enhancements to extend battery life)
+- For wall-mounted use, connect to USB-C power for uninterrupted operation
 
 ### Server URL
 Your device's server URL is automatically configured during BLE WiFi setup. The Setup Wizard sends your deployment URL alongside WiFi credentials -- no manual firmware configuration needed.

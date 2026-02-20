@@ -93,9 +93,9 @@ Your e-ink display refreshes **every 60 seconds**, updating only the parts that 
 
 ## Power Requirements
 
-> **USB-C power is required for continuous operation.** Battery-powered mode is under active
-> development. Deep sleep, battery voltage monitoring, and configurable refresh intervals are
-> planned features that are not yet implemented in the current firmware.
+> **USB-C power is recommended for continuous operation.** Battery-powered operation is supported
+> but lasts only several days. Deep sleep and configurable refresh intervals are planned
+> enhancements to extend battery life in a future firmware release.
 
 ### Why Partial Refresh Matters
 
@@ -124,7 +124,7 @@ Partial:      ####................  ( 20% pixels updated)
 
 **Why 58 seconds sleep?**
 - Total cycle: 58s (sleep) + 2s (fetch + update) = 60s
-- ESP32 enters light sleep during 58s period
+- ESP32 idles during 58s period (battery operation is supported but lasts only several days; USB-C recommended for continuous use)
 - Wakes up, fetches data, updates display, repeats
 
 ### Server Configuration
@@ -244,7 +244,7 @@ Legend:
 **Check:**
 1. **WiFi connection**: Device must be connected to fetch data
 2. **Server URL**: Verify in preferences
-3. **USB-C power**: Ensure the device is connected to USB-C power (battery mode is under development)
+3. **Power**: USB-C recommended for continuous use; battery operation supported but lasts only several days
 4. **Serial output**: Connect USB and check for errors
 
 **Debug command:**
@@ -267,7 +267,7 @@ screen /dev/cu.usbmodem* 115200
 
 ### "Device not staying powered"
 
-**USB-C power is required** for continuous operation. Battery-powered mode is under active development and is not yet functional. Ensure the device is connected to a USB-C power source at all times.
+**USB-C power is recommended** for continuous operation. Battery-powered operation is supported but lasts only several days. For always-on use, ensure the device is connected to a USB-C power source.
 
 ---
 

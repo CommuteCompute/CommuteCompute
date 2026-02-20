@@ -221,7 +221,7 @@ The entire system must be usable for free. Paid APIs (Google Places) are optiona
 | 1-bit colour | Black and white only, no grayscale |
 | Slow refresh | 2-3 seconds full, 500ms partial |
 | Ghosting | Requires anti-ghosting patterns |
-| Power | USB-C required (battery mode under development) |
+| Power | USB-C recommended; battery supported (several days) |
 
 ### ESP32-C3 Limitations
 | Constraint | Impact |
