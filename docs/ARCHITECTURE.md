@@ -194,12 +194,12 @@ The Commute Compute System(TM) is composed of four core trademark families worki
 │  │                 │  │                 │  │                 │          │
 │  │ .fetchZones()   │  │ .fetchZones()   │  │ .fetchZones()   │          │
 │  │ .renderEInk()   │  │ .renderEInk()   │  │ .renderEInk()   │          │
-│  │ .deepSleep()    │  │ .deepSleep()    │  │ .deepSleep()    │          │
+│  │ .waitPoll()     │  │ .waitPoll()     │  │ .waitPoll()     │          │
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘          │
 │                                                                          │
 │  BOOT STATE MACHINE:                                                    │
 │  INIT -> CHECK_CREDS -> WIFI_CONNECT -> CHECK_URL ->                    │
-│  FETCH_ZONES -> RENDER -> DEEP_SLEEP (60s)                              │
+│  FETCH_ZONES -> RENDER -> IDLE/POLL (60s)                               │
 │                                                                          │
 │  DEVICE PAIRING (2-phase):                                              │
 │  Phase 1: BLE -> phone sends SSID + password only (no URL)             │
@@ -624,7 +624,7 @@ commute-compute/
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        CCFirm(TM) DEVICE                                │
 │                                                                         │
-│   Fetches CCDash(TM) zones -> Renders to e-ink -> Deep sleep (60s)     │
+│   Fetches CCDash(TM) zones -> Renders to e-ink -> Polls (60s)          │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -668,7 +668,7 @@ commute-compute/
 | **Display** | 7.5" E-ink, 800x480 pixels, 1-bit |
 | **Connectivity** | WiFi 802.11 b/g/n (2.4GHz) |
 | **Memory** | 400KB SRAM, 4MB Flash |
-| **Power** | USB-C or battery (deep sleep <10uA) |
+| **Power** | USB-C required (battery mode under development) |
 | **Refresh** | Partial refresh supported (~500ms) |
 
 ### 5.2 TRMNL Mini
@@ -1803,7 +1803,10 @@ CCFirm(TM) is the custom firmware family for Commute Compute devices. All device
        └── (loop back to STATE_FETCH_ZONES)
 ```
 
-### 21.4 Deep Sleep Cycle
+### 21.4 Polling Loop (Current Implementation)
+
+> **Note:** Deep sleep mode is under development. The current firmware uses a polling loop
+> with `delay()` rather than hardware deep sleep. USB-C power is required for continuous operation.
 
 ```
 ┌───────────────┐
@@ -1817,16 +1820,15 @@ CCFirm(TM) is the custom firmware family for Commute Compute devices. All device
         │
         v
 ┌───────────────┐
-│  Deep Sleep   │
-│  esp_deep_    │
-│  sleep_start  │
-│  (<10uA)      │
+│  Polling      │
+│  delay()      │
+│  (USB-C       │
+│   powered)    │
 └───────┬───────┘
-        │ Timer wakeup
+        │ Timer fires
         v
 ┌───────────────┐
-│  Wake         │
-│  -> FETCH     │
+│  FETCH        │
 │  -> RENDER    │
 │  -> IDLE      │
 └───────────────┘
@@ -1835,7 +1837,7 @@ CCFirm(TM) is the custom firmware family for Commute Compute devices. All device
 ### 21.5 Partial Refresh Cycle
 
 ```
-1. Firmware wakes from deep sleep
+1. Firmware polls after delay interval
 2. Connects to WiFi (saved credentials)
 3. GET /api/zones?token=<token>
 4. Parse JSON response
@@ -1844,7 +1846,7 @@ CCFirm(TM) is the custom firmware family for Commute Compute devices. All device
    b. Set partial refresh window (x, y, w, h)
    c. Write BMP to display buffer
    d. Trigger partial refresh
-6. Enter deep sleep for 60 seconds
+6. Wait 60 seconds before next poll
 ```
 
 ### 21.6 Critical Requirements

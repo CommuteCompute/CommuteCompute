@@ -4,20 +4,20 @@
 
 # Commute Compute™ Setup Guide
 
-**Complete setup instructions for your Commute Compute smart transit display.**
+**Complete setup instructions for your Commute Compute™ smart transit display.**
 
 **Version:** 4.1
 **Last Updated:** 2026-02-16
 **System Version:** v4.2.0 (CCDashDesignV15.0)
 **Licence:** AGPL-3.0 Dual Licence (see [LICENSE](LICENSE))
 
-> New to Commute Compute? Start with our [Complete Beginner Guide](docs/guides/COMPLETE-BEGINNER-GUIDE.md) for a friendlier walkthrough with no technical background required.
+> New to Commute Compute™? Start with our [Complete Beginner Guide](docs/guides/COMPLETE-BEGINNER-GUIDE.md) for a friendlier walkthrough with no technical background required.
 
 ---
 
 ## Overview
 
-Setting up Commute Compute involves four steps:
+Setting up Commute Compute™ involves four steps:
 
 1. **Deploy** -- Host the server on Vercel (one click)
 2. **Storage** -- Add Redis via Vercel Marketplace
@@ -76,7 +76,7 @@ You should see a JSON response confirming the server is running.
 
 [TIME] This step takes approximately 5-7 minutes.
 
-Redis provides persistent storage for your configuration, API keys, and device pairing codes. This is required for Commute Compute to function across serverless invocations.
+Redis provides persistent storage for your configuration, API keys, and device pairing codes. This is required for Commute Compute™ to function across serverless invocations.
 
 ### 2.1 Install Redis Integration
 
@@ -99,7 +99,7 @@ Redis provides persistent storage for your configuration, API keys, and device p
 
 1. Go to the **Projects** tab for your new Redis database
 2. Click **Connect Project**
-3. Select your Commute Compute project
+3. Select your Commute Compute™ project
 4. Click **Connect**
 
 This automatically injects the required environment variables (`UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`) into your Vercel project. After connecting, the integration appears as **Redis** in your Integrations tab with a green status indicator.
@@ -138,8 +138,8 @@ Navigate to: `https://your-project-name.vercel.app/setup-wizard.html`
 ### 3.2 Device Selection
 
 Choose your display device:
-- **CC E-Ink BYOS** -- 800x480 e-ink (primary)
-- **CC E-Ink Mini** -- 400x300 e-ink
+- **TRMNL Display (OG)** -- 800x480 e-ink (primary)
+- **TRMNL Mini** -- 400x300 e-ink
 - **Kindle** -- Various models (requires jailbreak)
 
 ### 3.3 Google Places API Key (Optional)
@@ -191,7 +191,7 @@ Before proceeding to flash your device, verify your dashboard is working by visi
 2. You should see a rendered dashboard image (even without live departure data, the layout should be visible)
 3. If you see an error or blank page, check that Redis is connected (`/api/kv-status` shows `"connected": true`) and that your addresses were saved correctly in the Setup Wizard
 
-This confirms your server is correctly configured before you invest time in device flashing. If the dashboard preview works in your browser, it will work on your CC E-Ink display.
+This confirms your server is correctly configured before you invest time in device flashing. If the dashboard preview works in your browser, it will work on your TRMNL display.
 
 **Next:** Proceed to Step 4 to set up your physical device.
 
@@ -424,7 +424,7 @@ This is normal behaviour during initial setup:
 
 ## Alternative Hosting
 
-While Vercel is the recommended platform (turnkey setup, free tier), Commute Compute can also run on:
+While Vercel is the recommended platform (turnkey setup, free tier), Commute Compute™ can also run on:
 
 - **Render.com** -- Free tier with Redis addon
 - **Railway** -- With Redis plugin

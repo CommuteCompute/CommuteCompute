@@ -33,7 +33,9 @@ USER nodejs
 
 # Environment defaults (can be overridden)
 ENV NODE_ENV=production \
-    PORT=3000
+    PORT=3000 \
+    UPSTASH_REDIS_REST_URL="" \
+    UPSTASH_REDIS_REST_TOKEN=""
 
 # Start application
 CMD ["node", "src/server.js"]

@@ -1559,6 +1559,16 @@
             z-index: 9999;
         }
 
+        /* Screen reader only utility class (WCAG) */
+        .sr-only {
+            position: absolute;
+            left: -10000px;
+            top: auto;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+        }
+
         /* High contrast text for accessibility */
         p, span, div {
             color: var(--text-secondary);
@@ -1840,23 +1850,25 @@
 
     <div class="container" id="main-content" role="main">
         <!-- Sidebar Navigation (matches privacy/help pages) -->
-        <aside class="sidebar" role="navigation" aria-label="Sidebar navigation">
-            <div class="sidebar-title">Dashboard</div>
-            <ul class="sidebar-nav">
-                <li><button data-section="live" class="active" aria-current="true" onclick="showTab('live', null); updateSidebarActive(this);">Live Data</button></li>
-                <li><button data-section="setup" onclick="showTab('setup', null); updateSidebarActive(this);">Today's Journey</button></li>
-                <li><button data-section="architecture" onclick="showTab('architecture', null); updateSidebarActive(this);">Architecture</button></li>
-            </ul>
-            <div class="sidebar-title">Settings</div>
-            <ul class="sidebar-nav">
-                <li><button data-section="config" onclick="showTab('config', null); updateSidebarActive(this);">Configuration</button></li>
-                <li><button data-section="api" onclick="showTab('api', null); updateSidebarActive(this);">Transit API</button></li>
-            </ul>
-            <div class="sidebar-title">System</div>
-            <ul class="sidebar-nav">
-                <li><button data-section="system" onclick="showTab('system', null); updateSidebarActive(this);">System & Support</button></li>
-                <li><button data-section="legal" onclick="showTab('legal', null); updateSidebarActive(this);">Legal</button></li>
-            </ul>
+        <aside class="sidebar" aria-label="Sidebar navigation">
+            <nav aria-label="Admin navigation">
+                <div class="sidebar-title">Dashboard</div>
+                <ul class="sidebar-nav">
+                    <li><button data-section="live" class="active" aria-current="true" onclick="showTab('live', null); updateSidebarActive(this);">Live Data</button></li>
+                    <li><button data-section="setup" onclick="showTab('setup', null); updateSidebarActive(this);">Today's Journey</button></li>
+                    <li><button data-section="architecture" onclick="showTab('architecture', null); updateSidebarActive(this);">Architecture</button></li>
+                </ul>
+                <div class="sidebar-title">Settings</div>
+                <ul class="sidebar-nav">
+                    <li><button data-section="config" onclick="showTab('config', null); updateSidebarActive(this);">Configuration</button></li>
+                    <li><button data-section="api" onclick="showTab('api', null); updateSidebarActive(this);">Transit API</button></li>
+                </ul>
+                <div class="sidebar-title">System</div>
+                <ul class="sidebar-nav">
+                    <li><button data-section="system" onclick="showTab('system', null); updateSidebarActive(this);">System & Support</button></li>
+                    <li><button data-section="legal" onclick="showTab('legal', null); updateSidebarActive(this);">Legal</button></li>
+                </ul>
+            </nav>
         </aside>
 
         <!-- Content Area -->
@@ -2061,7 +2073,7 @@
                         <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; margin-bottom: 15px;">
                             <div><svg class="icon-xl" style="color: #4fb28e;"><use href="#icon-monitor"/></svg></div>
                             <div style="flex: 1;">
-                                <div id="device-name" style="font-weight: 600; font-size: 16px; margin-bottom: 4px;">CC E-Ink Display (OG)</div>
+                                <div id="device-name" style="font-weight: 600; font-size: 16px; margin-bottom: 4px;">TRMNL Display (OG)</div>
                                 <div id="device-specs" style="font-size: 12px; opacity: 0.7;">800×480 • Landscape • ESP32</div>
                             </div>
                             <!-- V13.6: Battery Status -->
@@ -2515,7 +2527,7 @@
                             <div>
                                 <h3 style="font-size: 16px; font-weight: 600; color: #f1f5f9; margin: 0;">E-Ink Display Preview</h3>
                                 <span style="font-size: 12px; color: #94a3b8;">
-                                    <span id="eink-device-name">CC E-Ink OG</span> • 
+                                    <span id="eink-device-name">TRMNL OG</span> • 
                                     <span id="eink-dimensions">800×480</span> • 
                                     <span id="eink-last-update">--</span>
                                 </span>
@@ -2552,7 +2564,7 @@
                     <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
                         <div style="padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
                             <div style="font-size: 10px; text-transform: uppercase; opacity: 0.6; margin-bottom: 4px;">Device</div>
-                            <div id="eink-device-info" style="font-size: 14px; font-weight: 600; color: #f1f5f9;">CC E-Ink Display (OG)</div>
+                            <div id="eink-device-info" style="font-size: 14px; font-weight: 600; color: #f1f5f9;">TRMNL Display (OG)</div>
                         </div>
                         <div style="padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
                             <div style="font-size: 10px; text-transform: uppercase; opacity: 0.6; margin-bottom: 4px;">Resolution</div>
@@ -3199,7 +3211,7 @@
                         </div>
                         <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
                             <div style="font-size: 11px; color: #667eea; font-weight: 600; margin-bottom: 4px;">RESOLUTION</div>
-                            <div style="font-size: 12px; color: #94a3b8;">800x480 (CC E-Ink OG)</div>
+                            <div style="font-size: 12px; color: #94a3b8;">800x480 (TRMNL OG)</div>
                         </div>
                         <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
                             <div style="font-size: 11px; color: #667eea; font-weight: 600; margin-bottom: 4px;">TYPOGRAPHY</div>
@@ -3244,7 +3256,7 @@
                         <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #a855f7;">CCFirm&#8482; CC-FW-7.7.0 Firmware</h3>
                     </div>
                     <p style="font-size: 13px; color: #e2e8f0; line-height: 1.7; margin-bottom: 12px;">
-                        The ESP32-C3 firmware that runs on CC E-Ink devices. CCFirm&#8482; handles WiFi connectivity, HTTPS image fetching, BMP rendering, and partial display refresh. Includes device pairing via 6-character codes and anti-brick safety measures.
+                        The ESP32-C3 firmware that runs on TRMNL devices. CCFirm&#8482; handles WiFi connectivity, HTTPS image fetching, BMP rendering, and partial display refresh. Includes device pairing via 6-character codes and anti-brick safety measures.
                     </p>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
                         <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
@@ -3334,7 +3346,7 @@
                     </div>
                     <div style="padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
                         <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Display</div>
-                        <div style="font-size: 14px; font-weight: 500;">E-ink 800x480 (CC E-Ink, Kindle)</div>
+                        <div style="font-size: 14px; font-weight: 500;">E-ink 800x480 (TRMNL, Kindle)</div>
                     </div>
                     <div style="padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
                         <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Typography</div>
@@ -3617,14 +3629,14 @@
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 15px;">
                     <div style="padding: 14px; background: rgba(79, 178, 142, 0.1); border-radius: 8px; border: 1px solid rgba(79, 178, 142, 0.2);">
-                        <div style="font-weight: 600; font-size: 14px; color: #4fb28e; margin-bottom: 8px;">CC E-Ink OG</div>
+                        <div style="font-weight: 600; font-size: 14px; color: #4fb28e; margin-bottom: 8px;">TRMNL OG</div>
                         <div style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
                             800×480 • ESP32-C3<br>
                             7.5" E-ink • 60s partial refresh
                         </div>
                     </div>
                     <div style="padding: 14px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; border: 1px solid rgba(102, 126, 234, 0.2);">
-                        <div style="font-weight: 600; font-size: 14px; color: #667eea; margin-bottom: 8px;">CC E-Ink Mini</div>
+                        <div style="font-weight: 600; font-size: 14px; color: #667eea; margin-bottom: 8px;">TRMNL Mini</div>
                         <div style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
                             400×300 • ESP32-C3<br>
                             Compact form factor
@@ -3906,7 +3918,7 @@
 │                                ▼                                        │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
 │   │                 CCFirm&#8482; Firmware CC-FW-7.7.0                   │   │
-│   │  CC E-Ink OG      │ Kindle (WIP) │ Inkplate (WIP)               │   │
+│   │  TRMNL OG         │ Kindle (WIP) │ Inkplate (WIP)               │   │
 │   └─────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -3958,7 +3970,7 @@
                             <code style="font-family: 'JetBrains Mono', monospace; color: #ec4899; font-size: 13px;">/api/livedash</code>
                             <span style="font-size: 11px; opacity: 0.7;">GET</span>
                         </div>
-                        <div style="font-size: 12px; opacity: 0.85;">Multi-device renderer for CC E-Ink, Kindle, Inkplate</div>
+                        <div style="font-size: 12px; opacity: 0.85;">Multi-device renderer for TRMNL, Kindle, Inkplate</div>
                     </div>
                 </div>
             </div>
@@ -4083,7 +4095,7 @@
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 12px; opacity: 0.7;">Commit: 7336929</div>
-                            <div style="font-size: 12px; opacity: 0.7;">Verified: CC E-Ink OG</div>
+                            <div style="font-size: 12px; opacity: 0.7;">Verified: TRMNL OG</div>
                         </div>
                     </div>
                 </div>
@@ -4232,7 +4244,7 @@
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Licence — AGPL-3.0</h2>
                 </div>
                 <p style="margin-bottom: 20px; opacity: 0.9; font-size: 14px; line-height: 1.6;">
-                    The Commute Compute&#8482; System is licenced under the <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" style="color: #4fb28e; text-decoration: none; font-weight: 500;">GNU Affero General Public License v3.0</a>.
+                    The Commute Compute&#8482; System is licensed under the <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" style="color: #4fb28e; text-decoration: none; font-weight: 500;">GNU Affero General Public License v3.0</a>.
                 </p>
                 
                 <!-- Permitted Uses -->
@@ -4361,7 +4373,7 @@
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Third-Party Software</h2>
                 </div>
                 <p style="margin-bottom: 16px; opacity: 0.9; font-size: 14px; line-height: 1.6;">
-                    The following software components are incorporated under their original licenses and are excluded from copyright claims.
+                    The following software components are incorporated under their original licences and are excluded from copyright claims.
                 </p>
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
@@ -4415,7 +4427,7 @@
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Contact & Licensing</h2>
                 </div>
                 <p style="margin-bottom: 16px; opacity: 0.9; font-size: 14px; line-height: 1.6;">
-                    For commercial licensing inquiries, trademark permissions, or legal questions:
+                    For commercial licensing enquiries, trademark permissions, or legal questions:
                 </p>
                 <div style="display: grid; gap: 12px;">
                     <div style="padding: 16px; background: rgba(0,0,0,0.2); border-radius: 10px;">
@@ -4433,7 +4445,7 @@
                     </div>
                 </div>
                 <div style="margin-top: 16px; padding: 12px; background: rgba(251, 191, 36, 0.1); border-radius: 8px; font-size: 12px; line-height: 1.6;">
-                    <strong style="color: #fbbf24;">Commercial Use:</strong> Commercial use is NOT permitted under the AGPL-3.0 license. For commercial licensing, please contact the copyright holder with details of your intended use.
+                    <strong style="color: #fbbf24;">Commercial Use:</strong> Commercial use is NOT permitted under the AGPL-3.0 licence. For commercial licensing, please contact the copyright holder with details of your intended use.
                 </div>
             </div>
 
@@ -4479,7 +4491,7 @@
          *    - Circuit breakers for APIs
          *    - Graceful degradation
          *
-         * 5. CC E-Ink COMPLIANCE (Section P):
+         * 5. TRMNL DISPLAY COMPLIANCE (Section P):
          *    - 7.5" e-ink display (800x480 or 480x800)
          *    - BYOS webhook format required
          *    - Respect e-ink refresh limits
@@ -6575,8 +6587,8 @@
 
         // Device configurations (matches firmware)
         const DEVICE_CONFIGS = {
-            'trmnl-og': { name: 'CC E-Ink Display (OG)', width: 800, height: 480, orientation: 'landscape' },
-            'trmnl-mini': { name: 'CC E-Ink Display (Mini)', width: 400, height: 300, orientation: 'landscape' },
+            'trmnl-og': { name: 'TRMNL Display (OG)', width: 800, height: 480, orientation: 'landscape' },
+            'trmnl-mini': { name: 'TRMNL Display (Mini)', width: 400, height: 300, orientation: 'landscape' },
             'kindle-pw3': { name: 'Kindle Paperwhite 3', width: 758, height: 1024, orientation: 'portrait' },
             'kindle-pw4': { name: 'Kindle Paperwhite 4', width: 1072, height: 1448, orientation: 'portrait' },
             'kindle-pw5': { name: 'Kindle Paperwhite 5', width: 1236, height: 1648, orientation: 'portrait' }
@@ -7318,14 +7330,14 @@
                 
                 if (deviceName) {
                     const deviceNames = {
-                        'trmnl-og': 'CC E-Ink Display (OG)',
-                        'trmnl-byos': 'CC E-Ink Display',
-                        'trmnl-mini': 'CC E-Ink Display (Mini)',
+                        'trmnl-og': 'TRMNL Display (OG)',
+                        'trmnl-byos': 'TRMNL Display',
+                        'trmnl-mini': 'TRMNL Display (Mini)',
                         'kindle-pw3': 'Kindle Paperwhite 3',
                         'kindle-pw4': 'Kindle Paperwhite 4',
                         'kindle-pw5': 'Kindle Paperwhite 5'
                     };
-                    deviceName.textContent = deviceNames[device] || 'CC E-Ink Display';
+                    deviceName.textContent = deviceNames[device] || 'TRMNL Display';
                 }
                 if (deviceSpecs) {
                     deviceSpecs.textContent = device?.startsWith('kindle') ? '1072×1448 • Portrait' : '800×480 • Landscape • ESP32';
@@ -9179,7 +9191,7 @@
 
             const deviceSpecs = {
                 'trmnl-byos': {
-                    name: 'CC E-Ink (OG)',
+                    name: 'TRMNL Display (OG)',
                     resolution: '800×480 pixels',
                     orientation: 'Landscape',
                     display: '7.5" E-ink',
@@ -9297,7 +9309,7 @@
             // Get device selection
             const selectedDevice = document.getElementById('setup-device-select').value;
 
-            // Get display model selection if CC E-Ink is selected
+            // Get display model selection if TRMNL device is selected
             let trmnlModel = null;
             if (selectedDevice === 'trmnl-byos') {
                 const trmnlModelRadio = document.querySelector('input[name="trmnl-model"]:checked');

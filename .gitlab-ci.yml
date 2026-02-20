@@ -19,7 +19,7 @@ lint-job:
   script:
     - echo "Running syntax checks on all JavaScript files..."
     - find api/ src/ -name '*.js' -exec node --check {} +
-    - node --check tests/test-redis-kv.js
+    - node --check tests/*.js
     - echo "All JavaScript files pass syntax validation."
     - echo "Running ESLint no-undef checks..."
     - npx eslint api/ src/
@@ -47,4 +47,8 @@ test-job:
   script:
     - echo "Running Redis KV in-memory fallback tests..."
     - node --test tests/test-redis-kv.js
+    - echo "Running render pipeline smoke tests..."
+    - node --test tests/test-render-smoke.js
+    - echo "Running screen endpoint smoke tests..."
+    - node --test tests/test-screen-smoke.js
   allow_failure: false

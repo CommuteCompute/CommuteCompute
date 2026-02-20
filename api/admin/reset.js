@@ -95,7 +95,7 @@ export default async function handler(req, res) {
       errors: errors.length > 0 ? errors : undefined,
       nextSteps: [
         'Visit /setup-wizard.html to reconfigure',
-        'Re-pair your CC E-Ink device',
+        'Re-pair your TRMNL device',
         'Re-enter your Transit API key'
       ],
       timestamp: new Date().toISOString()

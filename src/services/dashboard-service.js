@@ -337,7 +337,7 @@ class DashboardService {
   }
 
   /**
-   * Render for CC E-Ink webhook (returns PNG)
+   * Render for TRMNL display webhook (returns PNG)
    */
   async renderForTRMNL(openDataService, weatherService) {
     return this.renderDashboard({
