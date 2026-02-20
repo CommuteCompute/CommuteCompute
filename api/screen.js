@@ -1,5 +1,5 @@
 /**
- * /api/screen - Full Dashboard PNG for CC E-Ink Webhook
+ * /api/screen - Full Dashboard PNG for TRMNL display webhook
  *
  * Renders the complete V15.0 dashboard as an 800×480 PNG image.
  *
@@ -1564,7 +1564,7 @@ export default async function handler(req, res) {
     // =========================================================================
     // DEVICE INFO - battery status from device request
     // =========================================================================
-    // CC E-Ink devices send battery info via query params or headers
+    // TRMNL devices send battery info via query params or headers
     const batteryPercent = parseInt(req.query?.battery || req.headers?.['x-battery'] || req.headers?.['battery']) || null;
     const batteryVoltage = parseFloat(req.query?.voltage || req.headers?.['x-voltage']) || null;
     const deviceId = req.query?.device_id || req.headers?.['x-device-id'] || null;
@@ -1944,7 +1944,7 @@ export default async function handler(req, res) {
       // Per Section 23.6: LIVE badge must reflect actual data source, not API key existence
       isLive: hasAnyLiveData,
       dataSource: hasAnyLiveData ? 'live' : (transitApiKey ? 'no-data' : 'no-key'),
-      // V13.6: Device battery status (from CC E-Ink device request)
+      // V13.6: Device battery status (from TRMNL device request)
       battery_percent: batteryPercent,
       battery_voltage: batteryVoltage,
       device_id: deviceId,

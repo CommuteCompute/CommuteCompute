@@ -113,7 +113,7 @@
   </style>
 </head>
 <body>
-  <main class="wrap">
+  <main class="wrap" role="main">
     <h1>CommuteCompute&#8482; Device Installer</h1>
     <p>Plug in your device, pick the target model, then install firmware ready for pairing.</p>
     <p style="margin-top: 8px; font-size: 0.92rem;">Other apps show delays. CommuteCompute&#8482; reacts to them. Live data flows into every decision- coffee, timing, connections. 1 glance. No app switching. Open Source.</p>
@@ -123,7 +123,7 @@
         <div>
           <label for="device-family">Device Family</label>
           <select id="device-family">
-            <option value="esp32-c3">CC E-Ink / ESP32-C3</option>
+            <option value="esp32-c3">TRMNL Display / ESP32-C3</option>
             <option value="kindle">Kindle (jailbroken + KUAL)</option>
           </select>
         </div>
@@ -145,11 +145,11 @@
         </div>
       </div>
 
-      <div id="detect-status" class="status">Detection has not run yet.</div>
+      <div id="detect-status" class="status" aria-live="polite">Detection has not run yet.</div>
     </section>
 
     <section id="esp-panel" class="card">
-      <h2>Flash CommuteCompute&#8482; Firmware (CC E-Ink / ESP32-C3)</h2>
+      <h2>Flash CommuteCompute&#8482; Firmware (TRMNL Display / ESP32-C3)</h2>
       <p>Use Chrome, Edge, or Opera. Put the board in bootloader mode if needed, then install.</p>
       <div style="margin-top: 14px;">
         <esp-web-install-button manifest="/flasher/manifest.json">
@@ -171,7 +171,7 @@
       <div style="margin-top: 12px;">
         <button id="install-kindle" type="button">Install To Mounted Kindle</button>
       </div>
-      <div id="kindle-status" class="status">Awaiting install.</div>
+      <div id="kindle-status" class="status" aria-live="polite">Awaiting install.</div>
       <ol class="steps">
         <li>Eject Kindle safely when install completes.</li>
         <li>Open KUAL, then run Commute Compute start/configure actions.</li>

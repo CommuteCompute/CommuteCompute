@@ -4,12 +4,12 @@
 
 # Commute Compute™ Firmware Releases
 
-## [LOCKED] Current Production: CC-FW-7.4.3
+## [UNLOCKED] Current Production: CC-FW-7.7.0
 
-**Version:** 7.2.1  
-**Commit:** `22f92ac`  
-**Date:** 2026-02-02  
-**Status:** [LOCKED] LOCKED — PRODUCTION RELEASE
+**Version:** 7.7.0
+**Commit:** (pending)
+**Date:** 2026-02-20
+**Status:** [UNLOCKED] UNLOCKED — PRODUCTION RELEASE
 
 ### Key Features
 - **BLE Provisioning** — Hybrid BLE + Pairing Code flow (WiFiManager removed)
@@ -66,7 +66,7 @@ pio run -e trmnl -t upload --upload-port /dev/cu.usbmodem*
 
 | Version | Date | Status | Notes |
 |---------|------|--------|-------|
-| **7.2.1** | 2026-02-02 | [LOCKED] LOCKED | VCOM stabilization after every refresh |
+| **7.7.0** | 2026-02-20 | [UNLOCKED] UNLOCKED | Current production. Credential redaction, version alignment, stability. |
 | 7.2.0 | 2026-02-02 | Superseded | Added button handler, reduced partial count |
 | 7.1.0 | 2026-02-01 | Superseded | Redis Cloud KV, Transit API validation |
 | 7.0.0 | 2026-02-01 | Superseded | Hybrid BLE + Pairing provisioning |

@@ -12,9 +12,47 @@ This document tracks all firmware releases for the Commute Compute System.
 
 ---
 
-## [LOCKED] Production Versions
+## [UNLOCKED] Production Versions
 
-### CC-FW-7.5.0 (Current)
+### CC-FW-7.7.0 (Current)
+
+| Attribute | Value |
+|-----------|-------|
+| **Version** | 7.7.0 |
+| **Official Name** | CC-FW-7.7.0 |
+| **Release Date** | 2026-02-16 |
+| **Git Commit** | (pending) |
+| **Previous** | CC-FW-7.5.0 |
+| **Status** | [DONE] PRODUCTION - UNLOCKED |
+| **Hardware Verified** | TRMNL BYOS (ESP32-C3, 7.5" 800x480 e-ink) |
+
+**Description:**
+Production firmware aligned with System v4.2.0. Includes all BLE provisioning improvements from CC-FW-7.5.0 plus credential redaction in serial output, version alignment across all documentation and admin panel, and stability improvements.
+
+**Key Changes from 7.5.0:**
+- **Credential Redaction:** Serial output no longer prints WiFi passwords or API tokens in plaintext.
+- **Version Alignment:** Firmware version constant unified across `config.h`, admin panel, and all documentation.
+- **Stability Improvements:** Minor fixes for BLE provisioning reliability.
+
+**Provisioning Flow:**
+```
+BLE Setup Screen → WiFi Credentials + Webhook URL via BLE → Connect to WiFi → Fetch Dashboard
+```
+
+**Flashing Command:**
+```bash
+cd firmware
+pio run -e trmnl -t upload
+# Use standalone serial terminal (do NOT use pio device monitor -- causes crash)
+screen /dev/cu.usbmodem* 115200  # macOS
+```
+
+**Modification Policy:**
+[CRITICAL] DO NOT MODIFY without explicit approval. Changes require new version number and hardware verification.
+
+---
+
+### CC-FW-7.5.0 (Superseded by 7.7.0)
 
 | Attribute | Value |
 |-----------|-------|
@@ -23,8 +61,8 @@ This document tracks all firmware releases for the Commute Compute System.
 | **Release Date** | 2026-02-09 |
 | **Git Commit** | (pending) |
 | **Previous** | CC-FW-7.4.3 |
-| **Status** | [DONE] PRODUCTION - LOCKED |
-| **Hardware Verified** | TRMNL OG (ESP32-C3, 7.5" 800x480 e-ink) |
+| **Status** | Superseded by CC-FW-7.7.0 |
+| **Hardware Verified** | TRMNL BYOS (ESP32-C3, 7.5" 800x480 e-ink) |
 
 **Description:**
 BLE provisioning with webhook URL. Setup Wizard sends WiFi credentials AND webhook URL via BLE — no hardcoded server URLs in firmware. Eliminates DEFAULT_SERVER auto-pairing.
@@ -45,7 +83,8 @@ BLE Setup Screen → WiFi Credentials + Webhook URL via BLE → Connect to WiFi 
 ```bash
 cd firmware
 pio run -e trmnl -t upload
-pio device monitor -b 115200
+# Use standalone serial terminal (do NOT use pio device monitor -- causes crash)
+screen /dev/cu.usbmodem* 115200  # macOS
 ```
 
 **Modification Policy:**
@@ -63,7 +102,7 @@ pio device monitor -b 115200
 | **Git Commit** | (pending) |
 | **Previous** | CC-FW-7.4.2 |
 | **Status** | [DONE] PRODUCTION - LOCKED |
-| **Hardware Verified** | TRMNL OG (ESP32-C3, 7.5" 800×480 e-ink) |
+| **Hardware Verified** | TRMNL BYOS (ESP32-C3, 7.5" 800×480 e-ink) |
 
 **Description:**
 Implements hybrid two-phase provisioning as mandated by DEVELOPMENT-RULES.md Section 21.7:
@@ -119,7 +158,7 @@ pio device monitor -b 115200
 | **Git Commit** | (pending) |
 | **Previous** | CC-FW-6.1-60s (`7336929`) |
 | **Status** | [CAUTION] SUPERSEDED by CC-FW-7.4.3 |
-| **Hardware Verified** | TRMNL OG (ESP32-C3, 7.5" 800×480 e-ink) |
+| **Hardware Verified** | TRMNL BYOS (ESP32-C3, 7.5" 800×480 e-ink) |
 
 ---
 
@@ -133,10 +172,10 @@ pio device monitor -b 115200
 | **Git Commit** | `7336929` |
 | **Previous** | CC-FW-6.0-STABLE (`2f8d6cf`) |
 | **Status** | [CAUTION] SUPERSEDED by CC-FW-7.4.3 |
-| **Hardware Verified** | TRMNL OG (ESP32-C3, 7.5" 800×480 e-ink) |
+| **Hardware Verified** | TRMNL BYOS (ESP32-C3, 7.5" 800×480 e-ink) |
 
 **Description:**  
-Updated refresh timing for improved battery life and reduced API load. Consolidated FIRMWARE_VERSION define to eliminate compiler warnings.
+Updated refresh timing for reduced power consumption and reduced API load. Consolidated FIRMWARE_VERSION define to eliminate compiler warnings.
 
 **Changes from 6.0:**
 - Refresh interval: 20s → 60s (reduces API calls by 3x)
@@ -144,7 +183,7 @@ Updated refresh timing for improved battery life and reduced API load. Consolida
 - FIRMWARE_VERSION consolidated to `config.h` (eliminates redefinition warning)
 
 **Rationale:**
-- 60s refresh balances real-time feel with battery efficiency
+- 60s refresh balances real-time feel with power efficiency
 - Transit departures don't change dramatically within 60 seconds
 - Reduces e-ink wear (fewer partial refreshes per hour)
 
@@ -170,7 +209,7 @@ pio device monitor -b 115200
 | **Release Date** | 2026-01-31 |
 | **Git Commit** | `2f8d6cf` |
 | **Status** | [DONE] PRODUCTION - LOCKED |
-| **Hardware Verified** | TRMNL OG (ESP32-C3, 7.5" 800×480 e-ink) |
+| **Hardware Verified** | TRMNL BYOS (ESP32-C3, 7.5" 800×480 e-ink) |
 
 **Description:**  
 First production-ready firmware with full CCDashDesignV15.0 dashboard rendering. Sequential zone fetching, direct BMP rendering via bb_epaper library, hardcoded WiFi/server for ESP32-C3 stability.
@@ -207,7 +246,8 @@ pio device monitor -b 115200
 
 | Version | Date | Commit | Status | Notes |
 |---------|------|--------|--------|-------|
-| **CC-FW-7.5.0** | 2026-02-09 | (pending) | [LOCKED] LOCKED | Current production release. BLE webhook URL provisioning. |
+| **CC-FW-7.7.0** | 2026-02-16 | (pending) | [UNLOCKED] UNLOCKED | Current production release. Credential redaction, version alignment, stability. |
+| **CC-FW-7.5.0** | 2026-02-09 | (pending) | Superseded | BLE webhook URL provisioning. |
 | **CC-FW-7.4.3** | 2026-02-07 | (pending) | Superseded | Hybrid BLE + Pairing Code provisioning. |
 | **CC-FW-7.4.3-HYBRID** | 2026-02-01 | (pending) | Superseded | Hybrid BLE + Pairing Code provisioning. |
 | **CC-FW-6.1-60s** | 2026-01-31 | `7336929` | Superseded | 60s refresh interval, consolidated version define. |
@@ -241,8 +281,9 @@ Examples:
 
 ## Hardware Compatibility
 
-| Firmware | TRMNL OG | TRMNL Mini | Kindle |
-|----------|----------|------------|--------|
+| Firmware | TRMNL BYOS | TRMNL Mini | Kindle |
+|----------|------------|------------|--------|
+| CC-FW-7.7.0 | [YES] Verified | [?] Untested | N/A |
 | CC-FW-7.5.0 | [YES] Verified | [?] Untested | N/A |
 | CC-FW-6.1-60s | [YES] Verified | [?] Untested | N/A |
 | CC-FW-6.0-STABLE | [YES] Verified | [?] Untested | N/A |

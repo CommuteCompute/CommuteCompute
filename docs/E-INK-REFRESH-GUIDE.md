@@ -20,7 +20,7 @@ Your e-ink display refreshes **every 60 seconds**, updating only the parts that 
 
 ### The Sweet Spot
 
-- **Too fast (< 30s)**: Damages e-ink display, shortens lifespan, drains battery
+- **Too fast (< 30s)**: Damages e-ink display, shortens lifespan, increases power draw
 - **60 seconds**: Perfect balance -- fresh data without wear
 - **Too slow (> 120s)**: Departure times become stale, you might miss your train
 
@@ -91,28 +91,21 @@ Your e-ink display refreshes **every 60 seconds**, updating only the parts that 
 
 ---
 
-## Battery Impact
+## Power Requirements
 
-### Power Consumption
+> **USB-C power is required for continuous operation.** Battery-powered mode is under active
+> development. Deep sleep, battery voltage monitoring, and configurable refresh intervals are
+> planned features that are not yet implemented in the current firmware.
 
-**Partial Refresh (60s cycle):**
-- Active time: 2 seconds
-- Sleep time: 58 seconds
-- Power draw: ~30mA average
-- **Battery life: 3-5 days** (2500mAh battery)
+### Why Partial Refresh Matters
 
-**If using full refresh every 60s (DO NOT DO THIS):**
-- Active time: 2 seconds
-- Power draw: ~100mA average
-- **Battery life: ~1 day**
-
-### Why Partial Refresh Saves Battery
+Even on USB-C power, partial refresh reduces display wear and power draw:
 
 ```
 Full Refresh: ################....  (100% pixels updated)
 Partial:      ####................  ( 20% pixels updated)
               ^
-              5x less power consumption
+              5x less display wear per cycle
 ```
 
 ---
@@ -187,7 +180,7 @@ Partial:      ####................  ( 20% pixels updated)
 - Excessive e-ink wear
 - Display lifespan reduced from 5 years to 1 year
 - Ghosting artifacts accumulate faster
-- Battery drains 2x faster
+- Higher power consumption
 - No real benefit (transit data does not update faster than 30s)
 
 ### DO NOT Disable Partial Refresh
@@ -251,7 +244,7 @@ Legend:
 **Check:**
 1. **WiFi connection**: Device must be connected to fetch data
 2. **Server URL**: Verify in preferences
-3. **Battery level**: Low battery disables partial refresh
+3. **USB-C power**: Ensure the device is connected to USB-C power (battery mode is under development)
 4. **Serial output**: Connect USB and check for errors
 
 **Debug command:**
@@ -272,17 +265,9 @@ screen /dev/cu.usbmodem* 115200
 #define FULL_REFRESH_INTERVAL 180000  // 3 minutes instead of 5
 ```
 
-### "Battery draining too fast"
+### "Device not staying powered"
 
-**Check partial refresh is enabled:**
-```c
-#define PARTIAL_REFRESH_INTERVAL 60000  // Should be 60000, not less
-```
-
-**If battery still draining:**
-- Increase sleep time: `SLEEP_BETWEEN_PARTIALS_MS 88000` (90s cycle)
-- Reduce full refresh: `FULL_REFRESH_INTERVAL 600000` (10 min)
-- Check WiFi signal strength (weak signal = more power)
+**USB-C power is required** for continuous operation. Battery-powered mode is under active development and is not yet functional. Ensure the device is connected to a USB-C power source at all times.
 
 ---
 
@@ -310,15 +295,15 @@ screen /dev/cu.usbmodem* 115200
 - Updates only changed zones (70-80% less wear)
 - Full refresh every 5 minutes clears ghosting
 - Extends display lifespan from 1 year to 5+ years
-- Provides fresh transit data without excessive power consumption
+- Provides fresh transit data without excessive display wear
 
 **If you change these settings without approval, you WILL:**
 - Damage your e-ink display
 - Void your warranty
-- Drain your battery faster
+- Increase power consumption unnecessarily
 - See worse image quality
 
-**The 60-second refresh is optimised for transit data freshness, display longevity, and battery life. Do not change it.**
+**The 60-second refresh is optimised for transit data freshness and display longevity. Do not change it.**
 
 ---
 
@@ -326,4 +311,4 @@ screen /dev/cu.usbmodem* 115200
 **Applies To:** Commute Compute(TM) v4.2.0+ (CCDashDesignV15.0)
 **Firmware Version:** CC-FW-7.5.0
 
-(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual Licence
+(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual License

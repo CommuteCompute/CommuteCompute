@@ -11,7 +11,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-CC--FW--7.7.0-blue" alt="Version">
-  <img src="https://img.shields.io/badge/status-[LOCKED]%20LOCKED-green" alt="Locked">
+  <img src="https://img.shields.io/badge/status-[UNLOCKED]%20UNLOCKED-blue" alt="Unlocked">
   <img src="https://img.shields.io/badge/Anti--Brick-12%2F12%20✓-brightgreen" alt="Anti-Brick">
   <img src="https://img.shields.io/badge/platform-ESP32--C3-orange" alt="Platform">
 </p>
@@ -28,7 +28,7 @@ CCFirm™ is the custom firmware that runs on TRMNL e-ink display hardware to po
 - **Zone-based rendering** — Server renders, device displays
 - **Anti-brick compliance** — 12/12 safety rules enforced
 
-> [CAUTION] **LOCKED FIRMWARE**: CC-FW-7.7.0 is the production-locked version. Do not modify without explicit approval per DEVELOPMENT-RULES.md Section 5.6.
+> CC-FW-7.7.0 is the current production firmware, now unlocked for development. See DEVELOPMENT-RULES.md Section 5.6 for modification guidelines.
 
 ---
 
@@ -67,7 +67,7 @@ CCFirm™ is the custom firmware that runs on TRMNL e-ink display hardware to po
 | Attribute | Value |
 |-----------|-------|
 | **Version** | CC-FW-7.7.0 |
-| **Status** | [LOCKED] LOCKED (2026-02-16) |
+| **Status** | [UNLOCKED] UNLOCKED (2026-02-20) |
 | **Commit** | pending |
 | **Refresh Interval** | 60 seconds (HARDCODED) |
 | **Provisioning** | BLE + 6-character Pairing Code |

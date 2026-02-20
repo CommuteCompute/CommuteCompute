@@ -11,7 +11,7 @@ Last Updated: 2026-02-16
 
 ## Overview
 
-Commute Compute supports multiple e-ink display devices. This guide helps you:
+Commute Compute™ supports multiple e-ink display devices. This guide helps you:
 1. Choose the right device for your needs
 2. Verify compatibility with your hardware
 3. Configure the server for your specific device
@@ -25,7 +25,7 @@ Commute Compute supports multiple e-ink display devices. This guide helps you:
 
 | Device | Screen Size | Resolution | Status | Price Range |
 |--------|-------------|------------|--------|-------------|
-| **TRMNL BYOS** (also known as OG) | 7.5" | 800×480 | Official | $150-200 USD |
+| **TRMNL Display (OG)** | 7.5" | 800×480 | Official | $150-200 USD (~$230-310 AUD) |
 | **TRMNL Mini** | 4.2" | 400×300 | Official | $99-120 USD |
 | **Kindle Paperwhite 3/4** | 6" | 758×1024 | Supported | $50-80 USD (used) |
 | **Kindle Paperwhite 5** | 6.8" | 1236×1648 | Supported | $90-120 USD (used) |
@@ -44,7 +44,7 @@ Commute Compute supports multiple e-ink display devices. This guide helps you:
 
 ## Device Comparison
 
-### CC E-Ink BYOS (Official Platform - TRMNL Hardware)
+### TRMNL Display (OG) (Official Platform)
 
 **Pros**:
 - **Plug and play**: No jailbreaking required
@@ -54,12 +54,12 @@ Commute Compute supports multiple e-ink display devices. This guide helps you:
 - **Support**: Official TRMNL community
 
 **Cons**:
-- **Higher cost**: $150-200 USD new
+- **Higher cost**: $150-200 USD (~$230-310 AUD) new
 - **Availability**: May have wait times
 
 **Best For**: Users who want hassle-free setup and don't mind paying for quality.
 
-**Setup Time**: 15 minutes
+**Setup Time**: Hardware setup: ~15 minutes (after server deployment)
 
 ### Jailbroken Amazon Kindle
 
@@ -73,7 +73,7 @@ Commute Compute supports multiple e-ink display devices. This guide helps you:
 - **Requires jailbreak**: More technical setup
 - **Warranty void**: Jailbreaking voids Amazon warranty
 - **More setup steps**: Needs custom software installation
-- **Smaller screen**: 6" vs 7.5" for TRMNL BYOS display
+- **Smaller screen**: 6" vs 7.5" for TRMNL Display (OG)
 
 **Best For**: Tech-savvy users, budget-conscious buyers, or those with old Kindles lying around.
 
@@ -83,12 +83,12 @@ Commute Compute supports multiple e-ink display devices. This guide helps you:
 
 ## Device Specifications
 
-### CC E-Ink BYOS (TRMNL Hardware)
+### TRMNL Display (OG)
 
 **Hardware**:
 - **Display**: 7.5" Waveshare e-paper
 - **Resolution**: 800×480 pixels (landscape)
-- **Refresh Rate**: Configurable (5-60 min recommended)
+- **Refresh Rate**: Currently fixed at 60-second partial / 5-minute full (configurable refresh planned for future battery mode)
 - **Connectivity**: WiFi (2.4 GHz)
 - **Power**: USB-C, wall adapter included
 - **Platform**: BYOS (Bring Your Own Screen)
@@ -123,7 +123,7 @@ const TRMNL_BYOS = {
 **Hardware**:
 - **Display**: 4.2" Waveshare e-paper
 - **Resolution**: 400×300 pixels (landscape)
-- **Refresh Rate**: Configurable (5-60 min recommended)
+- **Refresh Rate**: Currently fixed at 60-second partial / 5-minute full (configurable refresh planned for future battery mode)
 - **Connectivity**: WiFi (2.4 GHz)
 - **Power**: USB-C
 - **Platform**: TRMNL Mini
@@ -145,7 +145,7 @@ const TRMNL_MINI = {
 **LiveDash Endpoint**: `/api/livedash?device=trmnl-mini`
 
 **Scaling Notes**:
-- V13 dashboard is proportionally scaled down
+- V15.0 dashboard is proportionally scaled down
 - Header height: 60px (vs 94px on BYOS)
 - Maximum journey legs: 4 (vs 5 on BYOS)
 - Font sizes reduced proportionally
@@ -303,7 +303,7 @@ const INKPLATE_10 = {
 
 ## Server-Side Device Detection
 
-Commute Compute automatically adapts to different devices.
+Commute Compute™ automatically adapts to different devices.
 
 ### Auto-Detection System
 
@@ -324,7 +324,7 @@ function detectDevice(req) {
     return detectKindleModel(userAgent);
   }
 
-  // Default to CC E-Ink BYOS
+  // Default to TRMNL Display (OG)
   return getDeviceConfig('trmnl-byos');
 }
 ```
@@ -347,7 +347,7 @@ DEVICE_HEIGHT=480
 
 ---
 
-## Setup Guide: CC E-Ink BYOS (TRMNL Hardware)
+## Setup Guide: TRMNL Display (OG)
 
 ### 1. Hardware Setup
 
@@ -358,7 +358,7 @@ DEVICE_HEIGHT=480
 
 ### 2. Flash CCFirm™ Firmware
 
-1. Connect the TRMNL display to your computer via USB
+1. Connect the display to your computer via USB
 2. Use the browser-based flasher at `https://your-project-name.vercel.app/flasher/` (Chrome or Edge required)
 3. Click **Connect**, select your device, and click **Flash**
 4. Wait for "Flash Complete!" message
@@ -398,14 +398,14 @@ The webhook URL is automatically configured during BLE setup via the Setup Wizar
 **WARNING**: Jailbreaking voids your Amazon warranty.
 
 **For Kindle Paperwhite 3/4/5**:
-1. Follow Commute Compute's Kindle setup guide
+1. Follow Commute Compute™'s Kindle setup guide
 2. Download jailbreak tools from MobileRead forums
 3. Install via USB connection
 4. Verify jailbreak successful
 
 **Resources**:
 - MobileRead Wiki: https://wiki.mobileread.com/wiki/Kindle_Hacks_Information
-- Commute Compute Kindle Setup Guide: See `/docs/hardware/KINDLE-SETUP.md`
+- Commute Compute™ Kindle Setup Guide: See `/docs/hardware/KINDLE-SETUP.md`
 
 ### Step 2: Install Kiosk Mode
 
@@ -457,7 +457,7 @@ https://your-server-name.vercel.app/api/dashboard?device=kindle-pw3&orientation=
 
 ## Server Endpoints for Different Devices
 
-### CC E-Ink BYOS Webhook
+### TRMNL Display (OG) Webhook
 
 **Endpoint**: `GET /api/screen`
 
@@ -470,7 +470,7 @@ https://your-server-name.vercel.app/api/dashboard?device=kindle-pw3&orientation=
 }
 ```
 
-### CC E-Ink BYOS LiveDash
+### TRMNL Display (OG) LiveDash
 
 **Endpoint**: `GET /api/livedash?device=trmnl-byos`
 
@@ -508,7 +508,7 @@ https://your-server-name.vercel.app/api/dashboard?device=kindle-4&orientation=la
 
 **Endpoint**: `GET /api/livedash`
 
-The LiveDash endpoint provides a unified multi-device rendering API that automatically scales the V13 dashboard specification to different screen sizes.
+The LiveDash endpoint provides a unified multi-device rendering API that automatically scales the V15.0 dashboard specification to different screen sizes.
 
 **Query Parameters**:
 | Parameter | Values | Default | Description |
@@ -520,7 +520,7 @@ The LiveDash endpoint provides a unified multi-device rendering API that automat
 **Supported Devices**:
 | Device ID | Resolution | Orientation | Notes |
 |-----------|------------|-------------|-------|
-| `trmnl-byos` | 800×480 | Landscape | TRMNL BYOS (default) |
+| `trmnl-byos` | 800×480 | Landscape | TRMNL Display (OG) (default) |
 | `trmnl-mini` | 400×300 | Landscape | TRMNL Mini (scaled down) |
 | `kindle-pw3` | 758×1024 | Portrait | Kindle Paperwhite 3/4 |
 | `kindle-pw5` | 1236×1648 | Portrait | Kindle Paperwhite 5 |
@@ -557,7 +557,7 @@ X-Dimensions: 800x480
   "status": "ok",
   "device": {
     "id": "trmnl-byos",
-    "name": "TRMNL BYOS",
+    "name": "TRMNL Display (OG)",
     "width": 800,
     "height": 480,
     "orientation": "landscape"
@@ -583,7 +583,7 @@ All outputs follow e-ink best practices:
 
 ### Device-Specific Optimisations
 
-**CC E-Ink BYOS (800×480)**:
+**TRMNL Display (OG) (800×480)**:
 - Font sizes: 24-48px
 - 4-6 data cards per screen
 - Landscape orientation
@@ -614,7 +614,7 @@ All outputs follow e-ink best practices:
 
 ## Troubleshooting
 
-### CC E-Ink BYOS Issues
+### TRMNL Display (OG) Issues
 
 **Device not refreshing**:
 - Verify the server URL was delivered correctly during BLE provisioning (re-run WiFi setup if needed)
@@ -736,15 +736,15 @@ Start Here
 │  ├─ Under $50   → Buy used Kindle 4 ($20-40)
 │  ├─ $50-$100    → Buy used Kindle Paperwhite 3/4 ($50-80)
 │  ├─ $100-$150   → Buy used Kindle Paperwhite 5 ($90-120)
-│  └─ $150-$200   → Buy TRMNL BYOS display ($150-200)
+│  └─ $150-$200   → Buy TRMNL Display (OG) display ($150-200)
 │
 ├─ How technical are you?
-│  ├─ Not technical → TRMNL BYOS (plug and play)
+│  ├─ Not technical → TRMNL Display (OG) (plug and play)
 │  ├─ Somewhat tech-savvy → Kindle Paperwhite (moderate jailbreak)
 │  └─ Very technical → Any device (you can handle it)
 │
 └─ How much time do you have?
-   ├─ 15-30 minutes → TRMNL BYOS (quick setup)
+   ├─ 15-30 minutes → TRMNL Display (OG) (quick setup)
    └─ 1-2 hours     → Jailbroken Kindle (more setup steps)
 ```
 
@@ -757,9 +757,9 @@ Start Here
 | **Budget Build** | Used Kindle 4 ($20-40) | Cheapest option, still very functional |
 | **Best Value** | Used Kindle PW3/4 ($50-80) | Great screen, affordable |
 | **Best Quality** | Kindle PW5 ($90-120) | Highest resolution, newer hardware |
-| **Easiest Setup** | TRMNL BYOS display ($150-200) | No jailbreaking, hardware support |
+| **Easiest Setup** | TRMNL Display (OG) ($150-200) | No jailbreaking, hardware support |
 | **Repurpose Old Device** | Your existing Kindle | Free if you already own one |
-| **Future-Proof** | TRMNL BYOS display | Purpose-built hardware, CC E-Ink firmware |
+| **Future-Proof** | TRMNL Display (OG) | Purpose-built hardware, CCFirm&#8482; firmware |
 
 ---
 
@@ -774,7 +774,7 @@ A: Yes! Jailbreak doesn't remove Amazon functionality. You can switch between tr
 **Q: Which Kindle should I buy used?**
 A: Kindle Paperwhite 3 or 4 ($50-80 used) offers best value. Avoid Kindle Fire (it's a tablet, not e-ink).
 
-**Q: Does Commute Compute work with Kobo devices?**
+**Q: Does Commute Compute™ work with Kobo devices?**
 A: Experimentally. Kobo uses different software. Community members have had success but it requires custom work.
 
 **Q: Can I use an old e-reader I found?**
@@ -782,7 +782,7 @@ A: Maybe! Check if it has WiFi and can run custom software. Post specs in GitLab
 
 **Q: How long does battery last?**
 A: Kindle: 2-4 weeks (refreshing every 15 min, WiFi on)
-TRMNL displays: Designed for always-plugged operation
+TRMNL display: USB-C power required. Battery mode is under development.
 
 **Q: Can I rotate the display?**
 A: Yes! Use `?orientation=landscape` or `portrait` parameter.
@@ -795,8 +795,8 @@ A: Open a GitLab Issue with your device specs. Community may have already tested
 ## Resources
 
 ### Official Guides
-- **Commute Compute Kindle Guide**: See `/docs/hardware/KINDLE-SETUP.md`
-- **CCFirm™ Firmware**: See `/tools/setup-wizard/firmware/`
+- **Commute Compute™ Kindle Guide**: See `/docs/hardware/KINDLE-SETUP.md`
+- **CCFirm&#8482; Firmware**: See `/tools/setup-wizard/firmware/`
 - **TRMNL Hardware Support**: https://discord.gg/trmnl
 
 ### Jailbreaking Resources

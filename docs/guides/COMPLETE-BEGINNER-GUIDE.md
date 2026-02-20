@@ -16,10 +16,10 @@
 ---
 
 > **Key Terms:** Before we start, here are a few terms you will see throughout this guide:
-> - **TRMNL display** — The third-party e-ink display hardware that sits on your desk or wall (manufactured by TRMNL; Commute Compute runs custom firmware on it)
+> - **TRMNL display** — Your e-ink display device (the physical screen that sits on your desk or wall), manufactured by TRMNL
 > - **Redis** — The database that stores your settings (set up automatically via Vercel)
 > - **GTFS-RT** — The live departure data feed from Transport Victoria that powers real-time countdown timers
-> - **Vercel** — The free cloud platform that hosts your Commute Compute server
+> - **Vercel** — The free cloud platform that hosts your Commute Compute™ server
 > - **Setup Wizard** — The web page where you configure your addresses and preferences
 > - **CCFirm™** — The custom firmware (device software) that runs on your TRMNL display
 > - **BLE** — Bluetooth Low Energy, used to send WiFi credentials and your server URL to your display during initial setup
@@ -47,10 +47,11 @@ The display updates automatically every 60 seconds with real-time information.
 Before starting, confirm you have the following. Gathering everything upfront will make the process much smoother.
 
 **Hardware checklist:**
-- [ ] A CC E-Ink display (TRMNL BYOS from the [TRMNL Shop](https://shop.trmnl.com), or a jailbroken Kindle)
+- [ ] A TRMNL display (TRMNL Display (OG) from the [TRMNL Shop](https://shop.trmnl.com), or a jailbroken Kindle)
 - [ ] A USB-C data cable (not charge-only) for connecting the display to your computer
+- [ ] A USB-C power supply for continuous operation (battery mode is under development and not currently supported)
 - [ ] A desktop or laptop computer with **Chrome or Edge** browser (required for device flashing and BLE WiFi provisioning; Safari, Firefox, and iPhone/iPad are not supported for these steps)
-- [ ] A **2.4GHz WiFi network** -- the CC E-Ink display does not support 5GHz networks. If your router broadcasts a combined 2.4/5GHz network, ensure the 2.4GHz band is enabled.
+- [ ] A **2.4GHz WiFi network** -- the TRMNL display does not support 5GHz networks. If your router broadcasts a combined 2.4/5GHz network, ensure the 2.4GHz band is enabled.
 
 **Accounts checklist:**
 - [ ] A **Vercel account** (free) -- sign up at [vercel.com](https://vercel.com)
@@ -65,8 +66,8 @@ Before starting, confirm you have the following. Gathering everything upfront wi
 
 Commute Compute™ is compatible with the following e-ink displays:
 
-- **CC E-Ink BYOS** (also known as OG) (800x480, 7.5" e-ink) — A purpose-built e-ink display available from the [TRMNL Shop](https://shop.trmnl.com). The hardware is manufactured by TRMNL; Commute Compute™ runs custom CCFirm™ firmware on it. Commute Compute is not affiliated with or endorsed by TRMNL.
-- **Jailbroken Kindle** — Various Kindle models (Paperwhite 3/4/5, Kindle 4) can be repurposed as Commute Compute displays. Requires jailbreaking the device.
+- **TRMNL Display (OG)** (800x480, 7.5" e-ink) — A purpose-built e-ink display available from the [TRMNL Shop](https://shop.trmnl.com). The hardware is manufactured by TRMNL; Commute Compute™ runs custom CCFirm™ firmware on it. Commute Compute™ is not affiliated with or endorsed by TRMNL.
+- **Jailbroken Kindle** — Various Kindle models (Paperwhite 3/4/5, Kindle 4) can be repurposed as Commute Compute™ displays. Requires jailbreaking the device.
 
 For detailed specifications, setup instructions, and a full list of supported devices, see the [Device Compatibility Guide](../hardware/DEVICE-COMPATIBILITY.md).
 
@@ -80,10 +81,13 @@ Before starting, gather these items and information:
 
 | Item | Description | Cost |
 |------|-------------|------|
-| **CC E-Ink display** | E-ink display device (e.g. CC E-Ink BYOS from the TRMNL Shop) | ~$150 AUD |
-| **Computer** | Desktop or laptop for initial setup (not iPhone/iPad) | — |
+| **TRMNL display** | E-ink display device (e.g. TRMNL Display (OG) from the TRMNL Shop) | ~$150 AUD |
+| **Computer** | Desktop or laptop for initial setup (not iPhone/iPad) | -- |
 | **USB Cable** | USB-C cable for connecting display to computer | Usually included |
-| **WiFi Network** | 2.4 GHz network (5 GHz not supported) | — |
+| **USB-C Power Supply** | Required for continuous operation (battery mode is under development) | -- |
+| **WiFi Network** | 2.4 GHz network (5 GHz not supported) | -- |
+
+[IMPORTANT] **Power:** USB-C power supply required. Your TRMNL display must remain connected to USB-C power for continuous operation. Battery mode is under development and not currently supported.
 
 ### Required Online Accounts
 
@@ -129,7 +133,7 @@ Before starting setup, have these details ready:
 
 [TIME] This entire part takes approximately 10-15 minutes.
 
-Your Commute Compute server runs in the cloud for free on Vercel. "The cloud" simply means the server runs on someone else's computer (Vercel's) instead of yours.
+Your Commute Compute™ server runs in the cloud for free on Vercel. "The cloud" simply means the server runs on someone else's computer (Vercel's) instead of yours.
 
 ### Step 1.1: Create Vercel Account
 
@@ -142,22 +146,22 @@ Your Commute Compute server runs in the cloud for free on Vercel. "The cloud" si
 3. Choose **Continue with GitLab** (recommended)
 4. If you don't have a GitLab account, click "Create one" and follow the registration steps at [gitlab.com](https://gitlab.com)
 
-**What is GitLab?** GitLab is a code hosting platform. Vercel needs to connect to it to access the Commute Compute code.
+**What is GitLab?** GitLab is a code hosting platform. Vercel needs to connect to it to access the Commute Compute™ code.
 
 ### Step 1.2: Deploy Commute Compute
 
 [TIME] Approximately 3-5 minutes (mostly automated waiting).
 
-[NOTE] "Deploy" means to copy the Commute Compute code to Vercel's servers and start it running.
+[NOTE] "Deploy" means to copy the Commute Compute™ code to Vercel's servers and start it running.
 
-1. Go to the Commute Compute repository on GitLab
+1. Go to the Commute Compute™ repository on GitLab
 2. Click the **Deploy to Vercel** button in the README
 3. Click **Create** when prompted by Vercel
 4. Wait while Vercel builds and deploys your server (takes 2-3 minutes)
 
 **Success!** You'll see a green checkmark and a deployment URL like `your-project-name.vercel.app`
 
-[IMPORTANT] Write down this URL -- you'll use it throughout setup. This is your personal Commute Compute server address.
+[IMPORTANT] Write down this URL -- you'll use it throughout setup. This is your personal Commute Compute™ server address.
 
 ### Step 1.3: Create Database
 
@@ -183,11 +187,11 @@ Your server needs a database to store your settings (addresses, API keys, prefer
 
 [TIME] Approximately 2-3 minutes.
 
-Redis installed via the Marketplace needs to be linked to your Commute Compute project.
+Redis installed via the Marketplace needs to be linked to your Commute Compute™ project.
 
 1. After database creation, you'll see a **Projects** tab
 2. Click **Connect Project**
-3. Select your Commute Compute project from the list
+3. Select your Commute Compute™ project from the list
 4. Click **Connect**
 
 **What just happened?** Vercel automatically added two "environment variables" (configuration settings) to your project so it knows how to access the database.
@@ -323,8 +327,8 @@ Click **Next** to continue.
 [TIME] Less than 1 minute.
 
 Choose your display device type:
-- **CC E-Ink BYOS** -- Select this for the standard 800x480 CC E-Ink display
-- **CC E-Ink Mini** -- For smaller 400x300 displays
+- **TRMNL Display (OG)** -- Select this for the standard 800x480 TRMNL display
+- **TRMNL Mini** -- For smaller 400x300 displays
 - **Kindle** -- For jailbroken Kindle devices
 
 Click **Complete Setup** to finish configuration.
@@ -385,7 +389,7 @@ This verification confirms your server is working before you invest time in devi
 
 You have two options to flash CCFirm™ firmware to your TRMNL display. The browser flasher is the easiest method and requires no software installation.
 
-**What is flashing?** "Flashing" means installing the Commute Compute firmware (device software) onto your display's memory chip. This is a one-time process.
+**What is flashing?** "Flashing" means installing the Commute Compute™ firmware (device software) onto your display's memory chip. This is a one-time process.
 
 ### Option A: Browser Flasher (Recommended -- No Software Install Required)
 
@@ -435,7 +439,7 @@ pip3 install platformio
 
 **Step 2: Download Firmware Code**
 
-1. Go to the Commute Compute GitLab repository in your browser
+1. Go to the Commute Compute™ GitLab repository in your browser
 2. Click **Code** dropdown button > **Download ZIP**
 3. Extract the ZIP file to your Downloads folder
 4. Open Terminal (macOS) or Command Prompt (Windows)
@@ -671,9 +675,9 @@ If you're stuck:
 
 | Term | Meaning |
 |------|---------|
-| **TRMNL display** | The third-party e-ink display hardware — the physical screen that shows your dashboard |
+| **TRMNL display** | The e-ink display hardware (manufactured by TRMNL) — the physical screen that shows your dashboard |
 | **CCFirm™** | The custom firmware (device software) that runs on your TRMNL display |
-| **Vercel** | Free cloud hosting service that runs your Commute Compute server |
+| **Vercel** | Free cloud hosting service that runs your Commute Compute™ server |
 | **Redis** | Database for your settings, installed via the Vercel Marketplace (powered by Upstash) |
 | **PlatformIO** | Software tool used to program (flash) firmware onto devices |
 | **Firmware** | Software that runs directly on your TRMNL display hardware |

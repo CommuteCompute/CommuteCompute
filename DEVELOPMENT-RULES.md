@@ -142,7 +142,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 - 5.3 Flashing Procedure
 - 5.4 Critical bb_epaper ESP32-C3 Findings (2026-01-29)
 - 5.5 ESP32-C3 Troubleshooting Guide (2026-01-30)
-- 5.6 **Production Firmware: CC-FW-7.7.0** [LOCKED]
+- 5.6 **Production Firmware: CC-FW-7.7.0** [UNLOCKED]
 </details>
 
 <details>
@@ -874,7 +874,7 @@ Commute Compute is designed for TRMNL e-ink display hardware with custom firmwar
 | Display | 7.5" E-ink, 800×480 pixels, 1-bit depth |
 | Connectivity | WiFi 802.11 b/g/n (2.4GHz) |
 | Memory | 400KB SRAM, 4MB Flash |
-| Power | USB-C or battery (low power deep sleep) |
+| Power | USB-C required (battery mode under development) |
 | Refresh | Partial refresh supported |
 
 ### 5.2 Custom Firmware Requirements
@@ -1102,14 +1102,14 @@ The renderer creates a minimal 1-bit BMP in RAM (62-byte header + pixel data), r
 
 ### 5.6 Production Firmware: CC-FW-7.7.0 (2026-02-16)
 
-**[LOCKED] — Production Release**
+**[UNLOCKED] — Production Release**
 
 **Official Name:** `CC-FW-7.7.0`
 **Version:** 7.7.0
 **Commit:** (pending)
 **Previous:** `CC-FW-7.6.0`
 **Verified On:** TRMNL OG hardware
-**Status:** [LOCKED] (2026-02-16) — Production Release
+**Status:** [UNLOCKED] (2026-02-20) — Production Release
 
 **Changes from 7.6.0:**
 - **Version Alignment:** Canonical firmware version declared by founder directive

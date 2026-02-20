@@ -61,11 +61,11 @@ export default async function handler(req, res) {
       livedash: { version: 'v3.0', locked: false },
       // Admin panel
       admin: { version: 'v5.0', locked: false },
-      // Firmware (LOCKED — runtime factory reset + BLE provisioning)
+      // Firmware (UNLOCKED — runtime factory reset + BLE provisioning)
       firmware: {
         version: 'CC-FW-7.7.0',
-        locked: true,
-        lockedDate: '2026-02-16',
+        locked: false,
+        lockedDate: null,
         description: 'ESP32 firmware with runtime factory reset, battery reporting, zero-config BLE pairing'
       }
     },
