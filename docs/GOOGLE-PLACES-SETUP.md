@@ -62,7 +62,7 @@
 
 2. **Create New Project** (or select existing):
    - Click "Select a project" → "New Project"
-   - Project name: `Commute Compute` (or your choice)
+   - Project name: `Commute Compute™` (or your choice)
    - Click "Create"
 
 ### Step 2: Enable Places API (New)
@@ -155,7 +155,7 @@ If you prefer environment variables (e.g., for Render or Docker deployments):
 - Autocomplete (per session): $2.83 per 1000 requests
 - Place Details: $17 per 1000 requests
 
-**Typical Usage** for Commute Compute:
+**Typical Usage** for Commute Compute™:
 - ~10 address searches per day = 300/month
 - ~600 API calls/month (autocomplete + details)
 - **Cost**: $0/month (well within free tier)

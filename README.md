@@ -54,7 +54,7 @@ Here is what no other commuter tool provides:
 
 - **Melbourne Metro Tunnel compliance.** Full support for Melbourne's once-in-a-generation infrastructure change: 5 new underground stations, rerouted Pakenham/Cranbourne/Sunbury lines, and discontinued City Loop services. First-to-market for this routing change.
 
-- **Zero-config setup via BLE provisioning.** No environment variables. No config files. Pair via Bluetooth, run the Setup Wizard, and configure everything through a guided web interface. First-time setup takes approximately 60-90 minutes including API key registration and device flashing.
+- **Zero-config setup via BLE provisioning.** No environment variables. No config files. Pair via Bluetooth, run the Setup Wizard, and configure everything through a guided web interface. First-time setup takes approximately 60-90 minutes including API key registration and device flashing (plus 24-48 hour wait for Transport Victoria API key approval).
 
 - **Graceful offline degradation.** When APIs are unreachable, the system falls back to cached data and static timetables. The display always shows something useful.
 
@@ -95,7 +95,7 @@ Status timing follows user-intent logic: when departure is still far away (>120 
                                       |
                             +------------------------+
                             |                        |
-                            |  TRMNL (ESP32-C3)      |
+                            |  TRMNL Display (ESP32)  |
                             |  Kindle E-Reader       |
                             |  Inkplate 6/10         |
                             |  Web Browser           |
@@ -316,7 +316,7 @@ This makes Commute Compute&#8482; one of the first commuter tools to fully suppo
 2. **Data Sources** are polled on each request: GTFS-RT for live transit (30s cache), BOM for weather (5min cache), Google Places for cafe status.
 3. **Five Intelligence Engines** process the combined data into a unified journey model.
 4. **CCDash&#8482; Renderer** converts the data model into an 800x480 1-bit BMP image optimised for e-ink.
-5. **The device** (TRMNL, Kindle, Inkplate, or browser) fetches the rendered image over HTTPS on a 60-second refresh cycle.
+5. **The device** (TRMNL display, Kindle, Inkplate, or browser) fetches the rendered image over HTTPS on a 60-second refresh cycle.
 
 ### Caching Strategy
 
@@ -352,13 +352,13 @@ Vercel Dashboard > Integrations > Browse Marketplace > **Redis** (Upstash) > Ins
 
 Open `https://your-project.vercel.app/setup-wizard.html` and follow the guided configuration (home, work, arrival time, API keys).
 
-### 4. Flash Device (TRMNL)
+### 4. Flash Device (TRMNL Display)
 
 **Option A: Browser Flasher (Recommended)**
 
 Use the hosted browser flasher at `https://your-project.vercel.app/flasher/` (Chrome/Edge desktop required):
 
-- TRMNL / ESP32-C3 firmware flashing via Web Serial
+- TRMNL display / ESP32-C3 firmware flashing via Web Serial
 - Kindle package install (jailbroken + KUAL) to `extensions/commute-compute`
 
 **Option B: PlatformIO CLI**
@@ -372,7 +372,7 @@ Embed snippet for docs pages that support iframes:
 ```html
 <iframe
   src="https://your-project.vercel.app/flasher/"
-  title="Commute Compute Device Flasher"
+  title="Commute Compute™ Device Flasher"
   width="100%"
   height="900"
   style="border:1px solid #d7e0eb;border-radius:12px;"
@@ -417,7 +417,7 @@ See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed step-by-step instructions 
 
 | Device | Resolution | Status |
 |:-------|:-----------|:-------|
-| TRMNL OG (ESP32-C3) | 800 x 480 | Primary target -- requires CCFirm&#8482; firmware |
+| TRMNL Display (OG) (ESP32-C3) | 800 x 480 | Primary target -- requires CCFirm&#8482; firmware |
 | TRMNL Mini | 400 x 300 | Supported |
 | Kindle Paperwhite 3/4/5 | 1072 x 1448 | Supported -- requires jailbreak |
 | Kindle Basic 10/11 | 600 x 800 | Supported -- requires jailbreak |
@@ -429,12 +429,12 @@ See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed step-by-step instructions 
 
 | Device | Source | Notes |
 |:-------|:-------|:------|
-| **TRMNL OG (ESP32-C3)** | [TRMNL Shop](https://shop.trmnl.com) | Primary supported hardware. Approximately AU$120-150 shipped to Australia. |
-| **ESP32-C3 + E-Ink DIY Kit** | [Seeed Studio](https://www.seeedstudio.com) | Build your own e-ink display from components. Requires soldering and case assembly. |
+| **TRMNL Display (OG) (ESP32-C3)** | [TRMNL Shop](https://shop.trmnl.com) | Primary supported hardware. Approximately AU$120-150 shipped to Australia. |
+| **ESP32-C3 + E-Ink DIY Kit** | [Seeed Studio](https://www.seeedstudio.com) | Build your own TRMNL-compatible display from components. Requires soldering and case assembly. |
 | **Kindle Paperwhite / Basic** | Amazon or second-hand | Requires jailbreak. Older models (PW3/PW4) recommended for jailbreak compatibility. |
 | **Inkplate 6 / 10** | [Soldered Electronics](https://soldered.com) | Open-hardware ESP32 e-ink boards. |
 
-The TRMNL OG display is the primary supported device and provides the best experience with CCFirm&#8482; firmware and BLE provisioning.
+The TRMNL Display (OG) is the primary supported device and provides the best experience with CCFirm&#8482; firmware and BLE provisioning.
 
 <br>
 
@@ -450,7 +450,7 @@ The TRMNL OG display is the primary supported device and provides the best exper
 | Lines of Code | 112,000+ |
 | Intelligence Engines | 5 |
 | Development Rules Sections | 24 |
-| Automated Compliance Checks | 240+ |
+| Automated Compliance Checks | 214 |
 | Australian Coverage | VIC (Live GTFS-RT), 7 States/Territories (timetable) |
 
 <br>

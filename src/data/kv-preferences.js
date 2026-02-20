@@ -380,10 +380,23 @@ export async function getDeviceStatus() {
  * @returns {Promise<boolean>}
  */
 export async function setDeviceStatus(status) {
-  return await set(KEYS.DEVICE_STATUS, {
+  const value = {
     ...status,
     updated_at: new Date().toISOString()
-  });
+  };
+  try {
+    const client = await getClient();
+    if (client) {
+      await withTimeout(client.set(KEYS.DEVICE_STATUS, value, { ex: 86400 }), 5000, false);
+      return true;
+    }
+    memoryStore.set(KEYS.DEVICE_STATUS, value);
+    return true;
+  } catch (error) {
+    console.error('[KV]', { operation: 'setDeviceStatus', error: error.message, timestamp: new Date().toISOString() });
+    memoryStore.set(KEYS.DEVICE_STATUS, value);
+    return false;
+  }
 }
 
 /**

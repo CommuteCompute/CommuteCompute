@@ -8,7 +8,7 @@
 **Last Updated**: 2026-02-03  
 **System**: Commute Compute System v3.1.0  
 **Spec**: CCDashDesignV15.0 (LOCKED)
-**Firmware**: CC-FW-7.4.3 (LOCKED)
+**Firmware**: CC-FW-7.7.0 (UNLOCKED)
 **Architecture**: Zero-Config Serverless (Vercel + KV)
 
 ---
@@ -384,9 +384,9 @@ curl "https://your-project.vercel.app/api/screen?token=BASE64_CONFIG_TOKEN"
 
 ## Phase 5: Firmware Testing
 
-### 5.1 Firmware Verification (CC-FW-7.4.3)
+### 5.1 Firmware Verification (CC-FW-7.7.0)
 
-**[CAUTION] FIRMWARE IS LOCKED** — Do not modify without explicit approval.
+**Firmware is UNLOCKED** for development and updates.
 
 **Boot Sequence**:
 - [ ] CC logo displayed on boot (2-3 seconds)
@@ -536,7 +536,7 @@ Vercel serverless cold start:
 2. [ ] User imports to Vercel
 3. [ ] User creates Redis database
 4. [ ] User deploys (auto or manual)
-5. [ ] User flashes device with CC-FW-7.4.3 (if not pre-flashed)
+5. [ ] User flashes device with CC-FW-7.7.0 (if not pre-flashed)
 6. [ ] **Phase 1 (BLE)**: User provisions device WiFi via Bluetooth
    - [ ] Device shows BLE setup screen
    - [ ] User connects phone to device via BLE
@@ -600,7 +600,7 @@ Vercel serverless cold start:
 **Tester**: _________________  
 **Date**: ____ / ____ / 2026  
 **Version**: v3.1.0  
-**Firmware**: CC-FW-7.4.3  
+**Firmware**: CC-FW-7.7.0
 **Spec**: CCDashDesignV15.0
 
 **Overall Result**:

@@ -112,7 +112,7 @@
         }
         .compliance-check input[type="checkbox"] {
             appearance: none; -webkit-appearance: none;
-            width: 20px; height: 20px; min-width: 20px;
+            width: 24px; height: 24px; min-width: 24px;
             border: 2px solid #4fb28e; border-radius: 4px;
             background: transparent; cursor: pointer;
             margin-top: 2px; position: relative;
@@ -122,7 +122,7 @@
         }
         .compliance-check input[type="checkbox"]:checked::after {
             content: ''; position: absolute;
-            left: 5px; top: 1px; width: 6px; height: 12px;
+            left: 7px; top: 2px; width: 6px; height: 12px;
             border: solid #0f172a; border-width: 0 2px 2px 0;
             transform: rotate(45deg);
         }
@@ -323,6 +323,18 @@
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.5; transform: scale(1.2); }
         }
+        @media (max-width: 480px) {
+            body { padding: 12px; padding-bottom: 80px; }
+            .wizard-card { padding: 16px; }
+            .compliance-card { padding: 20px; }
+            .compliance-card h1 { font-size: 18px; }
+            .compliance-card .subtitle { font-size: 12px; }
+            .compliance-section { padding: 12px; }
+            .compliance-check label { font-size: 14px; }
+            .wizard-header h1 { font-size: 20px; }
+            h2 { font-size: 16px; }
+            .step-tab { width: 28px; height: 28px; font-size: 11px; }
+        }
         @media (max-width: 768px) {
             .cc-system-footer-inner { flex-direction: column; text-align: center; }
             .cc-footer-attribution { text-align: center; }
@@ -417,51 +429,35 @@
     <!-- ========== LEGAL COMPLIANCE GATE (Must be acknowledged before setup) ========== -->
     <div id="compliance-gate" class="compliance-gate" role="dialog" aria-modal="true" aria-labelledby="compliance-title" aria-describedby="compliance-desc">
         <div class="compliance-card">
-            <img src="/assets/brand/cc-logo-512.png" alt="Commute Compute" style="display: block; margin: 0 auto 16px; width: 200px; height: auto;">
-            <h1 id="compliance-title">Legal &amp; Privacy Acknowledgment</h1>
-            <p id="compliance-desc" class="subtitle">Please review and acknowledge the following before setting up Commute Compute&#8482;. Your acknowledgment is required to proceed.</p>
+            <img src="/assets/brand/cc-logo-512.png" alt="Commute Compute" style="display: block; margin: 0 auto 16px; max-width: min(200px, 70vw); height: auto;">
+            <h1 id="compliance-title">Before We Begin</h1>
+            <p id="compliance-desc" class="subtitle">A few quick acknowledgements before we set up your dashboard.</p>
+
+            <p style="color: #94a3b8; font-size: 13px; line-height: 1.6; margin-bottom: 20px; text-align: center;">
+                Before we begin, here is what you are agreeing to. Commute Compute&#8482; is self-hosted &mdash; your data stays on your server.
+            </p>
 
             <div class="compliance-section">
-                <h3><svg class="icon-sm"><use href="#icon-shield"/></svg> Privacy &amp; Data Protection</h3>
+                <h3><svg class="icon-sm"><use href="#icon-shield"/></svg> Privacy &amp; Data</h3>
                 <div class="compliance-check">
                     <input type="checkbox" id="ack-privacy" aria-labelledby="ack-privacy-label">
-                    <label for="ack-privacy" id="ack-privacy-label">I have read and understand the <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. I understand this is a self-hosted system where all data is stored in my own Redis database. The project maintainer does not collect, access, or store any of my data.</label>
-                </div>
-                <div class="compliance-check">
-                    <input type="checkbox" id="ack-data-controller" aria-labelledby="ack-data-controller-label">
-                    <label for="ack-data-controller" id="ack-data-controller-label">I understand I am the <strong>data controller</strong> for my deployment and am responsible for its compliance with applicable privacy laws in my jurisdiction. If I configure this system for another person, I will inform them about data collection and their right to request deletion.</label>
-                </div>
-                <div class="compliance-check">
-                    <input type="checkbox" id="ack-cross-border" aria-labelledby="ack-cross-border-label">
-                    <label for="ack-cross-border" id="ack-cross-border-label">I understand that some third-party services (Vercel, Upstash Redis, Google Places API) may process data outside Australia. I have reviewed the <a href="/privacy.html#third-party-services" target="_blank" rel="noopener">Third-Party Services</a> section of the Privacy Policy.</label>
+                    <label for="ack-privacy" id="ack-privacy-label">I have read the <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. I understand this is a self-hosted system where I am the data controller. Some third-party services may process data outside Australia.</label>
                 </div>
             </div>
 
             <div class="compliance-section">
-                <h3><svg class="icon-sm"><use href="#icon-lock"/></svg> Licensing &amp; Attribution</h3>
+                <h3><svg class="icon-sm"><use href="#icon-lock"/></svg> Licensing</h3>
                 <div class="compliance-check">
                     <input type="checkbox" id="ack-licence" aria-labelledby="ack-licence-label">
-                    <label for="ack-licence" id="ack-licence-label">I understand this software is licensed under <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a> with <a href="/legal.html#dual-licence" target="_blank" rel="noopener">dual licensing</a> available for commercial use. If I modify and deploy this software over a network, I must provide source code access to users.</label>
-                </div>
-                <div class="compliance-check">
-                    <input type="checkbox" id="ack-attribution" aria-labelledby="ack-attribution-label">
-                    <label for="ack-attribution" id="ack-attribution-label">I will maintain all required <a href="/attribution.html" target="_blank" rel="noopener">third-party attributions</a> including Transport Victoria OpenData (CC BY 4.0), Bureau of Meteorology (CC BY 3.0 AU), and OpenStreetMap (ODbL).</label>
+                    <label for="ack-licence" id="ack-licence-label">I understand this software is licensed under <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a> with <a href="/legal.html#dual-licence" target="_blank" rel="noopener">dual licensing</a> available. If I modify and deploy this over a network, I must provide source code access. I will maintain all required third-party attributions.</label>
                 </div>
             </div>
 
             <div class="compliance-section">
-                <h3><svg class="icon-sm"><use href="#icon-warning"/></svg> Liability &amp; Warranty</h3>
+                <h3><svg class="icon-sm"><use href="#icon-warning"/></svg> Terms &amp; Conditions</h3>
                 <div class="compliance-check">
-                    <input type="checkbox" id="ack-liability" aria-labelledby="ack-liability-label">
-                    <label for="ack-liability" id="ack-liability-label">I understand this software is provided &ldquo;AS IS&rdquo; with <strong>no warranty</strong> of any kind. Subject to Australian Consumer Law non-excludable guarantees, liability is limited as described in the <a href="/legal.html#liability" target="_blank" rel="noopener">Legal Terms</a>.</label>
-                </div>
-            </div>
-
-            <div class="compliance-section">
-                <h3><svg class="icon-sm"><use href="#icon-lock"/></svg> Security</h3>
-                <div class="compliance-check">
-                    <input type="checkbox" id="ack-security" aria-labelledby="ack-security-label">
-                    <label for="ack-security" id="ack-security-label">I understand that device webhook URLs and admin tokens should be treated as sensitive credentials. I will secure my deployment by using a strong admin token and keeping my Redis credentials private.</label>
+                    <input type="checkbox" id="ack-terms" aria-labelledby="ack-terms-label">
+                    <label for="ack-terms" id="ack-terms-label">I understand this software is provided &ldquo;as is&rdquo; with no warranty, subject to Australian Consumer Law non-excludable guarantees. I will treat webhook URLs and admin tokens as sensitive credentials. See <a href="/legal.html" target="_blank" rel="noopener">Legal Terms</a>.</label>
                 </div>
             </div>
 
@@ -481,7 +477,7 @@
     <div class="container" id="wizard-main" role="main">
         <div class="wizard-card">
             <header class="wizard-header">
-                <img src="/assets/brand/cc-logo-512.png" alt="Commute Compute™" style="width: 280px; height: auto; margin-bottom: 20px;">
+                <img src="/assets/brand/cc-logo-512.png" alt="Commute Compute™" style="max-width: min(280px, 80vw); height: auto; margin-bottom: 20px;">
                 <h1>Welcome to Commute Compute&#8482;</h1>
                 <p>Powered by the CommuteCompute&#8482; intelligence engine for smart departure recommendations</p>
             </header>
@@ -499,12 +495,12 @@
 
             <!-- Step Indicator -->
             <nav class="step-indicator" role="tablist" aria-label="Setup progress">
-                <div class="step-tab active" role="tab" aria-selected="true" aria-controls="step-1" id="tab-1" tabindex="0">1</div>
-                <div class="step-tab" role="tab" aria-selected="false" aria-controls="step-2" id="tab-2" tabindex="-1">2</div>
-                <div class="step-tab" role="tab" aria-selected="false" aria-controls="step-3" id="tab-3" tabindex="-1">3</div>
-                <div class="step-tab" role="tab" aria-selected="false" aria-controls="step-4" id="tab-4" tabindex="-1">4</div>
-                <div class="step-tab" role="tab" aria-selected="false" aria-controls="step-5" id="tab-5" tabindex="-1">5</div>
-                <div class="step-tab" role="tab" aria-selected="false" aria-controls="step-6" id="tab-6" tabindex="-1">6</div>
+                <div class="step-tab active" role="tab" aria-selected="true" aria-controls="step-1" id="tab-1" tabindex="0" aria-label="Step 1: Connect Display">1</div>
+                <div class="step-tab" role="tab" aria-selected="false" aria-controls="step-2" id="tab-2" tabindex="-1" aria-label="Step 2: Google Places API">2</div>
+                <div class="step-tab" role="tab" aria-selected="false" aria-controls="step-3" id="tab-3" tabindex="-1" aria-label="Step 3: Your Addresses">3</div>
+                <div class="step-tab" role="tab" aria-selected="false" aria-controls="step-4" id="tab-4" tabindex="-1" aria-label="Step 4: Transit Authority">4</div>
+                <div class="step-tab" role="tab" aria-selected="false" aria-controls="step-5" id="tab-5" tabindex="-1" aria-label="Step 5: Journey Settings">5</div>
+                <div class="step-tab" role="tab" aria-selected="false" aria-controls="step-6" id="tab-6" tabindex="-1" aria-label="Step 6: Your Configuration">6</div>
             </nav>
 
             <!-- ========== STEP 1: Connect Your Display (BLE WiFi Only) ========== -->

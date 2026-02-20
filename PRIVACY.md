@@ -87,6 +87,8 @@ Commute Compute™ includes an optional feedback form (`/api/feedback`) that all
 
 ### Cross-Border Data Flows (APP 8)
 
+Commute Compute qualifies for the small business exemption under s 6D of the Privacy Act 1988 but voluntarily complies with APP 8.
+
 **Cross-border data flows:** Some third-party services process data outside Australia (Vercel and Upstash infrastructure is located in the United States). We take reasonable steps to protect your personal information when disclosed to overseas recipients by: (1) selecting providers with SOC 2 Type II certification (an independent audit standard that verifies a service organisation's security controls are effective over a sustained period) or equivalent, (2) using encryption in transit (HTTPS/TLS 1.3 — secure communication protocols that encrypt data sent between your browser and servers, indicated by the padlock icon in your browser) and at rest (AES-256), and (3) reviewing third-party privacy policies for compliance with international privacy standards. For Upstash security practices and certifications, see the [Upstash Security Page](https://upstash.com/docs/common/security). We recommend selecting the Sydney (Australia) region when creating your Redis database to minimise cross-border data transfers.
 
 ---

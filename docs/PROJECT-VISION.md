@@ -165,8 +165,8 @@ Create a **"set and forget"** smart transit display that tells you exactly when 
 - [x] Public repository finalization
 - [x] Community documentation
 - [x] Reddit/social media announcement (222k+ views)
-- [x] IP Australia trade mark applications filed
-- [x] ABN registered
+- [x] IP Australia trade mark applications filed (TM 2627709, TM 2627710)
+- [x] ABN registered (59 402 869 395)
 - [x] Live deployment on Vercel
 - [ ] Video tutorials (future)
 
@@ -221,7 +221,7 @@ The entire system must be usable for free. Paid APIs (Google Places) are optiona
 | 1-bit colour | Black and white only, no grayscale |
 | Slow refresh | 2-3 seconds full, 500ms partial |
 | Ghosting | Requires anti-ghosting patterns |
-| Power | Optimised for battery life (deep sleep) |
+| Power | USB-C required (battery mode under development) |
 
 ### ESP32-C3 Limitations
 | Constraint | Impact |

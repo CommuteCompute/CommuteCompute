@@ -2,6 +2,10 @@
  * CCDash™ Renderer v2.1
  * Part of the Commute Compute System™
  *
+ * Copyright (c) 2026 Angus Bergman
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
+ *
  * Primary renderer for Commute Compute System dashboards.
  * Implements CCDashDesignV15.0 specification (UNLOCKED 2026-02-06).
  *
@@ -39,10 +43,6 @@
  * - Arrival time (ARRIVE label + time)
  *
  * ============================================================================
- *
- * Copyright (c) 2026 Angus Bergman
- * SPDX-License-Identifier: AGPL-3.0-or-later
- * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  *
  * Layout (800x480):
  * ┌─────────────────────────────────────────────────────────────────────┐
@@ -187,7 +187,7 @@ export const JourneyStatus = {
  */
 export const DEVICE_CONFIGS = {
   'trmnl-og': {
-    name: 'CC E-Ink Original',
+    name: 'TRMNL Display (OG)',
     width: 800,
     height: 480,
     orientation: 'landscape',
@@ -195,7 +195,7 @@ export const DEVICE_CONFIGS = {
     format: 'bmp'
   },
   'trmnl-mini': {
-    name: 'CC E-Ink Mini',
+    name: 'TRMNL Mini',
     width: 400,
     height: 300,
     orientation: 'landscape',

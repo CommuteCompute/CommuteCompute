@@ -2,19 +2,25 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (c) 2026 Angus Bergman
 """
-Commute Compute Compliance Scanner v1.1
+Commute Compute™ Compliance Scanner v1.1
 
-Comprehensive Python compliance scanning covering:
+Comprehensive Python compliance scanning covering all requirements from:
 - DEVELOPMENT-RULES.md (26 sections)
-- Trademark, licensing, and IP compliance
-- Australian English enforcement
-- Security and secret detection
-- Privacy and regulatory checks (APP, OAIC)
-- CI/CD and supply chain verification
-- UI/UX and accessibility standards
-- Code quality and critical patterns
-- Docker and deployment consistency
-- Numeric legal claim validation
+- Project compliance standards and critical patterns
+
+Categories:
+- A: Trademark and branding compliance
+- B: Australian English spelling enforcement
+- C: Security (secrets, XSS, CSP, .env files)
+- D: Licensing (SPDX headers, copyright, AGPL compliance)
+- E: Prohibited terms (PTV naming, TRMNL server references)
+- F: Version consistency and user-facing accuracy
+- G: Privacy and regulatory compliance
+- H: CI/CD and dependency management
+- I: Accessibility (WCAG, emoji prohibition)
+- J: Code quality and patterns
+- K: Docker and deployment consistency
+- L: Numeric legal claim validation
 
 Run from repository root:
     python3 scripts/cc-compliance-scanner.py [--repo-root /path/to/repo]
@@ -188,7 +194,7 @@ METRO_TUNNEL_STATIONS = [
     "Anzac",
 ]
 
-# Current system versions -- keep in sync with api/version.js
+# Current system versions
 EXPECTED_VERSIONS = {
     "system": "v4.2.0",
     "commute_compute_engine": "v3.1",
@@ -331,11 +337,14 @@ def is_code_identifier(line: str, word: str, pos: int) -> bool:
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 1: TRADEMARK COMPLIANCE
+# Category A: Trademark and Branding Compliance
 # ============================================================================
 
 def check_trademark_symbols(repo_root: Path, results: AuditResults):
     """
     Verify that required trademarks have TM symbol in public-facing docs.
+    Per DEVELOPMENT-RULES.md: Commute Compute™, CCDash™, CC LiveDash™, CCFirm™
+    must always carry trademark symbols in user-facing text.
     """
     print("\n--- Trademark Symbol Enforcement ---")
     doc_files = get_files(repo_root, DOC_EXTENSIONS)
@@ -414,7 +423,7 @@ def check_trademark_symbols(repo_root: Path, results: AuditResults):
 def check_coffeedecision_no_tm(repo_root: Path, results: AuditResults):
     """
     Verify CoffeeDecision does NOT have TM symbol.
-    CoffeeDecision is a feature name, not a trademark.
+    CoffeeDecision is a feature name, not a trademark — must not carry TM symbol.
     """
     print("\n--- CoffeeDecision No-TM Check ---")
     all_files = get_files(repo_root, ALL_TEXT_EXTENSIONS)
@@ -443,13 +452,14 @@ def check_coffeedecision_no_tm(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 2: AUSTRALIAN ENGLISH
+# Category B: Australian English Spelling Enforcement
 # ============================================================================
 
 def check_australian_english(repo_root: Path, results: AuditResults):
     """
     Scan .md, .html, .txt files for American English spellings.
     Code identifiers (camelCase, UPPER_CASE, inside backticks) are exempt.
-    All prose must use Australian (British) English.
+    All prose, documentation, and user-facing strings must use Australian English.
     """
     print("\n--- Australian English Enforcement ---")
     doc_files = get_files(repo_root, {".md", ".html", ".txt"})
@@ -539,12 +549,13 @@ def check_australian_english(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 3: SECURITY
+# Category C: Security Checks
 # ============================================================================
 
 def check_no_env_files(repo_root: Path, results: AuditResults):
     """
     Verify no .env files exist (Section 3.1 Zero-Config).
-    DEVELOPMENT-RULES Section 3.
+    DEVELOPMENT-RULES Section 3: no .env files in repository.
     """
     print("\n--- No .env Files (Section 3.1) ---")
     env_files = []
@@ -564,6 +575,7 @@ def check_no_env_files(repo_root: Path, results: AuditResults):
 def check_no_hardcoded_secrets(repo_root: Path, results: AuditResults):
     """
     Scan for hardcoded API keys, tokens, or credentials.
+    No hardcoded API keys, tokens, or secrets in source files.
     """
     print("\n--- No Hardcoded Secrets ---")
     source_files = get_files(repo_root, SOURCE_EXTENSIONS | {".html"},
@@ -604,7 +616,7 @@ def check_no_hardcoded_secrets(repo_root: Path, results: AuditResults):
 def check_xss_sanitisation(repo_root: Path, results: AuditResults):
     """
     Check for innerHTML/outerHTML usage without sanitisation.
-    DEVELOPMENT-RULES Section 17.
+    DEVELOPMENT-RULES Section 17: all user input displayed in HTML must use sanitize().
     """
     print("\n--- XSS Sanitisation (Section 17) ---")
     html_files = get_files(repo_root, {".html"}, subdirs=["public"])
@@ -660,6 +672,7 @@ def check_xss_sanitisation(repo_root: Path, results: AuditResults):
 def check_csp_no_unsafe_eval(repo_root: Path, results: AuditResults):
     """
     Verify CSP header does not contain unsafe-eval.
+    No unsafe-eval or unsafe-inline in Content Security Policy headers.
     """
     print("\n--- CSP No unsafe-eval ---")
     vercel_json = repo_root / "vercel.json"
@@ -673,18 +686,20 @@ def check_csp_no_unsafe_eval(repo_root: Path, results: AuditResults):
         return
 
     if "unsafe-eval" in content:
-        results.fail_check("CSP contains 'unsafe-eval' -- must be removed")
+        results.fail_check("CSP contains 'unsafe-eval' -- must be removed (v8 fix)")
     else:
         results.pass_check("CSP does not contain unsafe-eval")
 
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 4: LICENSING & IP
+# Category D: Licensing and Copyright Compliance
 # ============================================================================
 
 def check_spdx_headers(repo_root: Path, results: AuditResults):
     """
     Verify SPDX-License-Identifier headers on all source files.
+    All source files must carry SPDX-License-Identifier: AGPL-3.0-or-later.
     """
     print("\n--- SPDX Licence Headers ---")
     source_files = get_files(repo_root, SOURCE_EXTENSIONS,
@@ -713,6 +728,7 @@ def check_spdx_headers(repo_root: Path, results: AuditResults):
 def check_copyright_year(repo_root: Path, results: AuditResults):
     """
     Verify copyright year is 2026 across all source files.
+    All source files must have Copyright (c) 2026 Angus Bergman header.
     """
     print("\n--- Copyright Year 2026 ---")
     source_files = get_files(repo_root, SOURCE_EXTENSIONS,
@@ -742,6 +758,7 @@ def check_copyright_year(repo_root: Path, results: AuditResults):
 def check_licence_file(repo_root: Path, results: AuditResults):
     """
     Verify LICENSE file exists with AGPL-3.0 content.
+    LICENCE/LICENSE file must exist and contain AGPL-3.0 text.
     """
     print("\n--- AGPL-3.0 Licence File ---")
     licence_file = repo_root / "LICENSE"
@@ -763,7 +780,7 @@ def check_licence_file(repo_root: Path, results: AuditResults):
 def check_governing_law(repo_root: Path, results: AuditResults):
     """
     Verify LEGAL.md references Victoria, Australia as governing law.
-    DEVELOPMENT-RULES Section 20.7.
+    DEVELOPMENT-RULES Section 20.7: governing law must be Victoria, Australia.
     """
     print("\n--- Governing Law: Victoria, Australia ---")
     legal_md = repo_root / "LEGAL.md"
@@ -785,6 +802,7 @@ def check_governing_law(repo_root: Path, results: AuditResults):
 def check_dco_documented(repo_root: Path, results: AuditResults):
     """
     Check CONTRIBUTING.md documents DCO requirement.
+    CONTRIBUTING.md must document DCO/CLA sign-off requirements.
     """
     print("\n--- DCO Documented in CONTRIBUTING.md ---")
     contributing = repo_root / "CONTRIBUTING.md"
@@ -805,13 +823,13 @@ def check_dco_documented(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 5: PROHIBITIONS
-# DEVELOPMENT-RULES Sections 1-2
+# Category E: Prohibited Terms (DEVELOPMENT-RULES Sections 1-2)
 # ============================================================================
 
 def check_forbidden_ptv_terms(repo_root: Path, results: AuditResults):
     """
     Scan source/HTML for forbidden PTV terms.
-    DEVELOPMENT-RULES Section 1.
+    DEVELOPMENT-RULES Section 1: forbidden PTV terminology.
     """
     print("\n--- Forbidden PTV Terms (Section 1) ---")
     scan_files = get_files(repo_root, SOURCE_EXTENSIONS | {".html"},
@@ -843,7 +861,7 @@ def check_forbidden_ptv_terms(repo_root: Path, results: AuditResults):
 def check_trmnl_references(repo_root: Path, results: AuditResults):
     """
     Check for TRMNL server/cloud references in code (Section 2).
-    DEVELOPMENT-RULES Section 2.
+    DEVELOPMENT-RULES Section 2: no TRMNL server/cloud references.
     NOTE: Documentation references to shop.trmnl.com for hardware purchase are exempt.
     """
     print("\n--- TRMNL Server References (Section 2) ---")
@@ -875,6 +893,7 @@ def check_trmnl_references(repo_root: Path, results: AuditResults):
 def check_smartcommute_removed(repo_root: Path, results: AuditResults):
     """
     Verify SmartCommute references are removed (renamed to CommuteCompute 2026-02-07).
+    SmartCommute is removed terminology — must not appear in source files.
     """
     print("\n--- SmartCommute Removed ---")
     all_files = get_files(repo_root, ALL_TEXT_EXTENSIONS)
@@ -906,11 +925,13 @@ def check_smartcommute_removed(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 6: DOCUMENTATION CONSISTENCY
+# Category F: Version Consistency and User-Facing Accuracy
 # ============================================================================
 
 def check_version_consistency(repo_root: Path, results: AuditResults):
     """
     Cross-reference system version numbers across key files.
+    Version strings must be consistent across all files.
     """
     print("\n--- Version Consistency ---")
     version_files = [
@@ -949,7 +970,7 @@ def check_version_consistency(repo_root: Path, results: AuditResults):
 def check_setup_time_estimates(repo_root: Path, results: AuditResults):
     """
     Flag inconsistent setup time estimates across guides.
-    Checks for discrepancies in quoted setup times between documentation files.
+    Setup time estimates must be accurate and consistent across all documentation.
     """
     print("\n--- Setup Time Estimate Consistency ---")
     guide_files = {
@@ -987,7 +1008,7 @@ def check_setup_time_estimates(repo_root: Path, results: AuditResults):
         # Just warn -- manual review needed for consistency
         results.warn_check(
             f"Setup time estimates found in {len(time_estimates)} guides -- "
-            f"verify consistency across guides",
+            f"verify consistency across all documentation",
             detail
         )
     else:
@@ -997,7 +1018,7 @@ def check_setup_time_estimates(repo_root: Path, results: AuditResults):
 def check_api_key_messaging(repo_root: Path, results: AuditResults):
     """
     Check API key is described as 'Required' consistently, not 'Optional'.
-    Flags contradictory messaging across documentation files.
+    API key wait time messaging must be consistent and accurate.
     """
     print("\n--- API Key Messaging Consistency ---")
     doc_files = get_files(repo_root, {".md", ".html"})
@@ -1034,14 +1055,14 @@ def check_api_key_messaging(repo_root: Path, results: AuditResults):
 
 def check_device_naming(repo_root: Path, results: AuditResults):
     """
-    Flag inconsistent device naming (CC E-Ink vs TRMNL OG).
-    Mixed terminology can cause user confusion and search failures.
+    Flag prohibited 'CC E-Ink' hardware naming -- must use TRMNL device names.
+    Device names must use official TRMNL product names, not internal codenames.
+    Rule: Physical e-ink display hardware manufactured by TRMNL must use TRMNL names.
     """
     print("\n--- Device Naming Consistency ---")
     doc_files = get_files(repo_root, {".md"})
 
     cc_eink_refs = []
-    trmnl_og_refs = []
 
     for fpath in doc_files:
         content = read_file_safe(fpath)
@@ -1051,24 +1072,21 @@ def check_device_naming(repo_root: Path, results: AuditResults):
         for i, line in enumerate(content.splitlines(), 1):
             if "CC E-Ink" in line:
                 cc_eink_refs.append(f"  {rel}:{i}")
-            if "TRMNL OG" in line:
-                trmnl_og_refs.append(f"  {rel}:{i}")
 
-    if cc_eink_refs and trmnl_og_refs:
-        results.warn_check(
-            f"Mixed device naming: 'CC E-Ink' ({len(cc_eink_refs)} refs) vs "
-            f"'TRMNL OG' ({len(trmnl_og_refs)} refs) -- consolidate for user clarity",
-            "CC E-Ink refs:\n" + "\n".join(cc_eink_refs[:3]) +
-            "\nTRMNL OG refs:\n" + "\n".join(trmnl_og_refs[:3])
+    if cc_eink_refs:
+        results.fail_check(
+            f"Prohibited 'CC E-Ink' hardware naming ({len(cc_eink_refs)} refs) -- "
+            f"must use TRMNL device names (TRMNL Display (OG), TRMNL Mini, TRMNL display)",
+            "CC E-Ink refs:\n" + "\n".join(cc_eink_refs[:5])
         )
     else:
-        results.pass_check("Device naming appears consistent")
+        results.pass_check("Device naming consistent: TRMNL hardware names used (no 'CC E-Ink')")
 
 
 def check_hardware_urls(repo_root: Path, results: AuditResults):
     """
     Verify hardware purchase URLs point to valid locations.
-    Recommends shop.trmnl.com for cleaner direct link.
+    Hardware purchase URLs must point to correct TRMNL shop pages.
     """
     print("\n--- Hardware Purchase URLs ---")
     doc_files = get_files(repo_root, {".md"})
@@ -1098,12 +1116,13 @@ def check_hardware_urls(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 7: PRIVACY & REGULATORY
+# Category G: Privacy and Regulatory Compliance
 # ============================================================================
 
 def check_privacy_app_compliance(repo_root: Path, results: AuditResults):
     """
     Verify PRIVACY.md contains required APP compliance sections.
-    Checks for Australian Privacy Principles, ADM disclosure, and OAIC reference.
+    Privacy policy must address all 13 Australian Privacy Principles.
     """
     print("\n--- PRIVACY.md APP Compliance ---")
     privacy_md = repo_root / "PRIVACY.md"
@@ -1140,19 +1159,20 @@ def check_privacy_app_compliance(repo_root: Path, results: AuditResults):
             "add link to oaic.gov.au/privacy/privacy-complaints"
         )
 
-    # Check for APP 8 reasonable steps for cross-border data
+    # Check for APP 8 reasonable steps (cross-border data disclosure)
     if "reasonable steps" in content.lower():
         results.pass_check("PRIVACY.md includes APP 8 'reasonable steps' disclosure")
     else:
         results.warn_check(
-            "PRIVACY.md missing APP 8 'reasonable steps' for cross-border data"
+            "PRIVACY.md missing APP 8 'reasonable steps' for cross-border data -- "
+            "compliance review identified this gap"
         )
 
 
 def check_security_md_exists(repo_root: Path, results: AuditResults):
     """
     Verify SECURITY.md exists with responsible disclosure and NDB plan.
-    CRITICAL: Must contain responsible disclosure policy, security contact, and NDB response plan.
+    SECURITY.md must exist with responsible disclosure process.
     """
     print("\n--- SECURITY.md Existence ---")
     security_md = repo_root / "SECURITY.md"
@@ -1183,12 +1203,14 @@ def check_security_md_exists(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 8: CI/CD & SUPPLY CHAIN
+# Category H: CI/CD and Dependency Management
 # ============================================================================
 
 def check_cicd_audit_job(repo_root: Path, results: AuditResults):
     """
     Verify .gitlab-ci.yml audit-job runs the actual compliance audit script,
     not 'npm test'.
+    CI/CD pipeline must include compliance audit job that runs the scanner.
     """
     print("\n--- CI/CD Audit Job Configuration ---")
     cicd_file = repo_root / ".gitlab-ci.yml"
@@ -1207,8 +1229,8 @@ def check_cicd_audit_job(repo_root: Path, results: AuditResults):
     elif "npm test" in content:
         results.fail_check(
             "CI/CD audit-job runs 'npm test' (1 integration test) instead of "
-            "comprehensive-compliance-audit.sh (240+ checks) -- "
-            "must run the full compliance scanner"
+            "comprehensive-compliance-audit.sh (214 checks) -- "
+            "compliance audit must run in CI/CD pipeline"
         )
     else:
         results.warn_check("CI/CD audit-job configuration unclear -- verify manually")
@@ -1219,14 +1241,15 @@ def check_cicd_audit_job(repo_root: Path, results: AuditResults):
     else:
         results.warn_check(
             "CI/CD missing 'npm audit --audit-level=critical' -- "
-            "recommend adding supply chain scanning"
+            "recommend adding supply chain scanning to CI pipeline"
         )
 
 
 def check_ghost_dependencies(repo_root: Path, results: AuditResults):
     """
     Verify no ghost dependencies (declared but unused packages).
-    Prevents declared-but-unimported packages from bloating the dependency tree.
+    No ghost dependencies (referenced in code but not in package.json).
+    This check prevents future ghost deps from entering.
     """
     print("\n--- Ghost Dependency Check ---")
     pkg_json = repo_root / "package.json"
@@ -1285,7 +1308,7 @@ def check_ghost_dependencies(repo_root: Path, results: AuditResults):
 def check_dependency_freshness(repo_root: Path, results: AuditResults):
     """
     Check package.json for exact version pinning (no caret ^ or tilde ~).
-    All deps should be exact-pinned to prevent unexpected updates.
+    All dependencies must use exact version pinning (no caret ^ or tilde ~).
     """
     print("\n--- Dependency Version Pinning ---")
     pkg_json = repo_root / "package.json"
@@ -1321,7 +1344,8 @@ def check_dependency_freshness(repo_root: Path, results: AuditResults):
 
 def check_node_version_pinning(repo_root: Path, results: AuditResults):
     """
-    Verify Node.js version is pinned to patched minimum (>=20.17.0).
+    Verify Node.js version is pinned to patched minimum.
+    Node.js version must be pinned consistently across package.json, .nvmrc, CI config.
     """
     print("\n--- Node.js Version Pinning ---")
     pkg_json = repo_root / "package.json"
@@ -1345,7 +1369,7 @@ def check_node_version_pinning(repo_root: Path, results: AuditResults):
     if node_version == "20.x":
         results.warn_check(
             "Node.js version '20.x' is too broad -- pin to '>=20.17.0' "
-            "to ensure January 2026 security patches (8 CVEs)"
+            "to ensure latest security patches are included"
         )
     elif ">=" in node_version or re.match(r'\d+\.\d+\.\d+', node_version):
         results.pass_check(f"Node.js version pinned: {node_version}")
@@ -1363,6 +1387,7 @@ def check_node_version_pinning(repo_root: Path, results: AuditResults):
 def check_npm_audit_in_cicd(repo_root: Path, results: AuditResults):
     """
     Verify npm audit is part of CI/CD pipeline.
+    CI/CD pipeline should include npm audit for dependency vulnerability scanning.
     """
     # This is already checked in check_cicd_audit_job, but we include explicit pass
     print("\n--- npm Audit in CI/CD ---")
@@ -1377,18 +1402,19 @@ def check_npm_audit_in_cicd(repo_root: Path, results: AuditResults):
     else:
         results.warn_check(
             "npm audit not in CI/CD -- add 'npm audit --audit-level=critical' "
-            "to audit-job"
+            "to audit-job for supply chain security"
         )
 
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 9: UI/UX & ACCESSIBILITY
+# Category I: Accessibility (WCAG, Emoji Prohibition)
 # ============================================================================
 
 def check_no_emojis_admin(repo_root: Path, results: AuditResults):
     """
     Verify admin panel uses SVG icons, not emojis.
-    DEVELOPMENT-RULES Section 22.3.
+    Admin panel must not contain emojis — SVG icons only per DEVELOPMENT-RULES.
     """
     print("\n--- No Emojis in Admin Panel ---")
     admin_file = repo_root / "public" / "admin.html"
@@ -1429,8 +1455,8 @@ def check_no_emojis_admin(repo_root: Path, results: AuditResults):
 def check_wcag_contrast_values(repo_root: Path, results: AuditResults):
     """
     Check admin panel CSS for known WCAG colour contrast failures.
-    --text-secondary #a3b8d0 on #1e293b = 4.2:1 (requires 4.5:1).
-    DDA 1992 compliance risk.
+    WCAG 1.4.3 AA: text colour contrast ratio must be at least 4.5:1.
+    DDA 1992 compliance risk if not met.
     """
     print("\n--- WCAG 2.2 AA Colour Contrast ---")
     admin_file = repo_root / "public" / "admin.html"
@@ -1444,12 +1470,12 @@ def check_wcag_contrast_values(repo_root: Path, results: AuditResults):
         return
 
     # Check for the known failing colour combination
-    # --text-secondary: #a3b8d0 on --bg-secondary: #1e293b = 4.2:1
+    # Check: --text-secondary: #a3b8d0 on --bg-secondary: #1e293b = 4.2:1
     if "#a3b8d0" in content:
         results.warn_check(
             "Admin panel uses --text-secondary: #a3b8d0 (4.2:1 contrast ratio) -- "
             "WCAG 1.4.3 failure (requires 4.5:1). "
-            "Fix: change to #b8cbe0 (4.6:1). "
+            "Fix: change to #b8cbe0 (4.6:1) for compliance. "
             "DDA 1992 non-compliance risk."
         )
     else:
@@ -1458,11 +1484,13 @@ def check_wcag_contrast_values(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 10: CODE QUALITY & PATTERNS
+# Category J: Code Quality and Patterns
 # ============================================================================
 
 def check_time_format(repo_root: Path, results: AuditResults):
     """
     Verify 12-hour time format uses hourCycle: 'h23'.
+    Time display must use 12-hour format with hourCycle: 'h23'.
     """
     print("\n--- 12-Hour Time Format (h23 hourCycle) ---")
     source_files = get_files(repo_root, SOURCE_EXTENSIONS,
@@ -1492,7 +1520,7 @@ def check_timezone_usage(repo_root: Path, results: AuditResults):
     """
     Verify timezone handling uses getMelbourneDisplayTime() / localHour,
     not new Date().getHours() directly.
-    Vercel serverless functions return UTC, not local time.
+    Must use getMelbourneDisplayTime()/localHour — Vercel serverless returns UTC.
     """
     print("\n--- Timezone Correctness ---")
     source_files = get_files(repo_root, SOURCE_EXTENSIONS,
@@ -1526,7 +1554,7 @@ def check_timezone_usage(repo_root: Path, results: AuditResults):
 def check_no_mock_data(repo_root: Path, results: AuditResults):
     """
     Verify opendata-client.js returns [] not mock data on failure.
-    Strictly live GTFS-RT only.
+    Strictly live GTFS-RT data only — no mock/fake data from opendata-client.js.
     """
     print("\n--- No Mock Data (opendata-client.js) ---")
     client_file = repo_root / "src" / "services" / "opendata-client.js"
@@ -1562,7 +1590,7 @@ def check_no_mock_data(repo_root: Path, results: AuditResults):
 def check_transport_vic_api_references(repo_root: Path, results: AuditResults):
     """
     Verify Transport Victoria API references use new portal URL.
-    Legacy DEP URLs were decommissioned 30 Sep 2025.
+    All Transport Victoria API references must use correct OpenData naming.
     """
     print("\n--- Transport Victoria API References ---")
     source_files = get_files(repo_root, SOURCE_EXTENSIONS | DOC_EXTENSIONS,
@@ -1601,7 +1629,8 @@ def check_transport_vic_api_references(repo_root: Path, results: AuditResults):
 
 def check_metro_tunnel_stations(repo_root: Path, results: AuditResults):
     """
-    Verify Metro Tunnel station references are present in source code.
+    Verify Metro Tunnel station references are present.
+    DEVELOPMENT-RULES Section 25: Metro Tunnel station support and line routing.
     """
     print("\n--- Metro Tunnel Station References ---")
     source_files = get_files(repo_root, SOURCE_EXTENSIONS,
@@ -1629,11 +1658,13 @@ def check_metro_tunnel_stations(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 11: TERMINOLOGY
+# Category K.0: Redis Terminology Compliance
 # ============================================================================
 
 def check_redis_terminology(repo_root: Path, results: AuditResults):
     """
     Verify Redis storage uses correct terminology (not 'Vercel KV' or 'Upstash Redis').
+    Redis storage terminology: "Redis" not "Vercel KV" or "Upstash Redis" in docs.
     Product name: 'Redis' (via Vercel Marketplace, powered by Upstash).
     """
     print("\n--- Redis Terminology ---")
@@ -1669,14 +1700,17 @@ def check_redis_terminology(repo_root: Path, results: AuditResults):
 
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY C EXPANSION (C.8-C.10): DOC CONSISTENCY
+# Category C: Documentation consistency checks per DEVELOPMENT-RULES
 # ============================================================================
 
 def check_device_naming_consistency(repo_root: Path, results: AuditResults):
     """
-    C.8: Check docs/hardware/DEVICE-COMPATIBILITY.md for 'CC E-Ink BYOS'
-    which should be 'CC E-Ink OG'.
+    C.8: Check docs/hardware/DEVICE-COMPATIBILITY.md for prohibited 'CC E-Ink'
+    hardware naming -- must use TRMNL device names.
+    Physical e-ink display hardware must use TRMNL names (TRMNL Display (OG), TRMNL Mini).
+    "CC E-Ink" is prohibited — CC trademarks apply to software/firmware only.
     """
-    print("\n--- C.8 Device Naming: BYOS -> OG ---")
+    print("\n--- C.8 Device Naming: TRMNL hardware names ---")
     compat_file = repo_root / "docs" / "hardware" / "DEVICE-COMPATIBILITY.md"
     if not compat_file.exists():
         results.skip_check("docs/hardware/DEVICE-COMPATIBILITY.md not found")
@@ -1689,23 +1723,23 @@ def check_device_naming_consistency(repo_root: Path, results: AuditResults):
 
     violations = []
     for i, line in enumerate(content.splitlines(), 1):
-        if "CC E-Ink BYOS" in line:
+        if "CC E-Ink" in line:
             violations.append(f"  DEVICE-COMPATIBILITY.md:{i}: {line.strip()[:80]}")
 
     if violations:
         results.fail_check(
-            f"'CC E-Ink BYOS' found ({len(violations)} occurrences) -- "
-            f"should be 'CC E-Ink OG'",
+            f"'CC E-Ink' found ({len(violations)} occurrences) -- "
+            f"must use TRMNL device names (TRMNL Display (OG), TRMNL Mini)",
             "\n".join(violations[:5])
         )
     else:
-        results.pass_check("Device naming consistent: no 'CC E-Ink BYOS' (correct: 'CC E-Ink OG')")
+        results.pass_check("Device naming consistent: TRMNL hardware names used (no 'CC E-Ink')")
 
 
 def check_support_signpost(repo_root: Path, results: AuditResults):
     """
     C.9: Check first 20 lines of SUPPORT.md for technical help redirect keywords.
-    SUPPORT.md must signpost users to help channels.
+    SUPPORT.md must signpost users to technical help resources.
     """
     print("\n--- C.9 SUPPORT.md Technical Help Signpost ---")
     support_md = repo_root / "SUPPORT.md"
@@ -1743,7 +1777,7 @@ def check_support_signpost(repo_root: Path, results: AuditResults):
 def check_readme_privacy_link(repo_root: Path, results: AuditResults):
     """
     C.10: Check README.md Prerequisites section for PRIVACY.md reference.
-    Prerequisites must link to privacy policy.
+    README prerequisites section must link to PRIVACY.md.
     """
     print("\n--- C.10 README.md Privacy Link in Prerequisites ---")
     readme = repo_root / "README.md"
@@ -1797,7 +1831,7 @@ def check_docker_node_version(repo_root: Path, results: AuditResults):
     """
     K.1: Extract Node.js version from package.json engines field and check
     Dockerfile, docker-compose.yml, and .gitlab-ci.yml for version consistency.
-    Deployment artefacts must match pinned Node version.
+    Deployment artefacts (Dockerfile, CI config) must match pinned Node.js version.
     """
     print("\n--- K.1 Docker/CI Node.js Version Consistency ---")
     pkg_json = repo_root / "package.json"
@@ -1895,7 +1929,7 @@ def check_docker_node_version(repo_root: Path, results: AuditResults):
 def check_numeric_legal_claims(repo_root: Path, results: AuditResults):
     """
     L.1: Check LEGAL.md and PRIVACY.md for known incorrect statutory figures.
-    Numeric claims in legal docs must be accurate.
+    Numeric claims in legal documents must be verified against current legislation.
 
     Known checks:
     - Statutory tort cap: correct = $478,550; incorrect = $660,000 / $660K / $660k
@@ -2018,7 +2052,7 @@ def run_all_checks(repo_root: Path) -> int:
     check_api_key_messaging(repo_root, results)
     check_device_naming(repo_root, results)
     check_hardware_urls(repo_root, results)
-    # C.8-C.10: v1.1 additions
+    # C.8-C.10: Additional documentation checks
     check_device_naming_consistency(repo_root, results)
     check_support_signpost(repo_root, results)
     check_readme_privacy_link(repo_root, results)

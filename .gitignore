@@ -49,3 +49,6 @@ user-preferences.json
 *.tgz
 coverage/
 dist/
+
+# Firmware archive (legacy credentials in archived versions)
+firmware/archive/
