@@ -668,7 +668,7 @@ commute-compute/
 | **Display** | 7.5" E-ink, 800x480 pixels, 1-bit |
 | **Connectivity** | WiFi 802.11 b/g/n (2.4GHz) |
 | **Memory** | 400KB SRAM, 4MB Flash |
-| **Power** | USB-C required (battery mode under development) |
+| **Power** | USB-C recommended; battery supported (several days) |
 | **Refresh** | Partial refresh supported (~500ms) |
 
 ### 5.2 TRMNL Mini

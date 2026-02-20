@@ -179,7 +179,7 @@
   <text x="600" y="1368" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#e0e7ff" text-anchor="middle">ESP32-C3 + 7.5" 800x480 display</text>
   <text x="600" y="1388" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#e0e7ff" text-anchor="middle">CCFirm CC-FW-7.7.0 custom firmware</text>
   <text x="600" y="1408" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#e0e7ff" text-anchor="middle">Partial refresh: 1 minute | Full refresh: 5 minutes</text>
-  <text x="600" y="1428" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#e0e7ff" text-anchor="middle">Deep sleep between updates</text>
+  <text x="600" y="1428" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#e0e7ff" text-anchor="middle">Idle between updates (USB-C or battery)</text>
 
   <!-- Arrow -->
   <path d="M 600 1450 L 600 1500" stroke="#6366f1" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>

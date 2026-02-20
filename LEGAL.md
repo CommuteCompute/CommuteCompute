@@ -36,8 +36,8 @@ The following trademark applications have been filed with IP Australia:
 
 | Application No. | Mark | Type | Classes | Status | Filed |
 |-----------------|------|------|---------|--------|-------|
-| TM 2627709 | COMMUTE COMPUTE | Word Mark | 9, 39, 42 | Headstart Part 1 | 14 February 2026 |
-| TM 2627710 | CC Logo | Figurative Mark | 9, 39, 42 | Headstart Part 1 | 14 February 2026 |
+| TM 2627709 | COMMUTE COMPUTE | Word Mark | 9, 39, 42 | Published | 14 February 2026 |
+| TM 2627710 | CC Logo | Figurative Mark | 9, 39, 42 | Published | 14 February 2026 |
 
 Filing references: AMCZ-2615437674, AMCZ-2615438195
 ABN: 59 402 869 395

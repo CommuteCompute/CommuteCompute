@@ -36,6 +36,7 @@ Before starting setup, gather these items:
 |-------------|-------------|
 | Vercel account | Free tier works perfectly -- sign up at [vercel.com](https://vercel.com) |
 | TRMNL display | Or jailbroken Kindle |
+| USB-C power source | USB-C (wall adapter or USB port) recommended for continuous use. Battery operation is supported but lasts only several days. |
 | WiFi network details | Network name (SSID) and password -- must be 2.4 GHz network (5 GHz not supported) |
 | Modern web browser | Chrome or Edge required for device flashing (Web Serial API) and BLE WiFi provisioning (Web Bluetooth API). Admin Panel and Setup Wizard work with Chrome, Firefox, Safari, or Edge. Internet Explorer is not supported. |
 | Transport Victoria API key | Required for live departure data -- register at [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/). Approval may take up to 48 hours. |

@@ -112,18 +112,18 @@
         }
         .compliance-check input[type="checkbox"] {
             appearance: none; -webkit-appearance: none;
-            width: 24px; height: 24px; min-width: 24px;
-            border: 2px solid #4fb28e; border-radius: 4px;
+            width: 44px; height: 44px; min-width: 44px;
+            border: 2px solid #4fb28e; border-radius: 6px;
             background: transparent; cursor: pointer;
-            margin-top: 2px; position: relative;
+            margin-top: 0; position: relative;
         }
         .compliance-check input[type="checkbox"]:checked {
             background: #4fb28e;
         }
         .compliance-check input[type="checkbox"]:checked::after {
             content: ''; position: absolute;
-            left: 7px; top: 2px; width: 6px; height: 12px;
-            border: solid #0f172a; border-width: 0 2px 2px 0;
+            left: 15px; top: 6px; width: 10px; height: 20px;
+            border: solid #0f172a; border-width: 0 3px 3px 0;
             transform: rotate(45deg);
         }
         .compliance-check input[type="checkbox"]:focus-visible {
@@ -339,6 +339,15 @@
             .cc-system-footer-inner { flex-direction: column; text-align: center; }
             .cc-footer-attribution { text-align: center; }
             .wizard-card { padding: 20px; }
+        }
+        @media (min-width: 481px) and (max-width: 600px) {
+            body { padding: 14px; padding-bottom: 80px; }
+            .wizard-card { padding: 18px; }
+            .compliance-card { padding: 22px; }
+            .compliance-card h1 { font-size: 20px; }
+            .compliance-section { padding: 14px; }
+            .wizard-header h1 { font-size: 22px; }
+            h2 { font-size: 17px; }
         }
 
         .icon { display: inline-block; width: 20px; height: 20px; vertical-align: middle; }

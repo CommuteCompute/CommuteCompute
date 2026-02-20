@@ -537,7 +537,7 @@ For commercial licensing enquiries: **commutecompute.licensing@gmail.com**
 
 ## Trademarks
 
-The following are unregistered trademarks owned by Angus Bergman:
+The following are trade mark applications (registration pending) owned by Angus Bergman:
 
 **Commute Compute&#8482;** | **Commute Compute System&#8482;** | **CommuteCompute&#8482;** | **CCDash&#8482;** | **CC LiveDash&#8482;** | **CCFirm&#8482;**
 
