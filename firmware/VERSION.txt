@@ -3,7 +3,7 @@
 
 VERSION=7.7.0
 BUILD_DATE=2026-02-16
-STATUS=PRODUCTION-LOCKED
+STATUS=PRODUCTION-UNLOCKED
 COMMIT=pending
 
 # v7.7.0 Changes (2026-02-16):
@@ -32,4 +32,4 @@ COMMIT=pending
 COMPATIBLE_DEVICES=TRMNL_OG,TRMNL_MINI
 # TURNKEY: Replace with your Vercel deployment URL before building
 DEFAULT_SERVER=https://your-project.vercel.app
-LOCKED=true
+LOCKED=false

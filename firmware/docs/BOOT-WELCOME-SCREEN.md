@@ -52,7 +52,7 @@ Displayed when device has no WiFi credentials.
 - Use FONT_8x8 only (FONT_12x16 causes rotation bug)
 - Centre text horizontally
 - Keep layout simple for e-ink readability
-- Refresh once, then deep sleep until WiFi config received
+- Refresh once, then wait (polling) until WiFi config received
 
 ---
 

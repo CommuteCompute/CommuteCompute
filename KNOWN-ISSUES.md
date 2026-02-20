@@ -23,7 +23,7 @@ When using the `bbep.begin(EPD_TRMNL_OG)` preset with the `FONT_12x16` font size
 
 ### Affected Configuration
 
-- Hardware: TRMNL OG (ESP32-C3 chip + 7.5" Waveshare e-ink panel)
+- Hardware: TRMNL Display (OG) (ESP32-C3 chip + 7.5" Waveshare e-ink panel)
 - Library: bb_epaper v2.0.3+
 - Preset: `EPD_TRMNL_OG`
 - Font: `FONT_12x16` (and possibly other larger fonts)
@@ -55,7 +55,7 @@ bbep.setFont(FONT_8x8);     // ONLY use 8x8 font
 
 ### Golden Rule
 
-**Rule:** On TRMNL OG hardware, use ONLY `FONT_8x8`. Larger fonts have rendering bugs that cause 90-degree rotation.
+**Rule:** On TRMNL Display (OG) hardware, use ONLY `FONT_8x8`. Larger fonts have rendering bugs that cause 90-degree rotation.
 
 **What this means for you:** The standard CCFirm™ firmware already uses the correct font. If you ever modify the firmware code, stick to `FONT_8x8` — do not switch to larger font sizes, or text will appear rotated on screen.
 
@@ -115,11 +115,23 @@ The `/api/geocode` endpoint (the address lookup service) returns a "404 not foun
 
 ### WiFi Must Be 2.4GHz
 
-The CC E-Ink display hardware (ESP32-C3 chipset) only supports 2.4GHz WiFi networks. 5GHz networks are not supported and will not appear in WiFi scans during setup.
+The TRMNL display hardware (ESP32-C3 chipset) only supports 2.4GHz WiFi networks. 5GHz networks are not supported and will not appear in WiFi scans during setup.
 
 If your router broadcasts a combined 2.4/5GHz network (common with modern routers), the device may fail to connect or the network may not appear in scans. **Fix:** Check your router settings and ensure a dedicated 2.4GHz network is available, or that your combined network supports 2.4GHz clients. Some dual-band routers disable the 2.4GHz band when only 5GHz is active -- ensure it is enabled.
 
-**What this means for you:** Before setting up your CC E-Ink display, verify that your WiFi router is broadcasting on 2.4GHz. If you only see 5GHz networks in your router settings, enable the 2.4GHz band. Most modern routers broadcast both by default.
+**What this means for you:** Before setting up your TRMNL display, verify that your WiFi router is broadcasting on 2.4GHz. If you only see 5GHz networks in your router settings, enable the 2.4GHz band. Most modern routers broadcast both by default.
+
+### Battery Mode Not Yet Functional
+
+**Date Documented:** 2026-02-20
+**Severity:** Informational
+**Status:** Under development
+
+Battery-powered operation is under active development. The current firmware requires USB-C power for continuous operation. Deep sleep, battery voltage monitoring, and configurable refresh intervals are planned features that are not yet implemented.
+
+The device runs a polling loop with `delay()` rather than hardware deep sleep, meaning power consumption is too high for practical battery operation. USB-C power is required for all current deployments.
+
+**What this means for you:** Keep your TRMNL display connected to USB-C power at all times. Do not rely on battery power alone -- the device will not operate for an extended period without a wired power source. Battery mode is a planned feature for a future firmware release.
 
 ---
 
@@ -138,4 +150,4 @@ These details are relevant for firmware developers only:
 
 ---
 
-(c) 2026 Commute Compute™ System by Angus Bergman -- AGPL-3.0 Dual Licence
+(c) 2026 Commute Compute™ System by Angus Bergman -- AGPL-3.0 Dual License

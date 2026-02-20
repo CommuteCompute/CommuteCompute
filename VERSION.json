@@ -57,10 +57,10 @@
     }
   },
   "firmware": {
-    "version": "7.6.0",
+    "version": "7.7.0",
     "description": "ESP32-C3 CCFirm - BLE Provisioning + BMP Text Renderer",
-    "locked": true,
-    "lastUpdated": "2026-02-07",
+    "locked": false,
+    "lastUpdated": "2026-02-20",
     "features": [
       "BLE provisioning (WiFi + server config)",
       "Pairing code display and verification",
@@ -127,7 +127,7 @@
         "AltTransit now triggers on delays, cancellations, and low confidence (not just no-transit)",
         "Admin Panel v5.0: dynamic version loading, fixed config tab, fixed Last Updated timestamp",
         "Removed redundant /api/calculate-journey endpoint",
-        "All TRMNL references replaced with CC E-Ink across 15+ files",
+        "Hardware naming standardised to TRMNL device names across 15+ files",
         "Route alternatives endpoint fixed (undefined variable references removed)",
         "All page footers now load versions dynamically from /api/version",
         "Flasher page: added cc-system-footer and sanitize() function"

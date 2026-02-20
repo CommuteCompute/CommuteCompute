@@ -5,7 +5,7 @@
  * Renders the CommuteCompute™ dashboard for different e-ink devices.
  * 
  * Query params:
- * - device: Device ID (CC E-Ink OG, CC E-Ink Mini, kindle-pw3, etc.)
+ * - device: Device ID (trmnl-og, trmnl-mini, kindle-pw3, etc.)
  * - format: Output format (png, json, html)
  * - refresh: Force refresh (true/false)
  * 

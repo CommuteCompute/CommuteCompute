@@ -8,6 +8,8 @@
 
 Your TRMNL display has been flashed with CCFirm™ firmware and is ready to connect to your Commute Compute™ admin panel.
 
+> **Note:** If you have not yet flashed your device, see the Browser Flasher guide first at `https://your-project-name.vercel.app/flasher/` (Chrome or Edge required). This Quick Start guide assumes flashing is already complete.
+
 ---
 
 ## What You Will Need
@@ -32,7 +34,7 @@ Before starting, gather these items:
 [TIME] Approximately 30-60 seconds.
 
 1. **Disconnect USB** (if connected)
-2. **Power on the display** (battery or USB)
+2. **Power on the display** via USB-C
 3. The display will boot and start BLE (Bluetooth Low Energy) advertising
 
 **What you should see:** The display shows BLE pairing instructions with device name `CC-XXXXXX`.
@@ -111,7 +113,7 @@ If your device shows a 6-character pairing code after WiFi setup, enter it in th
 ### Normal Operation:
 - **Partial refresh** every 60 seconds (departure times update)
 - **Full refresh** every 5 minutes (complete screen redraw to prevent ghosting)
-- **Light sleep** between updates (battery saving mode)
+- **USB-C power** required for continuous operation
 
 ---
 
@@ -262,7 +264,7 @@ RAM:         320KB
 Display:     7.5" e-ink (800x480)
 WiFi:        2.4GHz 802.11 b/g/n
 Update Rate: 1 min (partial), 5 min (full)
-Battery:     ~2-3 days (with 1-min updates)
+Power:       USB-C required (battery mode under development)
 ```
 
 ---
@@ -276,10 +278,10 @@ Your TRMNL display has been configured with:
 
 This is **required** for ESP32-C3. Do not change these settings.
 
-### Battery Life
-- **1-minute updates:** 2-3 days
-- **2-minute updates:** 4-5 days
-- Adjust in `config.h` if needed
+### Power Requirements
+- **USB-C power is required** for continuous operation
+- Battery-powered operation is under active development (deep sleep, battery monitoring, and configurable refresh intervals are planned features)
+- Ensure the device remains connected to USB-C power at all times
 
 ### Server URL
 Your device's server URL is automatically configured during BLE WiFi setup. The Setup Wizard sends your deployment URL alongside WiFi credentials -- no manual firmware configuration needed.
