@@ -49,7 +49,7 @@ Before starting, confirm you have the following. Gathering everything upfront wi
 **Hardware checklist:**
 - [ ] A TRMNL display (TRMNL Display (OG) from the [TRMNL Shop](https://shop.trmnl.com), or a jailbroken Kindle)
 - [ ] A USB-C data cable (not charge-only) for connecting the display to your computer
-- [ ] A USB-C power supply for continuous operation (battery mode is under development and not currently supported)
+- [ ] A USB-C power supply recommended for continuous operation (battery operation is supported but lasts only several days)
 - [ ] A desktop or laptop computer with **Chrome or Edge** browser (required for device flashing and BLE WiFi provisioning; Safari, Firefox, and iPhone/iPad are not supported for these steps)
 - [ ] A **2.4GHz WiFi network** -- the TRMNL display does not support 5GHz networks. If your router broadcasts a combined 2.4/5GHz network, ensure the 2.4GHz band is enabled.
 
@@ -84,10 +84,10 @@ Before starting, gather these items and information:
 | **TRMNL display** | E-ink display device (e.g. TRMNL Display (OG) from the TRMNL Shop) | ~$150 AUD |
 | **Computer** | Desktop or laptop for initial setup (not iPhone/iPad) | -- |
 | **USB Cable** | USB-C cable for connecting display to computer | Usually included |
-| **USB-C Power Supply** | Required for continuous operation (battery mode is under development) | -- |
+| **USB-C Power Supply** | Recommended for continuous operation (battery lasts several days) | -- |
 | **WiFi Network** | 2.4 GHz network (5 GHz not supported) | -- |
 
-[IMPORTANT] **Power:** USB-C power supply required. Your TRMNL display must remain connected to USB-C power for continuous operation. Battery mode is under development and not currently supported.
+[IMPORTANT] **Power:** USB-C power supply recommended for continuous operation. Battery operation is supported but lasts only several days. For always-on wall-mounted use, connect to USB-C power.
 
 ### Required Online Accounts
 

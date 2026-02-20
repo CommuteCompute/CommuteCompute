@@ -121,17 +121,15 @@ If your router broadcasts a combined 2.4/5GHz network (common with modern router
 
 **What this means for you:** Before setting up your TRMNL display, verify that your WiFi router is broadcasting on 2.4GHz. If you only see 5GHz networks in your router settings, enable the 2.4GHz band. Most modern routers broadcast both by default.
 
-### Battery Mode Not Yet Functional
+### Battery Operation — Limited Duration
 
 **Date Documented:** 2026-02-20
 **Severity:** Informational
-**Status:** Under development
+**Status:** Functional (limited)
 
-Battery-powered operation is under active development. The current firmware requires USB-C power for continuous operation. Deep sleep, battery voltage monitoring, and configurable refresh intervals are planned features that are not yet implemented.
+Battery-powered operation is supported but lasts only several days. USB-C power is recommended for continuous, long-term operation. The device runs a polling loop with `delay()` rather than hardware deep sleep, which limits battery life. Deep sleep and configurable refresh intervals are planned enhancements to extend battery duration in a future firmware release.
 
-The device runs a polling loop with `delay()` rather than hardware deep sleep, meaning power consumption is too high for practical battery operation. USB-C power is required for all current deployments.
-
-**What this means for you:** Keep your TRMNL display connected to USB-C power at all times. Do not rely on battery power alone -- the device will not operate for an extended period without a wired power source. Battery mode is a planned feature for a future firmware release.
+**What this means for you:** The display can run on battery for several days, but for always-on wall-mounted use, connect it to USB-C power. If you need temporary portable operation (e.g. testing placement), battery is sufficient for several days.
 
 ---
 
@@ -150,4 +148,4 @@ These details are relevant for firmware developers only:
 
 ---
 
-(c) 2026 Commute Compute™ System by Angus Bergman -- AGPL-3.0 Dual License
+(c) 2026 Commute Compute™ System by Angus Bergman -- AGPL-3.0 Dual Licence
