@@ -36,7 +36,7 @@ Before starting setup, gather these items:
 |-------------|-------------|
 | Vercel account | Free tier works perfectly -- sign up at [vercel.com](https://vercel.com) |
 | TRMNL display | Or jailbroken Kindle |
-| USB-C power source | USB-C (wall adapter or USB port) recommended for continuous use. Battery operation is supported but lasts only several days. |
+| USB-C power source | USB-C (wall adapter or USB port) for continuous always-on use. Battery operation provides several days of cable-free use — ideal for testing placement or portable scenarios. |
 | WiFi network details | Network name (SSID) and password -- must be 2.4 GHz network (5 GHz not supported) |
 | Modern web browser | Chrome or Edge required for device flashing (Web Serial API) and BLE WiFi provisioning (Web Bluetooth API). Admin Panel and Setup Wizard work with Chrome, Firefox, Safari, or Edge. Internet Explorer is not supported. |
 | Transport Victoria API key | Required for live departure data -- register at [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/). Approval may take up to 48 hours. |
@@ -174,7 +174,7 @@ This key is essential for live real-time departure countdowns -- the core featur
 ### 3.6 Journey Settings
 
 - Set your **target arrival time** at work (e.g., 9:00 AM)
-- Enable **CoffeeDecision** if you want coffee stop recommendations
+- Enable **CoffeeDecision™** if you want coffee stop recommendations
 
 ### 3.7 Complete Setup
 

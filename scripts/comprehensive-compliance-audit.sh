@@ -790,7 +790,7 @@ if [ -f "api/screen.js" ]; then
         fi
     done
 
-    for engine in "departure-confidence" "lifestyle-context" "sleep-optimizer" "alt-transit"; do
+    for engine in "departure-confidence" "lifestyle-context" "sleep-optimiser" "alt-transit"; do
         ((SCREEN_IMPORTS_TOTAL++))
         if grep -q "$engine" api/screen.js 2>/dev/null; then
             ((SCREEN_IMPORTS_PASS++))

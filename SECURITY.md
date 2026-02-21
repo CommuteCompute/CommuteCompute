@@ -177,7 +177,7 @@ Commute Compute™ stores the following categories of data in each user's own Re
 
 <p align="center">
 
-Commute Compute™, CommuteCompute™, CCDash™, CC LiveDash™, and CCFirm™ are trademarks of Angus Bergman.
+Commute Compute™, CommuteCompute™, CCDash™, CC LiveDash™, CCFirm™, CoffeeDecision™, DepartureConfidence™, LifestyleContext™, SleepOptimiser™, and AltTransit™ are trade marks of Angus Bergman.
 
 Copyright &copy; 2026 Angus Bergman &bull; Licensed under [AGPL-3.0 (Dual Licence)](https://www.gnu.org/licenses/agpl-3.0.html)
 

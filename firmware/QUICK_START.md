@@ -85,7 +85,7 @@ If your device shows a 6-character pairing code after WiFi setup, enter it in th
 **What happens next:** The display will automatically fetch and show:
 - Next trams/trains to work
 - When to leave (based on current time)
-- CoffeeDecision recommendation (based on available time)
+- CoffeeDecision™ recommendation (based on available time)
 - Weather and service status
 
 [IMPORTANT] Allow 2-3 minutes after WiFi provisioning (or pairing, if required) for the display to fetch its first dashboard image. The first load takes longer than subsequent refreshes. Do not power off or reset during this time.
@@ -225,7 +225,7 @@ curl https://your-server-name.vercel.app/api/status
 
 4. **Signal strength:** Move the display closer to your WiFi router to ensure strong signal.
 
-5. **Reset WiFi credentials:** Hold the device button for 5 seconds, or reflash firmware to clear stored credentials.
+5. **Reset WiFi credentials:** Hold the device button for 10 seconds to factory reset, then re-provision via BLE from the Setup Wizard.
 
 ### Admin Panel Not Responding
 
@@ -280,7 +280,7 @@ This is **required** for ESP32-C3. Do not change these settings.
 
 ### Power Requirements
 - **USB-C power recommended** for continuous, always-on operation
-- Battery-powered operation is supported but lasts only several days (deep sleep and configurable refresh intervals are planned enhancements to extend battery life)
+- Battery operation provides several days of cable-free use — ideal for testing placement or portable scenarios. Deep sleep and configurable refresh intervals are planned enhancements to further extend battery duration
 - For wall-mounted use, connect to USB-C power for uninterrupted operation
 
 ### Server URL
