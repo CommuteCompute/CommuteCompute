@@ -226,7 +226,7 @@ Before ANY testing, read and understand:
 
 **Preview Display**:
 - [ ] Renders at selected device resolution
-- [ ] 1-bit black/white only (no grayscale)
+- [ ] 1-bit black/white only (no greyscale)
 - [ ] Matches CCDashDesignV15.0 spec exactly
 - [ ] Updates on data change
 

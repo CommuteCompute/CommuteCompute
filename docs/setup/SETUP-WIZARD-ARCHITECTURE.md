@@ -760,7 +760,7 @@ Cache cafe business hours during setup to avoid runtime Google Places API calls.
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-### CoffeeDecision Usage
+### CoffeeDecision™ Usage
 
 At runtime, CoffeeDecision reads cached hours from token:
 

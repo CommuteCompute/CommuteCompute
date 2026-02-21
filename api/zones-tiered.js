@@ -1,20 +1,22 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Angus Bergman
+// Part of the Commute Compute System™ — https://gitlab.com/angusbergman/commute-compute-system
+// Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
+
 /**
  * /api/zones-tiered - Tiered Refresh Zone API
- * 
+ * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
+ *
  * Supports per-tier zone fetching for optimised refresh intervals:
  * - Tier 1 (1 min): Time-critical (clock, duration boxes, departures)
  * - Tier 2 (2 min): Content (weather, leg details) - only if changed
  * - Tier 3 (5 min): Static (location bar)
  * - Full refresh: 10 minutes
- * 
+ *
  * Query params:
  * - tier: 1, 2, 3, or 'all' (default: 'all')
  * - force=1: Return all zones in tier (ignore change detection)
  * - format=json: Return zone metadata only (no BMP data)
- * 
- * Copyright (c) 2026 Angus Bergman
- * SPDX-License-Identifier: AGPL-3.0-or-later
- * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  */
 
 import { getDepartures, getDisruptions, getWeather } from '../src/services/opendata-client.js';

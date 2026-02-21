@@ -311,4 +311,4 @@ screen /dev/cu.usbmodem* 115200
 **Applies To:** Commute Compute(TM) v4.2.0+ (CCDashDesignV15.0)
 **Firmware Version:** CC-FW-7.5.0
 
-(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual License
+(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual Licence

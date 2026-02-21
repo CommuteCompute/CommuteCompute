@@ -57,7 +57,7 @@ All notable changes to this project are documented here.
 ## [2026-02-09] -- System v3.5.0
 
 ### Added
-- **Admin Analytics Integration** -- DepartureConfidence and LifestyleContext engines now power admin dashboard analytics via `/api/commutecompute`
+- **Admin Analytics Integration** -- DepartureConfidence™ and LifestyleContext™ engines now power admin dashboard analytics via `/api/commutecompute`
 - **Sidebar Navigation** -- Admin panel redesigned with branded sidebar matching privacy/help design system
 
 ### Changed
@@ -69,7 +69,7 @@ All notable changes to this project are documented here.
 
 ### Fixed
 - **E-ink suburb display** -- home/work locations now show suburb names instead of full geocoded addresses
-- **AltTransit false activation** -- alternative transit panel only appears when ALL public transit is cancelled, not when a single mode is unavailable
+- **AltTransit™ false activation** -- alternative transit panel only appears when ALL public transit is cancelled, not when a single mode is unavailable
 
 ---
 
@@ -215,7 +215,7 @@ All notable changes to this project are documented here.
 ### Added
 - Complete self-hosted architecture
 - Transport Victoria OpenData API integration
-- CoffeeDecision engine
+- CoffeeDecision™ engine
 - BOM weather integration
 - Setup Wizard (zero-config)
 - Device simulator
