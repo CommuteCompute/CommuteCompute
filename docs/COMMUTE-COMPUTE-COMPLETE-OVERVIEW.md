@@ -786,8 +786,8 @@ Visual indicators:
 | State | Border | Meaning |
 |-------|--------|---------|
 | Normal | Solid 2px black | Service running normally |
-| Delayed | Dashed 2px gray | Service delayed |
-| Skip | Dashed 2px gray | Coffee skipped |
+| Delayed | Dashed 2px grey | Service delayed |
+| Skip | Dashed 2px grey | Coffee skipped |
 | Cancelled | Diagonal stripes | Service suspended |
 
 ## Status Bar Variants

@@ -133,7 +133,7 @@ Comprehensive troubleshooting guide for all monitored endpoints, pages, and data
    - Check `specs/CCDashDesignV15.md` (V15.0) for exact coordinates
 
 2. **BMP encoding issues**
-   - 1-bit BMP only (no grayscale)
+   - 1-bit BMP only (no greyscale)
    - Check `src/services/zone-renderer.js`
    - Verify BMP header generation
 

@@ -224,7 +224,7 @@ The CommuteCompute™ engine is the brain of Commute Compute. It calculates opti
 
 ---
 
-## CoffeeDecision Logic
+## CoffeeDecision™ Logic
 
 The engine determines whether to include a coffee stop based on:
 

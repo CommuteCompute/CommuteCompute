@@ -1280,7 +1280,7 @@ IMAGE_URL="https://your-deployment.vercel.app/api/kindle/image"
 | Aspect | Kindle | TRMNL |
 |--------|--------|-------|
 | Orientation | Portrait (native) | Landscape |
-| Bit Depth | 8-bit grayscale | 1-bit BMP |
+| Bit Depth | 8-bit greyscale | 1-bit BMP |
 | Output Format | PNG | BMP |
 | API Endpoint | `/api/kindle/image` | `/api/zones` |
 | Refresh | Full only | Partial supported |
@@ -1458,8 +1458,8 @@ function mergeConsecutiveWalkLegs(legs) {
 |------|-----|-------|
 | E-ink Background | `#f5f5f0` | Display background |
 | Black | `#1a1a1a` | Text, borders, fills |
-| Gray | `#888888` | Muted text, dashed borders |
-| Light Gray | `#cccccc` | Cancelled stripe pattern |
+| Grey | `#888888` | Muted text, dashed borders |
+| Light Grey | `#cccccc` | Cancelled stripe pattern |
 
 ### 8.4 Mode Icons (LOCKED)
 
@@ -1476,10 +1476,10 @@ function mergeConsecutiveWalkLegs(legs) {
 | State | Border | Background | Time Box |
 |-------|--------|------------|----------|
 | Normal | 2px solid black | White | Filled black |
-| Delayed | 2px dashed gray | White | Filled black + "+X MIN" |
-| Skip | 2px dashed gray | White (grayed) | None |
-| Cancelled | 2px gray | Diagonal stripes 135° | "CANCELLED" text |
-| Diverted | 2px gray | Vertical stripes 90° | Filled black |
+| Delayed | 2px dashed grey | White | Filled black + "+X MIN" |
+| Skip | 2px dashed grey | White (greyed) | None |
+| Cancelled | 2px grey | Diagonal stripes 135° | "CANCELLED" text |
+| Diverted | 2px grey | Vertical stripes 90° | Filled black |
 
 ### 8.6 Status Bar Variants (LOCKED)
 
@@ -1497,7 +1497,7 @@ function mergeConsecutiveWalkLegs(legs) {
 ## Section 9: E-ink Constraints
 
 ### 9.1 1-bit Depth Only
-All BMP output must be pure black and white (1-bit colour depth). No grayscale, no dithering unless explicitly specified. E-ink displays cannot render intermediate tones reliably.
+All BMP output must be pure black and white (1-bit colour depth). No greyscale, no dithering unless explicitly specified. E-ink displays cannot render intermediate tones reliably.
 
 ### 9.2 Design for Partial Refresh
 Any zone may refresh independently of others. Never assume zones refresh together. Each zone must be self-contained and render correctly in isolation.

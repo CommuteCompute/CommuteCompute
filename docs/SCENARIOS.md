@@ -13,7 +13,7 @@
 
 ## Overview
 
-This document catalogs all dashboard scenarios supported by the CommuteCompute™ engine and CCDash™ renderer. Each scenario demonstrates how the system handles different real-world transit situations.
+This document catalogues all dashboard scenarios supported by the CommuteCompute™ engine and CCDash™ renderer. Each scenario demonstrates how the system handles different real-world transit situations.
 
 ---
 
@@ -341,8 +341,8 @@ IF express_available AND express_saves_time
 | Border | Meaning |
 |--------|---------|
 | Solid 2px black | Normal service |
-| Dashed 2px gray | Delayed/diverted/skip |
-| Solid 2px gray | Muted (past leg) |
+| Dashed 2px grey | Delayed/diverted/skip |
+| Solid 2px grey | Muted (past leg) |
 
 ### Background Patterns
 

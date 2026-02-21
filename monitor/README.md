@@ -142,7 +142,7 @@ Generates a JSON file in `monitor/reports/` with complete results and failure an
 Each monitored item includes a detailed resolution guide that explains:
 - Common failure causes
 - Step-by-step resolution procedures
-- Fallback behaviors
+- Fallback behaviours
 - Debugging commands
 
 See `RESOLUTION-GUIDE.md` for the complete troubleshooting reference.

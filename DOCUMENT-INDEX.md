@@ -223,7 +223,7 @@
 
 | File | Description |
 |------|-------------|
-| `assets/brand/BRAND-COLORS.md` | Brand color definitions |
+| `assets/brand/BRAND-COLORS.md` | Brand colour definitions |
 
 ---
 
