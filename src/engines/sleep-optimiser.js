@@ -44,14 +44,14 @@ const DISPLAY_LINE_MAX = 22;
 // =============================================================================
 
 /**
- * SleepOptimizer - Evening preparation engine for Commute Compute™.
+ * SleepOptimiser - Evening preparation engine for Commute Compute™.
  *
  * When the dashboard is viewed in the evening (after 6pm), this engine
  * calculates when the user should go to bed and set their alarm to
  * get optimal sleep before tomorrow's commute.
  *
  * @example
- * const engine = new SleepOptimizer();
+ * const engine = new SleepOptimiser();
  * const result = engine.calculate({
  *   targetArrivalMins: 540, // 9:00am
  *   totalJourneyMins: 45,
@@ -62,7 +62,7 @@ const DISPLAY_LINE_MAX = 22;
  * // result.displayLine => 'BED BY 10:25PM'
  * // result.alarmTime => '7:45AM'
  */
-class SleepOptimizer {
+class SleepOptimiser {
 
   /**
    * Calculate optimal bedtime and alarm time.
@@ -246,4 +246,4 @@ class SleepOptimizer {
   }
 }
 
-export default SleepOptimizer;
+export default SleepOptimiser;

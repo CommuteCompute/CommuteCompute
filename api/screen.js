@@ -19,7 +19,7 @@ import { renderFullDashboard, renderFullScreenBMP } from '../src/services/ccdash
 import { getScenario, getScenarioNames } from '../src/services/journey-scenarios.js';
 import DepartureConfidence from '../src/engines/departure-confidence.js';
 import LifestyleContext from '../src/engines/lifestyle-context.js';
-import SleepOptimizer from '../src/engines/sleep-optimizer.js';
+import SleepOptimiser from '../src/engines/sleep-optimiser.js';
 import AltTransit from '../src/engines/alt-transit.js';
 import crypto from 'node:crypto';
 
@@ -1873,7 +1873,7 @@ export default async function handler(req, res) {
       localMinute: melbourneTime.minute
     });
     // V15.0: Sleep Optimizer - evening mode bedtime/alarm calculation
-    const sleepEngine = new SleepOptimizer();
+    const sleepEngine = new SleepOptimiser();
     const sleepData = sleepEngine.calculate({
       targetArrivalMins: targetMins,
       totalJourneyMins: totalMinutes,

@@ -47,7 +47,7 @@ All code, specifications, and documentation freely available under AGPL-3.0 (dua
 | **CC LiveDash™** | Multi-device live renderer |
 | **CCFirm™** | Custom firmware family |
 
-All trademarks © 2026 Angus Bergman.
+All trade marks © 2026 Angus Bergman.
 
 ---
 
@@ -288,7 +288,7 @@ Things we explicitly **will not** pursue:
 - **Creator:** Angus Bergman
 - **Licence:** AGPL-3.0 Dual Licence
 - **Repository:** Public GitLab
-- **Trademarks:** All ™ marks owned by Angus Bergman
+- **Trade Marks:** All ™ marks owned by Angus Bergman
 
 ### Decision Making
 - Major changes require specification updates

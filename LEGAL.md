@@ -16,35 +16,41 @@ All intellectual property rights in the Commute Compute System, including but no
 
 ---
 
-## Trademarks
+## Trade Marks
 
-The following are **trademarks (™)** owned by **Angus Bergman** (registration pending for marks noted below):
+### Filed Trade Mark Applications (IP Australia)
+
+The following trade mark applications have been filed with IP Australia and are at **filed: Published** status as of 14 February 2026. These are **not yet registered trade marks** — registration is pending completion of the examination and opposition process.
+
+| Application No. | Mark | Type | Classes | Status | Filed |
+|-----------------|------|------|---------|--------|-------|
+| TM 2627709 | COMMUTE COMPUTE | Word Mark | 9, 39, 42 | filed: Published | 14 February 2026 |
+| TM 2627710 | CC Logo | Figurative Mark | 9, 39, 42 | filed: Published | 14 February 2026 |
+
+Filing references: AMCZ-2615437674, AMCZ-2615438195
+ABN: 59 402 869 395
+
+### Unregistered Trade Marks (Common Law)
+
+The following are unregistered common law trade marks (™) owned by **Angus Bergman**:
 
 | Mark | Type | Owner | Copyright |
 |------|------|-------|-----------|
-| **Commute Compute™** | Word Mark | Angus Bergman | © 2026 Angus Bergman |
 | **Commute Compute System™** | Word Mark | Angus Bergman | © 2026 Angus Bergman |
 | **CommuteCompute™** | Word Mark | Angus Bergman | © 2026 Angus Bergman |
 | **CCDash™** | Word Mark | Angus Bergman | © 2026 Angus Bergman |
 | **CC LiveDash™** | Word Mark | Angus Bergman | © 2026 Angus Bergman |
 | **CCFirm™** | Word Mark | Angus Bergman | © 2026 Angus Bergman |
+| **CoffeeDecision™** | Word Mark | Angus Bergman | © 2026 Angus Bergman |
+| **DepartureConfidence™** | Word Mark | Angus Bergman | © 2026 Angus Bergman |
+| **LifestyleContext™** | Word Mark | Angus Bergman | © 2026 Angus Bergman |
+| **SleepOptimiser™** | Word Mark | Angus Bergman | © 2026 Angus Bergman |
+| **AltTransit™** | Word Mark | Angus Bergman | © 2026 Angus Bergman |
 | **CC Logo** | Design Mark | Angus Bergman | © 2026 Angus Bergman |
-
-### Trademark Applications (IP Australia)
-
-The following trademark applications have been filed with IP Australia:
-
-| Application No. | Mark | Type | Classes | Status | Filed |
-|-----------------|------|------|---------|--------|-------|
-| TM 2627709 | COMMUTE COMPUTE | Word Mark | 9, 39, 42 | Published | 14 February 2026 |
-| TM 2627710 | CC Logo | Figurative Mark | 9, 39, 42 | Published | 14 February 2026 |
-
-Filing references: AMCZ-2615437674, AMCZ-2615438195
-ABN: 59 402 869 395
 
 ### Ownership Statement
 
-All trademarks, service marks, trade names, logos, and designs listed above are the exclusive intellectual property of **Angus Bergman**. All associated copyrights, including but not limited to source code, documentation, specifications, and brand assets relating to each trademark, are owned by Angus Bergman.
+All trade marks, service marks, trade names, logos, and designs listed above are the exclusive intellectual property of **Angus Bergman**. All associated copyrights, including but not limited to source code, documentation, specifications, and brand assets relating to each trade mark, are owned by Angus Bergman.
 
 ### Dual Licence
 
@@ -61,10 +67,10 @@ By using, copying, modifying, or distributing any part of this system under the 
 1. Your use is subject to and governed by the AGPL-3.0 licence terms
 2. No ownership or proprietary rights are transferred to you
 3. Proprietary or closed-source use requires a commercial licence
-4. All trademark rights remain exclusively with Angus Bergman
+4. All trade mark rights remain exclusively with Angus Bergman
 5. Attribution must be maintained in all copies and derivative works
 
-**No implied licence** is granted under any trademark, patent, or other intellectual property right of Angus Bergman, except as expressly set forth in the applicable licence.
+**No implied licence** is granted under any trade mark, patent, or other intellectual property right of Angus Bergman, except as expressly set forth in the applicable licence.
 
 ### Third-Party Content Exclusion
 
@@ -93,17 +99,18 @@ Removal or alteration of third-party attributions is prohibited.
 
 ### CommuteCompute™ Intelligence Engines
 
-The CommuteCompute™ system comprises **five interconnected intelligence engines** that work together to provide intelligent commute planning. Only CommuteCompute itself is trademarked; the sub-engines are copyright-protected components.
+The CommuteCompute™ system comprises **five interconnected intelligence engines** and the **CoffeeDecision™** feature engine, all of which are unregistered common law trade marks (™) of Angus Bergman.
 
-| Engine | Status | Trademarked | Copyright | Description |
+| Engine | Status | Trade Marked | Copyright | Description |
 |--------|--------|-------------|-----------|-------------|
 | **CommuteCompute™** | Parent Engine | Yes (™) | © 2026 Angus Bergman | Core journey orchestration and unified intelligence engine |
-| **DepartureConfidence** | Sub-Engine | No | © 2026 Angus Bergman | Real-time departure reliability scoring and prediction |
-| **LifestyleContext** | Sub-Engine | No | © 2026 Angus Bergman | User lifestyle pattern analysis and preference learning |
-| **SleepOptimizer** | Sub-Engine | No | © 2026 Angus Bergman | Optimal departure time calculation based on sleep patterns |
-| **AltTransit** | Sub-Engine | No | © 2026 Angus Bergman | Alternative transport route discovery and recommendation |
+| **DepartureConfidence™** | Sub-Engine | Yes (™) | © 2026 Angus Bergman | Real-time departure reliability scoring and prediction |
+| **LifestyleContext™** | Sub-Engine | Yes (™) | © 2026 Angus Bergman | User lifestyle pattern analysis and preference learning |
+| **SleepOptimiser™** | Sub-Engine | Yes (™) | © 2026 Angus Bergman | Optimal departure time calculation based on sleep patterns |
+| **AltTransit™** | Sub-Engine | Yes (™) | © 2026 Angus Bergman | Alternative transport route discovery and recommendation |
+| **CoffeeDecision™** | Feature Engine | Yes (™) | © 2026 Angus Bergman | Journey-aware coffee timing recommendation engine |
 
-**Ownership:** All five engines are the exclusive intellectual property of Angus Bergman. While only CommuteCompute carries the ™ designation, all engine names and their implementations are copyright protected.
+**Ownership:** All six engines are the exclusive intellectual property of Angus Bergman. All engine names are unregistered common law trade marks (™) and their implementations are copyright protected under the Copyright Act 1968 (Cth).
 
 ### Firmware Naming Convention
 
@@ -116,12 +123,12 @@ All custom firmware uses the **CCFirm** prefix:
 | CCFirmWaveshare | Waveshare e-ink displays |
 | CCFirmESP32 | Generic ESP32 e-ink setups |
 
-### Trademark Usage Guidelines
+### Trade Mark Usage Guidelines
 
 1. Always use ™ symbol on first reference in documents
-2. Do not alter, abbreviate, or modify trademark names
+2. Do not alter, abbreviate, or modify trade mark names
 3. Use proper capitalization (CommuteCompute, not commutecompute)
-4. Third parties must obtain written permission for trademark use
+4. Third parties must obtain written permission for trade mark use
 
 ---
 
@@ -214,7 +221,7 @@ Subject to individual negotiation, a commercial licence may address:
 - Right to create derivative works without AGPL-3.0 copyleft requirements
 - SaaS deployment rights without network copyleft obligations (AGPL-3.0 s 13)
 - Custom support and maintenance terms
-- Trademark usage permissions (subject to separate trademark licence)
+- Trade Mark usage permissions (subject to separate trade mark licence)
 
 The inclusion or exclusion of any of the above is determined solely by the terms of the individual written agreement.
 
@@ -301,13 +308,13 @@ When displaying data from external sources, the following attributions are requi
 **Files with Copyright Headers:** 84  
 **Compliance Status:** Complete
 
-### Trademark Family File Registry
+### Trade Mark Family File Registry
 
-All source files contain appropriate trademark attribution in their headers:
+All source files contain appropriate trade mark attribution in their headers:
 
-| Trademark | Files | Key Components |
+| Trade Mark | Files | Key Components |
 |-----------|-------|----------------|
-| **CommuteCompute™** | 9 | `commute-compute.js`, `smart-journey-engine.js`, `smart-route-recommender.js`, `journey-planner.js`, `opendata-client.js`, `coffee-decision.js` — includes DepartureConfidence, LifestyleContext, SleepOptimizer, and AltTransit sub-engines |
+| **CommuteCompute™** | 9 | `commute-compute.js`, `smart-journey-engine.js`, `smart-route-recommender.js`, `journey-planner.js`, `opendata-client.js`, `coffee-decision.js` — includes DepartureConfidence, LifestyleContext, SleepOptimiser, and AltTransit sub-engines |
 | **CCDash™** | 5 | `ccdash-renderer.js`, `zones.js`, `dashboard_template.cpp`, `journey-display/` module |
 | **CC LiveDash™** | 2 | `livedash.js`, `api/livedash.js` |
 | **CCFirm™** | 7 | `main.cpp`, `main-tiered.cpp`, `main-minimal.cpp`, and all firmware variants |
@@ -356,7 +363,7 @@ CCFirm™ firmware files include explicit third-party attribution in headers:
 
 ## Contact
 
-For licensing enquiries, trademark permissions, or legal questions:
+For licensing enquiries, trade mark permissions, or legal questions:
 
 **Angus Bergman**
 **Email:** commutecompute.licensing@gmail.com
@@ -372,10 +379,10 @@ For security vulnerability reporting, see our [Responsible Disclosure Policy](SE
 |---------|------|---------|
 | 1.6 | 2026-02-16 | Added Sole Trader Structure & Liability Mitigation section, supply chain integrity documentation, enhanced consumer law compliance disclosure |
 | 1.5 | 2026-02-16 | Added SECURITY.md cross-reference for responsible disclosure, added email to Contact section, corrected "inquiries" to "enquiries" (Australian English) |
-| 1.4 | 2026-02-15 | Added IP Australia TM 2627709/2627710 applications, updated trademark heading for registration-pending status |
+| 1.4 | 2026-02-15 | Added IP Australia TM 2627709/2627710 applications, updated trade mark heading for registration-pending status |
 | 1.3 | 2026-02-14 | Added Governing Law & Jurisdiction (Victoria, Australia), Copyright Act 1968 (Cth) references, moral rights assertion, Commercial Licence Framework (bespoke per-licensee terms), Limitation of Liability with ACL compliance |
 | 1.2 | 2026-02-07 | Updated to AGPL-3.0 Dual Licence model (open source + commercial) |
-| 1.1 | 2026-01-31 | Added File Attribution Audit section, Trademark Family File Registry, third-party exclusions documentation |
+| 1.1 | 2026-01-31 | Added File Attribution Audit section, Trade Mark Family File Registry, third-party exclusions documentation |
 | 1.0 | 2026-01-30 | Initial IP documentation |
 
 ---

@@ -44,7 +44,7 @@ Here is what no other commuter tool provides:
 
 - **Single-glance intelligence on e-ink.** The entire commute -- departure countdowns, weather preparation, coffee feasibility, journey confidence, sleep optimisation, and alternative transport costs -- rendered as one image. Readable from across a room.
 
-- **Five interconnected intelligence engines.** CommuteCompute&#8482;, DepartureConfidence, LifestyleContext, SleepOptimizer, and AltTransit work together. A weather change affects clothing suggestions, walking speed estimates, coffee feasibility, and confidence scoring simultaneously. They do not operate in isolation.
+- **Five interconnected intelligence engines.** CommuteCompute&#8482;, DepartureConfidence™, LifestyleContext™, SleepOptimiser™, and AltTransit™ work together. A weather change affects clothing suggestions, walking speed estimates, coffee feasibility, and confidence scoring simultaneously. They do not operate in isolation.
 
 - **Sleep optimisation for next-day commute readiness.** No other transit tool calculates your optimal bedtime and alarm time based on tomorrow's journey duration, your wake routine, and desired sleep hours.
 
@@ -81,7 +81,7 @@ Status timing follows user-intent logic: when departure is still far away (>120 
 |  Home Address    |       |  GTFS-RT Live Transit  |       |  1. CommuteCompute™       |
 |  Work Address    | ----> |  BOM Weather API       | ----> |  2. DepartureConfidence   |
 |  Arrival Time    |       |  Google Places API     |       |  3. LifestyleContext      |
-|  Preferences     |       |                        |       |  4. SleepOptimizer        |
+|  Preferences     |       |                        |       |  4. SleepOptimiser        |
 |                  |       +------------------------+       |  5. AltTransit            |
 +------------------+               (live, cached)           +---------------------------+
                                                                         |
@@ -194,7 +194,7 @@ DISPLAY: 14 Showers | UMBRELLA + JACKET | Feels 10C
 
 ---
 
-### 4. SleepOptimizer Engine
+### 4. SleepOptimiser Engine
 
 Evening bedtime and alarm calculation for next-day commute readiness.
 
@@ -303,7 +303,7 @@ This makes Commute Compute&#8482; one of the first commuter tools to fully suppo
 |  CommuteCompute(TM) | CCDash(TM) | CC LiveDash(TM) | Weather (BOM)      |
 +--------------------------------------------------------------------------+
 |                        INTELLIGENCE LAYER                                 |
-|  DepartureConfidence | LifestyleContext | SleepOptimizer | AltTransit    |
+|  DepartureConfidence | LifestyleContext | SleepOptimiser | AltTransit    |
 +--------------------------------------------------------------------------+
 |                           DATA LAYER                                      |
 |  OpenData Client (GTFS-RT) | BOM API | Google Places | Redis         |
@@ -467,7 +467,7 @@ The TRMNL Display (OG) is the primary supported device and provides the best exp
 | [SUPPORT.md](SUPPORT.md) | Support channels and troubleshooting |
 | [KNOWN-ISSUES.md](KNOWN-ISSUES.md) | Current known issues and workarounds |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | Version history and release notes |
-| [LEGAL.md](LEGAL.md) | Trademarks, intellectual property, and licensing |
+| [LEGAL.md](LEGAL.md) | Trade Marks, intellectual property, and licensing |
 | [PRIVACY.md](PRIVACY.md) | Privacy policy and data collection practices |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines |
 
@@ -535,13 +535,13 @@ For commercial licensing enquiries: **commutecompute.licensing@gmail.com**
 
 <br>
 
-## Trademarks
+## Trade Marks
 
 The following are trade mark applications (registration pending) owned by Angus Bergman:
 
 **Commute Compute&#8482;** | **Commute Compute System&#8482;** | **CommuteCompute&#8482;** | **CCDash&#8482;** | **CC LiveDash&#8482;** | **CCFirm&#8482;**
 
-See [LEGAL.md](LEGAL.md) for complete trademark and intellectual property details.
+See [LEGAL.md](LEGAL.md) for complete trade mark and intellectual property details.
 
 <br>
 
