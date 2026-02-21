@@ -8,7 +8,7 @@ stages:
   - test
 
 variables:
-  NODE_VERSION: "20"
+  NODE_VERSION: "22"
 
 # Stage 1: Syntax validation + ESLint
 lint-job:
@@ -51,4 +51,8 @@ test-job:
     - node --test tests/test-render-smoke.js
     - echo "Running screen endpoint smoke tests..."
     - node --test tests/test-screen-smoke.js
+    - echo "Running auth middleware tests..."
+    - node --test tests/test-auth-middleware.js
+    - echo "Running opendata client unit tests..."
+    - node --test tests/test-opendata-client-unit.js
   allow_failure: false

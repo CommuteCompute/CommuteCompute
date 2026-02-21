@@ -782,7 +782,7 @@ A: Maybe! Check if it has WiFi and can run custom software. Post specs in GitLab
 
 **Q: How long does battery last?**
 A: Kindle: 2-4 weeks (refreshing every 15 min, WiFi on)
-TRMNL display: USB-C recommended for continuous use. Battery operation supported but lasts only several days.
+TRMNL display: USB-C for continuous always-on use. Battery provides several days of cable-free operation — ideal for testing placement or portable scenarios.
 
 **Q: Can I rotate the display?**
 A: Yes! Use `?orientation=landscape` or `portrait` parameter.

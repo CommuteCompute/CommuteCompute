@@ -16,9 +16,9 @@
 
 ## Intellectual Property Notice
 
-All trademarks and associated copyrights are owned by **Angus Bergman**:
+All trade marks and associated copyrights are owned by **Angus Bergman**:
 
-| Trademark | Copyright |
+| Trade Mark | Copyright |
 |-----------|-----------|
 | Commute Compute(TM) | (c) 2026 Angus Bergman |
 | Commute Compute System(TM) | (c) 2026 Angus Bergman |
@@ -31,9 +31,9 @@ See **LEGAL.md** for complete IP documentation.
 
 ---
 
-## Trademark Family File Registry
+## Trade Mark Family File Registry
 
-Complete mapping of each trademark to its constituent files in the codebase.
+Complete mapping of each trade mark to its constituent files in the codebase.
 
 ### CommuteCompute(TM) -- Intelligent Route Engine
 
@@ -51,7 +51,7 @@ Complete mapping of each trademark to its constituent files in the codebase.
 |------|--------|---------|
 | `src/engines/departure-confidence.js` | DepartureConfidence | Departure probability scoring |
 | `src/engines/lifestyle-context.js` | LifestyleContext | Time-of-day and routine awareness |
-| `src/engines/sleep-optimizer.js` | SleepOptimizer | Evening mode and wake time logic |
+| `src/engines/sleep-optimiser.js` | SleepOptimiser | Evening mode and wake time logic |
 | `src/engines/alt-transit.js` | AltTransit | Alternate route cost comparison |
 
 ### CCDash(TM) -- Primary Dashboard Renderer
@@ -105,7 +105,7 @@ Complete mapping of each trademark to its constituent files in the codebase.
 
 ### Supporting Services
 
-| File | Trademark | Purpose |
+| File | Trade Mark | Purpose |
 |------|-----------|---------|
 | `src/services/opendata.js` | CommuteCompute(TM) | Transport Victoria GTFS-RT client |
 | `src/services/weather-bom.js` | CCDash(TM) | BOM weather integration |
@@ -120,7 +120,7 @@ Complete mapping of each trademark to its constituent files in the codebase.
 
 ## Simplified System Architecture
 
-The Commute Compute System(TM) is composed of four core trademark families working together:
+The Commute Compute System(TM) is composed of four core trade mark families working together:
 
 ```
                            EXTERNAL DATA SOURCES
@@ -150,7 +150,7 @@ The Commute Compute System(TM) is composed of four core trademark families worki
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘          │
 │                                                                          │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐          │
-│  │ DepartureConf.  │  │ LifestyleCtx    │  │ SleepOptimizer  │          │
+│  │ DepartureConf.  │  │ LifestyleCtx    │  │ SleepOptimiser  │          │
 │  │                 │  │                 │  │                 │          │
 │  │ .calcConfidence │  │ .inferHabits()  │  │ .maximizeRest() │          │
 │  │ .assessReliab() │  │ .getWorkSched() │  │ .alignCircadian │          │
@@ -251,7 +251,7 @@ return_journey() -> IF confidence < 40% THEN show_alt_transit()
 Vercel Serverless (free tier) -> Redis (storage) -> GitLab CI/CD -> Multi-device deployment
 ```
 
-### Trademark Family Relationships
+### Trade Mark Family Relationships
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────┐
@@ -313,7 +313,7 @@ External APIs -> CommuteCompute(TM) -> CCDash(TM)/CC LiveDash(TM) -> CCFirm(TM) 
 11. [CommuteCompute(TM) Engine](#11-commutecomputetm-engine)
 12. [Melbourne Metro Tunnel Compliance](#12-melbourne-metro-tunnel-compliance)
 13. [CC LiveDash(TM) Multi-Device Renderer](#13-cc-livedashtm-multi-device-renderer)
-14. [CoffeeDecision Patterns](#14-coffeedecision-patterns)
+14. [CoffeeDecision™ Patterns](#14-coffeedecision-patterns)
 15. [Setup Wizard & Free-Tier Architecture](#15-setup-wizard--free-tier-architecture)
 16. [Journey Display Module](#16-journey-display-module)
 17. [Data Layer Architecture](#17-data-layer-architecture)
@@ -452,7 +452,7 @@ commute-compute/
 │   │   ├── commute-compute.js    # Core engine
 │   │   ├── departure-confidence.js  # DepartureConfidence
 │   │   ├── lifestyle-context.js  # LifestyleContext
-│   │   ├── sleep-optimizer.js    # SleepOptimizer
+│   │   ├── sleep-optimiser.js    # SleepOptimiser
 │   │   └── alt-transit.js        # AltTransit
 │   ├── journey-display/          # Journey display module
 │   │   ├── api.js                # Display API layer
@@ -515,7 +515,7 @@ commute-compute/
 └── DEVELOPMENT-RULES.md          # Development rules (v1.28)
 ```
 
-### 3.2 Layer Architecture (by Trademark Family)
+### 3.2 Layer Architecture (by Trade Mark Family)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -568,7 +568,7 @@ commute-compute/
 
 ## 4. Data Flow
 
-### 4.1 Complete Data Flow (by Trademark Family)
+### 4.1 Complete Data Flow (by Trade Mark Family)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -591,7 +591,7 @@ commute-compute/
 │   └────────┬────────┘  └────────┬────────┘  └────────┬────────┘         │
 │            │                    │                    │                   │
 │   ┌────────┴────────┐  ┌───────┴────────┐  ┌───────┴─────────┐         │
-│   │ DepartureConf.  │  │ LifestyleCtx   │  │ SleepOptimizer  │         │
+│   │ DepartureConf.  │  │ LifestyleCtx   │  │ SleepOptimiser  │         │
 │   │ AltTransit      │  │                │  │                 │         │
 │   └────────┬────────┘  └───────┬────────┘  └───────┬─────────┘         │
 │            └────────────────────┴────────────────────┘                   │
@@ -888,9 +888,9 @@ convert source.png \
   BMP3:output.bmp
 ```
 
-### 7.3 Renderer Versions (by Trademark)
+### 7.3 Renderer Versions (by Trade Mark)
 
-| Renderer | Trademark | Purpose | Status |
+| Renderer | Trade Mark | Purpose | Status |
 |----------|-----------|---------|--------|
 | `ccdash-renderer.js` | **CCDash(TM)** | Consolidated zone renderer (v2.0) | Primary |
 | `livedash.js` | **CC LiveDash(TM)** | Multi-device renderer | Primary |
@@ -1116,9 +1116,9 @@ const STATE_CONFIG = {
    - Walking distance
    - Service frequency
    - Current delays
-   - DepartureConfidence score
+   - DepartureConfidence™ score
 6. Apply CoffeeDecision if enabled
-7. Apply SleepOptimizer if evening mode
+7. Apply SleepOptimiser™ if evening mode
 8. Return optimal journey with alternatives
 9. Alternate routes shown ONLY when primary confidence < 40%
 ```
@@ -2095,10 +2095,10 @@ grep -rn "Clara\|Toorak\|Norman" src/ api/ --include="*.js" \
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 6.0 | 2026-02-07 | **Engine Rename and V15.0 Spec**: Renamed SmartCommute to CommuteCompute throughout. Updated to CCDash V15.0 (UNLOCKED) with new dashboard layout: Sleep mode, Alt Transit cost panel, Mindset status bar, enhanced glanceability. Added sub-engines (DepartureConfidence, LifestyleContext, SleepOptimizer, AltTransit). FRIDAY TREAT for CoffeeDecision. Alternate routes shown only when primary confidence < 40%. Metro Tunnel Compliance promoted to standalone section. All references updated to GitLab. Development Rules v1.26. |
+| 6.0 | 2026-02-07 | **Engine Rename and V15.0 Spec**: Renamed SmartCommute to CommuteCompute throughout. Updated to CCDash V15.0 (UNLOCKED) with new dashboard layout: Sleep mode, Alt Transit cost panel, Mindset status bar, enhanced glanceability. Added sub-engines (DepartureConfidence, LifestyleContext, SleepOptimiser, AltTransit). FRIDAY TREAT for CoffeeDecision. Alternate routes shown only when primary confidence < 40%. Metro Tunnel Compliance promoted to standalone section. All references updated to GitLab. Development Rules v1.26. |
 | 5.4 | 2026-02-01 | **Hybrid BLE + Pairing Provisioning**: Major update to Device Pairing and Firmware Architecture. Documents two-phase provisioning: Phase 1 (BLE WiFi only) and Phase 2 (Pairing code for server config). |
-| 5.2 | 2026-01-31 | **Simplified System Architecture Diagrams**: Added high-level trademark-based architecture diagram. Updated all diagrams to use trademark family names consistently. |
-| 5.1 | 2026-01-31 | **Trademark Family File Registry**: Added comprehensive mapping of all trademarked components to their constituent files. |
+| 5.2 | 2026-01-31 | **Simplified System Architecture Diagrams**: Added high-level trade mark-based architecture diagram. Updated all diagrams to use trade mark family names consistently. |
+| 5.1 | 2026-01-31 | **Trade Mark Family File Registry**: Added comprehensive mapping of all trade mark components to their constituent files. |
 | 5.0 | 2026-01-31 | **Alignment with DEVELOPMENT-RULES.md v1.14**: Added Vercel KV Storage, GTFS-RT Data Flow, Turnkey Compliance. |
 | 4.0 | 2026-01-30 | Major update: Added Journey Display Module, Data Layer, Multi-State Support, Device Pairing, Health Monitoring, CCFirm Architecture. |
 | 3.0 | 2026-01-29 | Added IP notice, Setup Wizard, Free-Tier architecture |

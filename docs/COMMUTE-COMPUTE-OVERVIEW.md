@@ -50,7 +50,7 @@ Commute Compute answers all of these at a glance on a dedicated e-ink display.
 | **CC LiveDash™** | Multi-device live renderer |
 | **CCFirm™** | Custom firmware family |
 
-All trademarks © 2026 Angus Bergman.
+All trade marks © 2026 Angus Bergman.
 
 ---
 

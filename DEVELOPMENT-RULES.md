@@ -83,7 +83,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 | 19 | [Refresh Timing](#-section-19-refresh-timing) | [CRITICAL] | 60s partial, 5min full refresh (v1.8) |
 | 20 | [Licensing](#-section-20-licensing) | [CRITICAL] | AGPL-3.0 Dual Licence requirement |
 | 21 | [Device Setup Flow](#-section-21-device-setup-flow-mandatory) | [CRITICAL] | Setup wizard, admin panel, device config |
-| 22 | [Admin Panel UI/UX Branding](#-section-22-admin-panel-uiux-branding-mandatory) | [CRITICAL] | Colors, typography, icons (no emojis), cards, readability |
+| 22 | [Admin Panel UI/UX Branding](#-section-22-admin-panel-uiux-branding-mandatory) | [CRITICAL] | Colours, typography, icons (no emojis), cards, readability |
 
 ### Appendices
 
@@ -212,7 +212,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 <details>
 <summary><strong>Section 12: Business Logic</strong></summary>
 
-- 12.1 CoffeeDecision is Sacred
+- 12.1 CoffeeDecision™ is Sacred
 - 12.2 12-hour Time Format (User-Facing Only)
 - 12.3 Walking Time Buffer
 - 12.4 Journey Math is Critical
@@ -1788,7 +1788,7 @@ const apiOptions = transitApiKey ? { apiKey: transitApiKey } : {};
 
 ## Section 12: Business Logic
 
-### 12.1 CoffeeDecision is Sacred
+### 12.1 CoffeeDecision™ is Sacred
 The CoffeeDecision engine logic is specified exactly in the CCDashDesignV15.0 spec. Implement it precisely as documented. No "improvements" or "optimisations" that alter the decision logic.
 
 ### 12.2 12-hour Time Format (User-Facing Only)
@@ -1828,7 +1828,7 @@ Test all edge cases in journey calculations:
 - Multi-leg journeys
 
 ### 12.5 User Intent Timing Window (Status Bar)
-The status bar MUST prioritize immediate "walk out the door" context when departure is far away.
+The status bar MUST prioritise immediate "walk out the door" context when departure is far away.
 
 **Rule:**
 - If `leave_in_minutes > 120`, do NOT evaluate or display late/on-time against target arrival.
@@ -3265,11 +3265,11 @@ The AGPL-3.0 licence imposes the following mandatory obligations on anyone who u
 1. **Network Copyleft (Section 13):** If you modify the Program and make it available to users over a network, you MUST provide those users access to the corresponding source code of your modified version
 2. **Source Disclosure:** All modifications and derivative works MUST be released under AGPL-3.0
 3. **Copyright Preservation:** All copyright notices, SPDX identifiers, and licence headers MUST be preserved in all copies and derivative works
-4. **Attribution:** The dual licence notice, trademark attributions, and third-party data attributions MUST remain intact
+4. **Attribution:** The dual licence notice, trade mark attributions, and third-party data attributions MUST remain intact
 
 Non-compliance with these obligations constitutes copyright infringement under the *Copyright Act 1968* (Cth) and applicable international copyright treaties.
 
-### 20.2 Trademarks
+### 20.2 Trade Marks
 
 The following are **trade mark applications (™, registration pending)** owned by **Angus Bergman**, with all associated copyrights:
 
@@ -3283,23 +3283,24 @@ The following are **trade mark applications (™, registration pending)** owned 
 | **CCFirm™** | Custom firmware family | © 2026 Angus Bergman |
 | **CC Logo** | Arrow-integrated CC letterform | © 2026 Angus Bergman |
 
-**Ownership:** All trademarks and associated intellectual property are exclusively owned by Angus Bergman.
+**Ownership:** All trade marks and associated intellectual property are exclusively owned by Angus Bergman.
 
-**Licence Disclaimer:** Use of the Commute Compute System™ and all associated trademarks and intellectual property is granted solely pursuant to the **AGPL-3.0 (Dual Licence)**. No ownership rights are transferred. Commercial use prohibited without written permission. See **LEGAL.md** for full terms.
+**Licence Disclaimer:** Use of the Commute Compute System™ and all associated trade marks and intellectual property is granted solely pursuant to the **AGPL-3.0 (Dual Licence)**. No ownership rights are transferred. Commercial use prohibited without written permission. See **LEGAL.md** for full terms.
 
 **Third-Party Exclusion:** Copyright claims apply to original work only. Third-party content (Transport Victoria, BoM, OpenStreetMap, npm dependencies) remains property of respective owners under their original licences. See **LEGAL.md** Section "Third-Party Content Exclusion".
 
 #### CommuteCompute™ Intelligence Engines
 
-CommuteCompute™ comprises **five interconnected intelligence engines** that work together. Only CommuteCompute is trademarked; the sub-engines are copyright-protected components:
+CommuteCompute™ comprises **five interconnected intelligence engines** that work together. All engine names are common law trade marks of Angus Bergman:
 
-| Engine | Role | Trademarked | Copyright |
+| Engine | Role | Trade Marked | Copyright |
 |--------|------|-------------|-----------|
 | **CommuteCompute™** | Core journey orchestration | Yes (™) | © 2026 Angus Bergman |
-| **DepartureConfidence** | Real-time departure reliability scoring and prediction | No | © 2026 Angus Bergman |
-| **LifestyleContext** | User lifestyle pattern analysis and preference learning | No | © 2026 Angus Bergman |
-| **SleepOptimizer** | Optimal departure time calculation based on sleep patterns | No | © 2026 Angus Bergman |
-| **AltTransit** | Alternative transport route discovery and recommendation | No | © 2026 Angus Bergman |
+| **CoffeeDecision™** | Café stop feasibility analysis | Yes (™) | © 2026 Angus Bergman |
+| **DepartureConfidence™** | Real-time departure reliability scoring and prediction | Yes (™) | © 2026 Angus Bergman |
+| **LifestyleContext™** | User lifestyle pattern analysis and preference learning | Yes (™) | © 2026 Angus Bergman |
+| **SleepOptimiser™** | Optimal departure time calculation based on sleep patterns | Yes (™) | © 2026 Angus Bergman |
+| **AltTransit™** | Alternative transport route discovery and recommendation | Yes (™) | © 2026 Angus Bergman |
 
 ### 20.3 Firmware Naming Convention
 
@@ -3814,7 +3815,7 @@ background: linear-gradient(135deg, rgba(79, 178, 142, 0.1) 0%, rgba(34, 197, 94
 
 Before deploying UI changes, verify:
 
-- [ ] Colors match Section 22.1 palette
+- [ ] Colours match Section 22.1 palette
 - [ ] Typography follows Section 22.2 specs
 - [ ] **No emojis** — replaced with proper icons
 - [ ] Cards use consistent border-radius (12px) and accent borders
@@ -3905,7 +3906,7 @@ The footer MUST display attributions based on what the user has configured in `l
 
 ## Section 23: CommuteCompute Data Flow Requirements (MANDATORY)
 
-**[CRITICAL]**: CommuteCompute™ is the core journey calculation engine comprising five interconnected intelligence engines: CommuteCompute™ (orchestration), DepartureConfidence (reliability scoring), LifestyleContext (pattern analysis), SleepOptimizer (departure timing), and AltTransit (alternative routes). All data flow must follow these exact patterns.
+**[CRITICAL]**: CommuteCompute™ is the core journey calculation engine comprising five interconnected intelligence engines: CommuteCompute™ (orchestration), DepartureConfidence™ (reliability scoring), LifestyleContext™ (pattern analysis), SleepOptimiser™ (departure timing), and AltTransit™ (alternative routes). All data flow must follow these exact patterns.
 
 ### 23.1 GTFS-RT Stop ID Architecture
 

@@ -10,7 +10,7 @@
  *   CommuteCompute™ — Core journey orchestration (trademarked)
  *   DepartureConfidence — Real-time departure reliability scoring
  *   LifestyleContext — User lifestyle pattern analysis and preference learning
- *   SleepOptimizer — Optimal departure time based on sleep patterns
+ *   SleepOptimiser — Optimal departure time based on sleep patterns
  *   AltTransit — Alternative transport route discovery and recommendation
  *
  * Per DEVELOPMENT-RULES.md Section 24: Single source of truth for journey calculations.

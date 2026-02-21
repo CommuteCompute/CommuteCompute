@@ -32,7 +32,7 @@
 
 | Component | Requirement |
 |-----------|-------------|
-| Node.js | v18+ (v22 recommended) |
+| Node.js | v22.0.0+ (LTS) |
 | Platform | Vercel (recommended), Docker, or Node.js host |
 | Storage | Redis (via Vercel Marketplace) |
 | Memory | 512MB minimum |

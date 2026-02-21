@@ -91,6 +91,8 @@ Commute Compute qualifies for the small business exemption under s 6D of the Pri
 
 **Cross-border data flows:** Some third-party services process data outside Australia (Vercel and Upstash infrastructure is located in the United States). We take reasonable steps to protect your personal information when disclosed to overseas recipients by: (1) selecting providers with SOC 2 Type II certification (an independent audit standard that verifies a service organisation's security controls are effective over a sustained period) or equivalent, (2) using encryption in transit (HTTPS/TLS 1.3 — secure communication protocols that encrypt data sent between your browser and servers, indicated by the padlock icon in your browser) and at rest (AES-256), and (3) reviewing third-party privacy policies for compliance with international privacy standards. For Upstash security practices and certifications, see the [Upstash Security Page](https://upstash.com/docs/common/security). We recommend selecting the Sydney (Australia) region when creating your Redis database to minimise cross-border data transfers.
 
+**Vercel serverless function execution:** Vercel may execute serverless functions in regions outside Australia (including the United States) depending on deployment configuration and request routing. During function execution, data read from Redis (including your addresses and preferences) is processed in memory on the function instance. This data is not persisted outside Redis and is discarded when the function completes. To minimise cross-border data processing, configure your Vercel project's function region to Sydney (syd1) if available on your plan.
+
 ---
 
 ## 5. Data Storage and Security
@@ -199,7 +201,7 @@ Google Places API is optional. If not configured, the system uses free OpenStree
 
 ## 10. Children's Privacy
 
-Commute Compute™ is not directed at children under the age of 13. We do not knowingly collect personal information from children. If you believe a child has provided personal data through this system, please contact us to have it removed.
+Commute Compute™ is not directed at children under the age of 18. The system does not collect age information, does not require account creation, does not enable social interaction, and does not engage in behavioural profiling or targeted content delivery. We do not knowingly collect personal information from children. If you believe a child has provided personal data through this system, please contact us to have it removed. This position will be reviewed against the OAIC Children's Online Privacy Code upon its registration (expected by 10 December 2026).
 
 ---
 
@@ -213,21 +215,21 @@ Commute Compute™ is designed with the Australian Privacy Principles (APPs) und
 - **Transparency:** This policy and the open-source code provide full visibility into data handling
 - **Security:** Encryption at rest, HTTPS in transit, input sanitisation, and token-based authentication
 
-### Privacy Act 2025 Amendments
+### Privacy and Other Legislation Amendment Act 2024
 
-The *Privacy Act 1988* (Cth), as amended by the *Privacy and Other Legislation Amendment Bill 2025* (effective 10 June 2025), introduces a statutory tort for serious invasions of privacy and expands the definition of "personal information" to include device identifiers and technical data. Commute Compute™'s self-hosted, privacy-first architecture is designed so that all personal data remains under your control on your own Vercel deployment. The project maintainer does not collect, access, or store any user data.
+The *Privacy Act 1988* (Cth), as amended by the *Privacy and Other Legislation Amendment Act 2024* (Royal Assent 10 December 2024; statutory tort effective 10 June 2025), introduces a statutory tort for serious invasions of privacy and expands the definition of "personal information" to include device identifiers and technical data. Commute Compute™'s self-hosted, privacy-first architecture is designed so that all personal data remains under your control on your own Vercel deployment. The project maintainer does not collect, access, or store any user data.
 
 ---
 
 ## 12. Automated Decision-Making (ADM) Transparency
 
-*In accordance with Australian Privacy Principle 1 (APP 1), as amended by the Privacy and Other Legislation Amendment Bill 2025, and effective from 10 December 2026, the following disclosure is provided.*
+*In accordance with Australian Privacy Principle 1 (APP 1), as amended by the Privacy and Other Legislation Amendment Act 2024, and effective from 10 December 2026, the following disclosure is provided.*
 
 Commute Compute uses automated processing to personalise your dashboard:
 
 - **Departure timing:** The CommuteCompute Engine calculates when you should leave based on your saved addresses, preferred arrival time, and current transit conditions.
 - **Route selection:** The engine automatically selects the best route considering live departures, walking pace, and your mode preferences.
-- **Coffee recommendations:** The CoffeeDecision feature uses your journey timing and coffee preferences to suggest whether you have time for a coffee.
+- **Coffee recommendations:** The CoffeeDecision™ feature uses your journey timing and coffee preferences to suggest whether you have time for a coffee.
 - **Live departures:** CC LiveDash™ automatically selects which transit departures to display based on proximity and route relevance.
 
 **Your rights:** You can view, change, or delete all inputs to these automated decisions at any time via the Admin Panel (`/admin`) or Setup Wizard (`/setup-wizard.html`). To delete all stored data, use the admin reset endpoint (`/api/admin/reset`).
@@ -246,7 +248,7 @@ The CommuteCompute Engine is responsible for the core departure timing and route
 
 ### 12.2 LifestyleContext Engine
 
-The LifestyleContext Engine provides contextually appropriate lifestyle suggestions alongside your commute data.
+The LifestyleContext™ Engine provides contextually appropriate lifestyle suggestions alongside your commute data.
 
 - **Input:** Current time of day, day of week, and your commute schedule (derived from your saved preferences).
 - **Processing:** Selects lifestyle suggestions based on the current context — for example, coffee recommendations when you are approaching your departure window, or timing advice relevant to your commute pattern.
@@ -254,9 +256,9 @@ The LifestyleContext Engine provides contextually appropriate lifestyle suggesti
 - **Impact:** Informational only — no binding decisions, no financial impact, no notifications sent to third parties.
 - **Human oversight:** You can disable lifestyle suggestions via Admin Panel preferences. All inputs are derived from preferences you have explicitly configured.
 
-### 12.3 SleepOptimizer
+### 12.3 SleepOptimiser
 
-The SleepOptimizer determines when to transition your dashboard between sleep and active display modes.
+The SleepOptimiser™ determines when to transition your dashboard between sleep and active display modes.
 
 - **Input:** Current time and your wake-up preferences (if configured via the Admin Panel).
 - **Processing:** Determines whether the dashboard should display in sleep mode (minimal, dimmed display) or active mode (full commute dashboard), and calculates pre-commute preparation timing based on your configured schedule.
@@ -289,7 +291,7 @@ All inputs are provided directly by you via the Setup Wizard or Admin Panel and 
 
 ## 14. Statutory Tort — Serious Invasion of Privacy
 
-The *Privacy Act 1988* (Cth), as amended by the *Privacy and Other Legislation Amendment Bill 2025* and subsequent reforms, provides individuals with a statutory cause of action for serious invasions of privacy. Commute Compute™ is committed to handling all personal information in accordance with the Australian Privacy Principles to minimise the risk of such invasions.
+The *Privacy Act 1988* (Cth), as amended by the *Privacy and Other Legislation Amendment Act 2024* (Royal Assent 10 December 2024), provides individuals with a statutory cause of action for serious invasions of privacy (effective 10 June 2025). Commute Compute™ is committed to handling all personal information in accordance with the Australian Privacy Principles to minimise the risk of such invasions.
 
 If you believe your privacy has been seriously invaded through the use of this service, you may:
 1. Contact us at commutecompute.licensing@gmail.com
@@ -316,7 +318,7 @@ If you are not satisfied with our response, you may lodge a complaint with the O
 
 <p align="center">
 
-Commute Compute™, CommuteCompute™, CCDash™, CC LiveDash™, and CCFirm™ are trademarks of Angus Bergman.
+Commute Compute™, CommuteCompute™, CCDash™, CC LiveDash™, CCFirm™, CoffeeDecision™, DepartureConfidence™, LifestyleContext™, SleepOptimiser™, and AltTransit™ are trade marks of Angus Bergman.
 
 Copyright &copy; 2026 Angus Bergman &bull; Licensed under [AGPL-3.0 (Dual Licence)](https://www.gnu.org/licenses/agpl-3.0.html)
 

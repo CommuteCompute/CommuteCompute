@@ -76,7 +76,7 @@ All notable changes to this project are documented here.
 ## [2026-02-06] -- V15.0 Release (System v3.4.0)
 
 ### Added
-- **Sleep Optimizer Engine** (`src/engines/sleep-optimizer.js`) -- bedtime recommendations and alarm integration for optimal commute departure
+- **Sleep Optimiser Engine** (`src/engines/sleep-optimiser.js`) -- bedtime recommendations and alarm integration for optimal commute departure
 - **Alt Transit Engine** (`src/engines/alt-transit.js`) -- Uber, bike, and scooter cost/time comparisons alongside public transit options
 - **Lifestyle Mindset** (`calculateMindset` in `src/engines/lifestyle-context.js`) -- stress level, step count, and feels-like temperature factored into journey decisions
 - **Enhanced Glanceability** -- larger fonts in CCDash(TM) Renderer v1.80 for improved at-a-glance readability on e-ink displays

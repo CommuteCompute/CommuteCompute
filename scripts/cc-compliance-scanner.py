@@ -161,7 +161,7 @@ AUSTRALIAN_ENGLISH_EXEMPTIONS = [
     # Code identifiers (camelCase, PascalCase, UPPER_CASE, snake_case)
     r"[a-z][a-zA-Z]*[Cc]olor[a-zA-Z]*",
     r"[a-z][a-zA-Z]*[Oo]ptimi[zs]e[a-zA-Z]*",
-    r"SleepOptimizer",  # Code class name
+    r"SleepOptimiser",  # Code class name
     r"AltTransit",
     # CSS property values
     r"color:",

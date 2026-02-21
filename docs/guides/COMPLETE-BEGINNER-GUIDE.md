@@ -49,7 +49,7 @@ Before starting, confirm you have the following. Gathering everything upfront wi
 **Hardware checklist:**
 - [ ] A TRMNL display (TRMNL Display (OG) from the [TRMNL Shop](https://shop.trmnl.com), or a jailbroken Kindle)
 - [ ] A USB-C data cable (not charge-only) for connecting the display to your computer
-- [ ] A USB-C power supply recommended for continuous operation (battery operation is supported but lasts only several days)
+- [ ] A USB-C power supply for continuous always-on operation (battery provides several days of cable-free use — great for trying different spots around your home)
 - [ ] A desktop or laptop computer with **Chrome or Edge** browser (required for device flashing and BLE WiFi provisioning; Safari, Firefox, and iPhone/iPad are not supported for these steps)
 - [ ] A **2.4GHz WiFi network** -- the TRMNL display does not support 5GHz networks. If your router broadcasts a combined 2.4/5GHz network, ensure the 2.4GHz band is enabled.
 
@@ -87,7 +87,7 @@ Before starting, gather these items and information:
 | **USB-C Power Supply** | Recommended for continuous operation (battery lasts several days) | -- |
 | **WiFi Network** | 2.4 GHz network (5 GHz not supported) | -- |
 
-[IMPORTANT] **Power:** USB-C power supply recommended for continuous operation. Battery operation is supported but lasts only several days. For always-on wall-mounted use, connect to USB-C power.
+[IMPORTANT] **Power:** Battery operation provides several days of cable-free use — perfect for testing where to place your display. For always-on wall-mounted use, connect to USB-C power.
 
 ### Required Online Accounts
 
