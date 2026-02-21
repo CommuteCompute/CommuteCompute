@@ -20,7 +20,7 @@ import CafeBusyDetector from '../src/services/cafe-busy-detector.js';
 import DepartureConfidence from '../src/engines/departure-confidence.js';
 import LifestyleContext from '../src/engines/lifestyle-context.js';
 import AltTransit from '../src/engines/alt-transit.js';
-import SleepOptimizer from '../src/engines/sleep-optimizer.js';
+import SleepOptimiser from '../src/engines/sleep-optimiser.js';
 import { getStopNameById } from '../src/data/gtfs-stop-names.js';
 
 export default async function handler(req, res) {
@@ -180,7 +180,7 @@ export default async function handler(req, res) {
     });
 
     // V15.0: Sleep Optimizer for evening dashboard
-    const sleepEngine = new SleepOptimizer();
+    const sleepEngine = new SleepOptimiser();
     const sleep = sleepEngine.calculate({
       targetArrivalMins: targetH * 60 + targetM,
       totalJourneyMins: totalMinutes,

@@ -23,7 +23,7 @@
 > Includes 5 Intelligence Engines, Metro Tunnel compliance, strictly-live GTFS-RT data, and full transit pipeline.
 >
 > **V15.0 Changes from V14 (current):**
-> - **5 Intelligence Engines:** DepartureConfidence (0-100%), LifestyleContext (weather-aware), SleepOptimizer (evening mode), AltTransit (rideshare/bike/scooter), Mindset (stress/steps/feels-like)
+> - **5 Intelligence Engines:** DepartureConfidence (0-100%), LifestyleContext (weather-aware), SleepOptimiser (evening mode), AltTransit (rideshare/bike/scooter), Mindset (stress/steps/feels-like)
 > - **Strictly live data:** No timetable fallbacks — transit legs removed when GTFS-RT has no matching departures
 > - **Transit-to-walk conversion:** Removed transit legs converted to estimated walks (speed ratios: train 4x, tram 2.5x, bus 3x)
 > - **Catchable departures only:** "Next: X, Y min LIVE" shows only departures reachable after walking to stop
@@ -622,7 +622,7 @@ When user will be late based on arrival time:
 
 ### 9.3.1 User Intent Timing Window (V15.1)
 
-For far-future departures, status MUST prioritize immediate context over target-arrival compliance.
+For far-future departures, status MUST prioritise immediate context over target-arrival compliance.
 
 - **Threshold:** `ACTIONABLE_DEPARTURE_WINDOW_MINS = 120`
 - **If `leave_in_minutes > 120`:**

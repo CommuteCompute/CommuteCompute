@@ -127,7 +127,7 @@ If your router broadcasts a combined 2.4/5GHz network (common with modern router
 **Severity:** Informational
 **Status:** Functional (limited)
 
-Battery-powered operation is supported but lasts only several days. USB-C power is recommended for continuous, long-term operation. The device runs a polling loop with `delay()` rather than hardware deep sleep, which limits battery life. Deep sleep and configurable refresh intervals are planned enhancements to extend battery duration in a future firmware release.
+Battery operation provides several days of cable-free use — ideal for testing placement, trying different locations, or portable display scenarios. For continuous always-on wall-mounted use, connect to USB-C power. The current firmware uses a polling loop with `delay()` rather than hardware deep sleep; deep sleep and configurable refresh intervals are planned enhancements to further extend battery duration.
 
 **What this means for you:** The display can run on battery for several days, but for always-on wall-mounted use, connect it to USB-C power. If you need temporary portable operation (e.g. testing placement), battery is sufficient for several days.
 

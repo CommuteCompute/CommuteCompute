@@ -305,7 +305,7 @@ DISPLAY SHOWS:
 
 ### How I Solved It
 
-I built the **CoffeeDecision Engine**:
+I built the **CoffeeDecision™ Engine**:
 
 ```
 INPUTS:
