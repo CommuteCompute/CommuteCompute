@@ -575,7 +575,7 @@ X-Dimensions: 800x480
 
 All outputs follow e-ink best practices:
 
-1. **High Contrast**: Black on white only (no grays)
+1. **High Contrast**: Black on white only (no greys)
 2. **Large Text**: Minimum 14px font size
 3. **Minimal Updates**: Reduce refresh frequency
 4. **Simple Graphics**: No gradients or complex images

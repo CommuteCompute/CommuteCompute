@@ -1,16 +1,18 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Angus Bergman
+// Part of the Commute Compute System™ — https://gitlab.com/angusbergman/commute-compute-system
+// Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
+
 /**
  * opendata.js
  * Minimal Open Data GTFS‑Realtime client for Metro Trains, Trams & Buses (VIC)
+ * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  * Uses Transport Victoria OpenData API with KeyId header authentication (UUID format API key)
  * Format: Protobuf (decoded via gtfs-realtime-bindings)
  *
  * UPDATED 2026-01-27: Transport Victoria OpenData API endpoints have changed!
  * Old: https://opendata.transport.vic.gov.au/gtfsr/...
  * New: https://api.opendata.transport.vic.gov.au/opendata/public-transport/gtfs/realtime/v1/...
- *
- * Copyright (c) 2026 Angus Bergman
- * SPDX-License-Identifier: AGPL-3.0-or-later
- * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  */
 
 import fetch from "node-fetch";

@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Angus Bergman
+// Part of the Commute Compute System™ — https://gitlab.com/angusbergman/commute-compute-system
+
 /**
  * Fallback Timetable Data for All Australian States
  * Provides default stop/station data when live APIs are unavailable

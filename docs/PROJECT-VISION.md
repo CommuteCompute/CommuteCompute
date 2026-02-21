@@ -218,7 +218,7 @@ The entire system must be usable for free. Paid APIs (Google Places) are optiona
 ### E-ink Display Limitations
 | Constraint | Impact |
 |------------|--------|
-| 1-bit colour | Black and white only, no grayscale |
+| 1-bit colour | Black and white only, no greyscale |
 | Slow refresh | 2-3 seconds full, 500ms partial |
 | Ghosting | Requires anti-ghosting patterns |
 | Power | USB-C recommended; battery supported (several days) |

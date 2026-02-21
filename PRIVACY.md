@@ -246,7 +246,7 @@ The CommuteCompute Engine is responsible for the core departure timing and route
 - **Impact:** Informational only — provides timing recommendations. No binding decisions, no financial transactions, no legal consequences.
 - **Human oversight:** You can view, change, or delete all inputs at any time via the Admin Panel (`/admin`) or Setup Wizard (`/setup-wizard.html`). You may also switch between saved Journey Profiles to override the route selection.
 
-### 12.2 LifestyleContext Engine
+### 12.2 LifestyleContext™ Engine
 
 The LifestyleContext™ Engine provides contextually appropriate lifestyle suggestions alongside your commute data.
 
@@ -256,7 +256,7 @@ The LifestyleContext™ Engine provides contextually appropriate lifestyle sugge
 - **Impact:** Informational only — no binding decisions, no financial impact, no notifications sent to third parties.
 - **Human oversight:** You can disable lifestyle suggestions via Admin Panel preferences. All inputs are derived from preferences you have explicitly configured.
 
-### 12.3 SleepOptimiser
+### 12.3 SleepOptimiser™
 
 The SleepOptimiser™ determines when to transition your dashboard between sleep and active display modes.
 

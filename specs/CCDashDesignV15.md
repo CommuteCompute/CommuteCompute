@@ -23,7 +23,7 @@
 > Includes 5 Intelligence Engines, Metro Tunnel compliance, strictly-live GTFS-RT data, and full transit pipeline.
 >
 > **V15.0 Changes from V14 (current):**
-> - **5 Intelligence Engines:** DepartureConfidence (0-100%), LifestyleContext (weather-aware), SleepOptimiser (evening mode), AltTransit (rideshare/bike/scooter), Mindset (stress/steps/feels-like)
+> - **5 Intelligence Engines:** DepartureConfidence™ (0-100%), LifestyleContext™ (weather-aware), SleepOptimiser™ (evening mode), AltTransit™ (rideshare/bike/scooter), Mindset (stress/steps/feels-like)
 > - **Strictly live data:** No timetable fallbacks — transit legs removed when GTFS-RT has no matching departures
 > - **Transit-to-walk conversion:** Removed transit legs converted to estimated walks (speed ratios: train 4x, tram 2.5x, bus 3x)
 > - **Catchable departures only:** "Next: X, Y min LIVE" shows only departures reachable after walking to stop
@@ -723,7 +723,7 @@ Displayed in the status bar alongside arrival time.
 
 ### 11.2 Sleep Mode Display (V15.0 — Evening)
 
-After 6pm, the coffee decision box is replaced by the sleep optimizer display.
+After 6pm, the coffee decision box is replaced by the sleep optimiser display.
 
 - **Condition:** `sleep_active: true`
 - **Position:** Same as coffee box (header area)
@@ -773,7 +773,7 @@ Full-day forecast-driven equipment suggestions.
 | v2.1 | 2026-02-13 | **V15.0 UPDATE** — Lifestyle obligation styling, transit-to-walk conversion, suburb extraction, admin KV persistence, security hardening |
 | v2.0 | 2026-02-10 | **V15.0** — 5 intelligence engines, strictly live GTFS-RT, route-aware filtering, V/Line, ferry, all-mode disruptions, catchable departures |
 | v1.81 | 2026-02-09 | Suburb-level location names, AltTransit guard, admin analytics |
-| v1.80 | 2026-02-06 | V15.0 initial: Sleep Optimizer, AltTransit, Mindset, enhanced glanceability |
+| v1.80 | 2026-02-06 | V15.0 initial: Sleep Optimiser, AltTransit, Mindset, enhanced glanceability |
 | v1.70 | 2026-02-06 | V14.0: Departure Confidence, Lifestyle Context, commute analytics |
 | v1.51 | 2026-02-05 | V13.1: Coffee busyness display, departure countdown, disruption types |
 | v1.50 | 2026-02-05 | V13: Variable leg heights, footer logo, live departures |
