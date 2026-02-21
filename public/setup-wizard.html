@@ -357,7 +357,7 @@
     </style>
 </head>
 <body>
-    <a href="#wizard-main" class="skip-link">Skip to main content</a>
+    <a href="#compliance-gate" class="skip-link" id="skip-link">Skip to main content</a>
 
     <!-- SVG Icon Sprite - DEVELOPMENT-RULES Section 22.3 Compliant -->
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
@@ -489,6 +489,9 @@
                 <img src="/assets/brand/cc-logo-512.png" alt="Commute Compute™" style="max-width: min(280px, 80vw); height: auto; margin-bottom: 20px;">
                 <h1>Welcome to Commute Compute&#8482;</h1>
                 <p>Powered by the CommuteCompute&#8482; intelligence engine for smart departure recommendations</p>
+                <div style="margin-top: 12px;">
+                    <a href="/admin.html" id="skip-to-admin-link" style="color: #94a3b8; font-size: 13px; text-decoration: underline;">Already configured? Skip to Admin Panel &rarr;</a>
+                </div>
             </header>
 
             <!-- Metro Tunnel Compatibility Banner -->
@@ -955,32 +958,56 @@
     // COMPLIANCE GATE
     // ============================================
     (function initComplianceGate() {
+      try {
         const accepted = localStorage.getItem('cc-terms-accepted');
         const gate = document.getElementById('compliance-gate');
-        if (accepted && gate) {
+        const wizardMain = document.getElementById('wizard-main');
+        const skipLink = document.getElementById('skip-link');
+        if (!gate) return; // No compliance gate element — skip
+
+        if (accepted) {
+            // Terms previously accepted — unlock wizard
             gate.classList.add('hidden');
             gate.setAttribute('aria-hidden', 'true');
+            if (wizardMain) {
+                wizardMain.style.display = '';
+                wizardMain.removeAttribute('aria-hidden');
+                wizardMain.removeAttribute('inert');
+            }
+            if (skipLink) skipLink.href = '#wizard-main';
             return;
         }
 
-        // Hide wizard content while gate is active
-        const wizardMain = document.getElementById('wizard-main');
-        if (wizardMain) wizardMain.setAttribute('aria-hidden', 'true');
+        // === COMPLIANCE GATE ACTIVE ===
+        // Fully block all access to wizard content until terms accepted.
+        // Per sole trader liability requirements: no pathway to system without gate completion.
+        if (wizardMain) {
+            wizardMain.style.display = 'none';
+            wizardMain.setAttribute('aria-hidden', 'true');
+            wizardMain.setAttribute('inert', '');
+        }
 
         const checkboxes = gate.querySelectorAll('input[type="checkbox"]');
         const continueBtn = document.getElementById('compliance-continue-btn');
+        if (!continueBtn) return; // No button — skip
 
         function updateContinueState() {
             const allChecked = Array.from(checkboxes).every(function(cb) { return cb.checked; });
             if (allChecked) {
                 continueBtn.disabled = false;
+                continueBtn.removeAttribute('disabled');
                 continueBtn.setAttribute('aria-disabled', 'false');
                 continueBtn.classList.add('enabled');
+                continueBtn.style.pointerEvents = 'auto';
+                continueBtn.style.cursor = 'pointer';
                 continueBtn.textContent = 'I Acknowledge \u2014 Continue to Setup';
             } else {
                 continueBtn.disabled = true;
+                continueBtn.setAttribute('disabled', '');
                 continueBtn.setAttribute('aria-disabled', 'true');
                 continueBtn.classList.remove('enabled');
+                continueBtn.style.pointerEvents = 'none';
+                continueBtn.style.cursor = 'not-allowed';
                 var remaining = Array.from(checkboxes).filter(function(cb) { return !cb.checked; }).length;
                 continueBtn.textContent = remaining + ' item' + (remaining !== 1 ? 's' : '') + ' remaining';
             }
@@ -992,11 +1019,22 @@
 
         continueBtn.addEventListener('click', function() {
             if (continueBtn.disabled) return;
+            // Re-verify all checkboxes are still checked (prevent DOM manipulation bypass)
+            const allStillChecked = Array.from(checkboxes).every(function(cb) { return cb.checked; });
+            if (!allStillChecked) {
+                updateContinueState();
+                return;
+            }
             var timestamp = new Date().toISOString();
             localStorage.setItem('cc-terms-accepted', timestamp);
             gate.classList.add('hidden');
             gate.setAttribute('aria-hidden', 'true');
-            if (wizardMain) wizardMain.removeAttribute('aria-hidden');
+            if (wizardMain) {
+                wizardMain.style.display = '';
+                wizardMain.removeAttribute('aria-hidden');
+                wizardMain.removeAttribute('inert');
+            }
+            if (skipLink) skipLink.href = '#wizard-main';
             // Focus the wizard heading
             var heading = document.querySelector('.wizard-header h1');
             if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus(); }
@@ -1008,6 +1046,15 @@
         // Focus first checkbox on load
         if (checkboxes.length > 0) checkboxes[0].focus();
         updateContinueState();
+      } catch (err) {
+        // If compliance gate fails, keep wizard locked for safety
+        console.error('[ComplianceGate] Error — wizard remains locked:', err);
+        var wizardMain = document.getElementById('wizard-main');
+        if (wizardMain) {
+            wizardMain.style.display = 'none';
+            wizardMain.setAttribute('inert', '');
+        }
+      }
     })();
 
     // ============================================
@@ -1075,7 +1122,13 @@
     // ============================================
     // NAVIGATION
     // ============================================
+    // Compliance guard — blocks all wizard functionality until terms accepted
+    function isComplianceAccepted() {
+        return !!localStorage.getItem('cc-terms-accepted');
+    }
+
     function goToStep(target) {
+        if (!isComplianceAccepted()) return; // Blocked until compliance gate completed
         if (target < 1 || target > TOTAL_STEPS) return;
         document.getElementById('step-' + currentStep).classList.remove('active');
         document.getElementById('step-' + target).classList.add('active');
