@@ -149,55 +149,45 @@ export default async function handler(req, res) {
 
     // Render dashboard image
     if (format === 'bmp') {
-      // BMP format for e-ink devices - use ccdash-renderer
-      const journeyData = await liveDash.commuteCompute.getJourneyRecommendation({});
+      // BMP format for e-ink devices - use buildJourneyForDisplay() for live data
+      const journeyRec = await liveDash.commuteCompute.getJourneyRecommendation({});
+      const transitData = journeyRec?.transit || { trains: [], trams: [], buses: [] };
+      const weatherData = journeyRec?.weather || null;
+      const displayData = await liveDash.commuteCompute.buildJourneyForDisplay(transitData, weatherData);
 
-
-      // Build dashboard data in format expected by ccdash-renderer
-      const localTime = liveDash.commuteCompute.getLocalTime();
-      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-      const hours24 = localTime.getHours();
-      const hours12 = hours24 % 12 || 12;
-      const minutes = localTime.getMinutes().toString().padStart(2, '0');
-
-      // Map journey legs or provide fallback demo legs
-      let journeyLegs = (journeyData?.legs || []).map((leg, idx) => ({
+      // Map display legs to renderer format
+      let journeyLegs = (displayData?.legs || []).map((leg, idx) => ({
         number: idx + 1,
         type: leg.type || 'walk',
         title: leg.title || leg.description || '',
         subtitle: leg.subtitle || '',
-        minutes: leg.duration || leg.minutes || 0,
+        minutes: leg.duration || leg.minutes || leg.durationMinutes || 0,
         state: leg.status === 'delayed' ? 'delayed' :
                leg.status === 'skipped' ? 'skip' : 'normal',
         canGet: leg.type === 'coffee' ? leg.canGet !== false : undefined
       }));
 
-      // Fallback demo legs if no data available
+      // Informational fallback if no journey data configured
       if (journeyLegs.length === 0) {
         journeyLegs = [
-          { number: 1, type: 'walk', title: 'Walk to stop', subtitle: 'Nearest transit stop', minutes: 5 },
-          { number: 2, type: 'tram', title: 'Transit to city', subtitle: 'Check timetable', minutes: 12 },
-          { number: 3, type: 'coffee', title: 'Coffee stop', subtitle: 'Optional', minutes: 5, canGet: true },
-          { number: 4, type: 'walk', title: 'Walk to destination', subtitle: 'Final leg', minutes: 8 }
+          { number: 1, type: 'walk', title: 'No journey data', subtitle: 'Configure via Setup Wizard', minutes: 0, state: 'normal' }
         ];
       }
 
       const dashboardData = {
-        location: preferences.homeAddress || 'Home',
-        current_time: `${hours12}:${minutes}`,
-        day: days[localTime.getDay()],
-        date: `${localTime.getDate()} ${months[localTime.getMonth()]}`,
-        temp: journeyData?.weather?.temp ?? '--',
-        condition: journeyData?.weather?.condition || 'N/A',
-        umbrella: journeyData?.weather?.umbrella || false,
-        status_type: journeyData?.status || 'normal',
-        arrive_by: preferences.arrivalTime || '09:00',
-        total_minutes: journeyData?.totalDuration || 30,
-        leave_in_minutes: journeyData?.leaveIn || null,
+        location: displayData?.location || preferences.homeAddress || 'Home',
+        current_time: displayData?.current_time || '',
+        day: displayData?.day || '',
+        date: displayData?.date || '',
+        temp: displayData?.temp ?? weatherData?.temp ?? '--',
+        condition: displayData?.condition || weatherData?.condition || 'N/A',
+        umbrella: weatherData?.umbrella || false,
+        status_type: journeyRec?.status || 'normal',
+        arrive_by: displayData?.arrive_by || preferences.arrivalTime || '09:00',
+        total_minutes: displayData?.total_minutes || 30,
+        leave_in_minutes: journeyRec?.leaveIn || null,
         journey_legs: journeyLegs,
-        destination: preferences.workAddress || 'Work'
+        destination: displayData?.destination || preferences.workAddress || 'Work'
       };
 
       const bmpBuffer = renderFullScreenBMP(dashboardData);

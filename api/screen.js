@@ -1054,12 +1054,12 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
         leg.isLive = false;
         removedTypes.push(originalType);
         // Fall through — add as walk. mergeConsecutiveWalkLegs() will combine.
+      } else {
+        // Live data is available - mark the leg accordingly
+        leg.dataSource = 'live';
+        leg.isLive = true;
+        leg.isScheduleOnly = false;
       }
-
-      // Live data is available - mark the leg accordingly
-      leg.dataSource = 'live';
-      leg.isLive = true;
-      leg.isScheduleOnly = false;
 
       // Check if prior walk leg is longer than transit wait time
       const priorWalkTime = prevLeg?.type === 'walk' ? (prevLeg.minutes || prevLeg.durationMinutes || 0) : 0;

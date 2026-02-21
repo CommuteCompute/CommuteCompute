@@ -1,6 +1,14 @@
 /**
- * CCFirm™ v7.7 — Hybrid BLE + Pairing Code Firmware
+ * CCFirm™ v8.0.0 — Battery Deep Sleep + BLE Provisioning Firmware
  * Part of the Commute Compute System™
+ *
+ * v8.0.0 ADDITIONS:
+ *   Battery monitoring via GPIO 3 ADC (8-sample avg, 2x divider)
+ *   Deep sleep on battery: 60s intervals matching USB refresh cycle
+ *   Auto-shutdown at 5% to protect LiPo cell
+ *   Low battery warning at 15% on e-ink display
+ *   Battery telemetry sent to server (voltage, percent, power source)
+ *   Button wake from deep sleep (GPIO 2 LOW)
  *
  * BLE PROVISIONING (see DEVELOPMENT-RULES.md Section 21.7):
  *   WiFi credentials (SSID + password) + webhook URL from Setup Wizard
@@ -28,6 +36,8 @@
 #include "base64.hpp"
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
+#include "esp_sleep.h"
+#include "driver/rtc_io.h"
 #include "../include/config.h"
 #include "../include/cc_logo_data.h"
 #include "../include/text_renderer.h"
@@ -93,14 +103,14 @@ const char* ISRG_ROOT_X1 = \
 "hkiG9w0BAQsFAAOCAgEAVR9YqbyyqFDQDLHYGmkgJykIrGF1XIpu+ILlaS/V9lZL\n" \
 "ubhzEFnTIZd+50xx+7LSYK05qAvqFyFWhfFQDlnrzuBZ6brJFe+GnY+EgPbk6ZGQ\n" \
 "3BebYhtF8GaV0nxvwuo77x/Py9auJ/GpsMiu/X1+mvoiBOv/2X/qkSsisRcOj/KK\n" \
-"NFtY2PwByVS5uCbMiogZiUvsQ72SCnQDP3/6pccDbuGvJwI3C0i1V/9fS+1HMfB4\n" \
-"pvLIDU6wRfwl+AOI/YTteMj4LVMBg2JfvPC9SOSlx2vFimSl5S6lLWg+Qe8V4ACx\n" \
-"yp0mfIk7/5+3z8bq2mSnVv7SRwG2rXnLMHoC0joAaVhB6RB5lmuqfUCZ9QOQB0B2\n" \
-"b4hkVlE7wBw+1C4bE0u12bMR1XmE/bME1JBFnJnYLKsn4vIVdMpCfl4F3FqL2n4F\n" \
-"Dtp62dYf1MOUXHf5R+of57Y/cPYQn+cD4F+f2N0KNyT/ZBY0e+LoYH3LDt3i+oiB\n" \
-"j8JHBPanYIu28b0pBDcGFYoJLOAqhB9pkm0vMD8FRZK5LM+2sSsMBe3LBJ/aIOwn\n" \
-"m0M8M+3Ud7b+yDsH8LQiCs3d/VTpMXIaq6LSqFBM/bIWJfeKJuqMAM/yJTM0TC7r\n" \
-"F9r+GNLmrVz/7sBX5UGTEaFb9aj+K4VQjY8L5OX4sMzxHP1LDiCEj/VhWMc=\n" \
+"NFtY2PwByVS5uCbMiogziUwthDyC3+6WVwW6LLv3xLfHTjuCvjHIInNzktHCgKQ5\n" \
+"ORAzI4JMPJ+GslWYHb4phowim57iaztXOoJwTdwJx4nLCgdNbOhdjsnvzqvHu7Ur\n" \
+"TkXWStAmzOVyyghqpZXjFaH3pO3JLF+l+/+sKAIuvtd7u+Nxe5AW0wdeRlN8NwdC\n" \
+"jNPElpzVmbUq4JUagEiuTDkHzsxHpFKVK7q4+63SM1N95R1NbdWhscdCb+ZAJzVc\n" \
+"oyi3B43njTOQ5yOf+1CceWxG1bQVs5ZufpsMljq4Ui0/1lvh+wjChP4kqKOJ2qxq\n" \
+"4RgqsahDYVvTH9w7jXbyLeiNdd8XM2w9U/t7y0Ff/9yi0GE44Za4rF2LN9d11TPA\n" \
+"mRGunUHBcnWEvgJBQl9nJEiU0Zsnvgc/ubhPgXRR4Xq37Z0j4r7g1SgEEzwxA57d\n" \
+"emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=\n" \
 "-----END CERTIFICATE-----\n";
 
 // ============================================================================
@@ -212,6 +222,20 @@ int consecutiveErrors = 0;
 uint8_t* zoneBmpBuffer = nullptr;
 
 // ============================================================================
+// DEEP SLEEP / BATTERY (v8.0.0)
+// ============================================================================
+// RTC memory persists across deep sleep cycles
+RTC_DATA_ATTR int rtcBootCount = 0;
+RTC_DATA_ATTR int rtcVcomCycles = 0;
+RTC_DATA_ATTR bool rtcWasDeepSleep = false;
+
+bool wokeFromDeepSleep = false;
+bool lowBatteryWarningShown = false;
+int batteryVoltageMv = 0;
+int batteryPercent = 0;
+bool onBatteryPower = false;
+
+// ============================================================================
 // FUNCTION DECLARATIONS
 // ============================================================================
 
@@ -236,6 +260,14 @@ void doFullRefresh();
 void doVcomDischarge();
 void doFactoryReset();
 void doVcomMaintenance();
+// Battery + deep sleep (v8.0.0)
+int readBatteryVoltage();
+int calculateBatteryPercent(int voltageMv);
+bool isOnBatteryPower(int voltageMv);
+bool isDeepSleepWake();
+void enterDeepSleep(int sleepSeconds);
+void showLowBatteryWarning(int percent);
+void doAutoShutdown();
 
 // ============================================================================
 // JSON HELPERS
@@ -372,26 +404,41 @@ class CredentialCallbacks : public BLECharacteristicCallbacks {
 void setup() {
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
 
-        Serial.begin(115200);
+    Serial.begin(115200);
     delay(500);
-    
-    // ===== FACTORY RESET CHECK (hold button during power-on for 5 seconds) =====
+
+    // ===== DEEP SLEEP WAKE CHECK (v8.0.0) =====
+    wokeFromDeepSleep = isDeepSleepWake();
+    if (wokeFromDeepSleep) {
+        Serial.printf("\n=== Commute Compute v" FIRMWARE_VERSION " (deep sleep wake #%d) ===\n", rtcBootCount);
+    } else {
+        Serial.println("\n=== Commute Compute v" FIRMWARE_VERSION " (cold boot) ===");
+    }
+
+    // ===== BATTERY READ (fast ADC, <10ms, safe in setup) =====
+    pinMode(PIN_BATTERY, INPUT);
+    batteryVoltageMv = readBatteryVoltage();
+    batteryPercent = calculateBatteryPercent(batteryVoltageMv);
+    onBatteryPower = isOnBatteryPower(batteryVoltageMv);
+    Serial.printf("[BATTERY] %dmV (%d%%) — %s\n", batteryVoltageMv, batteryPercent,
+                  onBatteryPower ? "BATTERY" : "USB");
+
+    // ===== FACTORY RESET CHECK (skip if woke from deep sleep — prevents button-wake triggering reset) =====
     pinMode(PIN_INTERRUPT, INPUT_PULLUP);
     delay(50);  // Debounce
-    if (digitalRead(PIN_INTERRUPT) == LOW) {
-        Serial.println("\n[BOOT] Button held at startup!");
+    if (!wokeFromDeepSleep && digitalRead(PIN_INTERRUPT) == LOW) {
+        Serial.println("[BOOT] Button held at startup!");
         Serial.println("[BOOT] Keep holding for 5 seconds to factory reset...");
-        
+
         int countdown = 5;
         while (digitalRead(PIN_INTERRUPT) == LOW && countdown > 0) {
             Serial.printf("[BOOT] Factory reset in %d...\n", countdown);
             delay(1000);
             countdown--;
         }
-        
+
         if (digitalRead(PIN_INTERRUPT) == LOW) {
             Serial.println("[BOOT] FACTORY RESET TRIGGERED!");
-            // Erase everything
             nvs_flash_erase();
             WiFi.disconnect(true, true);
             Preferences prefs;
@@ -405,9 +452,8 @@ void setup() {
             Serial.println("[BOOT] Button released - normal boot");
         }
     }
-    
-    Serial.println("\n=== Commute Compute v" FIRMWARE_VERSION " ===");
-    Serial.println("BLE Provisioning Firmware");
+
+    Serial.println("BLE Provisioning + Battery Deep Sleep Firmware");
 
     // Initialize NVS
     esp_err_t err = nvs_flash_init();
@@ -431,7 +477,13 @@ void setup() {
     // Init display
     initDisplay();
 
-    currentState = STATE_BOOT;
+    // Deep sleep wake: skip boot screen, go straight to WiFi connect
+    if (wokeFromDeepSleep && devicePaired && strlen(webhookUrl) > 0) {
+        Serial.println("[BOOT] Deep sleep wake — skipping boot screen, going to WiFi connect");
+        currentState = STATE_WIFI_CONNECT;
+    } else {
+        currentState = STATE_BOOT;
+    }
 }
 
 // ============================================================================
@@ -541,6 +593,146 @@ void doVcomMaintenance() {
         Serial.println("[VCOM] Maintenance complete");
     }
 }
+
+// ============================================================================
+// BATTERY MONITORING (v8.0.0)
+// ============================================================================
+
+/**
+ * Read battery voltage from GPIO 3 ADC.
+ * 8-sample average with 2x voltage divider compensation.
+ * Returns voltage in millivolts.
+ */
+int readBatteryVoltage() {
+    analogSetAttenuation(ADC_11db);
+    long sum = 0;
+    for (int i = 0; i < BATTERY_ADC_SAMPLES; i++) {
+        sum += analogReadMilliVolts(PIN_BATTERY);
+        delayMicroseconds(100);
+    }
+    int rawMv = (int)(sum / BATTERY_ADC_SAMPLES);
+    // Compensate for voltage divider on battery pin
+    return rawMv * BATTERY_VOLTAGE_DIVIDER;
+}
+
+/**
+ * Linear battery percentage: (voltage - 3.0V) / 1.2V * 100
+ * Clamped to 0-100 range.
+ */
+int calculateBatteryPercent(int voltageMv) {
+    if (voltageMv <= BATTERY_EMPTY_MV) return 0;
+    if (voltageMv >= BATTERY_FULL_MV) return 100;
+    return (int)(((float)(voltageMv - BATTERY_EMPTY_MV) / (float)(BATTERY_FULL_MV - BATTERY_EMPTY_MV)) * 100.0f);
+}
+
+/**
+ * Detect power source: battery vs USB.
+ * Returns true if running on battery (voltage between 3.0V and 4.2V).
+ * Returns false if USB powered (>4.25V) or no battery (<1.0V).
+ */
+bool isOnBatteryPower(int voltageMv) {
+    if (voltageMv > BATTERY_USB_THRESH_MV) return false;   // USB powered
+    if (voltageMv < BATTERY_ABSENT_MV) return false;        // No battery
+    return true;                                             // Battery powered
+}
+
+// ============================================================================
+// DEEP SLEEP (v8.0.0)
+// ============================================================================
+
+/**
+ * Check if this boot was a deep sleep wakeup.
+ */
+bool isDeepSleepWake() {
+    esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
+    return (cause == ESP_SLEEP_WAKEUP_TIMER || cause == ESP_SLEEP_WAKEUP_GPIO);
+}
+
+/**
+ * Enter deep sleep for specified duration.
+ * Properly disconnects WiFi, discharges VCOM, frees memory.
+ * Button press on GPIO 2 (LOW) will also wake the device.
+ */
+void enterDeepSleep(int sleepSeconds) {
+    Serial.printf("[SLEEP] Entering deep sleep for %d seconds (boot #%d)\n", sleepSeconds, rtcBootCount);
+
+    // Disconnect WiFi to save power
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_OFF);
+    delay(10);
+
+    // VCOM discharge — display already refreshed, just power off panel
+    if (bbep) {
+        bbep->sleep(0);
+    }
+
+    // Free buffer to reduce RTC memory usage
+    if (zoneBmpBuffer) {
+        free(zoneBmpBuffer);
+        zoneBmpBuffer = nullptr;
+    }
+
+    // Mark that next boot is deep sleep wake
+    rtcWasDeepSleep = true;
+    rtcBootCount++;
+
+    // Configure timer wakeup
+    if (sleepSeconds > 0) {
+        esp_sleep_enable_timer_wakeup((uint64_t)sleepSeconds * SLEEP_US_TO_S_FACTOR);
+    }
+
+    // Configure GPIO 2 (button) as wake source — LOW to wake
+    esp_deep_sleep_enable_gpio_wakeup(1ULL << PIN_INTERRUPT, ESP_GPIO_WAKEUP_GPIO_LOW);
+
+    Serial.println("[SLEEP] Goodnight.");
+    Serial.flush();
+
+    esp_deep_sleep_start();
+    // Device resets here — execution never reaches past this line
+}
+
+/**
+ * Display low battery warning on e-ink screen.
+ */
+void showLowBatteryWarning(int percent) {
+    Serial.printf("[BATTERY] Low battery warning: %d%%\n", percent);
+    bbep->fillScreen(BBEP_WHITE);
+    drawTextCentered(bbep, "LOW BATTERY", SCREEN_W, 200);
+    char pctLine[32];
+    snprintf(pctLine, sizeof(pctLine), "%d%% remaining", percent);
+    drawTextCentered(bbep, pctLine, SCREEN_W, 240);
+    drawTextCentered(bbep, "Please charge via USB", SCREEN_W, 280);
+    bbep->refresh(REFRESH_FULL, true);
+    delay(500);
+}
+
+/**
+ * Auto-shutdown at critical battery level.
+ * VCOM discharge + indefinite deep sleep (GPIO-only wake, no timer).
+ */
+void doAutoShutdown() {
+    Serial.println("[BATTERY] CRITICAL — auto shutdown to protect battery");
+    bbep->fillScreen(BBEP_WHITE);
+    drawTextCentered(bbep, "BATTERY CRITICAL", SCREEN_W, 200);
+    drawTextCentered(bbep, "Shutting down to protect battery", SCREEN_W, 240);
+    drawTextCentered(bbep, "Connect USB to wake", SCREEN_W, 280);
+    bbep->refresh(REFRESH_FULL, true);
+    delay(1000);
+    doVcomDischarge();
+
+    // Indefinite deep sleep — only GPIO wake (button press), no timer
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_OFF);
+    rtcWasDeepSleep = true;
+    esp_deep_sleep_enable_gpio_wakeup(1ULL << PIN_INTERRUPT, ESP_GPIO_WAKEUP_GPIO_LOW);
+    Serial.println("[BATTERY] Indefinite deep sleep — press button or connect USB to wake");
+    Serial.flush();
+    esp_deep_sleep_start();
+}
+
+// ============================================================================
+// MAIN LOOP
+// ============================================================================
 
 void loop() {
     unsigned long now = millis();
@@ -758,13 +950,47 @@ void loop() {
         }
 
         // ==== IDLE ====
-        // Button handling:
+        // v8.0.0: Battery-aware idle with deep sleep
+        // USB mode: 60s poll loop with button handling (unchanged from v7.x)
+        // Battery mode: deep sleep for 60s between fetches (matches refresh interval)
+        // Button handling (USB only):
         //   3s hold + release → VCOM discharge (safe power-off)
         //   10s continuous hold → Factory reset + BLE config wipe
         static unsigned long buttonPressStart = 0;
         static bool buttonWasPressed = false;
         static bool resetWarningShown = false;
         case STATE_IDLE: {
+            // Read battery voltage on each idle entry
+            batteryVoltageMv = readBatteryVoltage();
+            batteryPercent = calculateBatteryPercent(batteryVoltageMv);
+            onBatteryPower = isOnBatteryPower(batteryVoltageMv);
+
+            // Battery critical (<=5%): auto shutdown to protect cell
+            if (onBatteryPower && batteryVoltageMv <= BATTERY_SHUTDOWN_MV) {
+                doAutoShutdown();
+                // Never returns — device enters indefinite deep sleep
+            }
+
+            // Battery low (<=15%): show warning once
+            if (onBatteryPower && batteryVoltageMv <= BATTERY_LOW_WARN_MV && !lowBatteryWarningShown) {
+                showLowBatteryWarning(batteryPercent);
+                lowBatteryWarningShown = true;
+            }
+
+            // === BATTERY MODE: deep sleep for 60s ===
+            if (onBatteryPower) {
+                // VCOM maintenance every N deep sleep cycles
+                rtcVcomCycles++;
+                if (rtcVcomCycles >= VCOM_MAINTENANCE_INTERVAL) {
+                    doVcomMaintenance();
+                    rtcVcomCycles = 0;
+                }
+                // Enter deep sleep — device will reset and run setup() on wake
+                enterDeepSleep(SLEEP_INTERVAL_BATTERY_SEC);
+                // Never returns
+            }
+
+            // === USB MODE: existing 60-second poll behaviour ===
             if (now - lastRefresh >= 60000) {
                 currentState = STATE_FETCH_DASHBOARD;
             }
@@ -784,13 +1010,10 @@ void loop() {
                 } else {
                     unsigned long held = now - buttonPressStart;
                     if (held >= 10000) {
-                        // 10-second hold: FACTORY RESET
                         Serial.println("[Button] 10s hold — FACTORY RESET triggered");
                         doFactoryReset();
-                        // doFactoryReset calls ESP.restart(), won't reach here
                     } else if (held >= 5000 && !resetWarningShown) {
                         Serial.println("[Button] 5s hold — keep holding for FACTORY RESET (10s total)");
-                        // Show warning on e-ink display
                         bbep->fillScreen(BBEP_WHITE);
                         drawTextCentered(bbep, "KEEP HOLDING FOR", SCREEN_W, 200);
                         drawTextCentered(bbep, "FACTORY RESET", SCREEN_W, 230);
@@ -803,7 +1026,6 @@ void loop() {
                 if (buttonWasPressed) {
                     unsigned long held = now - buttonPressStart;
                     if (held >= 3000) {
-                        // Released after 3s+ but before 10s: VCOM discharge
                         Serial.println("[Button] Released after 3s+ — VCOM discharge");
                         doVcomDischarge();
                         Serial.println("[Button] Safe to power off now");
@@ -1189,13 +1411,29 @@ bool fetchFullScreenBMP() {
     HTTPClient http;
 
     // Fetch full-screen BMP from device endpoint
-    String url = String(webhookUrl) + "?format=bmp";
+    // v8.0.0: Append battery telemetry as query params
+    char batParams[64] = "";
+    if (batteryVoltageMv > 0) {
+        snprintf(batParams, sizeof(batParams), "&bat_v=%.2f&bat_pct=%d",
+                 batteryVoltageMv / 1000.0f, batteryPercent);
+    }
+    String url = String(webhookUrl) + "?format=bmp" + String(batParams);
     Serial.printf("[Fetch] Full screen: %s\n", url.c_str());
 
     http.setTimeout(20000);
     if (!http.begin(client, url)) {
         Serial.println("[Fetch] Failed to begin HTTP");
         return false;
+    }
+
+    // v8.0.0: Battery telemetry HTTP headers
+    if (batteryVoltageMv > 0) {
+        char volStr[8], pctStr[4];
+        snprintf(volStr, sizeof(volStr), "%.2f", batteryVoltageMv / 1000.0f);
+        snprintf(pctStr, sizeof(pctStr), "%d", batteryPercent);
+        http.addHeader("X-Battery-Voltage", volStr);
+        http.addHeader("X-Battery-Percent", pctStr);
+        http.addHeader("X-Power-Source", onBatteryPower ? "battery" : "usb");
     }
 
     int code = http.GET();

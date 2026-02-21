@@ -13,7 +13,7 @@
 // VERSION
 // =============================================================================
 
-#define FIRMWARE_VERSION "7.7.0"
+#define FIRMWARE_VERSION "8.0.0"
 
 // =============================================================================
 // SERVER CONFIGURATION
@@ -91,6 +91,27 @@
 
 #define PIN_INTERRUPT 2
 #define PIN_BATTERY 3
+
+// =============================================================================
+// BATTERY MONITORING (v8.0.0)
+// =============================================================================
+
+#define BATTERY_ADC_SAMPLES 8          // Averaged ADC reads for stable voltage
+#define BATTERY_VOLTAGE_DIVIDER 2      // 2x voltage divider on battery pin
+#define BATTERY_FULL_MV 4200           // Fully charged LiPo
+#define BATTERY_USB_THRESH_MV 4250     // Above this = USB powered (not battery)
+#define BATTERY_EMPTY_MV 3000          // Fully discharged
+#define BATTERY_LOW_WARN_MV 3700       // ~15% — show warning on e-ink
+#define BATTERY_SHUTDOWN_MV 3500       // ~5% — auto shutdown to protect cell
+#define BATTERY_ABSENT_MV 1000         // Below this = no battery connected
+
+// =============================================================================
+// DEEP SLEEP (v8.0.0)
+// =============================================================================
+
+#define SLEEP_INTERVAL_BATTERY_SEC 60          // 60s deep sleep (matches USB refresh)
+#define SLEEP_US_TO_S_FACTOR 1000000ULL        // Microsecond-to-second conversion
+#define VCOM_MAINTENANCE_INTERVAL 5            // VCOM cycle every N deep sleep wakes
 
 // =============================================================================
 // ZONE LAYOUT (V10 Dashboard)
