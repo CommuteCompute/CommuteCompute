@@ -41,6 +41,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { getTransitApiKey, getGoogleApiKey } from '../data/kv-preferences.js';
 import { getStopNameById, detectStopIdsFromAddress } from '../data/gtfs-stop-names.js';
+import { getAllStops } from '../data/fallback-timetables.js';
 
 // =============================================================================
 // STATE CONFIGURATION
@@ -717,7 +718,8 @@ export class CommuteCompute {
     return {
       trains: [],
       trams: [],
-      buses: []
+      buses: [],
+      stops: getAllStops(this.state || 'VIC')
     };
   }
 
@@ -942,26 +944,18 @@ export class CommuteCompute {
         
         return {
           trains: trains.map(t => ({
-            minutes: t.minutes,
-            departureTimeMs: t.departureTimeMs, // Absolute time for live countdown
-            destination: t.destination,
-            platform: t.platform,
+            ...t,
             isScheduled: !t.isLive,
-            isDelayed: t.isDelayed,
-            delayMinutes: t.delayMinutes,
+            delayMinutes: t.delay || t.delayMinutes || 0,
             source: t.isLive ? 'live' : 'scheduled'
           })),
           trams: trams.map(t => ({
-            minutes: t.minutes,
-            departureTimeMs: t.departureTimeMs, // Absolute time for live countdown
-            destination: t.destination,
+            ...t,
             isScheduled: !t.isLive,
             source: t.isLive ? 'live' : 'scheduled'
           })),
           buses: buses.map(b => ({
-            minutes: b.minutes,
-            departureTimeMs: b.departureTimeMs, // Absolute time for live countdown
-            destination: b.destination,
+            ...b,
             isScheduled: !b.isLive,
             source: b.isLive ? 'live' : 'scheduled'
           })),
@@ -2048,14 +2042,12 @@ export class CommuteCompute {
     if (!departures?.length) return [];
 
     const matches = departures.filter(d => {
-      if (leg.routeNumber && d.route_number) {
-        return d.route_number.toString() === leg.routeNumber.toString();
+      if (leg.routeNumber && d.routeNumber) {
+        return d.routeNumber.toString() === leg.routeNumber.toString();
       }
-      if (leg.type === 'tram' && d.route_type === 1) return true;
-      if (leg.type === 'train' && d.route_type === 0) return true;
-      if (leg.type === 'bus' && d.route_type === 2) return true;
-      if (leg.type === 'vline' && d.route_type === 3) return true;
-      return false;
+      // Departures are already segregated by mode in trains/trams/buses arrays,
+      // so match any departure if no specific route number to filter by
+      return true;
     });
 
     // Sort by departure time

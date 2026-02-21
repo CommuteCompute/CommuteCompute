@@ -5100,31 +5100,31 @@
 
         // ==================== END JOURNEY PROFILES MANAGEMENT ====================
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             updateClock();
             setInterval(updateClock, 1000);
-            loadAllData();
-            loadSavedPreferences();
-            loadDeviceBattery();  // V13.6: Load device battery status
-            refreshInterval = setInterval(() => {
-                loadAllData();
-                loadDeviceBattery();  // V13.6: Refresh battery status
+            try { await loadAllData(); } catch (e) { console.error('[Admin] loadAllData failed:', e); }
+            try { loadSavedPreferences(); } catch (e) { console.error('[Admin] loadSavedPreferences failed:', e); }
+            try { loadDeviceBattery(); } catch (e) { console.error('[Admin] loadDeviceBattery failed:', e); }
+            refreshInterval = setInterval(async () => {
+                try { await loadAllData(); } catch (e) { console.error('[Admin] loadAllData refresh failed:', e); }
+                try { loadDeviceBattery(); } catch (e) { console.error('[Admin] loadDeviceBattery refresh failed:', e); }
             }, 30000);
 
             // Check if this is first visit and show onboarding
-            checkFirstVisit();
+            try { checkFirstVisit(); } catch (e) { console.error('[Admin] checkFirstVisit failed:', e); }
 
             // Load profiles when on Config tab
-            loadProfiles();
+            try { loadProfiles(); } catch (e) { console.error('[Admin] loadProfiles failed:', e); }
 
             // Load CommuteCompute settings and e-ink preview
-            loadCommuteComputeSettings();
-            loadInlineEditValues();
-            loadEinkPreview();
-            
+            try { loadCommuteComputeSettings(); } catch (e) { console.error('[Admin] loadCommuteComputeSettings failed:', e); }
+            try { loadInlineEditValues(); } catch (e) { console.error('[Admin] loadInlineEditValues failed:', e); }
+            try { loadEinkPreview(); } catch (e) { console.error('[Admin] loadEinkPreview failed:', e); }
+
             // Auto-refresh e-ink preview every 60 seconds (matches firmware refresh)
             setInterval(() => {
-                loadEinkPreview(false);
+                try { loadEinkPreview(false); } catch (e) { console.error('[Admin] loadEinkPreview refresh failed:', e); }
             }, 60000);
         });
 
@@ -8454,24 +8454,30 @@
         }
 
         // Initialize autocomplete on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            updateClock();
+        document.addEventListener('DOMContentLoaded', async () => {
+            try { updateClock(); } catch (e) { console.error('[Admin] updateClock failed:', e); }
             setInterval(updateClock, 1000);
-            loadAllData();
-            loadSavedPreferences();
-            refreshInterval = setInterval(loadAllData, 30000);
+            try { await loadAllData(); } catch (e) { console.error('[Admin] loadAllData failed:', e); }
+            try { loadSavedPreferences(); } catch (e) { console.error('[Admin] loadSavedPreferences failed:', e); }
+            refreshInterval = setInterval(async () => {
+                try { await loadAllData(); } catch (e) { console.error('[Admin] loadAllData refresh failed:', e); }
+            }, 30000);
 
             // Setup address autocomplete
-            setupAddressAutocomplete('home-address', 'home-suggestions');
-            setupAddressAutocomplete('cafe-address', 'cafe-suggestions');
-            setupAddressAutocomplete('work-address', 'work-suggestions');
+            try {
+                setupAddressAutocomplete('home-address', 'home-suggestions');
+                setupAddressAutocomplete('cafe-address', 'cafe-suggestions');
+                setupAddressAutocomplete('work-address', 'work-suggestions');
+            } catch (e) { console.error('[Admin] setupAddressAutocomplete failed:', e); }
 
             // Setup auto-save for address fields
-            setupAutoSave('home-address', 'addresses', 'home');
-            setupAutoSave('cafe-name', 'addresses', 'cafeName');
-            setupAutoSave('cafe-address', 'addresses', 'cafe');
-            setupAutoSave('work-address', 'addresses', 'work');
-            setupAutoSave('arrival-time', 'journey', 'arrivalTime');
+            try {
+                setupAutoSave('home-address', 'addresses', 'home');
+                setupAutoSave('cafe-name', 'addresses', 'cafeName');
+                setupAutoSave('cafe-address', 'addresses', 'cafe');
+                setupAutoSave('work-address', 'addresses', 'work');
+                setupAutoSave('arrival-time', 'journey', 'arrivalTime');
+            } catch (e) { console.error('[Admin] setupAutoSave failed:', e); }
         });
 
         // ============= SIMPLIFIED JOURNEY PLANNER =============
