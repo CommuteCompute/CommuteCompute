@@ -40,14 +40,14 @@
 
 **Requirements**:
 - [YES] **1-bit depth only** - Pure black (#000000) and white (#FFFFFF)
-- [YES] **No grayscale** - No intermediate tones
+- [YES] **No greyscale** - No intermediate tones
 - [YES] **No animations** - Static content only
-- [YES] **No colors** - Monochrome only
+- [YES] **No colours** - Monochrome only
 - [YES] **Cross-referenced hardware** - Firmware must match internal/external hardware specs
 
 **Prohibited**:
-- [NO] RGB colors
-- [NO] Grayscale values
+- [NO] RGB colours
+- [NO] Greyscale values
 - [NO] Animated transitions
 - [NO] Fade effects
 - [NO] Any content not displayable on 1-bit e-ink

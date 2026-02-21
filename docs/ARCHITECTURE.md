@@ -49,10 +49,10 @@ Complete mapping of each trade mark to its constituent files in the codebase.
 
 | File | Engine | Purpose |
 |------|--------|---------|
-| `src/engines/departure-confidence.js` | DepartureConfidence | Departure probability scoring |
-| `src/engines/lifestyle-context.js` | LifestyleContext | Time-of-day and routine awareness |
-| `src/engines/sleep-optimiser.js` | SleepOptimiser | Evening mode and wake time logic |
-| `src/engines/alt-transit.js` | AltTransit | Alternate route cost comparison |
+| `src/engines/departure-confidence.js` | DepartureConfidence™ | Departure probability scoring |
+| `src/engines/lifestyle-context.js` | LifestyleContext™ | Time-of-day and routine awareness |
+| `src/engines/sleep-optimiser.js` | SleepOptimiser™ | Evening mode and wake time logic |
+| `src/engines/alt-transit.js` | AltTransit™ | Alternate route cost comparison |
 
 ### CCDash(TM) -- Primary Dashboard Renderer
 
@@ -84,7 +84,7 @@ Complete mapping of each trade mark to its constituent files in the codebase.
 | `firmware/include/prerendered-screens.h` | Asset | Prerendered screens (boot, error) |
 | `firmware/platformio.ini` | Build | PlatformIO build config |
 
-### CoffeeDecision Engine (Component of CommuteCompute(TM))
+### CoffeeDecision™ Engine (Component of CommuteCompute(TM))
 
 | File | Type | Purpose |
 |------|------|---------|

@@ -14,7 +14,7 @@ Key requirements:
 - CCDashDesignV15.0 spec is **LOCKED** — no UI changes without approval
 - Never use "PTV API" — use "Transport Victoria OpenData API"
 - Custom firmware only — NO usetrmnl.com dependencies
-- 1-bit BMP rendering — no grayscale
+- 1-bit BMP rendering — no greyscale
 - AGPL-3.0 dual licence required on all contributions (see [LICENSE](LICENSE))
 
 ## How to Contribute

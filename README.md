@@ -25,7 +25,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-TRMNL%20%7C%20Kindle%20%7C%20Inkplate-orange.svg?style=flat-square" alt="Platform: TRMNL | Kindle | Inkplate">
   &nbsp;
-  <img src="https://img.shields.io/badge/VIC%20(Live%20GTFS--RT)%20%7C%207%20States%20(Timetable)-yellow.svg?style=flat-square" alt="VIC (Live) | 7 States (Timetable)">
+  <img src="https://img.shields.io/badge/VIC%20(Live%20GTFS--RT)%20%7C%20All%20States%20%26%20Territories%20(Timetable)-yellow.svg?style=flat-square" alt="VIC (Live) | All States &amp; Territories (Timetable)">
   &nbsp;
   <img src="https://img.shields.io/badge/Melbourne_Metro_Tunnel-Fully_Supported-0072CE.svg?style=flat-square" alt="Melbourne Metro Tunnel Supported">
 </p>
@@ -144,7 +144,7 @@ DISPLAY: [C] GET COFFEE | LEAVE IN 6 MIN | ARRIVE 8:58am
 
 ---
 
-### 2. DepartureConfidence Engine
+### 2. DepartureConfidence™ Engine
 
 Journey success probability scoring from 0 to 100%.
 
@@ -169,7 +169,7 @@ DISPLAY: CONFIDENCE 74% | AT RISK | "Buffer tight at Flinders connection"
 
 ---
 
-### 3. LifestyleContext Engine
+### 3. LifestyleContext™ Engine
 
 Weather-aware lifestyle suggestions and commute stress scoring.
 
@@ -194,7 +194,7 @@ DISPLAY: 14 Showers | UMBRELLA + JACKET | Feels 10C
 
 ---
 
-### 4. SleepOptimiser Engine
+### 4. SleepOptimiser™ Engine
 
 Evening bedtime and alarm calculation for next-day commute readiness.
 
@@ -229,7 +229,7 @@ DISPLAY: GO TO BED NOW | ALARM 6:35AM | SLEEP: INSUFFICIENT
 
 ---
 
-### 5. AltTransit Engine
+### 5. AltTransit™ Engine
 
 Alternative transport cost estimation when public transit is cancelled or disrupted.
 
@@ -425,6 +425,13 @@ See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed step-by-step instructions 
 | Inkplate 10 | 1200 x 825 | Supported |
 | Web Browser | Any | Full dashboard via `/api/screen` endpoint |
 
+### Battery Operation
+
+The TRMNL display operates on battery power for several days between charges,
+making it suitable for placement anywhere in the home without cable management.
+USB-C provides continuous power when preferred. Battery percentage and voltage
+are monitored via the Admin Panel.
+
 ### Where to Buy Hardware
 
 | Device | Source | Notes |
@@ -451,7 +458,7 @@ The TRMNL Display (OG) is the primary supported device and provides the best exp
 | Intelligence Engines | 5 |
 | Development Rules Sections | 24 |
 | Automated Compliance Checks | 214 |
-| Australian Coverage | VIC (Live GTFS-RT), 7 States/Territories (timetable) |
+| Australian Coverage | VIC (Live GTFS-RT), All states and territories (timetable) |
 
 <br>
 

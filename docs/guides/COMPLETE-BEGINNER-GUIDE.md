@@ -270,7 +270,7 @@ Now you'll tell the system about your commute: where you live, where you work, a
 
 [TIME] Approximately 1 minute, or skip entirely.
 
-If you want CoffeeDecision recommendations (whether you have time for coffee before work):
+If you want CoffeeDecision™ recommendations (whether you have time for coffee before work):
 
 1. Type your favourite cafe's name and address
 2. Select from autocomplete suggestions
