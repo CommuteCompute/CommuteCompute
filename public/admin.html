@@ -194,9 +194,8 @@
 
         /* Info/warning boxes */
         .info-box {
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid var(--border);
-            border-left: 4px solid var(--purple);
+            background: rgba(102, 126, 234, 0.06);
+            border: 1px solid rgba(102, 126, 234, 0.15);
             border-radius: 8px;
             padding: 14px 16px;
             margin: 12px 0;
@@ -204,9 +203,8 @@
             color: var(--text-secondary);
         }
         .warning-box {
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid var(--border);
-            border-left: 4px solid var(--warning);
+            background: rgba(251, 191, 36, 0.06);
+            border: 1px solid rgba(251, 191, 36, 0.15);
             border-radius: 8px;
             padding: 14px 16px;
             margin: 12px 0;
@@ -1912,7 +1910,7 @@
             <!-- Configured State - Summary View -->
             <div id="setup-configured" style="display: none;">
                 <!-- Journey Configuration Card - Inline Editable -->
-                <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(79, 178, 142, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%); border-left: 4px solid #4fb28e;">
+                <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(79, 178, 142, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%);">
                     <div class="card-header" style="margin-bottom: 20px;">
                         <span class="card-icon"><svg class="icon-lg"><use href="#icon-map"/></svg></span>
                         <h2>Your Commute</h2>
@@ -2063,7 +2061,7 @@
                 </div>
 
                 <!-- Device Configuration Card -->
-                <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-left: 4px solid #818cf8;">
+                <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);">
                     <div class="card-header" style="margin-bottom: 20px;">
                         <span class="card-icon"><svg class="icon-lg"><use href="#icon-tv"/></svg></span>
                         <h2>Display Device</h2>
@@ -2094,7 +2092,7 @@
                         </div>
 
                         <!-- Firmware Disclaimer -->
-                        <div id="firmware-disclaimer" style="padding: 12px; background: rgba(251, 191, 36, 0.1); border-radius: 8px; border-left: 3px solid #fbbf24; margin-bottom: 15px;">
+                        <div id="firmware-disclaimer" style="padding: 12px; background: rgba(251, 191, 36, 0.1); border-radius: 8px; margin-bottom: 15px;">
                             <div style="font-size: 12px; line-height: 1.5; color: rgba(255,255,255,0.85);">
                                 <strong><svg class="icon-sm"><use href="#icon-warning"/></svg> Custom Firmware Required:</strong> Your device must be flashed with 
                                 <a href="/flasher/" target="_blank" style="color: #fbbf24;">Commute Compute&#8482; firmware</a> 
@@ -2304,7 +2302,7 @@
                     </div>
 
                     <!-- Error State -->
-                    <div id="routes-error" aria-live="polite" role="alert" style="display: none; padding: 16px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border-left: 3px solid #ef4444;">
+                    <div id="routes-error" aria-live="polite" role="alert" style="display: none; padding: 16px; background: rgba(239, 68, 68, 0.1); border-radius: 8px;">
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <svg width="18" height="18" style="color: #ef4444;"><use href="#icon-alert"/></svg>
                             <span id="routes-error-text" style="font-size: 13px;">Failed to load routes</span>
@@ -2486,7 +2484,7 @@
             <!-- Configured State -->
             <div id="live-data-configured">
                 <!-- CommuteCompute Status Banner -->
-                <div id="commutecompute-status-banner" aria-live="polite" role="status" style="margin-bottom: 20px; padding: 18px 20px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 15px; background: linear-gradient(135deg, rgba(79, 178, 142, 0.15) 0%, rgba(34, 197, 94, 0.15) 100%); border-left: 4px solid #4fb28e;">
+                <div id="commutecompute-status-banner" aria-live="polite" role="status" style="margin-bottom: 20px; padding: 18px 20px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 15px; background: linear-gradient(135deg, rgba(79, 178, 142, 0.15) 0%, rgba(34, 197, 94, 0.15) 100%);">
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <div id="commutecompute-status-icon" style="width: 32px; height: 32px; border-radius: 50%; background: #22c55e; display: flex; align-items: center; justify-content: center;">
                             <svg width="18" height="18" style="color: white;"><use href="#icon-check"/></svg>
@@ -2503,7 +2501,7 @@
                 </div>
 
                 <!-- Journey Configuration Summary -->
-                <div id="journey-config-banner" style="margin-bottom: 20px; padding: 16px 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #667eea;">
+                <div id="journey-config-banner" style="margin-bottom: 20px; padding: 16px 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                     <div style="font-weight: 600; margin-bottom: 8px; font-size: 14px; color: #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <svg width="16" height="16" style="color: #667eea;"><use href="#icon-route"/></svg>
@@ -2613,7 +2611,7 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
                     
                     <!-- Train Departures Card -->
-                    <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px; padding: 20px; border-left: 4px solid #4fb28e;">
+                    <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px; padding: 20px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(79, 178, 142, 0.2); display: flex; align-items: center; justify-content: center;">
@@ -2635,7 +2633,7 @@
                     </div>
 
                     <!-- Tram Departures Card -->
-                    <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px; padding: 20px; border-left: 4px solid #667eea;">
+                    <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px; padding: 20px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(102, 126, 234, 0.2); display: flex; align-items: center; justify-content: center;">
@@ -2657,7 +2655,7 @@
                     </div>
 
                     <!-- Weather Card -->
-                    <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px; padding: 20px; border-left: 4px solid #fbbf24;">
+                    <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px; padding: 20px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(251, 191, 36, 0.2); display: flex; align-items: center; justify-content: center;">
@@ -2679,7 +2677,7 @@
                     </div>
 
                     <!-- Coffee Decision Card -->
-                    <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px; padding: 20px; border-left: 4px solid #a78bfa;">
+                    <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px; padding: 20px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(167, 139, 250, 0.2); display: flex; align-items: center; justify-content: center;">
@@ -2702,7 +2700,7 @@
                 </div>
 
                 <!-- CommuteCompute Journey Summary -->
-                <div class="card" style="margin-top: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; padding: 20px; border-left: 4px solid #4fb28e;">
+                <div class="card" style="margin-top: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; padding: 20px;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(79, 178, 142, 0.2); display: flex; align-items: center; justify-content: center;">
@@ -2817,7 +2815,7 @@
                 </div>
 
                 <!-- Transit API Card -->
-                <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(79, 178, 142, 0.1) 0%, rgba(34, 197, 94, 0.1) 100%); border-left: 4px solid #4fb28e;">
+                <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(79, 178, 142, 0.1) 0%, rgba(34, 197, 94, 0.1) 100%);">
                     <div class="card-header" style="margin-bottom: 15px;">
                         <span class="card-icon"><svg class="icon-lg"><use href="#icon-train"/></svg></span>
                         <h2>Transport Victoria OpenData API</h2>
@@ -2861,7 +2859,7 @@
                 </div>
 
                 <!-- Transit Stop IDs Card (Section 23.1.1) -->
-                <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(79, 178, 142, 0.1) 100%); border-left: 4px solid #667eea;">
+                <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(79, 178, 142, 0.1) 100%);">
                     <div class="card-header" style="margin-bottom: 15px;">
                         <span class="card-icon"><svg class="icon-lg"><use href="#icon-train"/></svg></span>
                         <h2>Transit Stop IDs</h2>
@@ -2913,7 +2911,7 @@
                 </div>
 
                 <!-- Google Places API Card -->
-                <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-left: 4px solid #818cf8;">
+                <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);">
                     <div class="card-header" style="margin-bottom: 15px;">
                         <span class="card-icon"><svg class="icon-lg"><use href="#icon-pin"/></svg></span>
                         <h2>Google Places API</h2>
@@ -3013,7 +3011,7 @@
                 <!-- Configuration Tab -->
         <div id="tab-config" class="tab-content">
             <!-- Journey Profiles Management -->
-            <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px; border-left: 4px solid #4fb28e;">
+            <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #4fb28e;"><use href="#icon-list"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Journey Profiles</h2>
@@ -3023,7 +3021,7 @@
                 </p>
 
                 <!-- Active Profile Display -->
-                <div id="active-profile-display" style="padding: 16px; background: rgba(34, 197, 94, 0.1); border-radius: 12px; border-left: 4px solid #22c55e; margin-bottom: 20px;">
+                <div id="active-profile-display" style="padding: 16px; background: rgba(34, 197, 94, 0.1); border-radius: 12px; margin-bottom: 20px;">
                     <div style="font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
                         <svg width="18" height="18" style="color: #22c55e;"><use href="#icon-check"/></svg>
                         <span>Active: <span id="active-profile-name">Default Journey</span></span>
@@ -3047,7 +3045,7 @@
             </div>
 
             <!-- Data Sources Overview -->
-            <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px; border-left: 4px solid #4fb28e;">
+            <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #667eea;"><use href="#icon-globe"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Active Data Sources</h2>
@@ -3063,7 +3061,7 @@
             </div>
 
             <!-- User Configuration -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #4fb28e;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #4fb28e;"><use href="#icon-user"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Your Journey Configuration</h2>
@@ -3079,7 +3077,7 @@
             </div>
 
             <!-- Note: API settings moved to API Settings tab -->
-            <div style="margin-bottom: 20px; padding: 16px; background: rgba(102, 126, 234, 0.1); border-radius: 12px; border-left: 4px solid #667eea;">
+            <div style="margin-bottom: 20px; padding: 16px; background: rgba(102, 126, 234, 0.1); border-radius: 12px;">
                 <div style="font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
                     <svg width="18" height="18" style="color: #667eea;"><use href="#icon-key"/></svg>
                     <span>Looking for API Settings?</span>
@@ -3094,7 +3092,7 @@
 
 
             <div class="grid" style="gap: 20px;">
-                <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #4fb28e;">
+                <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                     <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                         <svg width="22" height="22" style="color: #4fb28e;"><use href="#icon-sliders"/></svg>
                         <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Display Settings</h2>
@@ -3113,7 +3111,7 @@
                     </button>
                 </div>
 
-                <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #667eea;">
+                <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                     <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                         <svg width="22" height="22" style="color: #667eea;"><use href="#icon-wrench"/></svg>
                         <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Actions</h2>
@@ -3135,7 +3133,7 @@
         <!-- Architecture Tab -->
         <div id="tab-architecture" class="tab-content">
             <!-- Architecture Overview -->
-            <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px; border-left: 4px solid #4fb28e;">
+            <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #4fb28e;"><use href="#icon-layers"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Commute Compute&#8482; System Architecture</h2>
@@ -3152,7 +3150,7 @@
             </div>
 
             <!-- Trade Marked Tools Overview -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #a855f7;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #a855f7;"><use href="#icon-star"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Commute Compute&#8482; Trade Marked Tools</h2>
@@ -3280,7 +3278,7 @@
             </div>
 
             <!-- Core Principles -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #4fb28e;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #4fb28e;"><use href="#icon-check"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Core Principles</h2>
@@ -3318,7 +3316,7 @@
             </div>
 
             <!-- Technology Stack -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #667eea;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #667eea;"><use href="#icon-database"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Technology Stack</h2>
@@ -3356,7 +3354,7 @@
             </div>
 
             <!-- Layer Architecture -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #4fb28e;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #4fb28e;"><use href="#icon-layers"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Layer Architecture</h2>
@@ -3364,23 +3362,23 @@
                 <div style="margin-top: 15px; font-family: 'JetBrains Mono', monospace; font-size: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 16px; overflow-x: auto;">
                     <div style="color: #94a3b8; margin-bottom: 8px;">/* Presentation → API → Service → Core → Data */</div>
                     <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <div style="padding: 10px 14px; background: linear-gradient(90deg, rgba(79, 178, 142, 0.3) 0%, rgba(79, 178, 142, 0.1) 100%); border-radius: 6px; border-left: 3px solid #4fb28e;">
+                        <div style="padding: 10px 14px; background: linear-gradient(90deg, rgba(79, 178, 142, 0.3) 0%, rgba(79, 178, 142, 0.1) 100%); border-radius: 6px;">
                             <span style="color: #4fb28e; font-weight: 600;">PRESENTATION</span>
                             <span style="color: #94a3b8; margin-left: 12px;">admin.html, setup-wizard.html</span>
                         </div>
-                        <div style="padding: 10px 14px; background: linear-gradient(90deg, rgba(102, 126, 234, 0.3) 0%, rgba(102, 126, 234, 0.1) 100%); border-radius: 6px; border-left: 3px solid #667eea;">
+                        <div style="padding: 10px 14px; background: linear-gradient(90deg, rgba(102, 126, 234, 0.3) 0%, rgba(102, 126, 234, 0.1) 100%); border-radius: 6px;">
                             <span style="color: #667eea; font-weight: 600;">API LAYER</span>
                             <span style="color: #94a3b8; margin-left: 12px;">/api/zones, /api/livedash, /api/screen, /api/admin/*</span>
                         </div>
-                        <div style="padding: 10px 14px; background: linear-gradient(90deg, rgba(251, 191, 36, 0.3) 0%, rgba(251, 191, 36, 0.1) 100%); border-radius: 6px; border-left: 3px solid #fbbf24;">
+                        <div style="padding: 10px 14px; background: linear-gradient(90deg, rgba(251, 191, 36, 0.3) 0%, rgba(251, 191, 36, 0.1) 100%); border-radius: 6px;">
                             <span style="color: #fbbf24; font-weight: 600;">SERVICE LAYER</span>
                             <span style="color: #94a3b8; margin-left: 12px;">CommuteCompute&#8482;, CC LiveDash&#8482;, Zone Renderer, Weather</span>
                         </div>
-                        <div style="padding: 10px 14px; background: linear-gradient(90deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.1) 100%); border-radius: 6px; border-left: 3px solid #ef4444;">
+                        <div style="padding: 10px 14px; background: linear-gradient(90deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.1) 100%); border-radius: 6px;">
                             <span style="color: #ef4444; font-weight: 600;">CORE LAYER</span>
                             <span style="color: #94a3b8; margin-left: 12px;">CoffeeDecision&trade;, Route Planner, Journey Engine</span>
                         </div>
-                        <div style="padding: 10px 14px; background: linear-gradient(90deg, rgba(168, 85, 247, 0.3) 0%, rgba(168, 85, 247, 0.1) 100%); border-radius: 6px; border-left: 3px solid #a855f7;">
+                        <div style="padding: 10px 14px; background: linear-gradient(90deg, rgba(168, 85, 247, 0.3) 0%, rgba(168, 85, 247, 0.1) 100%); border-radius: 6px;">
                             <span style="color: #a855f7; font-weight: 600;">DATA LAYER</span>
                             <span style="color: #94a3b8; margin-left: 12px;">OpenData Client, GTFS Static, Preferences, Fallback Timetables</span>
                         </div>
@@ -3389,7 +3387,7 @@
             </div>
 
             <!-- Data Flow with Device Pairing -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #667eea;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #667eea;"><use href="#icon-route"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Data Flow & Device Pairing</h2>
@@ -3480,7 +3478,7 @@
             </div>
 
             <!-- Zone Layout (V15.0) -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #fbbf24;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #fbbf24;"><use href="#icon-sliders"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Zone Layout (CCDash&#8482; V15.0)</h2>
@@ -3544,7 +3542,7 @@
             </div>
 
             <!-- API Endpoints -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #4fb28e;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #4fb28e;"><use href="#icon-globe"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">API Endpoints</h2>
@@ -3622,7 +3620,7 @@
             </div>
 
             <!-- Hardware Support -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #667eea;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #667eea;"><use href="#icon-smartphone"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Supported Hardware</h2>
@@ -3653,7 +3651,7 @@
             </div>
 
             <!-- Visual Diagrams -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #a855f7;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #a855f7;"><use href="#icon-search"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">System Architecture Diagrams</h2>
@@ -3814,7 +3812,7 @@
             </div>
 
             <!-- Documentation Links -->
-            <div style="padding: 16px; background: rgba(79, 178, 142, 0.1); border-radius: 12px; border-left: 4px solid #4fb28e;">
+            <div style="padding: 16px; background: rgba(79, 178, 142, 0.1); border-radius: 12px;">
                 <div style="font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                     <svg width="18" height="18" style="color: #4fb28e;"><use href="#icon-book"/></svg>
                     <span>Full Documentation</span>
@@ -3844,7 +3842,7 @@
         <div id="tab-system" class="tab-content">
             
             <!-- System Overview Card -->
-            <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(79, 178, 142, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%); border-radius: 12px; border-left: 4px solid #4fb28e;">
+            <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(79, 178, 142, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="24" height="24" style="color: #4fb28e;"><use href="#icon-cpu"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Commute Compute&#8482; System Overview</h2>
@@ -3852,7 +3850,7 @@
                 <p style="margin-bottom: 12px; opacity: 0.9; font-size: 14px;">
                     Real-time transit intelligence for your daily commute. Five interconnected engines working together.
                 </p>
-                <p style="margin-bottom: 20px; font-size: 13px; color: #94a3b8; font-style: italic; line-height: 1.6; padding: 12px 16px; background: rgba(79, 178, 142, 0.08); border-radius: 8px; border-left: 3px solid #4fb28e;">
+                <p style="margin-bottom: 20px; font-size: 13px; color: #94a3b8; font-style: italic; line-height: 1.6; padding: 12px 16px; background: rgba(79, 178, 142, 0.08); border-radius: 8px;">
                     Other apps show delays. CommuteCompute&#8482; reacts to them. Live data flows into every decision- coffee, timing, connections. 1 glance. No app switching. Open Source.
                 </p>
                 
@@ -3927,7 +3925,7 @@
             </div>
 
             <!-- API Endpoints -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #667eea;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #667eea;"><use href="#icon-code"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">API Endpoints</h2>
@@ -3938,7 +3936,7 @@
                 
                 <div style="display: grid; gap: 10px;">
                     <!-- CommuteCompute API -->
-                    <div style="padding: 12px; background: rgba(79, 178, 142, 0.1); border-radius: 8px; border-left: 3px solid #4fb28e;">
+                    <div style="padding: 12px; background: rgba(79, 178, 142, 0.1); border-radius: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                             <code style="font-family: 'JetBrains Mono', monospace; color: #4fb28e; font-size: 13px;">/api/commutecompute</code>
                             <span style="font-size: 11px; opacity: 0.7;">GET/POST</span>
@@ -3947,7 +3945,7 @@
                     </div>
                     
                     <!-- Screen API -->
-                    <div style="padding: 12px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; border-left: 3px solid #667eea;">
+                    <div style="padding: 12px; background: rgba(102, 126, 234, 0.1); border-radius: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                             <code style="font-family: 'JetBrains Mono', monospace; color: #667eea; font-size: 13px;">/api/screen</code>
                             <span style="font-size: 11px; opacity: 0.7;">GET</span>
@@ -3956,7 +3954,7 @@
                     </div>
                     
                     <!-- Zones API -->
-                    <div style="padding: 12px; background: rgba(251, 191, 36, 0.1); border-radius: 8px; border-left: 3px solid #fbbf24;">
+                    <div style="padding: 12px; background: rgba(251, 191, 36, 0.1); border-radius: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                             <code style="font-family: 'JetBrains Mono', monospace; color: #fbbf24; font-size: 13px;">/api/zones</code>
                             <span style="font-size: 11px; opacity: 0.7;">GET</span>
@@ -3965,7 +3963,7 @@
                     </div>
                     
                     <!-- LiveDash API -->
-                    <div style="padding: 12px; background: rgba(236, 72, 153, 0.1); border-radius: 8px; border-left: 3px solid #ec4899;">
+                    <div style="padding: 12px; background: rgba(236, 72, 153, 0.1); border-radius: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                             <code style="font-family: 'JetBrains Mono', monospace; color: #ec4899; font-size: 13px;">/api/livedash</code>
                             <span style="font-size: 11px; opacity: 0.7;">GET</span>
@@ -3976,7 +3974,7 @@
             </div>
 
             <!-- Algorithm Intelligence -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #4fb28e;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #4fb28e;"><use href="#icon-cpu"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Algorithm Intelligence</h2>
@@ -3986,7 +3984,7 @@
                 </p>
 
                 <!-- Coffee Decision Algorithm -->
-                <details style="margin-bottom: 12px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 3px solid #4fb28e;">
+                <details style="margin-bottom: 12px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
                     <summary style="font-weight: 600; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;">
                         <svg width="16" height="16" style="color: #4fb28e;"><use href="#icon-coffee"/></svg>
                         Coffee Decision Algorithm
@@ -4013,7 +4011,7 @@
                 </details>
 
                 <!-- Cafe Busyness Detection -->
-                <details style="margin-bottom: 12px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 3px solid #f6ad55;">
+                <details style="margin-bottom: 12px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
                     <summary style="font-weight: 600; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;">
                         <svg width="16" height="16" style="color: #f6ad55;"><use href="#icon-clock"/></svg>
                         Cafe Busyness Detection
@@ -4034,7 +4032,7 @@
                 </details>
 
                 <!-- Route Recommender -->
-                <details style="margin-bottom: 12px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 3px solid #667eea;">
+                <details style="margin-bottom: 12px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
                     <summary style="font-weight: 600; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;">
                         <svg width="16" height="16" style="color: #667eea;"><use href="#icon-target"/></svg>
                         Smart Route Recommender
@@ -4055,7 +4053,7 @@
                 </details>
 
                 <!-- Live Data Integration -->
-                <details style="margin-bottom: 0; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 3px solid #ec4899;">
+                <details style="margin-bottom: 0; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
                     <summary style="font-weight: 600; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;">
                         <svg width="16" height="16" style="color: #ec4899;"><use href="#icon-zap"/></svg>
                         Live Data Integration
@@ -4078,7 +4076,7 @@
             </div>
 
             <!-- Firmware Info -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #fbbf24;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #fbbf24;"><use href="#icon-cpu"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">CCFirm&#8482; Firmware</h2>
@@ -4111,7 +4109,7 @@
                     </ul>
                 </div>
                 
-                <div style="margin-top: 15px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 6px; border-left: 3px solid #ef4444;">
+                <div style="margin-top: 15px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 6px;">
                     <div style="font-size: 12px; font-weight: 600; color: #ef4444; margin-bottom: 4px;">Important</div>
                     <div style="font-size: 12px; opacity: 0.9;">
                         E-ink devices must run Commute Compute&#8482; firmware for this system to function.
@@ -4121,7 +4119,7 @@
             </div>
 
             <!-- Data Sources -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #4fb28e;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #4fb28e;"><use href="#icon-database"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Data Sources & Attribution</h2>
@@ -4152,7 +4150,7 @@
             </div>
 
             <!-- Support -->
-            <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(79, 178, 142, 0.15) 0%, rgba(64, 220, 165, 0.1) 100%); border-radius: 12px; border-left: 4px solid #40DCA5;">
+            <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(79, 178, 142, 0.15) 0%, rgba(64, 220, 165, 0.1) 100%); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #40DCA5;"><use href="#icon-heart"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Support Development</h2>
@@ -4168,7 +4166,7 @@
             </div>
 
             <!-- About -->
-            <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #667eea;">
+            <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #667eea;"><use href="#icon-info"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">About Commute Compute&#8482;</h2>
@@ -4189,7 +4187,7 @@
         <div id="tab-legal" class="tab-content">
             
             <!-- Intellectual Property Overview -->
-            <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px; border-left: 4px solid #818cf8;">
+            <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="24" height="24" style="color: #818cf8;"><use href="#icon-shield"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Intellectual Property</h2>
@@ -4238,7 +4236,7 @@
             </div>
 
             <!-- License Information -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #4fb28e;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #4fb28e;"><use href="#icon-file-text"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Licence — AGPL-3.0</h2>
@@ -4248,7 +4246,7 @@
                 </p>
                 
                 <!-- Permitted Uses -->
-                <div style="padding: 16px; background: rgba(34, 197, 94, 0.1); border-radius: 10px; border-left: 3px solid #22c55e; margin-bottom: 16px;">
+                <div style="padding: 16px; background: rgba(34, 197, 94, 0.1); border-radius: 10px; margin-bottom: 16px;">
                     <div style="font-weight: 600; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: #22c55e;">
                         <svg width="18" height="18"><use href="#icon-check-circle"/></svg>
                         You ARE Free To
@@ -4263,7 +4261,7 @@
                 </div>
                 
                 <!-- Prohibited Uses -->
-                <div style="padding: 16px; background: rgba(239, 68, 68, 0.1); border-radius: 10px; border-left: 3px solid #ef4444; margin-bottom: 16px;">
+                <div style="padding: 16px; background: rgba(239, 68, 68, 0.1); border-radius: 10px; margin-bottom: 16px;">
                     <div style="font-weight: 600; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: #ef4444;">
                         <svg width="18" height="18"><use href="#icon-warning"/></svg>
                         You May NOT
@@ -4278,7 +4276,7 @@
                 </div>
                 
                 <!-- Attribution Requirement -->
-                <div style="padding: 16px; background: rgba(251, 191, 36, 0.1); border-radius: 10px; border-left: 3px solid #fbbf24;">
+                <div style="padding: 16px; background: rgba(251, 191, 36, 0.1); border-radius: 10px;">
                     <div style="font-weight: 600; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; color: #fbbf24;">
                         <svg width="18" height="18"><use href="#icon-info"/></svg>
                         Attribution Requirements
@@ -4296,7 +4294,7 @@
             </div>
 
             <!-- Third-Party Data Sources -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #667eea;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #667eea;"><use href="#icon-database"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Third-Party Data Sources</h2>
@@ -4356,7 +4354,7 @@
                 </div>
                 
                 <!-- Required Attributions -->
-                <div style="margin-top: 16px; padding: 14px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid rgba(255,255,255,0.2);">
+                <div style="margin-top: 16px; padding: 14px; background: rgba(255,255,255,0.03); border-radius: 8px;">
                     <div style="font-weight: 600; font-size: 13px; margin-bottom: 8px;">Required Attributions When Displaying Data</div>
                     <div style="font-size: 12px; opacity: 0.8; line-height: 1.7; font-family: 'JetBrains Mono', monospace;">
                         • "Transit data from Transport Victoria OpenData, licensed under CC BY 4.0"<br>
@@ -4367,7 +4365,7 @@
             </div>
 
             <!-- Third-Party Software -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px; border-left: 4px solid #f97316;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #f97316;"><use href="#icon-layers"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Third-Party Software</h2>
@@ -4405,7 +4403,7 @@
             </div>
 
             <!-- Warranty Disclaimer -->
-            <div class="card" style="margin-bottom: 20px; background: rgba(239, 68, 68, 0.05); border-radius: 12px; border-left: 4px solid #ef4444;">
+            <div class="card" style="margin-bottom: 20px; background: rgba(239, 68, 68, 0.05); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #ef4444;"><use href="#icon-warning"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Warranty Disclaimer</h2>
@@ -4421,7 +4419,7 @@
             </div>
 
             <!-- Contact & Commercial Licensing -->
-            <div class="card" style="background: linear-gradient(135deg, rgba(79, 178, 142, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%); border-radius: 12px; border-left: 4px solid #4fb28e;">
+            <div class="card" style="background: linear-gradient(135deg, rgba(79, 178, 142, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #4fb28e;"><use href="#icon-mail"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Contact & Licensing</h2>
@@ -4912,7 +4910,7 @@
                 const safeSchedule = sanitize(scheduleText);
 
                 return `
-                    <div class="profile-card" style="padding: 16px; background: ${isActive ? 'rgba(102, 126, 234, 0.15)' : 'rgba(255,255,255,0.05)'}; border-radius: 10px; border-left: 3px solid ${isActive ? '#4fb28e' : 'rgba(255,255,255,0.2)'};">
+                    <div class="profile-card" style="padding: 16px; background: ${isActive ? 'rgba(102, 126, 234, 0.15)' : 'rgba(255,255,255,0.05)'}; border-radius: 10px; border: 1px solid ${isActive ? 'rgba(79, 178, 142, 0.3)' : 'rgba(255,255,255,0.08)'};">
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                             <div style="flex: 1;">
                                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
@@ -5611,7 +5609,7 @@
 
             // Transit Authority API
             sources.push(`
-                <div style="padding: 15px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; border-left: 3px solid ${apis.transitAuthority.configured ? '#22c55e' : '#fc8181'};">
+                <div style="padding: 15px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; border: 1px solid ${apis.transitAuthority.configured ? 'rgba(34, 197, 94, 0.2)' : 'rgba(252, 129, 129, 0.2)'};">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div style="font-weight: 600; font-size: 14px;"><svg class="icon-sm"><use href="#icon-train"/></svg> ${apis.transitAuthority.name}</div>
                         <span style="padding: 4px 10px; background: ${apis.transitAuthority.configured ? 'rgba(72, 187, 120, 0.2)' : 'rgba(252, 129, 129, 0.2)'}; border-radius: 12px; font-size: 11px; font-weight: 600; color: ${apis.transitAuthority.configured ? '#22c55e' : '#fc8181'};">
@@ -5627,7 +5625,7 @@
 
             // Nominatim/OpenStreetMap (always active)
             sources.push(`
-                <div style="padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border-left: 3px solid #22c55e;">
+                <div style="padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div style="font-weight: 600; font-size: 14px;"><svg class="icon-sm"><use href="#icon-map"/></svg> OpenStreetMap / Nominatim</div>
                         <span style="padding: 4px 10px; background: rgba(72, 187, 120, 0.2); border-radius: 12px; font-size: 11px; font-weight: 600; color: #22c55e;">
@@ -5644,7 +5642,7 @@
             // Google Places (if configured)
             if (apis.googlePlaces && apis.googlePlaces.configured) {
                 sources.push(`
-                    <div style="padding: 15px; background: rgba(251, 191, 36, 0.1); border-radius: 8px; border-left: 3px solid #fbbf24;">
+                    <div style="padding: 15px; background: rgba(251, 191, 36, 0.1); border-radius: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                             <div style="font-weight: 600; font-size: 14px;"><svg class="icon-sm"><use href="#icon-pin"/></svg> Google Places API</div>
                             <span style="padding: 4px 10px; background: rgba(72, 187, 120, 0.2); border-radius: 12px; font-size: 11px; font-weight: 600; color: #22c55e;">
@@ -5662,7 +5660,7 @@
             // BOM Weather
             if (apis.bom) {
                 sources.push(`
-                    <div style="padding: 15px; background: rgba(72, 187, 120, 0.1); border-radius: 8px; border-left: 3px solid #22c55e;">
+                    <div style="padding: 15px; background: rgba(72, 187, 120, 0.1); border-radius: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                             <div style="font-weight: 600; font-size: 14px;"><svg class="icon-sm"><use href="#icon-sun"/></svg> Bureau of Meteorology</div>
                             <span style="padding: 4px 10px; background: rgba(72, 187, 120, 0.2); border-radius: 12px; font-size: 11px; font-weight: 600; color: #22c55e;">
@@ -5680,7 +5678,7 @@
             // Victorian GTFS Realtime API (Victoria only)
             if (state === 'VIC') {
                 sources.push(`
-                    <div style="padding: 15px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; border-left: 3px solid #4fb28e;">
+                    <div style="padding: 15px; background: rgba(102, 126, 234, 0.1); border-radius: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                             <div style="font-weight: 600; font-size: 14px;"><svg class="icon-sm"><use href="#icon-train"/></svg> Transport for Victoria - GTFS Realtime</div>
                             <span style="padding: 4px 10px; background: ${apis.transitAuthority.configured ? 'rgba(72, 187, 120, 0.2)' : 'rgba(251, 191, 36, 0.2)'}; border-radius: 12px; font-size: 11px; font-weight: 600; color: ${apis.transitAuthority.configured ? '#22c55e' : '#fbbf24'};">
@@ -5699,7 +5697,7 @@
 
             // Fallback Timetables
             sources.push(`
-                <div style="padding: 15px; background: rgba(139, 92, 246, 0.1); border-radius: 8px; border-left: 3px solid #4fb28e;">
+                <div style="padding: 15px; background: rgba(139, 92, 246, 0.1); border-radius: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div style="font-weight: 600; font-size: 14px;"><svg class="icon-sm"><use href="#icon-database"/></svg> Fallback Timetables</div>
                         <span style="padding: 4px 10px; background: rgba(72, 187, 120, 0.2); border-radius: 12px; font-size: 11px; font-weight: 600; color: #22c55e;">
@@ -5971,7 +5969,7 @@
             const statusText = status === 'active' ? 'Active' : status === 'optional' ? 'Optional' : 'Inactive';
 
             return `
-                <div style="padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 4px solid ${statusColor};">
+                <div style="padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                         <span style="font-size: 24px;">${icon}</span>
                         <div style="flex: 1;">
@@ -8240,7 +8238,7 @@
                     const safeNote = sanitize(api.note || '');
 
                     return `
-                        <div style="padding: 15px; background: ${colors.bg}; border-radius: 10px; border-left: 4px solid ${colors.border};">
+                        <div style="padding: 15px; background: ${colors.bg}; border-radius: 10px; border: 1px solid ${colors.border};">
                             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                                 <div style="font-weight: 600; font-size: 14px;">${safeName}</div>
                                 <div style="display: flex; align-items: center; gap: 6px;">
@@ -8987,7 +8985,7 @@
                             <div style="font-weight: 700; margin-bottom: 10px; font-size: 14px; text-align: center;"><svg class="icon-sm" style="vertical-align: middle;"><use href="#icon-globe"/></svg> ACTIVE DATA SOURCES</div>
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
                                 ${attributions.attributions?.filter(a => a.required || a.name !== 'Commute Compute').map(attr => `
-                                    <div style="padding: 8px; background: rgba(255,255,255,0.15); border-radius: 6px; border-left: 3px solid ${attr.name.includes('Transport') ? '#4fb28e' : attr.name.includes('BOM') || attr.name.includes('Meteorology') ? '#22c55e' : attr.name.includes('OpenStreetMap') ? '#22c55e' : '#fbbf24'};">
+                                    <div style="padding: 8px; background: rgba(255,255,255,0.15); border-radius: 6px;">
                                         <div style="font-weight: 600; font-size: 11px;">${attr.name}</div>
                                         <div style="font-size: 9px; opacity: 0.8; margin-top: 2px;">${attr.license}</div>
                                     </div>
@@ -9472,7 +9470,7 @@
                                 </div>
                             </div>
 
-                            <div style="background: rgba(251, 191, 36, 0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #fbbf24;">
+                            <div style="background: rgba(251, 191, 36, 0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                                 <div style="font-weight: 600; margin-bottom: 8px;">Warning: Using Fallback Timetable Data</div>
                                 <div style="font-size: 13px; opacity: 0.9; line-height: 1.6;">
                                     Your journey is configured and working! Currently using static timetable data.
