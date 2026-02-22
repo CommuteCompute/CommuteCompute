@@ -268,6 +268,15 @@ else
     pass "No non-trademark SmartCommute references in engine code"
 fi
 
+subsection "14.2 Bill 2025 prohibited term (should be Act 2024)"
+BILL_2025=$(grep -rn "Bill 2025" --include="*.js" --include="*.html" --include="*.md" src/ api/ public/ *.md 2>/dev/null | grep -v "prohibited\|should be\|DEVELOPMENT-RULES\|compliance-scanner\|compliance-audit" | head -5 || true)
+if [ -n "$BILL_2025" ]; then
+    fail "'Bill 2025' prohibited — should be 'Privacy and Other Legislation Amendment Act 2024':"
+    echo "$BILL_2025"
+else
+    pass "No prohibited 'Bill 2025' references (correct: Act 2024)"
+fi
+
 # ---------- Section 20: Licensing ----------
 section "SECTION 20: LICENSING"
 
