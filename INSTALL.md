@@ -32,7 +32,7 @@
 
 | Component | Requirement |
 |-----------|-------------|
-| Node.js | v22.0.0+ (LTS) |
+| Node.js | v24.0.0+ |
 | Platform | Vercel (recommended), Docker, or Node.js host |
 | Storage | Redis (via Vercel Marketplace) |
 | Memory | 512MB minimum |
@@ -701,7 +701,7 @@ docker-compose up -d
 
 ```bash
 # Install Node.js
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
 # Clone repository

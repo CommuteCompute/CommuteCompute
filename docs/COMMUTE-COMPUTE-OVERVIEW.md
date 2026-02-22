@@ -513,7 +513,7 @@ The entire system works on free infrastructure:
 |-------|--------|-----------|
 | **Normal** | Solid black border | Service running normally |
 | **Delayed** | Dashed border, "+X MIN" | Service delayed |
-| **Skip** | Dashed border, grayed | Coffee skipped |
+| **Skip** | Dashed border, greyed | Coffee skipped |
 | **Cancelled** | Diagonal stripes | Service suspended |
 | **Diverted** | Dashed + arrow | Route diverted |
 

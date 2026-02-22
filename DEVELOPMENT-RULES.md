@@ -2131,7 +2131,7 @@ curl -X POST $VERCEL_DEPLOY_HOOK
 ```
 
 **Required Settings:**
-- Node.js 20.x
+- Node.js 24.x
 - Build command: (none - serverless functions)
 - Output directory: (default)
 - Environment variables configured
@@ -4673,7 +4673,7 @@ SETUP (one-time API calls)          RUNTIME (zero API calls in Free Mode)
 
 | Layer | Technology | Alternatives Prohibited |
 |-------|------------|------------------------|
-| **Server** | Node.js 20.x, Express, Vercel Serverless | [NO] No Deno, Bun |
+| **Server** | Node.js 24.x, Express, Vercel Serverless | [NO] No Deno, Bun |
 | **Rendering** | @napi-rs/canvas, 1-bit BMP | [NO] No node-canvas |
 | **Data** | Transport Victoria OpenData (GTFS-RT) | [NO] No scraping |
 | **Storage** | Redis | [NO] No environment variables |
