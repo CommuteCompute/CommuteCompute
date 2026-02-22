@@ -53,7 +53,7 @@ Before ANY testing, read and understand:
 **Prerequisites**:
 - [ ] Vercel account (free tier sufficient)
 - [ ] GitLab repository forked/cloned
-- [ ] Node.js 20.x installed locally
+- [ ] Node.js 24.x installed locally
 
 **Vercel Configuration**:
 - [ ] Import project from GitLab
