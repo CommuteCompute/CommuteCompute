@@ -115,6 +115,10 @@ Commute Compute qualifies for the small business exemption under s 6D of the Pri
 
 For our full security policy, responsible disclosure process, and data breach response plan, see [SECURITY.md](SECURITY.md).
 
+### Notifiable Data Breaches (NDB) Scheme
+
+Commute Compute™ qualifies for the small business exemption under s 6D of the *Privacy Act 1988* (Cth) and is not currently subject to the Notifiable Data Breaches (NDB) scheme under Part IIIC. However, as a matter of best practice, the project voluntarily maintains a data breach response plan. In the unlikely event of a breach involving personal information held in a user's self-hosted Redis instance, the deployment operator (the person who set up that Vercel instance) is responsible for assessing the breach and, if applicable, notifying affected individuals. For the project's security incident response procedures, see [SECURITY.md](SECURITY.md).
+
 ### BLE Provisioning Security
 
 During initial device setup (Step 4 of the Setup Guide), your TRMNL display uses Bluetooth Low Energy (BLE) to receive WiFi credentials and the server URL from your browser.
@@ -265,6 +269,36 @@ The SleepOptimiser™ determines when to transition your dashboard between sleep
 - **Output:** Dashboard transitions between sleep and active modes at the appropriate times.
 - **Impact:** Display mode only — no alarms are triggered, no notifications are sent to third parties, and no data is shared externally.
 - **Human oversight:** You configure your sleep schedule and wake-up preferences via the Admin Panel. You may disable sleep mode entirely if preferred.
+
+### 12.4 DepartureConfidence™ Engine
+
+The DepartureConfidence™ Engine calculates a journey success probability score from 0 to 100%.
+
+- **Input:** Journey leg states, real-time transit delay data (GTFS-RT), current weather conditions (Bureau of Meteorology), coffee decision status, and buffer time between journey legs.
+- **Processing:** Combines delay penalties, weather impact scores, coffee timing risk, and connection buffer adequacy into a weighted confidence score. Assigns a status label (ON TIME, AT RISK, LATE) and resilience rating based on the ability to absorb missed connections.
+- **Output:** Confidence percentage (0–100%), status label, resilience rating, and contributing factor breakdown displayed on your dashboard.
+- **Impact:** Informational only — provides a reliability estimate to help you decide whether to proceed with your planned journey. No binding decisions, no financial transactions, no legal consequences.
+- **Human oversight:** You can view, change, or delete all inputs at any time via the Admin Panel (`/admin`) or Setup Wizard (`/setup-wizard.html`). Confidence scoring can be contextualised by reviewing the factor breakdown shown on the dashboard.
+
+### 12.5 AltTransit™ Engine
+
+The AltTransit™ Engine estimates alternative transport costs when public transit is cancelled or disrupted.
+
+- **Input:** Walking distance to destination (derived from geocoded home and work addresses), current time of day, and transit disruption notices (GTFS-RT service alerts).
+- **Processing:** Calculates estimated costs for rideshare, e-scooter, and bike share options based on distance, time of day, and peak surge detection. Compares alternatives to walking time.
+- **Output:** Cost estimates for rideshare, e-scooter, bike share, and walking time displayed on your dashboard when a disruption is detected.
+- **Impact:** Informational only — provides cost estimates to help you choose an alternative. No bookings are made, no financial transactions are initiated, and no data is shared with transport providers.
+- **Human oversight:** You can view, change, or delete all inputs at any time via the Admin Panel (`/admin`) or Setup Wizard (`/setup-wizard.html`). Alternative transport estimates are only displayed when a service disruption is detected.
+
+### 12.6 CoffeeDecision™ Engine
+
+The CoffeeDecision™ Engine determines whether you have time for a coffee stop during your commute.
+
+- **Input:** Journey timing (departure countdown and total journey duration), cafe location and walking distance (from your saved preferences), estimated cafe wait time, and your coffee preference setting (enabled/disabled).
+- **Processing:** Calculates whether a coffee stop can be inserted into your journey without causing you to arrive late. Considers walking time to and from the cafe, estimated service time, and the impact on downstream journey legs and connections.
+- **Output:** A coffee recommendation (GET COFFEE or SKIP COFFEE) and adjusted journey timing displayed on your dashboard.
+- **Impact:** Informational only — provides a recommendation. No orders are placed, no financial transactions are initiated, and no data is shared with cafe operators.
+- **Human oversight:** You can enable or disable the coffee feature via the Admin Panel (`/admin`) or Setup Wizard (`/setup-wizard.html`). You can change your cafe location and preferences at any time.
 
 ### Kinds of personal information used in automated decisions
 
