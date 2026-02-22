@@ -1680,6 +1680,13 @@
     </style>
 </head>
 <body>
+    <script>
+    (function() {
+        if (!localStorage.getItem('cc-terms-accepted')) {
+            window.location.replace('/setup-wizard.html');
+        }
+    })();
+    </script>
     <a href="#main-content" class="skip-link">Skip to main content</a>
     <!-- SVG Icon Sprite - DEVELOPMENT-RULES Section 22.3 Compliant -->
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">

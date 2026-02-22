@@ -20,7 +20,9 @@ import {
   setPreferences,
   getTransitApiKey,
   getGoogleApiKey,
-  getStorageStatus
+  getStorageStatus,
+  getSetupComplete,
+  setSetupComplete
 } from '../src/data/kv-preferences.js';
 import { requireAuth, isFirstTimeSetup, setAdminCorsHeaders } from '../src/utils/auth-middleware.js';
 
@@ -44,7 +46,13 @@ export default async function handler(req, res) {
       const status = await getStorageStatus();
       const transitKey = await getTransitApiKey();
       const googleKey = await getGoogleApiKey();
-      
+
+      // Auto-migrate: if transit key exists but setup_complete flag missing
+      const setupComplete = await getSetupComplete();
+      if (!setupComplete && transitKey) {
+        await setSetupComplete({ timestamp: new Date().toISOString(), source: 'sync-config-migration' });
+      }
+
       return res.json({
         success: true,
         kv: {
@@ -90,8 +98,11 @@ export default async function handler(req, res) {
         results.preferences = await setPreferences(preferences);
       }
       
+      // Mark setup as complete after all preferences saved
+      await setSetupComplete({ timestamp: new Date().toISOString(), source: 'setup-wizard' });
+
       const status = await getStorageStatus();
-      
+
       return res.json({
         success: true,
         saved: results,

@@ -29,7 +29,8 @@ const KEYS = {
   GOOGLE_KEY: 'cc:api:google_key',
   PREFERENCES: 'cc:preferences',
   STATE: 'cc:state',
-  DEVICE_STATUS: 'cc:device:status'  // V13.6: Device battery and status
+  DEVICE_STATUS: 'cc:device:status',  // V13.6: Device battery and status
+  SETUP_COMPLETE: 'cc:setup_complete'  // Setup wizard completion flag
 };
 
 // In-memory fallback for local development (no KV configured)
@@ -416,6 +417,23 @@ export async function getStorageStatus() {
   };
 }
 
+/**
+ * Get setup complete flag
+ * @returns {Promise<Object|null>}
+ */
+export async function getSetupComplete() {
+  return await get(KEYS.SETUP_COMPLETE);
+}
+
+/**
+ * Set setup complete flag
+ * @param {Object} value - { timestamp, source }
+ * @returns {Promise<boolean>}
+ */
+export async function setSetupComplete(value) {
+  return await set(KEYS.SETUP_COMPLETE, value);
+}
+
 export default {
   getClient,
   getTransitApiKey,
@@ -429,5 +447,7 @@ export default {
   getDeviceStatus,
   setDeviceStatus,
   getStorageStatus,
+  getSetupComplete,
+  setSetupComplete,
   KEYS
 };
