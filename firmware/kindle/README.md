@@ -316,4 +316,4 @@ This firmware is fully compatible with TRMNL's BYOS (Bring Your Own Server) syst
 
 Copyright (c) 2026 Angus Bergman
 AGPL-3.0 Dual Licence
-See LICENSE file for full terms.
+See LICENCE file for full terms.

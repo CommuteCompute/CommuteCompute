@@ -10,7 +10,7 @@ Commute Compute™ uses data and services from the following providers:
 
 ## Transport Data
 
-### Transport for Victoria
+### Transport Victoria
 - **Data**: GTFS static and real-time feeds
 - **Licence**: Creative Commons Attribution 4.0 (CC BY 4.0)
 - **Source**: https://opendata.transport.vic.gov.au/

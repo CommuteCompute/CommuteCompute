@@ -25,7 +25,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-TRMNL%20%7C%20Kindle%20%7C%20Inkplate-orange.svg?style=flat-square" alt="Platform: TRMNL | Kindle | Inkplate">
   &nbsp;
-  <img src="https://img.shields.io/badge/VIC%20(Live%20GTFS--RT)%20%7C%20All%20States%20%26%20Territories%20(Timetable)-yellow.svg?style=flat-square" alt="VIC (Live) | All States &amp; Territories (Timetable)">
+  <img src="https://img.shields.io/badge/VIC%20(Live%20GTFS--RT)%20%7C%20National%20(Static%20Timetable%20Fallback)-yellow.svg?style=flat-square" alt="VIC (Live GTFS-RT) | National (Static Timetable Fallback)">
   &nbsp;
   <img src="https://img.shields.io/badge/Melbourne_Metro_Tunnel-Fully_Supported-0072CE.svg?style=flat-square" alt="Melbourne Metro Tunnel Supported">
 </p>
@@ -458,7 +458,7 @@ The TRMNL Display (OG) is the primary supported device and provides the best exp
 | Intelligence Engines | 5 |
 | Development Rules Sections | 24 |
 | Automated Compliance Checks | 214 |
-| Australian Coverage | VIC (Live GTFS-RT), All states and territories (timetable) |
+| Australian Coverage | VIC (Live GTFS-RT) | National (Static Timetable Fallback) |
 
 <br>
 
