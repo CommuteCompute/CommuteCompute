@@ -83,7 +83,7 @@ AMERICAN_TO_AUSTRALIAN = {
     "License": "Licence",
     "licenses": "licences",
     "Licenses": "Licences",
-    "licensed": "licenced",          # Note: "Licensed" in SPDX headers is exempt
+    "licensed": "licensed",           # Verb form is identical in both — only noun changes
     "licensing": "licensing",         # Same spelling in both
     "optimize": "optimise",
     "Optimize": "Optimise",
@@ -921,6 +921,36 @@ def check_smartcommute_removed(repo_root: Path, results: AuditResults):
         )
     else:
         results.pass_check("SmartCommute correctly removed (renamed to CommuteCompute)")
+
+
+def check_bill_2025_prohibited(repo_root: Path, results: AuditResults):
+    """
+    Flag prohibited 'Bill 2025' references — correct citation is
+    'Privacy and Other Legislation Amendment Act 2024' (Cth).
+    """
+    print("\n--- Bill 2025 Prohibited Term ---")
+    all_files = get_files(repo_root, ALL_TEXT_EXTENSIONS)
+
+    violations = []
+    for fpath in all_files:
+        content = read_file_safe(fpath)
+        if content is None:
+            continue
+        rel = fpath.relative_to(repo_root)
+        for i, line in enumerate(content.splitlines(), 1):
+            if "Bill 2025" in line:
+                # Allow references in scanner/audit context explaining the prohibition
+                if "prohibited" in line.lower() or "should be" in line.lower():
+                    continue
+                violations.append(f"  {rel}:{i}: {line.strip()[:70]}")
+
+    if violations:
+        results.fail_check(
+            f"'Bill 2025' prohibited term found ({len(violations)}) — should be 'Act 2024'",
+            "\n".join(violations[:5])
+        )
+    else:
+        results.pass_check("No prohibited 'Bill 2025' references (correct: Act 2024)")
 
 
 # ============================================================================
@@ -2042,6 +2072,7 @@ def run_all_checks(repo_root: Path) -> int:
     check_forbidden_ptv_terms(repo_root, results)
     check_trmnl_references(repo_root, results)
     check_smartcommute_removed(repo_root, results)
+    check_bill_2025_prohibited(repo_root, results)
 
     # Category 6: Documentation Consistency
     print("\n" + "=" * 66)
