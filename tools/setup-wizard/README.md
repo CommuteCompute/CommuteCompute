@@ -131,8 +131,8 @@ $ node setup-wizard.js
 ╚═══════════════════════════════════════════════╝
 
 [INFO] Checking prerequisites...
-  [DONE] Node.js: v20.10.0
-  [DONE] npm: 10.2.3
+  [DONE] Node.js: v24.0.0
+  [DONE] npm: 11.0.0
   [DONE] Git: git version 2.39.2
   [CAUTION]  GitLab CLI (glab): Not found (optional)
 
