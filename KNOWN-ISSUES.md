@@ -121,7 +121,7 @@ If your router broadcasts a combined 2.4/5GHz network (common with modern router
 
 **What this means for you:** Before setting up your TRMNL display, verify that your WiFi router is broadcasting on 2.4GHz. If you only see 5GHz networks in your router settings, enable the 2.4GHz band. Most modern routers broadcast both by default.
 
-### Battery Operation — Limited Duration
+### Battery Operation — Several Days Cable-Free
 
 **Date Documented:** 2026-02-20
 **Severity:** Informational

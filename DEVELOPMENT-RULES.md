@@ -3354,7 +3354,7 @@ See **LEGAL.md** for the full commercial licence framework.
 All licensing checks in the compliance audit (`./scripts/comprehensive-compliance-audit.sh`) are **blocking violations** (FAIL, not WARN). A commit MUST NOT proceed if any licensing check fails.
 
 Required checks (all must pass):
-- LICENSE file references AGPL-3.0 and dual licensing / commercial terms
+- LICENCE file references AGPL-3.0 and dual licensing / commercial terms
 - All source files have `SPDX-License-Identifier: AGPL-3.0-or-later` headers
 - All source files reference dual licensing in headers
 - All copyright headers use correct year (2026)
