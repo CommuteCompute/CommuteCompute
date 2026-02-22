@@ -20,6 +20,9 @@
     <meta name="theme-color" content="#0f172a">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Setup Wizard - Commute Compute</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -952,21 +955,17 @@
     updateGlobalFooterAttributions();
     </script>
 
-    <!-- Main Wizard Script -->
-    <script type="module">
-    // ============================================
-    // COMPLIANCE GATE
-    // ============================================
+    <!-- Compliance Gate Script (CLASSIC — isolated from module parse errors) -->
+    <script>
     (function initComplianceGate() {
       try {
-        const accepted = localStorage.getItem('cc-terms-accepted');
-        const gate = document.getElementById('compliance-gate');
-        const wizardMain = document.getElementById('wizard-main');
-        const skipLink = document.getElementById('skip-link');
-        if (!gate) return; // No compliance gate element — skip
+        var accepted = localStorage.getItem('cc-terms-accepted');
+        var gate = document.getElementById('compliance-gate');
+        var wizardMain = document.getElementById('wizard-main');
+        var skipLink = document.getElementById('skip-link');
+        if (!gate) return;
 
         if (accepted) {
-            // Terms previously accepted — unlock wizard
             gate.classList.add('hidden');
             gate.setAttribute('aria-hidden', 'true');
             if (wizardMain) {
@@ -978,21 +977,18 @@
             return;
         }
 
-        // === COMPLIANCE GATE ACTIVE ===
-        // Fully block all access to wizard content until terms accepted.
-        // Per sole trader liability requirements: no pathway to system without gate completion.
         if (wizardMain) {
             wizardMain.style.display = 'none';
             wizardMain.setAttribute('aria-hidden', 'true');
             wizardMain.setAttribute('inert', '');
         }
 
-        const checkboxes = gate.querySelectorAll('input[type="checkbox"]');
-        const continueBtn = document.getElementById('compliance-continue-btn');
-        if (!continueBtn) return; // No button — skip
+        var checkboxes = gate.querySelectorAll('input[type="checkbox"]');
+        var continueBtn = document.getElementById('compliance-continue-btn');
+        if (!continueBtn) return;
 
         function updateContinueState() {
-            const allChecked = Array.from(checkboxes).every(function(cb) { return cb.checked; });
+            var allChecked = Array.from(checkboxes).every(function(cb) { return cb.checked; });
             if (allChecked) {
                 continueBtn.disabled = false;
                 continueBtn.removeAttribute('disabled');
@@ -1017,13 +1013,11 @@
             cb.addEventListener('change', updateContinueState);
         });
 
-        // Sync button state on load (handles browser-restored checkbox state)
         updateContinueState();
 
         continueBtn.addEventListener('click', function() {
             if (continueBtn.disabled) return;
-            // Re-verify all checkboxes are still checked (prevent DOM manipulation bypass)
-            const allStillChecked = Array.from(checkboxes).every(function(cb) { return cb.checked; });
+            var allStillChecked = Array.from(checkboxes).every(function(cb) { return cb.checked; });
             if (!allStillChecked) {
                 updateContinueState();
                 return;
@@ -1038,19 +1032,15 @@
                 wizardMain.removeAttribute('inert');
             }
             if (skipLink) skipLink.href = '#wizard-main';
-            // Focus the wizard heading
             var heading = document.querySelector('.wizard-header h1');
             if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus(); }
-            // Announce to screen readers
             var announcer = document.getElementById('step-announcer');
             if (announcer) announcer.textContent = 'Legal acknowledgment complete. Setup wizard is now available.';
         });
 
-        // Focus first checkbox on load
         if (checkboxes.length > 0) checkboxes[0].focus();
         updateContinueState();
       } catch (err) {
-        // If compliance gate fails, keep wizard locked for safety
         console.error('[ComplianceGate] Error — wizard remains locked:', err);
         var wizardMain = document.getElementById('wizard-main');
         if (wizardMain) {
@@ -1059,7 +1049,10 @@
         }
       }
     })();
+    </script>
 
+    <!-- Main Wizard Script -->
+    <script type="module">
     // ============================================
     // STATE
     // ============================================

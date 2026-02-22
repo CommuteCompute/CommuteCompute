@@ -11,7 +11,7 @@
  */
 
 import crypto from 'node:crypto';
-import { getTransitApiKey } from '../data/kv-preferences.js';
+import { getTransitApiKey, getSetupComplete, setSetupComplete } from '../data/kv-preferences.js';
 
 /**
  * Verify the request has a valid admin token.
@@ -65,16 +65,29 @@ export function requireAuth(req) {
 }
 
 /**
- * Check if the system is in first-time setup state (no transit key configured).
- * Used by setup endpoints to allow unauthenticated initial configuration.
- * Once the system is configured (transit key exists in KV), auth is required.
+ * Check if the system is in first-time setup state.
+ * Uses cc:setup_complete flag to determine if setup has finished.
+ * This prevents the race condition where saving the transit key during
+ * setup (Step 5) would cause subsequent wizard API calls to require auth.
  *
  * @returns {Promise<boolean>} true if system has not been configured yet
  */
 export async function isFirstTimeSetup() {
   try {
+    // Check the dedicated setup_complete flag first
+    const setupComplete = await getSetupComplete();
+    if (setupComplete) return false;
+
+    // Backward compat: if transit key exists but no setup_complete flag,
+    // this is a pre-migration deployment — auto-migrate and return false
     const transitKey = await getTransitApiKey();
-    return !transitKey;
+    if (transitKey) {
+      await setSetupComplete({ timestamp: new Date().toISOString(), source: 'auto-migration' });
+      return false;
+    }
+
+    // Neither flag nor transit key — genuine first-time setup
+    return true;
   } catch {
     return true;
   }

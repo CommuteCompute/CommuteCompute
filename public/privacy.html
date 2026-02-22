@@ -441,7 +441,7 @@
         <nav class="nav-links">
             <a href="/" class="nav-link">Home</a>
             <a href="/setup-wizard.html" class="nav-link">Setup</a>
-            <a href="/admin.html" class="nav-link">Dashboard</a>
+            <a href="/admin.html" class="nav-link" onclick="if(!localStorage.getItem('cc-terms-accepted')){event.preventDefault();window.location.href='/setup-wizard.html';}">Dashboard</a>
             <a href="/preview.html" class="nav-link">Preview</a>
             <a href="/help.html" class="nav-link">Help</a>
             <a href="/privacy.html" class="nav-link active">Privacy</a>
