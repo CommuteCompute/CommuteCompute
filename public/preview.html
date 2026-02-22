@@ -554,6 +554,13 @@
     </style>
 </head>
 <body>
+    <script>
+    (function() {
+        if (!localStorage.getItem('cc-terms-accepted')) {
+            window.location.replace('/setup-wizard.html');
+        }
+    })();
+    </script>
     <!-- SVG Icon Definitions -->
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
         <symbol id="icon-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

@@ -909,7 +909,7 @@
         <div class="nav-links" id="nav-links" role="menubar">
             <a href="/" class="nav-link active" role="menuitem" aria-current="page">Home</a>
             <a href="/setup-wizard.html" class="nav-link" role="menuitem">Setup</a>
-            <a href="/admin.html" class="nav-link" role="menuitem">Dashboard</a>
+            <a href="/admin.html" class="nav-link" role="menuitem" onclick="if(!localStorage.getItem('cc-terms-accepted')){event.preventDefault();window.location.href='/setup-wizard.html';}">Dashboard</a>
             <a href="/preview.html" class="nav-link" role="menuitem">Preview</a>
             <a href="/help.html" class="nav-link" role="menuitem">Help</a>
         </div>
@@ -924,7 +924,7 @@
     <div class="mobile-nav" id="mobile-nav">
         <a href="/">Home</a>
         <a href="/setup-wizard.html">Setup</a>
-        <a href="/admin.html">Dashboard</a>
+        <a href="/admin.html" onclick="if(!localStorage.getItem('cc-terms-accepted')){event.preventDefault();window.location.href='/setup-wizard.html';}">Dashboard</a>
         <a href="/preview.html">Preview</a>
         <a href="/help.html">Help</a>
     </div>
@@ -952,7 +952,7 @@
             
             <!-- Quick Actions -->
             <div class="quick-actions">
-                <a href="/admin.html" class="action-card">
+                <a href="/admin.html" class="action-card" onclick="if(!localStorage.getItem('cc-terms-accepted')){event.preventDefault();window.location.href='/setup-wizard.html';}">
                     <svg class="svg-icon lg"><use href="#icon-settings"/></svg>
                     <div><h3>Settings</h3>
                     <p>Change addresses, times & API keys</p></div>
