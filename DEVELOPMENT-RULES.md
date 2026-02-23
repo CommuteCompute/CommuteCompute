@@ -5,8 +5,8 @@
 # Commute Compute™ Development Rules
 
 **MANDATORY COMPLIANCE DOCUMENT**
-**Version:** 1.28
-**Last Updated:** 2026-02-07
+**Version:** 1.30
+**Last Updated:** 2026-02-23
 **Copyright (c) 2026 Commute Compute System by Angus Bergman — AGPL-3.0 Dual Licence**
 
 These rules govern all development on Commute Compute. Compliance is mandatory.
@@ -330,6 +330,8 @@ The system was previously known as "Commute Compute". Update any remaining refer
   - 22.9.3 Footer Styling
   - 22.9.4 Version Display Format
   - 22.9.5 Prohibited
+- 22.10 Official Tagline (MANDATORY) [CRITICAL]
+- 22.11 Prohibited Design Anti-Patterns (MANDATORY)
 </details>
 
 <details>
@@ -368,6 +370,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.30 | 2026-02-23 | Angus Bergman | **DEV RULES & AUDIT ACCURACY UPDATE**: Fixed stale `zone-renderer` references in Appendix B data flow diagram and Appendix D (3 occurrences) → `ccdash-renderer` per Section 0.3 legacy mapping. Added missing Section 22 TOC entries (22.10 Official Tagline, 22.11 Prohibited Design Anti-Patterns). Version header bumped from 1.28 to 1.30. Added audit coverage for Section 6 (Kindle devices), Section 15.4/15.5 (env files and version tags), and Section 18 (Change Management). |
 | 1.29 | 2026-02-09 | Angus Bergman | **BLE PROVISIONING ARCHITECTURE (CC-FW-7.5.0)**: Updated Section 5.6 — CC-FW-7.5.0 locked. BLE now sends WiFi credentials AND webhook URL (3 characteristics: SSID CC000002, Password CC000003, URL CC000004 re-added). No hardcoded server URLs; `DEFAULT_SERVER` is placeholder only. Rewrote Section 21.7 — single-phase BLE provisioning replaces hybrid BLE + pairing code as primary flow. Updated state machine: `STATE_BLE_SETUP` -> `STATE_WIFI_CONNECT` -> `STATE_FETCH_DASHBOARD`. Rewrote Section 21.7.9 — no DEFAULT_SERVER auto-pairing; firmware returns to BLE setup if no webhook URL in NVS. Added Section 17.4.3.1 — firmware webhook URL rule (URLs provisioned via BLE from Setup Wizard's `window.location.origin`). |
 | 1.28 | 2026-02-07 | Angus Bergman | **V15.0 COMPLIANCE UPDATE**: Updated all stale V10/V13 spec references to V15.0. Naming table, legacy references, data flow diagram, spec integrity section, layout structure, renderer references, footer version example all updated to match VERSION.json (System v3.4.0, CommuteCompute v2.3, CCDash Renderer v1.80, CCDashDesignV15.0). Fixed duplicated Section 22 TOC entries. Updated SmartCommute to CommuteCompute in v1.24 tagline. |
 | 1.27 | 2026-02-06 | Angus Bergman | **FIRMWARE LOGGING SYSTEM**: Updated Section 5.6 — CC-FW-7.4.3 adds structured logging with LOG_LEVEL (0-4), LOG_ERROR/WARN/INFO/DEBUG macros, state transition logging. Production recommended: LOG_LEVEL 2 (WARN). |
@@ -4530,7 +4533,7 @@ for (const route of alternatives) {
 │                     ┌─────────────────────┼─────────────────────┐        │
 │                     │                     │                     │         │
 │                     ▼                     ▼                     ▼         │
-│              zone-renderer          livedash           journey-display   │
+│            ccdash-renderer          livedash           journey-display   │
 │              (1-bit BMP)         (multi-device)          (web view)      │
 │                     │                     │                     │         │
 │                     ▼                     ▼                     ▼         │
@@ -4767,7 +4770,7 @@ git push origin v3.0.0        # Push tag
 
 **Added:** 2026-01-29 (from multi-week debugging session)
 
-This appendix documents critical bugs discovered during TRMNL OG custom firmware development and their solutions. **MANDATORY READING** before any firmware or zone-renderer work.
+This appendix documents critical bugs discovered during TRMNL OG custom firmware development and their solutions. **MANDATORY READING** before any firmware or ccdash-renderer work.
 
 ### D.1 Zone Name Alignment (CRITICAL)
 
@@ -4806,7 +4809,7 @@ static const ZoneDef ZONES[] = {
 
 **Symptom:** Display shows garbage, inverted, or nothing.
 
-**Fix in zone-renderer.js:**
+**Fix in ccdash-renderer.js:**
 ```javascript
 // DIB header - use POSITIVE height for bottom-up
 dib.writeInt32LE(h, 8);  // Positive = bottom-up
@@ -4919,9 +4922,9 @@ Before ANY firmware flash:
 
 ---
 
-### D.8 Pre-Deploy Checklist (Zone Renderer)
+### D.8 Pre-Deploy Checklist (CCDash Renderer)
 
-Before ANY zone-renderer.js deployment:
+Before ANY ccdash-renderer.js deployment:
 
 - [ ] Fonts bundled in `fonts/` directory
 - [ ] `GlobalFonts.registerFromPath()` called before rendering
