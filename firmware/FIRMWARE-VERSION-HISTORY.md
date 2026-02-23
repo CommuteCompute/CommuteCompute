@@ -14,7 +14,60 @@ This document tracks all firmware releases for the Commute Compute System.
 
 ## [UNLOCKED] Production Versions
 
-### CC-FW-7.7.0 (Current)
+### CC-FW-8.0.0 (Current)
+
+| Attribute | Value |
+|-----------|-------|
+| **Version** | 8.0.0 |
+| **Official Name** | CC-FW-8.0.0 |
+| **Release Date** | 2026-02-23 |
+| **Git Commit** | (pending) |
+| **Previous** | CC-FW-7.7.0 |
+| **Status** | [UNLOCKED] PRODUCTION |
+| **Hardware Verified** | TRMNL BYOS (ESP32-C3, 7.5" 800x480 e-ink) |
+
+**Description:**
+Battery Deep Sleep + BLE Provisioning firmware. Adds full battery-powered operation with deep sleep between 60-second refresh cycles, battery monitoring, auto-shutdown at critical levels, and battery-optimised network timeouts. Extends battery life by reducing active time per cycle.
+
+**Key Changes from 7.7.0:**
+- **Battery Monitoring:** GPIO 3 ADC with 8-sample averaging and 2x voltage divider compensation. Accurate voltage and percentage readings.
+- **Deep Sleep on Battery:** 60-second deep sleep intervals matching USB refresh cycle. WiFi fully off during sleep. Display VCOM discharged before sleep.
+- **Auto-Shutdown:** At 5% battery (3500mV), device enters indefinite deep sleep to protect the LiPo cell. GPIO-only wake (button press or USB connection).
+- **Low Battery Warning:** At 15% battery (3700mV), warning shown on e-ink display once per cycle.
+- **Battery Telemetry:** Server receives battery voltage, percentage, and power source via HTTP headers (`X-Battery-Voltage`, `X-Battery-Percent`, `X-Power-Source`).
+- **Button Wake from Deep Sleep:** GPIO 2 LOW wakes device from deep sleep.
+- **VCOM Maintenance:** Every 5 deep sleep cycles, a black-white-black flash maintains display quality.
+- **Battery-Optimised WiFi Timeout:** 15 attempts (7.5s max) on battery vs 30 attempts (15s) on USB.
+- **Battery-Optimised HTTP Timeout:** 10s on battery vs 20s on USB.
+- **Immediate Deep Sleep on Failure:** On battery, WiFi or fetch failures trigger immediate deep sleep instead of active retries — retry on next 60s cycle.
+- **Reduced Serial Delay:** Deep sleep wake uses 100ms serial stabilisation vs 500ms on cold boot.
+- **RTC Memory Persistence:** Boot count, VCOM cycle counter, and deep sleep flag survive across sleep cycles.
+
+**Provisioning Flow:**
+```
+BLE Setup Screen → WiFi Credentials + Webhook URL via BLE → Connect to WiFi → Fetch Dashboard
+```
+
+**Battery Mode Cycle:**
+```
+Wake from deep sleep → Read battery → Connect WiFi (7.5s max) → Fetch BMP (10s max) →
+Refresh display → VCOM discharge → Deep sleep 60s → Repeat
+```
+
+**Flashing Command:**
+```bash
+cd firmware
+pio run -e trmnl -t upload
+# Use standalone serial terminal (do NOT use pio device monitor -- causes crash)
+screen /dev/cu.usbmodem* 115200  # macOS
+```
+
+**Modification Policy:**
+[CRITICAL] DO NOT MODIFY without explicit approval. Changes require new version number and hardware verification.
+
+---
+
+### CC-FW-7.7.0 (Superseded by 8.0.0)
 
 | Attribute | Value |
 |-----------|-------|
@@ -23,7 +76,7 @@ This document tracks all firmware releases for the Commute Compute System.
 | **Release Date** | 2026-02-16 |
 | **Git Commit** | (pending) |
 | **Previous** | CC-FW-7.5.0 |
-| **Status** | [DONE] PRODUCTION - UNLOCKED |
+| **Status** | Superseded by CC-FW-8.0.0 |
 | **Hardware Verified** | TRMNL BYOS (ESP32-C3, 7.5" 800x480 e-ink) |
 
 **Description:**
@@ -246,7 +299,8 @@ pio device monitor -b 115200
 
 | Version | Date | Commit | Status | Notes |
 |---------|------|--------|--------|-------|
-| **CC-FW-7.7.0** | 2026-02-16 | (pending) | [UNLOCKED] UNLOCKED | Current production release. Credential redaction, version alignment, stability. |
+| **CC-FW-8.0.0** | 2026-02-23 | (pending) | [UNLOCKED] PRODUCTION | Current production release. Battery deep sleep, battery monitoring, optimised timeouts. |
+| **CC-FW-7.7.0** | 2026-02-16 | (pending) | Superseded | Credential redaction, version alignment, stability. |
 | **CC-FW-7.5.0** | 2026-02-09 | (pending) | Superseded | BLE webhook URL provisioning. |
 | **CC-FW-7.4.3** | 2026-02-07 | (pending) | Superseded | Hybrid BLE + Pairing Code provisioning. |
 | **CC-FW-7.4.3-HYBRID** | 2026-02-01 | (pending) | Superseded | Hybrid BLE + Pairing Code provisioning. |
@@ -283,6 +337,7 @@ Examples:
 
 | Firmware | TRMNL BYOS | TRMNL Mini | Kindle |
 |----------|------------|------------|--------|
+| CC-FW-8.0.0 | [YES] Verified | [?] Untested | N/A |
 | CC-FW-7.7.0 | [YES] Verified | [?] Untested | N/A |
 | CC-FW-7.5.0 | [YES] Verified | [?] Untested | N/A |
 | CC-FW-6.1-60s | [YES] Verified | [?] Untested | N/A |

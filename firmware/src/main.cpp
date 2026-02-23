@@ -251,7 +251,7 @@ void saveSettings();
 void initBLE();
 void stopBLE();
 String scanWiFiNetworks();
-bool connectWiFi();
+bool connectWiFi(int maxAttempts = 30);
 void generatePairingCode();
 bool pollPairingServer();
 bool fetchZoneUpdates(bool forceAll);
@@ -405,10 +405,12 @@ void setup() {
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
 
     Serial.begin(115200);
-    delay(500);
 
     // ===== DEEP SLEEP WAKE CHECK (v8.0.0) =====
     wokeFromDeepSleep = isDeepSleepWake();
+
+    // Reduced serial stabilisation delay on deep sleep wake (100ms vs 500ms)
+    delay(wokeFromDeepSleep ? 100 : 500);
     if (wokeFromDeepSleep) {
         Serial.printf("\n=== Commute Compute v" FIRMWARE_VERSION " (deep sleep wake #%d) ===\n", rtcBootCount);
     } else {
@@ -814,7 +816,9 @@ void loop() {
             // WiFi connection is fast enough that screen update isn't needed
             Serial.printf("[WiFi] Connecting to %s...\n", wifiSSID);
 
-            if (connectWiFi()) {
+            // Battery mode: reduced WiFi timeout (7.5s) to conserve power
+            int wifiAttempts = onBatteryPower ? 15 : 30;
+            if (connectWiFi(wifiAttempts)) {
                 wifiConnected = true;
                 Serial.printf("[OK] Connected: %s\n", WiFi.localIP().toString().c_str());
                 consecutiveErrors = 0;
@@ -832,6 +836,13 @@ void loop() {
             } else {
                 LOG_ERROR("WiFi connection failed after retries");
                 consecutiveErrors++;
+
+                // Battery mode: deep sleep immediately on WiFi failure — retry next cycle
+                if (onBatteryPower) {
+                    Serial.println("[BATTERY] WiFi failed — deep sleep and retry next cycle");
+                    enterDeepSleep(SLEEP_INTERVAL_BATTERY_SEC);
+                    // Never returns
+                }
 
                 if (consecutiveErrors >= 3) {
                     // Clear credentials and go back to BLE
@@ -939,6 +950,13 @@ void loop() {
                     consecutiveErrors = 0;
                 } else {
                     consecutiveErrors++;
+                    // Battery mode: deep sleep immediately on failure — retry next cycle
+                    // Far more power-efficient than burning active time with retries
+                    if (onBatteryPower) {
+                        Serial.println("[BATTERY] Fetch failed — deep sleep and retry next cycle");
+                        enterDeepSleep(SLEEP_INTERVAL_BATTERY_SEC);
+                        // Never returns
+                    }
                     if (consecutiveErrors > 5) {
                         currentState = STATE_ERROR;
                     } else {
@@ -1115,12 +1133,12 @@ void stopBLE() {
 // WIFI
 // ============================================================================
 
-bool connectWiFi() {
+bool connectWiFi(int maxAttempts) {
     WiFi.mode(WIFI_STA);
     WiFi.begin(wifiSSID, wifiPassword);
 
     int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 30) {
+    while (WiFi.status() != WL_CONNECTED && attempts < maxAttempts) {
         delay(500);
         Serial.print(".");
         attempts++;
@@ -1420,7 +1438,9 @@ bool fetchFullScreenBMP() {
     String url = String(webhookUrl) + "?format=bmp" + String(batParams);
     Serial.printf("[Fetch] Full screen: %s\n", url.c_str());
 
-    http.setTimeout(20000);
+    // Battery mode: reduced HTTP timeout (10s) to conserve power
+    int httpTimeout = onBatteryPower ? 10000 : 20000;
+    http.setTimeout(httpTimeout);
     if (!http.begin(client, url)) {
         Serial.println("[Fetch] Failed to begin HTTP");
         return false;
