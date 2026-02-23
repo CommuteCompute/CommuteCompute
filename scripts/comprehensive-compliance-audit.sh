@@ -282,6 +282,32 @@ else
     pass "No prohibited 'Bill 2025' references (correct: Act 2024)"
 fi
 
+# ---------- Section 15: Security Practices ----------
+section "SECTION 15: SECURITY PRACTICES"
+
+subsection "15.4 No .env files tracked by git"
+TRACKED_ENV=$(git ls-files '*.env' '.env*' 2>/dev/null | grep -v node_modules || true)
+if [ -n "$TRACKED_ENV" ]; then
+    fail ".env files are tracked by git (must be in .gitignore):"
+    echo "$TRACKED_ENV"
+else
+    pass "No .env files tracked by git"
+fi
+
+subsection "15.5 Git tags follow version format convention"
+GIT_TAGS=$(git tag 2>/dev/null || true)
+if [ -n "$GIT_TAGS" ]; then
+    BAD_TAGS=$(echo "$GIT_TAGS" | grep -v "^v[0-9]" || true)
+    if [ -n "$BAD_TAGS" ]; then
+        warn "Some git tags do not follow v* version format:"
+        echo "$BAD_TAGS" | head -5
+    else
+        pass "All git tags follow v* version format convention"
+    fi
+else
+    pass "No git tags present (version tracking via VERSION.json)"
+fi
+
 # ---------- Section 20: Licensing ----------
 section "SECTION 20: LICENSING"
 
@@ -1463,6 +1489,53 @@ else
     skip "firmware/src/main.cpp not found"
 fi
 
+# ---------- Section 6: Compatible Kindle Devices ----------
+section "SECTION 6: COMPATIBLE KINDLE DEVICES"
+
+subsection "6.1 Kindle device directories exist"
+KINDLE_DIR="firmware/kindle"
+if [ -d "$KINDLE_DIR" ]; then
+    KINDLE_DEVICES_FOUND=0
+    for device_dir in "$KINDLE_DIR"/kindle-*; do
+        [ -d "$device_dir" ] || continue
+        ((KINDLE_DEVICES_FOUND++))
+    done
+    if [ "$KINDLE_DEVICES_FOUND" -ge 1 ]; then
+        pass "Kindle device directories present ($KINDLE_DEVICES_FOUND found in firmware/kindle/)"
+    else
+        fail "No kindle-* device directories found in firmware/kindle/"
+    fi
+else
+    skip "firmware/kindle/ directory not found"
+fi
+
+subsection "6.2 Kindle launcher script present"
+if [ -f "firmware/kindle/common/commute-compute-launcher.sh" ]; then
+    pass "Kindle launcher script present (firmware/kindle/common/commute-compute-launcher.sh)"
+else
+    if [ -d "firmware/kindle" ]; then
+        fail "Kindle launcher script missing (expected firmware/kindle/common/commute-compute-launcher.sh)"
+    else
+        skip "firmware/kindle/ directory not found"
+    fi
+fi
+
+subsection "6.3 Kindle device-config.sh scripts present"
+if [ -d "$KINDLE_DIR" ]; then
+    KINDLE_CONFIGS=0
+    for cfg in "$KINDLE_DIR"/kindle-*/device-config.sh; do
+        [ -f "$cfg" ] || continue
+        ((KINDLE_CONFIGS++))
+    done
+    if [ "$KINDLE_CONFIGS" -ge 1 ]; then
+        pass "Kindle device-config.sh scripts present ($KINDLE_CONFIGS devices)"
+    else
+        fail "No device-config.sh scripts found in kindle-* directories"
+    fi
+else
+    skip "firmware/kindle/ directory not found"
+fi
+
 # ---------- Section 7: Spec Integrity ----------
 section "SECTION 7: SPEC INTEGRITY"
 
@@ -1561,6 +1634,33 @@ if [ -f "README.md" ]; then
     fi
 else
     fail "README.md not found"
+fi
+
+# ---------- Section 18: Change Management ----------
+section "SECTION 18: CHANGE MANAGEMENT"
+
+subsection "18.1 DEVELOPMENT-RULES.md exists and is non-empty"
+if [ -f "DEVELOPMENT-RULES.md" ]; then
+    DEVRULES_SIZE=$(wc -c < DEVELOPMENT-RULES.md 2>/dev/null | tr -d ' ')
+    if [ "$DEVRULES_SIZE" -gt 100 ]; then
+        pass "DEVELOPMENT-RULES.md exists and is non-empty ($DEVRULES_SIZE bytes)"
+    else
+        fail "DEVELOPMENT-RULES.md exists but appears empty or trivial ($DEVRULES_SIZE bytes)"
+    fi
+else
+    fail "DEVELOPMENT-RULES.md not found (required for change management)"
+fi
+
+subsection "18.2 VERSION.json exists and is non-empty"
+if [ -f "VERSION.json" ]; then
+    VJ_SIZE=$(wc -c < VERSION.json 2>/dev/null | tr -d ' ')
+    if [ "$VJ_SIZE" -gt 10 ]; then
+        pass "VERSION.json exists and is non-empty ($VJ_SIZE bytes)"
+    else
+        fail "VERSION.json exists but appears empty or trivial ($VJ_SIZE bytes)"
+    fi
+else
+    fail "VERSION.json not found (required for version tracking)"
 fi
 
 # ---------- Section 21: Device Setup & BLE Provisioning ----------
