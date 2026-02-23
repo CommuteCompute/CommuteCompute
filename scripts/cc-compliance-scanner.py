@@ -1036,6 +1036,7 @@ def check_smartcommute_removed(repo_root: Path, results: AuditResults):
     SMARTCOMMUTE_EXEMPT_FILES = {
         "comprehensive-compliance-audit.sh",
         "cc-compliance-scanner.py",
+        "cc-constants.json",
     }
 
     violations = []
@@ -1085,12 +1086,21 @@ def check_bill_2025_prohibited(repo_root: Path, results: AuditResults):
     print("\n--- Bill 2025 Prohibited Term ---")
     all_files = get_files(repo_root, ALL_TEXT_EXTENSIONS)
 
+    # Scanner infrastructure files that define prohibited terms for checking
+    BILL_2025_EXEMPT_FILES = {
+        "comprehensive-compliance-audit.sh",
+        "cc-compliance-scanner.py",
+        "cc-constants.json",
+    }
+
     violations = []
     for fpath in all_files:
         content = read_file_safe(fpath)
         if content is None:
             continue
         rel = fpath.relative_to(repo_root)
+        if rel.name in BILL_2025_EXEMPT_FILES:
+            continue
         for i, line in enumerate(content.splitlines(), 1):
             if "Bill 2025" in line:
                 # Allow references in scanner/audit context explaining the prohibition

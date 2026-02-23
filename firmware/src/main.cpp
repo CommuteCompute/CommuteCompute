@@ -38,6 +38,7 @@
 #include "soc/rtc_cntl_reg.h"
 #include "esp_sleep.h"
 #include "driver/rtc_io.h"
+#include <time.h>
 #include "../include/config.h"
 #include "../include/cc_logo_data.h"
 #include "../include/text_renderer.h"
@@ -822,6 +823,26 @@ void loop() {
                 wifiConnected = true;
                 Serial.printf("[OK] Connected: %s\n", WiFi.localIP().toString().c_str());
                 consecutiveErrors = 0;
+
+                // NTP time sync — required for SSL certificate validation
+                // Without this, ESP32 clock is at epoch 0 and cert appears not-yet-valid
+                configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+                struct tm timeinfo;
+                int ntpWait = onBatteryPower ? 6 : 10;  // 3s battery / 5s USB
+                bool ntpSynced = false;
+                for (int i = 0; i < ntpWait; i++) {
+                    if (getLocalTime(&timeinfo, 500)) {
+                        ntpSynced = true;
+                        break;
+                    }
+                }
+                if (ntpSynced) {
+                    Serial.printf("[NTP] Time synced: %04d-%02d-%02d %02d:%02d:%02d UTC\n",
+                                  timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+                                  timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+                } else {
+                    LOG_WARN("NTP sync failed — SSL requests may fail");
+                }
 
                 // Check if we have a valid webhook URL (provided via BLE)
                 if (devicePaired && strlen(webhookUrl) > 0) {
