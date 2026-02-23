@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# COMPREHENSIVE DEVELOPMENT RULES COMPLIANCE AUDIT v2.1
+# COMPREHENSIVE DEVELOPMENT RULES COMPLIANCE AUDIT v2.0
 # Copyright (c) 2026 Angus Bergman
 # Licensed under AGPL-3.0
 #
 # Systematically checks ALL 26 sections of DEVELOPMENT-RULES.md
-# 240+ automated checks across 13 groups:
+# 260+ automated checks across 11 groups:
 #   G1: Static Analysis (Sections 0-3, 14, 20)
 #   G2: Per-Page Verification (all HTML pages)
 #   G3: Per-Endpoint Verification (all API endpoints)
@@ -16,15 +16,20 @@
 #   G8: Architecture & Design (Sections 4-5, 7-10, 21-24)
 #   G9: Metro Tunnel Compliance (Section 25)
 #   G10: API Security & Auth (Section 26)
-#   G11: Prohibited Internal Terminology + Third-party hardware naming
-#   G12: Spelling Consistency (en-AU) + licence/license noun check
-#   G13: Jurisdiction & Legal Compliance
+#   G11: Python Compliance Scanner (13 unique checks + overlap verification)
 #
 # Run from repository root: ./scripts/comprehensive-compliance-audit.sh
 #
 
 # Don't exit on error - we handle failures explicitly
 set +e
+
+# Log file — full untruncated output saved automatically every run
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+AUDIT_LOG_DIR="$REPO_ROOT/audit-logs"
+mkdir -p "$AUDIT_LOG_DIR"
+AUDIT_LOG="$AUDIT_LOG_DIR/cc-compliance-audit-$(date +%Y%m%d-%H%M%S).log"
+exec > >(tee >(sed 's/\x1b\[[0-9;]*m//g' > "$AUDIT_LOG")) 2>&1
 
 # Colors for output
 RED='\033[0;31m'
@@ -1245,9 +1250,8 @@ fi
 
 subsection "17.7 npm audit"
 if command -v npm &> /dev/null && [ -f "package.json" ]; then
-    AUDIT_RESULT=$(npm audit --audit-level=high 2>&1 | grep -c "found 0 vulnerabilities" 2>/dev/null || true)
-    AUDIT_RESULT=${AUDIT_RESULT:-0}
-    if [ "$AUDIT_RESULT" -gt 0 ] 2>/dev/null; then
+    AUDIT_RESULT=$(npm audit --audit-level=high 2>&1 | grep -c "found 0 vulnerabilities" || echo "0")
+    if [ "$AUDIT_RESULT" -gt 0 ]; then
         pass "npm audit shows no high/critical vulnerabilities"
     else
         warn "npm audit may have findings - run 'npm audit' for details"
@@ -1618,6 +1622,22 @@ for ui_file in public/admin.html public/setup-wizard.html public/index.html publ
 done
 if [ "$EMOJI_FAILS" -eq 0 ]; then
     pass "No emojis in main UI files (Section 22.3)"
+fi
+
+subsection "22.11 No border-left accent anti-patterns"
+BORDERLEFT_FAILS=0
+for ui_file in public/admin.html public/setup-wizard.html public/index.html public/legal.html public/privacy.html public/attribution.html; do
+    if [ -f "$ui_file" ]; then
+        BL_MATCHES=$(grep -n 'border-left:\s*[0-9]\+px\s*solid' "$ui_file" 2>/dev/null | grep -v 'border-left:\s*0\|border-left:\s*none' || true)
+        if [ -n "$BL_MATCHES" ]; then
+            fail "Prohibited border-left accent pattern in $(basename "$ui_file") (Section 22.11):"
+            echo "$BL_MATCHES" | head -5
+            ((BORDERLEFT_FAILS++))
+        fi
+    fi
+done
+if [ "$BORDERLEFT_FAILS" -eq 0 ]; then
+    pass "No prohibited border-left accent patterns in UI files (Section 22.11)"
 fi
 
 subsection "22.9 Global system footer"
@@ -2038,281 +2058,39 @@ else
 fi
 
 # ============================================================================
-# GROUP 11: PROHIBITED INTERNAL TERMINOLOGY
+# GROUP 11: PYTHON COMPLIANCE SCANNER (13 unique checks + overlap verification)
 # ============================================================================
-group_header "GROUP 11: PROHIBITED INTERNAL TERMINOLOGY"
+group_header "GROUP 11: PYTHON COMPLIANCE SCANNER"
 
-section "Checking for prohibited internal development terminology..."
+PYTHON_SCANNER="./scripts/cc-compliance-scanner.py"
+if [ -f "$PYTHON_SCANNER" ] && command -v python3 > /dev/null 2>&1; then
+    PYTHON_OUTPUT=$(python3 "$PYTHON_SCANNER" --repo-root . 2>&1)
+    PYTHON_EXIT=$?
 
-# Directories and file types to scan
-TERM_SCAN_DIRS=""
-for d in src/ api/ public/ firmware/ docs/ *.md; do
-    if [ -e "$d" ]; then
-        TERM_SCAN_DIRS="$TERM_SCAN_DIRS $d"
-    fi
-done
+    PY_PASS=$(echo "$PYTHON_OUTPUT" | grep -c "\[PASS\]" || true)
+    PY_FAIL=$(echo "$PYTHON_OUTPUT" | grep -c "\[FAIL\]" || true)
+    PY_WARN=$(echo "$PYTHON_OUTPUT" | grep -c "\[WARN\]" || true)
+    PY_PASS=${PY_PASS:-0}
+    PY_FAIL=${PY_FAIL:-0}
+    PY_WARN=${PY_WARN:-0}
 
-TERM_EXCLUDES="--exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.pio --binary-files=without-match --exclude=package-lock.json --exclude=*.bmp --exclude=*.png --exclude=*.jpg --exclude=*.pdf --exclude=*.elf --exclude=*.o --exclude=*.a --exclude=comprehensive-compliance-audit.sh"
+    # Show Python scanner results
+    echo "$PYTHON_OUTPUT" | grep -E "\[PASS\]|\[FAIL\]|\[WARN\]|\[SKIP\]|CATEGORY|---"
 
-# G11 terminology checks load patterns from an external gitignored config file.
-# This prevents the audit script itself from embedding prohibited terms in source.
-TERMS_CONF="$(dirname "$0")/../.cc-prohibited-terms.conf"
-if [ ! -f "$TERMS_CONF" ]; then
-    TERMS_CONF="$REPO_ROOT/.cc-prohibited-terms.conf"
-fi
+    PASSED=$((PASSED + PY_PASS))
+    VIOLATIONS=$((VIOLATIONS + PY_FAIL))
+    WARNINGS=$((WARNINGS + PY_WARN))
 
-if [ -f "$TERMS_CONF" ]; then
-    # Parse config: extract values after '=' on non-comment, non-empty lines
-    _cfg_get() { grep "^$1=" "$TERMS_CONF" 2>/dev/null | head -1 | sed "s/^$1=//" ; }
-
-    CFG_STANDALONE=$(_cfg_get STANDALONE_NAMES)
-    CFG_PAIRED_NAMES=$(_cfg_get PAIRED_NAMES)
-    CFG_ROLE_TITLES=$(_cfg_get ROLE_TITLES)
-    CFG_ROLE_PATTERNS=$(_cfg_get ROLE_PATTERNS)
-    CFG_TOOL_PATTERNS=$(_cfg_get TOOL_PATTERNS)
-    CFG_ATTRIB_PATTERNS=$(_cfg_get ATTRIB_PATTERNS)
-
-    # 11.1: Standalone prohibited terms
-    subsection "11.1 Standalone prohibited terms"
-    if [ -n "$CFG_STANDALONE" ]; then
-        STANDALONE_HITS=$(grep -rni "$CFG_STANDALONE" $TERM_SCAN_DIRS $TERM_EXCLUDES 2>/dev/null | head -20 || true)
-        if [ -n "$STANDALONE_HITS" ]; then
-            fail "Prohibited internal terminology found (standalone):"
-            echo "$STANDALONE_HITS" | head -10
-        else
-            pass "No prohibited standalone internal terms found"
-        fi
+    if [ "$PYTHON_EXIT" -eq 0 ]; then
+        pass "Python scanner: $PY_PASS passed, $PY_WARN warnings"
     else
-        warn "No standalone terms configured"
-    fi
-
-    # 11.2: Names paired with role titles
-    subsection "11.2 Names paired with role titles"
-    ROLE_PAIRED_HITS=""
-    for NAME in $CFG_PAIRED_NAMES; do
-        # Pass 1: find lines containing the name as a whole word
-        NAME_LINES=$(grep -rniw "$NAME" $TERM_SCAN_DIRS $TERM_EXCLUDES 2>/dev/null || true)
-        if [ -n "$NAME_LINES" ]; then
-            # Pass 2: filter those lines for role titles as whole words
-            PAIRED=$(echo "$NAME_LINES" | grep -Eiw "${CFG_ROLE_TITLES}" 2>/dev/null | head -5 || true)
-            if [ -n "$PAIRED" ]; then
-                ROLE_PAIRED_HITS="${ROLE_PAIRED_HITS}${PAIRED}
-"
-            fi
-        fi
-    done
-    if [ -n "$ROLE_PAIRED_HITS" ]; then
-        fail "Prohibited internal terminology found (name+role combinations):"
-        echo "$ROLE_PAIRED_HITS" | head -10
-    else
-        pass "No prohibited name+role combinations found"
-    fi
-
-    # 11.3: Internal development role patterns
-    subsection "11.3 Internal development role patterns"
-    if [ -n "$CFG_ROLE_PATTERNS" ]; then
-        GREP_ROLE_PAT=$(echo "$CFG_ROLE_PATTERNS" | sed 's/|/\\|/g')
-        ROLE_HITS=$(grep -rn "$GREP_ROLE_PAT" $TERM_SCAN_DIRS $TERM_EXCLUDES 2>/dev/null | head -20 || true)
-        if [ -n "$ROLE_HITS" ]; then
-            fail "Prohibited internal development patterns found:"
-            echo "$ROLE_HITS" | head -10
-        else
-            pass "No prohibited internal development patterns found"
-        fi
-    else
-        warn "No role patterns configured"
-    fi
-
-    # 11.4: Prohibited tool references
-    subsection "11.4 Prohibited tool references"
-    if [ -n "$CFG_TOOL_PATTERNS" ]; then
-        GREP_TOOL_PAT=$(echo "$CFG_TOOL_PATTERNS" | sed 's/|/\\|/g')
-        TOOL_HITS=$(grep -rn "$GREP_TOOL_PAT" $TERM_SCAN_DIRS $TERM_EXCLUDES 2>/dev/null | head -20 || true)
-        if [ -n "$TOOL_HITS" ]; then
-            fail "Prohibited tool references found:"
-            echo "$TOOL_HITS" | head -10
-        else
-            pass "No prohibited tool references found"
-        fi
-    else
-        warn "No tool patterns configured"
-    fi
-
-    # 11.5: Prohibited attribution patterns
-    subsection "11.5 Prohibited attribution patterns"
-    if [ -n "$CFG_ATTRIB_PATTERNS" ]; then
-        GREP_ATTRIB_PAT=$(echo "$CFG_ATTRIB_PATTERNS" | sed 's/|/\\|/g')
-        ATTRIB_HITS=$(grep -rni "$GREP_ATTRIB_PAT" $TERM_SCAN_DIRS $TERM_EXCLUDES 2>/dev/null | head -20 || true)
-        if [ -n "$ATTRIB_HITS" ]; then
-            fail "Prohibited attribution patterns found in source files:"
-            echo "$ATTRIB_HITS" | head -10
-        else
-            pass "No prohibited attribution patterns in source files"
-        fi
-    else
-        warn "No attribution patterns configured"
-    fi
-
-else
-    # Config file not present — skip G11 terminology checks with warning
-    subsection "11.1-11.5 Prohibited terminology checks"
-    warn "Terminology config not found — G11 checks 11.1-11.5 skipped (run setup to enable)"
-fi
-
-# 11.6: Third-party hardware naming compliance (TRMNL renamed to CC E-Ink)
-subsection "11.6 Third-party hardware naming compliance"
-# TRMNL is a third-party hardware product. It must not be renamed to "CC E-Ink Display" in docs.
-# Check for "CC E-Ink Display" (incorrect rename of TRMNL hardware) in documentation
-HW_RENAME_HITS=$(grep -rn "CC E-Ink Display" $TERM_SCAN_DIRS $TERM_EXCLUDES --include="*.md" --include="*.html" 2>/dev/null \
-    | grep -v "DEVELOPMENT-RULES\|archive/" | head -10 || true)
-if [ -n "$HW_RENAME_HITS" ]; then
-    warn "Third-party hardware possibly renamed to 'CC E-Ink Display' (should use 'TRMNL display' for hardware):"
-    echo "$HW_RENAME_HITS" | head -5
-else
-    pass "No incorrect third-party hardware renames found ('CC E-Ink Display')"
-fi
-
-# Also check for "Commute Compute display" or "Commute Compute device" when referring to hardware
-HW_RENAME_CC=$(grep -rn "Commute Compute display\|Commute Compute device" $TERM_SCAN_DIRS $TERM_EXCLUDES --include="*.md" 2>/dev/null \
-    | grep -v "DEVELOPMENT-RULES\|archive/" | head -10 || true)
-if [ -n "$HW_RENAME_CC" ]; then
-    warn "'Commute Compute display/device' found (should use 'TRMNL display' for hardware references):"
-    echo "$HW_RENAME_CC" | head -5
-else
-    pass "No 'Commute Compute display/device' hardware renames found"
-fi
-
-# ============================================================================
-# GROUP 12: SPELLING CONSISTENCY (en-AU)
-# ============================================================================
-group_header "GROUP 12: SPELLING CONSISTENCY (en-AU)"
-
-section "Checking spelling consistency (en-AU)..."
-
-# Directories and file types to scan for prose
-SPELL_INCLUDES="--include=*.md --include=*.html --include=*.txt"
-SPELL_EXCLUDES="--exclude-dir=.git --exclude-dir=node_modules --exclude=package-lock.json --exclude=*.bmp --exclude=*.png --exclude=*.jpg --exclude=*.pdf"
-
-SPELL_SCAN_DIRS=""
-for d in src/ api/ public/ firmware/ docs/ *.md; do
-    if [ -e "$d" ]; then
-        SPELL_SCAN_DIRS="$SPELL_SCAN_DIRS $d"
-    fi
-done
-
-# Helper: check a spelling pattern (American → Australian), issue WARNING per match
-# Arguments: check_number, american_pattern, australian_spelling
-check_spelling() {
-    local CHECK_NUM="$1"
-    local AMERICAN="$2"
-    local AUSTRALIAN="$3"
-
-    subsection "${CHECK_NUM} ${AMERICAN} → ${AUSTRALIAN}"
-    # Use grep -inw for word-boundary matching; filter out CSS property lines and code lines
-    SPELL_HITS=$(grep -rniwE "$AMERICAN" $SPELL_SCAN_DIRS $SPELL_INCLUDES $SPELL_EXCLUDES 2>/dev/null \
-        | grep -v "color:\|background-color:\|text-align:\|var \|const \|let \|function \|=>\|require(\|import " \
-        | head -10 || true)
-    if [ -n "$SPELL_HITS" ]; then
-        warn "American English spelling '${AMERICAN}' found (use '${AUSTRALIAN}'):"
-        echo "$SPELL_HITS" | head -5
-    else
-        pass "No '${AMERICAN}' found — consistent en-AU spelling"
-    fi
-}
-
-check_spelling "12.1" "behavior" "behaviour"
-check_spelling "12.2" "favorite" "favourite"
-check_spelling "12.3" "optimize" "optimise"
-check_spelling "12.4" "optimization" "optimisation"
-check_spelling "12.5" "minimize" "minimise"
-check_spelling "12.6" "customize" "customise"
-check_spelling "12.7" "customizing" "customising"
-check_spelling "12.8" "canceled" "cancelled"
-check_spelling "12.9" "authorize" "authorise"
-check_spelling "12.10" "catalog" "catalogue"
-check_spelling "12.11" "defense" "defence"
-check_spelling "12.12" "standardize" "standardise"
-check_spelling "12.13" "analyze" "analyse"
-
-# 12.14: "license" used as a noun should be "licence" (en-AU)
-subsection "12.14 license (noun) → licence"
-# Check for "license" preceded by articles/adjectives indicating noun use
-# Exclude: files named LICENSE, SPDX-License-Identifier lines, GNU.*License (proper noun)
-LICENSE_NOUN_HITS=$(grep -rnE "(a |the |this |software |commercial |open source |dual |Dual )[Ll]icense" $SPELL_SCAN_DIRS $SPELL_INCLUDES $SPELL_EXCLUDES 2>/dev/null \
-    | grep -vi "SPDX-License-Identifier\|GNU.*License\|dual-licensed\|dual licensed" \
-    | grep -v "/LICENSE:" \
-    | grep -v "Licensed " \
-    | head -10 || true)
-if [ -n "$LICENSE_NOUN_HITS" ]; then
-    warn "American English 'license' used as noun (should be 'licence' in en-AU):"
-    echo "$LICENSE_NOUN_HITS" | head -5
-else
-    pass "No 'license' noun forms found — consistent en-AU 'licence' spelling"
-fi
-
-# ============================================================================
-# GROUP 13: JURISDICTION & LEGAL COMPLIANCE
-# ============================================================================
-group_header "GROUP 13: JURISDICTION & LEGAL COMPLIANCE"
-
-section "Verifying jurisdiction and legal references..."
-
-# 13.1: LEGAL.md governing law clause
-subsection "13.1 LEGAL.md governing law (Victoria, Australia)"
-if [ -f "LEGAL.md" ]; then
-    GOV_LAW_VIC=$(grep -ci "Victoria, Australia\|State of Victoria" LEGAL.md 2>/dev/null || echo "0")
-    if [ "$GOV_LAW_VIC" -gt 0 ]; then
-        pass "LEGAL.md specifies Victoria, Australia as governing law"
-    else
-        fail "LEGAL.md missing governing law clause (must specify Victoria, Australia)"
+        fail "Python scanner: $PY_FAIL violations detected"
     fi
 else
-    fail "LEGAL.md not found"
-fi
-
-# 13.2: LEGAL.md references Copyright Act 1968
-subsection "13.2 LEGAL.md references Copyright Act 1968"
-if [ -f "LEGAL.md" ]; then
-    COPYRIGHT_ACT_1968=$(grep -c "Copyright Act 1968" LEGAL.md 2>/dev/null || echo "0")
-    if [ "$COPYRIGHT_ACT_1968" -gt 0 ]; then
-        pass "LEGAL.md references Copyright Act 1968 (Cth)"
+    if ! command -v python3 > /dev/null 2>&1; then
+        warn "Python 3 not available — 13 unique checks skipped"
     else
-        fail "LEGAL.md missing Copyright Act 1968 reference"
-    fi
-fi
-
-# 13.3: PRIVACY.md references Privacy Act 1988 or APPs
-subsection "13.3 PRIVACY.md references Privacy Act 1988"
-if [ -f "PRIVACY.md" ]; then
-    PRIVACY_ACT=$(grep -c "Privacy Act 1988\|Australian Privacy Principles" PRIVACY.md 2>/dev/null || echo "0")
-    if [ "$PRIVACY_ACT" -gt 0 ]; then
-        pass "PRIVACY.md references Privacy Act 1988 / Australian Privacy Principles"
-    else
-        fail "PRIVACY.md missing Privacy Act 1988 or Australian Privacy Principles reference"
-    fi
-else
-    fail "PRIVACY.md not found"
-fi
-
-# 13.4: Flag US-specific legislation in legal docs
-subsection "13.4 No US-specific legislation references in legal docs"
-US_LEGISLATION="DMCA\|CCPA\|HIPAA\|FTC Act\|Digital Millennium"
-US_LEG_HITS=$(grep -rn "$US_LEGISLATION" LEGAL.md PRIVACY.md CONTRIBUTING.md 2>/dev/null | head -5 || true)
-if [ -n "$US_LEG_HITS" ]; then
-    warn "US-specific legislation referenced in legal docs (should use Australian equivalents):"
-    echo "$US_LEG_HITS" | head -5
-else
-    pass "No US-specific legislation references in legal docs"
-fi
-
-# 13.5: LEGAL.md references Australian Consumer Law
-subsection "13.5 LEGAL.md references Australian Consumer Law"
-if [ -f "LEGAL.md" ]; then
-    ACL_REF=$(grep -c "Australian Consumer Law" LEGAL.md 2>/dev/null || echo "0")
-    if [ "$ACL_REF" -gt 0 ]; then
-        pass "LEGAL.md references Australian Consumer Law"
-    else
-        fail "LEGAL.md missing Australian Consumer Law reference"
+        fail "cc-compliance-scanner.py not found"
     fi
 fi
 
@@ -2329,6 +2107,9 @@ echo -e "${GREEN}Passed:${NC}     $PASSED"
 echo -e "${RED}Violations:${NC} $VIOLATIONS"
 echo -e "${YELLOW}Warnings:${NC}   $WARNINGS"
 echo -e "${CYAN}Skipped:${NC}    $SKIPPED"
+echo ""
+
+echo "Full log (no truncation): $AUDIT_LOG"
 echo ""
 
 if [ $VIOLATIONS -gt 0 ]; then
