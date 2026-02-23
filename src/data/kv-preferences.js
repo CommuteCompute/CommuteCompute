@@ -69,6 +69,10 @@ function createRestClient(baseUrl, token) {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
+      // Unwrap JSON.stringify encoding from set() — matches ioredis client pattern
+      if (data.result !== null && data.result !== undefined) {
+        try { return JSON.parse(data.result); } catch { return data.result; }
+      }
       return data.result;
     },
     async set(key, value, options) {
