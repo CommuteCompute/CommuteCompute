@@ -47,14 +47,35 @@ from typing import List, Tuple, Dict, Optional, Set
 # CONFIGURATION
 # ============================================================================
 
+# Load constants from cc-constants.json if available (P1-6: single source of truth).
+# Falls back to inline constants if JSON is missing (e.g. CI containers).
+_CONSTANTS_JSON = Path(__file__).resolve().parent / "cc-constants.json"
+_LOADED_CONSTANTS = None
+if _CONSTANTS_JSON.exists():
+    try:
+        _LOADED_CONSTANTS = json.loads(_CONSTANTS_JSON.read_text())
+    except (json.JSONDecodeError, OSError):
+        print("WARN: cc-constants.json exists but could not be loaded — using inline constants",
+              file=sys.stderr)
+
 # Trademarks that MUST have the TM symbol
-REQUIRED_TM_MARKS = [
+# P1-6: Load from JSON (single source of truth) with inline fallback
+REQUIRED_TM_MARKS = (_LOADED_CONSTANTS or {}).get("required_tm_marks", [
     "Commute Compute",
+    "CommuteCompute",
     "CCDash",
     "CC LiveDash",
     "CCFirm",
     "CoffeeDecision",
-]
+    "DepartureConfidence",
+    "LifestyleContext",
+    "SleepOptimiser",
+    "AltTransit",
+])
+
+# Override from JSON if loaded (P1-6)
+if _LOADED_CONSTANTS:
+    REQUIRED_TM_MARKS = _LOADED_CONSTANTS.get("required_tm_marks", REQUIRED_TM_MARKS)
 
 # Forbidden PTV terms (Section 1)
 FORBIDDEN_PTV_TERMS = [
@@ -75,7 +96,20 @@ TRMNL_SERVER_PATTERNS = [
 
 # American English -> Australian English mapping
 # Code identifiers (camelCase, UPPER_CASE, snake_case) are exempt
-AMERICAN_TO_AUSTRALIAN = {
+# P1-6: Load base mappings from JSON, auto-generate capitalised forms, with inline fallback
+def _build_ae_dict(json_ae):
+    """Build AE dict with capitalised forms from JSON base mappings."""
+    result = {}
+    for american, australian in json_ae.items():
+        result[american] = australian
+        cap_a, cap_b = american.capitalize(), australian.capitalize()
+        if cap_a != american:
+            result[cap_a] = cap_b
+    return result
+
+AMERICAN_TO_AUSTRALIAN = (_build_ae_dict(_LOADED_CONSTANTS["american_to_australian"])
+                          if _LOADED_CONSTANTS and "american_to_australian" in _LOADED_CONSTANTS
+                          else {
     "license": "licence",
     "License": "Licence",
     "licenses": "licences",
@@ -142,7 +176,27 @@ AMERICAN_TO_AUSTRALIAN = {
     "signaling": "signalling",
     "gray": "grey",
     "Gray": "Grey",
-}
+    "customize": "customise",
+    "Customize": "Customise",
+    "standardize": "standardise",
+    "Standardize": "Standardise",
+    "fiber": "fibre",
+    "Fiber": "Fibre",
+    "catalog": "catalogue",
+    "Catalog": "Catalogue",
+    "favor": "favour",
+    "Favor": "Favour",
+    "minimize": "minimise",
+    "Minimize": "Minimise",
+    "maximize": "maximise",
+    "Maximize": "Maximise",
+    "characterize": "characterise",
+    "Characterize": "Characterise",
+    "utilize": "utilise",
+    "Utilize": "Utilise",
+    "traveled": "travelled",
+    "Traveled": "Travelled",
+})
 
 # Exemptions for Australian English check
 AUSTRALIAN_ENGLISH_EXEMPTIONS = [

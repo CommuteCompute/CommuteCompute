@@ -1,0 +1,95 @@
+{
+  "_comment": "CC Shared Constants — canonical brand and compliance data for the Commute Compute System.",
+  "required_tm_marks": [
+    "Commute Compute",
+    "CommuteCompute",
+    "CCDash",
+    "CC LiveDash",
+    "CCFirm",
+    "CoffeeDecision",
+    "DepartureConfidence",
+    "LifestyleContext",
+    "SleepOptimiser",
+    "AltTransit"
+  ],
+  "american_to_australian": {
+    "license": "licence",
+    "licenses": "licences",
+    "licensed": "licensed",
+    "optimize": "optimise",
+    "optimizer": "optimiser",
+    "optimization": "optimisation",
+    "organize": "organise",
+    "organization": "organisation",
+    "color": "colour",
+    "colors": "colours",
+    "favorite": "favourite",
+    "favorites": "favourites",
+    "honor": "honour",
+    "behavior": "behaviour",
+    "behaviors": "behaviours",
+    "center": "centre",
+    "centers": "centres",
+    "defense": "defence",
+    "prioritize": "prioritise",
+    "prioritized": "prioritised",
+    "recognize": "recognise",
+    "recognized": "recognised",
+    "analyze": "analyse",
+    "analyzed": "analysed",
+    "summarize": "summarise",
+    "summarized": "summarised",
+    "categorize": "categorise",
+    "authorize": "authorise",
+    "authorized": "authorised",
+    "criticize": "criticise",
+    "customizable": "customisable",
+    "serializable": "serialisable",
+    "minimizable": "minimisable",
+    "fulfillment": "fulfilment",
+    "enrollment": "enrolment",
+    "modeling": "modelling",
+    "labeling": "labelling",
+    "traveler": "traveller",
+    "traveled": "travelled",
+    "canceled": "cancelled",
+    "canceling": "cancelling",
+    "signaling": "signalling",
+    "gray": "grey",
+    "customize": "customise",
+    "standardize": "standardise",
+    "fiber": "fibre",
+    "catalog": "catalogue",
+    "favor": "favour",
+    "minimize": "minimise",
+    "maximize": "maximise",
+    "characterize": "characterise",
+    "utilize": "utilise"
+  },
+  "prohibited_terms": [
+    {
+      "term": "SmartCommute",
+      "reason": "Removed terminology \u2014 renamed to CommuteCompute"
+    },
+    {
+      "term": "PTV_API_KEY",
+      "reason": "Forbidden PTV reference"
+    },
+    {
+      "term": "PTV_DEV_ID",
+      "reason": "Forbidden PTV reference"
+    },
+    {
+      "term": "PTV_USER_ID",
+      "reason": "Forbidden PTV reference"
+    },
+    {
+      "term": "usetrmnl.com",
+      "reason": "TRMNL cloud reference prohibited"
+    },
+    {
+      "term": "Bill 2025",
+      "reason": "Should be 'Act 2024'"
+    }
+  ]
+}
