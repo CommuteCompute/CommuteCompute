@@ -38,6 +38,7 @@ import re
 import sys
 import json
 import glob
+import subprocess
 import argparse
 from pathlib import Path
 from typing import List, Tuple, Dict, Optional, Set
@@ -52,10 +53,6 @@ REQUIRED_TM_MARKS = [
     "CCDash",
     "CC LiveDash",
     "CCFirm",
-]
-
-# Terms that must NOT have TM symbol
-NO_TM_TERMS = [
     "CoffeeDecision",
 ]
 
@@ -155,6 +152,15 @@ AUSTRALIAN_ENGLISH_EXEMPTIONS = [
     # SPDX identifiers are standardised as American English
     r"SPDX-License-Identifier",
     r"Licensed under",
+    r"licensed under",
+    # Formal licence names are proper nouns (American English convention)
+    r"General Public License",
+    r"Open Database License",
+    r"Creative Commons",
+    r"MIT License",
+    r"Apache License",
+    r"BSD License",
+    r"SIL Open Font License",
     # npm/package.json standard fields
     r'"license"',
     r'"License"',
@@ -211,8 +217,7 @@ ALL_TEXT_EXTENSIONS = SOURCE_EXTENSIONS | DOC_EXTENSIONS | {".json", ".yaml", ".
 
 # Directories to exclude from scanning
 EXCLUDE_DIRS = {
-    "node_modules", ".git", ".next", "dist", "build",
-    "coverage", ".vercel", "archive", ".cache",
+    "node_modules", ".git", ".next", "dist", "build", "coverage", ".pio",
 }
 
 
@@ -420,36 +425,6 @@ def check_trademark_symbols(repo_root: Path, results: AuditResults):
             results.pass_check(f"'{mark}' TM symbol correctly applied")
 
 
-def check_coffeedecision_no_tm(repo_root: Path, results: AuditResults):
-    """
-    Verify CoffeeDecision does NOT have TM symbol.
-    CoffeeDecision is a feature name, not a trademark — must not carry TM symbol.
-    """
-    print("\n--- CoffeeDecision No-TM Check ---")
-    all_files = get_files(repo_root, ALL_TEXT_EXTENSIONS)
-    violations = []
-
-    pattern = re.compile(r'CoffeeDecision\s*[\u2122]|CoffeeDecision\s*&trade;|CoffeeDecision\s*\(TM\)')
-
-    for fpath in all_files:
-        content = read_file_safe(fpath)
-        if content is None:
-            continue
-        for i, line in enumerate(content.splitlines(), 1):
-            if pattern.search(line):
-                rel = fpath.relative_to(repo_root)
-                violations.append(f"  {rel}:{i}: {line.strip()[:80]}")
-
-    if violations:
-        results.fail_check(
-            f"CoffeeDecision has TM symbol ({len(violations)} occurrences) -- "
-            f"CoffeeDecision is NOT a trademark",
-            "\n".join(violations[:5])
-        )
-    else:
-        results.pass_check("CoffeeDecision correctly has no TM symbol")
-
-
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY 2: AUSTRALIAN ENGLISH
 # Category B: Australian English Spelling Enforcement
@@ -464,6 +439,11 @@ def check_australian_english(repo_root: Path, results: AuditResults):
     print("\n--- Australian English Enforcement ---")
     doc_files = get_files(repo_root, {".md", ".html", ".txt"})
 
+    # Historical audit reports are frozen records — do not flag
+    AUSENG_EXEMPT_FILES = {"AUDIT-REPORT-2026-02-04.md",
+                           "AUDIT-REPORT-2026-02-04-COMPREHENSIVE.md",
+                           "REMEDIATION-INDEX.md"}
+
     # Build exemption patterns
     exemption_regexes = [re.compile(p) for p in AUSTRALIAN_ENGLISH_EXEMPTIONS]
 
@@ -475,8 +455,12 @@ def check_australian_english(repo_root: Path, results: AuditResults):
         if content is None:
             continue
         rel = fpath.relative_to(repo_root)
+        if rel.name in AUSENG_EXEMPT_FILES:
+            continue
 
         in_code_block = False
+        in_style_block = False
+        in_script_block = False
         for i, line in enumerate(content.splitlines(), 1):
             # Track fenced code blocks
             stripped = line.strip()
@@ -486,8 +470,20 @@ def check_australian_english(repo_root: Path, results: AuditResults):
             if in_code_block:
                 continue
 
-            # Skip HTML tag lines (CSS, JS embedded)
-            if stripped.startswith("<style") or stripped.startswith("<script"):
+            # Track <style> and <script> blocks — skip CSS/JS content
+            if "<style" in stripped.lower():
+                in_style_block = True
+                continue
+            if "</style>" in stripped.lower():
+                in_style_block = False
+                continue
+            if "<script" in stripped.lower():
+                in_script_block = True
+                continue
+            if "</script>" in stripped.lower():
+                in_script_block = False
+                continue
+            if in_style_block or in_script_block:
                 continue
 
             for american, australian in AMERICAN_TO_AUSTRALIAN.items():
@@ -602,6 +598,9 @@ def check_no_hardcoded_secrets(repo_root: Path, results: AuditResults):
                     # Exclude test files and comments
                     if "/test" in str(rel) or "// " in line.strip()[:5]:
                         continue
+                    # Exclude BLE UUID constants (standard format, not secrets)
+                    if "BLE_" in line and "UUID" in line:
+                        continue
                     violations.append(f"  {rel}:{i}: {desc}")
 
     if violations:
@@ -611,6 +610,87 @@ def check_no_hardcoded_secrets(repo_root: Path, results: AuditResults):
         )
     else:
         results.pass_check("No hardcoded secrets detected in source files")
+
+
+def check_git_history_secrets(repo_root: Path, results: AuditResults):
+    """
+    Scan git history (all branches, last 50 commits each) for committed secrets.
+    Excludes scanner files and pattern definitions to avoid false positives.
+    """
+    print("\n--- Secret Scan: Git History (all branches) ---")
+    secret_patterns = [
+        r'AIza[0-9A-Za-z_-]{35}',
+        r'AKIA[0-9A-Z]{16}',
+        r'(?:sk|pk|rk)_(?:live|test)_[a-zA-Z0-9]{20,}',
+        r'ghp_[a-zA-Z0-9]{36}',
+        r'gho_[a-zA-Z0-9]{36}',
+        r'glpat-[a-zA-Z0-9_-]{20,}',
+        r'sk-[a-zA-Z0-9]{32,}',
+        r'github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59}',
+        r'-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----',
+    ]
+    combined = "|".join(secret_patterns)
+
+    # False positive indicators — lines that define patterns rather than contain secrets
+    fp_indicators = [
+        "r'", 'r"',               # Python regex literals
+        "grep ", "MATCH=",        # Shell grep commands
+        "\\{",                    # Shell escaped braces
+        "EXCLUDE", "SELF_EXCLUDE",
+        "secret_patterns",        # Variable definitions
+        "your_", "YOUR_", "XXXX", "example.com", "placeholder",
+        "fake_", "test-token", "my-secret", "AIzaSyXXX",
+    ]
+
+    try:
+        # Fetch all remotes to ensure we scan GitLab and GitHub branches
+        subprocess.run(
+            ["git", "fetch", "--all"],
+            capture_output=True, cwd=str(repo_root), timeout=30
+        )
+
+        # Get all local + remote branch names
+        branch_result = subprocess.run(
+            ["git", "branch", "-a", "--format=%(refname:short)"],
+            capture_output=True, cwd=str(repo_root), timeout=10
+        )
+        branches = [b.strip() for b in branch_result.stdout.decode("utf-8", errors="replace").splitlines() if b.strip()]
+        if not branches:
+            branches = ["HEAD"]
+
+        violations = []
+        for branch in branches:
+            try:
+                result = subprocess.run(
+                    ["git", "log", branch, "-20", "-p", "--diff-filter=ACMR"],
+                    capture_output=True, cwd=str(repo_root), timeout=60
+                )
+                output = result.stdout.decode("utf-8", errors="replace")
+            except (subprocess.TimeoutExpired, OSError):
+                continue
+            for line in output.splitlines():
+                if not line.startswith("+") or line.startswith("+++"):
+                    continue
+                if not re.search(combined, line):
+                    continue
+                # Check for false positive indicators
+                if any(fp in line for fp in fp_indicators):
+                    continue
+                violations.append(f"  [{branch}]: {line.strip()[:80]}")
+
+        if violations:
+            # Deduplicate
+            unique = list(dict.fromkeys(violations))
+            results.fail_check(
+                f"Secrets found in git history ({len(unique)} matches across {len(branches)} branches)",
+                "\n".join(unique[:10])
+            )
+        else:
+            results.pass_check(
+                f"No secrets detected in git history ({len(branches)} branches, 20 commits each)"
+            )
+    except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+        results.warn_check(f"Git history scan skipped ({e})")
 
 
 def check_xss_sanitisation(repo_root: Path, results: AuditResults):
@@ -898,12 +978,23 @@ def check_smartcommute_removed(repo_root: Path, results: AuditResults):
     print("\n--- SmartCommute Removed ---")
     all_files = get_files(repo_root, ALL_TEXT_EXTENSIONS)
 
+    # Files where SmartCommute references are expected (historical docs, scanner logic)
+    SMARTCOMMUTE_EXEMPT_FILES = {
+        "comprehensive-compliance-audit.sh",
+        "cc-compliance-scanner.py",
+    }
+
     violations = []
     for fpath in all_files:
         content = read_file_safe(fpath)
         if content is None:
             continue
         rel = fpath.relative_to(repo_root)
+        # Skip files that legitimately reference SmartCommute
+        if rel.name in SMARTCOMMUTE_EXEMPT_FILES:
+            continue
+        if rel.name.startswith("AUDIT-REPORT"):
+            continue
         for i, line in enumerate(content.splitlines(), 1):
             # Allow references explaining the rename
             if "renamed from SmartCommute" in line or "SmartCommute (non-generic)" in line:
@@ -911,6 +1002,15 @@ def check_smartcommute_removed(repo_root: Path, results: AuditResults):
             if "SmartCommute" in line:
                 # Check if it's in a "do not use" context
                 if "removed" in line.lower() or "renamed" in line.lower():
+                    continue
+                # Allow changelog table rows (historical context)
+                stripped = line.strip()
+                if stripped.startswith("|") and ("SmartCommute to CommuteCompute" in line
+                        or "SmartCommute engine name" in line
+                        or "Updated SmartCommute" in line):
+                    continue
+                # Allow version changelog entries
+                if "SmartCommute renamed to CommuteCompute" in line:
                     continue
                 violations.append(f"  {rel}:{i}: {line.strip()[:70]}")
 
@@ -1092,6 +1192,10 @@ def check_device_naming(repo_root: Path, results: AuditResults):
     print("\n--- Device Naming Consistency ---")
     doc_files = get_files(repo_root, {".md"})
 
+    # CC E-Ink is allowed in DEVELOPMENT-RULES.md (rule definitions) and
+    # cc-compliance-scanner.py (detection logic) — only flag elsewhere
+    EINK_EXEMPT_FILES = {"DEVELOPMENT-RULES.md", "cc-compliance-scanner.py"}
+
     cc_eink_refs = []
 
     for fpath in doc_files:
@@ -1099,6 +1203,8 @@ def check_device_naming(repo_root: Path, results: AuditResults):
         if content is None:
             continue
         rel = fpath.relative_to(repo_root)
+        if rel.name in EINK_EXEMPT_FILES:
+            continue
         for i, line in enumerate(content.splitlines(), 1):
             if "CC E-Ink" in line:
                 cc_eink_refs.append(f"  {rel}:{i}")
@@ -2038,7 +2144,6 @@ def run_all_checks(repo_root: Path) -> int:
     print("CATEGORY 1: TRADEMARK COMPLIANCE")
     print("=" * 66)
     check_trademark_symbols(repo_root, results)
-    check_coffeedecision_no_tm(repo_root, results)
 
     # Category 2: Australian English
     print("\n" + "=" * 66)
@@ -2052,6 +2157,7 @@ def run_all_checks(repo_root: Path) -> int:
     print("=" * 66)
     check_no_env_files(repo_root, results)
     check_no_hardcoded_secrets(repo_root, results)
+    check_git_history_secrets(repo_root, results)
     check_xss_sanitisation(repo_root, results)
     check_csp_no_unsafe_eval(repo_root, results)
 

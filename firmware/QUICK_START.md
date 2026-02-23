@@ -313,4 +313,4 @@ If you need to change the server URL, factory reset the device (hold button 10 s
 
 ---
 
-(c) 2026 Commute Compute™ System by Angus Bergman -- AGPL-3.0 Dual Licence
+(c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual Licence
