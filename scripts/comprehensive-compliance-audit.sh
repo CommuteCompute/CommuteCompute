@@ -1489,6 +1489,111 @@ else
     skip "firmware/src/main.cpp not found"
 fi
 
+# ---------- Section 5.6: Firmware Turnkey Compliance ----------
+subsection "5.6 No hardcoded WiFi credentials in firmware source"
+if [ -d "firmware/src" ]; then
+    # Check for hardcoded SSID/password assignments (not variable declarations or BLE callbacks)
+    HARDCODED_WIFI=$(grep -rn 'wifiSSID\s*=\s*"[^"]\+"\|wifiPassword\s*=\s*"[^"]\+"\|WiFi\.begin\s*("[^"]\+"' firmware/src/ 2>/dev/null | grep -v '""' | grep -v "wifiSSID\[" | grep -v "wifiPassword\[" | head -5 || true)
+    if [ -n "$HARDCODED_WIFI" ]; then
+        fail "Hardcoded WiFi credentials found in firmware source (must use BLE provisioning):"
+        echo "$HARDCODED_WIFI"
+    else
+        pass "No hardcoded WiFi credentials in firmware source"
+    fi
+else
+    skip "firmware/src/ directory not found"
+fi
+
+subsection "5.6 No personal filesystem paths in firmware source"
+if [ -d "firmware/src" ]; then
+    PERSONAL_PATHS=$(grep -rn '/Users/\|/home/\|C:\\Users\\' firmware/src/ firmware/include/ 2>/dev/null | head -5 || true)
+    if [ -n "$PERSONAL_PATHS" ]; then
+        fail "Personal filesystem paths found in firmware source:"
+        echo "$PERSONAL_PATHS"
+    else
+        pass "No personal filesystem paths in firmware source"
+    fi
+else
+    skip "firmware/src/ directory not found"
+fi
+
+subsection "5.6 No personal email addresses in firmware source"
+if [ -d "firmware/src" ]; then
+    # Allow the copyright-standard commutecompute.licensing@gmail.com but flag any other personal emails
+    PERSONAL_EMAILS=$(grep -rnoE '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}' firmware/src/ firmware/include/ 2>/dev/null | grep -v 'commutecompute\.licensing@gmail\.com' | head -5 || true)
+    if [ -n "$PERSONAL_EMAILS" ]; then
+        fail "Personal email addresses found in firmware source:"
+        echo "$PERSONAL_EMAILS"
+    else
+        pass "No personal email addresses in firmware source"
+    fi
+else
+    skip "firmware/src/ directory not found"
+fi
+
+subsection "5.6 No API keys or tokens hardcoded in firmware source"
+if [ -d "firmware/src" ]; then
+    # Check for common API key patterns (hex strings 32+ chars, Bearer tokens, key= assignments)
+    API_KEYS=$(grep -rnoE '(api[_-]?key|api[_-]?token|bearer|secret[_-]?key)\s*[:=]\s*"[^"]{8,}"' firmware/src/ firmware/include/ 2>/dev/null | grep -iv 'example\|placeholder\|your-' | head -5 || true)
+    if [ -n "$API_KEYS" ]; then
+        fail "Hardcoded API keys/tokens found in firmware source:"
+        echo "$API_KEYS"
+    else
+        pass "No hardcoded API keys or tokens in firmware source"
+    fi
+else
+    skip "firmware/src/ directory not found"
+fi
+
+# ---------- Section 5.7: Firmware Founder Privacy ----------
+subsection "5.7 Credential redaction in serial output"
+if [ -f "firmware/src/main.cpp" ]; then
+    # Verify that WiFi password is NOT printed in serial output
+    # Safe patterns: "Password received" (no value), wifiSSID printed (non-sensitive)
+    # Unsafe patterns: printing wifiPassword value, printing webhookUrl value
+    PASSWORD_LOGGED=$(grep -n 'Serial.*wifiPassword\b' firmware/src/main.cpp 2>/dev/null | grep -v 'received\|saved\|set\|strlen\|> 0' | head -5 || true)
+    if [ -n "$PASSWORD_LOGGED" ]; then
+        fail "WiFi password may be logged to serial output (credential redaction violation):"
+        echo "$PASSWORD_LOGGED"
+    else
+        pass "WiFi password not logged to serial output (credential redaction OK)"
+    fi
+else
+    skip "firmware/src/main.cpp not found"
+fi
+
+subsection "5.7 No personal identifiers in firmware source"
+if [ -d "firmware/src" ]; then
+    # Check for personal identifiers beyond the standard copyright attribution
+    # Only scan text files (exclude .bmp, .bin, .o), exclude standard code patterns
+    PERSONAL_IDS=$(grep -rn --include='*.cpp' --include='*.h' --include='*.c' --include='*.ino' 'phone[^_]\|mobile[^_]\|employer\|street\|suburb\|postcode\|[0-9]\{4\} [0-9]\{3\} [0-9]\{3\}' firmware/src/ firmware/include/ 2>/dev/null | grep -iv 'callback\|handler\|smartphone\|telephone_number\|phone_type\|ADDRESS\|BLEPhone' | head -5 || true)
+    if [ -n "$PERSONAL_IDS" ]; then
+        warn "Possible personal identifiers in firmware source — review manually:"
+        echo "$PERSONAL_IDS"
+    else
+        pass "No personal identifiers found in firmware source beyond standard attribution"
+    fi
+else
+    skip "firmware/src/ directory not found"
+fi
+
+subsection "5.7 Firmware version constant matches documentation"
+if [ -f "firmware/include/config.h" ] && [ -f "firmware/FIRMWARE-VERSION-HISTORY.md" ]; then
+    FW_VERSION_CODE=$(grep 'FIRMWARE_VERSION' firmware/include/config.h 2>/dev/null | sed -n 's/.*FIRMWARE_VERSION[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || true)
+    FW_VERSION_DOC=$(grep 'CC-FW-.*Current' firmware/FIRMWARE-VERSION-HISTORY.md 2>/dev/null | sed -n 's/.*CC-FW-\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | head -1 || true)
+    if [ -z "$FW_VERSION_CODE" ]; then
+        warn "Could not extract FIRMWARE_VERSION from config.h"
+    elif [ -z "$FW_VERSION_DOC" ]; then
+        warn "Could not extract current version from FIRMWARE-VERSION-HISTORY.md"
+    elif [ "$FW_VERSION_CODE" = "$FW_VERSION_DOC" ]; then
+        pass "Firmware version matches documentation ($FW_VERSION_CODE)"
+    else
+        fail "Firmware version mismatch: config.h=$FW_VERSION_CODE, docs=$FW_VERSION_DOC"
+    fi
+else
+    skip "firmware/include/config.h or FIRMWARE-VERSION-HISTORY.md not found"
+fi
+
 # ---------- Section 6: Compatible Kindle Devices ----------
 section "SECTION 6: COMPATIBLE KINDLE DEVICES"
 
