@@ -4,6 +4,7 @@ Standalone Serial Monitor for ESP32-C3 TRMNL device
 Runs independently to avoid timeout issues
 """
 
+import os
 import serial
 import serial.tools.list_ports
 import sys
@@ -146,11 +147,13 @@ class SerialMonitor:
     def save_crash_report(self, lines):
         """Save crash report to file"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{os.path.expanduser('~')}/commute-compute/crash_reports/crash_{timestamp}.txt"
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        repo_root = os.path.dirname(script_dir)
+        crash_dir = os.path.join(repo_root, "crash_reports")
+        filename = os.path.join(crash_dir, f"crash_{timestamp}.txt")
 
         # Ensure directory exists
-        import os
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        os.makedirs(crash_dir, exist_ok=True)
 
         with open(filename, "w") as f:
             f.write(f"CRASH REPORT - {datetime.now()}\n")

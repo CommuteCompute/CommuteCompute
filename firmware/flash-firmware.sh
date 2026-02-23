@@ -34,8 +34,8 @@ fi
 # Flash firmware
 echo ""
 echo "Flashing BYOS firmware..."
-export PATH="$HOME/Library/Python/3.9/bin:$PATH"
-cd ~/commute-compute/firmware
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
 pio run --target upload --environment trmnl --upload-port $DEVICE_PORT
 
 if [ $? -eq 0 ]; then
@@ -47,7 +47,7 @@ if [ $? -eq 0 ]; then
     echo "1. Device will create WiFi network: Commute Compute System-Setup"
     echo "2. Connect to it and configure your WiFi"
     echo "3. Device will register with: https://your-deployment.vercel.app"
-    echo "4. Display will show PTV transit data!"
+    echo "4. Display will show transit data!"
 else
     echo ""
     echo "✗ Flash failed. Try again."

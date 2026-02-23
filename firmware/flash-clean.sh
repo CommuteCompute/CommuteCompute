@@ -1,8 +1,10 @@
 #!/bin/bash
 
-export PATH="$HOME/Library/Python/3.9/bin:$PATH"
-FIRMWARE_DIR="$HOME/commute-compute/firmware"
-cd "$FIRMWARE_DIR"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Locate esptool: try PATH first, then PlatformIO default location
+ESPTOOL="$(command -v esptool.py 2>/dev/null || echo "$HOME/.platformio/packages/tool-esptoolpy/esptool.py")"
 
 echo "Waiting for device in bootloader mode..."
 sleep 3
@@ -20,11 +22,11 @@ fi
 echo "Found device at $PORT"
 echo ""
 echo "Step 1: Erasing flash..."
-python3 ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32c3 --port "$PORT" erase_flash
+python3 "$ESPTOOL" --chip esp32c3 --port "$PORT" erase_flash
 
 echo ""
 echo "Step 2: Flashing firmware..."
-python3 ~/.platformio/packages/tool-esptoolpy/esptool.py \
+python3 "$ESPTOOL" \
     --chip esp32c3 \
     --port "$PORT" \
     --baud 460800 \

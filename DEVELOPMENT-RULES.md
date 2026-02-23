@@ -1194,7 +1194,7 @@ The renderer creates a minimal 1-bit BMP in RAM (62-byte header + pixel data), r
 
 ```bash
 # 1. Navigate to firmware directory
-cd ~/commute-compute/firmware
+cd /path/to/commute-compute/firmware
 
 # 2. Verify on correct commit
 git log --oneline -1
@@ -3735,7 +3735,17 @@ devicePaired = true;
   background: rgba(30, 41, 59, 0.8);  /* CC Surface with transparency */
   border-radius: 12px;
   padding: 20px;
-  border-left: 4px solid #4fb28e;     /* CC Green accent */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);  /* Subtle depth */
+}
+```
+
+**Callout / Highlight Cards (when differentiation is needed):**
+```css
+.card-callout {
+  background: rgba(79, 178, 142, 0.08);  /* CC Green tint */
+  border: 1px solid rgba(79, 178, 142, 0.2);
+  border-radius: 12px;
+  padding: 20px;
 }
 ```
 
@@ -3818,7 +3828,8 @@ Before deploying UI changes, verify:
 - [ ] Colours match Section 22.1 palette
 - [ ] Typography follows Section 22.2 specs
 - [ ] **No emojis** — replaced with proper icons
-- [ ] Cards use consistent border-radius (12px) and accent borders
+- [ ] Cards use consistent border-radius (12px) and box-shadow depth
+- [ ] **No prohibited design anti-patterns** — no `border-left` accent lines, no chat bubbles (Section 22.11)
 - [ ] Buttons use standard styles (primary/secondary)
 - [ ] Form inputs are styled consistently
 - [ ] Spacing is consistent (use defined values)
@@ -3901,6 +3912,24 @@ The footer MUST display attributions based on what the user has configured in `l
 - [YES] Use in press/marketing materials
 - [NO] Do NOT paraphrase or modify
 - [NO] Do NOT use old taglines ("travel planner that factors in lifestyle", etc.)
+
+### 22.11 Prohibited Design Anti-Patterns (MANDATORY)
+
+**[PROHIBITED] The following design patterns MUST NOT appear in any Commute Compute interface:**
+
+| Pattern | Why Prohibited | Replacement |
+|---------|---------------|-------------|
+| `border-left: Npx solid <colour>` accent lines on cards/containers | Generic, low-effort design pattern. Does not align with Commute Compute brand identity. | Use `box-shadow` for card depth, `background` tint for callout differentiation, or `border: 1px solid` for full-border treatment |
+| Chat-bubble / speech-bubble UI elements | Not appropriate for dashboard/admin interfaces. Inconsistent with professional tooling aesthetic. | Use standard card components with consistent border-radius |
+| Gradient left-border accents | Variation of `border-left` pattern with gradient fills | Use background tints or subtle box-shadows |
+| Pill-shaped notification toasts with left accent bars | Generic toast pattern that conflicts with brand card styling | Use standard toast with consistent border-radius and background colour |
+
+**Audit Check:** The compliance audit scans all `public/*.html` files for `border-left:` patterns with pixel widths and `solid` keyword. Any match is a violation.
+
+**Acceptable `border-left` Usage:**
+- `border-left: 0` or `border-left: none` (resets)
+- `border-left` in CSS Grid/Flexbox layout contexts (table borders, separator lines)
+- `border-top`, `border-bottom`, `border-right` are not affected by this rule
 
 ---
 
@@ -4853,7 +4882,7 @@ ctx.font = '800 17px Inter';  // NOT 'sans-serif'
 
 **Fix:** Use `nohup` for background execution:
 ```bash
-nohup ~/.platformio/penv/bin/pio run -e trmnl -t upload > /tmp/pio-flash.log 2>&1 &
+nohup pio run -e trmnl -t upload > /tmp/pio-flash.log 2>&1 &
 # Check result after ~20 seconds
 tail -20 /tmp/pio-flash.log
 ```
