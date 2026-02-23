@@ -452,7 +452,7 @@ pip3 install platformio
 
 **On macOS:**
 ```bash
-~/.platformio/penv/bin/pio run -e trmnl -t upload
+pio run -e trmnl -t upload
 ```
 
 **On Windows:**

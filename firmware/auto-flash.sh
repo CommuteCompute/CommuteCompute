@@ -3,10 +3,11 @@
 # Auto-flash script for TRMNL device
 # This will monitor for the device and flash automatically
 
-export PATH="$HOME/Library/Python/3.9/bin:$PATH"
-FIRMWARE_DIR="$HOME/commute-compute/firmware"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
 
-cd "$FIRMWARE_DIR"
+# Locate esptool: try PATH first, then PlatformIO default location
+ESPTOOL="$(command -v esptool.py 2>/dev/null || echo "$HOME/.platformio/packages/tool-esptoolpy/esptool.py")"
 
 echo "=========================================="
 echo "TRMNL Auto-Flash Script"
@@ -32,7 +33,7 @@ flash_device() {
     echo ""
 
     # Try flashing with esptool directly
-    python3 ~/.platformio/packages/tool-esptoolpy/esptool.py \
+    python3 "$ESPTOOL" \
         --chip esp32c3 \
         --port "$PORT" \
         --baud 460800 \
@@ -49,7 +50,7 @@ flash_device() {
     if [ $? -eq 0 ]; then
         echo ""
         echo "=========================================="
-        echo "✅ FLASH SUCCESSFUL!"
+        echo "FLASH SUCCESSFUL!"
         echo "=========================================="
         echo ""
         echo "Your TRMNL device has been flashed!"
@@ -59,16 +60,16 @@ flash_device() {
         echo "2. It will create a WiFi hotspot: Commute Compute System-Setup"
         echo "3. Connect to it with password: your-wifi-password"
         echo "4. Configure your WiFi network"
-        echo "5. Enjoy your Melbourne PT display!"
+        echo "5. Enjoy your transit display!"
         echo ""
         return 0
     else
         echo ""
-        echo "⚠️  Flash failed. Retrying with different settings..."
+        echo "Flash failed. Retrying with different settings..."
         echo ""
 
         # Try again with slower baud and default reset
-        python3 ~/.platformio/packages/tool-esptoolpy/esptool.py \
+        python3 "$ESPTOOL" \
             --chip esp32c3 \
             --port "$PORT" \
             --baud 115200 \
@@ -85,12 +86,12 @@ flash_device() {
         if [ $? -eq 0 ]; then
             echo ""
             echo "=========================================="
-            echo "✅ FLASH SUCCESSFUL (2nd attempt)!"
+            echo "FLASH SUCCESSFUL (2nd attempt)!"
             echo "=========================================="
             return 0
         else
             echo ""
-            echo "❌ Flash failed. Please try again."
+            echo "Flash failed. Please try again."
             return 1
         fi
     fi
