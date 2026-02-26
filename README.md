@@ -36,6 +36,26 @@
 
 <br>
 
+## Overview
+
+Commute Compute™ is a self-hosted commuter intelligence system for e-ink displays. You tell it where you live, where you work, and when you need to arrive. Every 60 seconds it pulls live transit, weather, and places data, runs it through five intelligence engines, and renders a single-glance dashboard image to your display. No phone needed — everything you need for your morning commute is visible from across the room.
+
+The CCDash™ dashboard includes live departure countdowns, walking time to your stop, weather preparation (umbrella, jacket, sunscreen), coffee feasibility at nearby cafes, commute confidence scoring, sleep optimisation for next-day readiness, and alternative transport costs when services are disrupted. All rendered as a 1-bit 800×480 image designed for e-ink.
+
+The system runs serverless on Vercel. The e-ink display simply fetches a pre-rendered image — no computation happens on the device. All configuration is done through a web-based Setup Wizard. No environment variables or config files to edit.
+
+### Deploy in 5 Steps
+
+1. **Deploy to Vercel** — click the Deploy button below (or in Quick Start) to clone and deploy.
+2. **Add Redis** — install the free Redis integration from the Vercel Marketplace (Sydney region).
+3. **Run the Setup Wizard** — open `/setup-wizard.html` on your deployment and configure your home, work, arrival time, and API keys.
+4. **Flash your display** — use the browser-based flasher at `/flasher/` (Chrome/Edge) or PlatformIO CLI.
+5. **Pair and go** — the device connects via Bluetooth, receives your server URL, and starts displaying your dashboard.
+
+> A free Transport Victoria OpenData API key is required for live Victorian departures. Registration takes a few minutes but approval can take 24–48 hours — register early.
+
+See [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed instructions including API key registration, troubleshooting, and alternative hosting options.
+
 ## What Makes This Different
 
 Commute Compute&#8482; is not another transit app. It is an open-source commuter intelligence system that renders a complete decision surface onto an 800x480 1-bit e-ink display. Everything a commuter needs is visible in a single glance from 1-2 meters away. No phone. No app switching. No scrolling.
