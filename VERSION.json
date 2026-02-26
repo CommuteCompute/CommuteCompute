@@ -57,7 +57,7 @@
     }
   },
   "firmware": {
-    "version": "7.7.0",
+    "version": "8.0.0",
     "description": "ESP32-C3 CCFirm - BLE Provisioning + BMP Text Renderer",
     "locked": false,
     "lastUpdated": "2026-02-20",

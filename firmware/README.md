@@ -4,13 +4,13 @@
 
 <h1 align="center">CCFirm™ — Commute Compute Custom Firmware</h1>
 
-![Version](https://img.shields.io/badge/version-7.7.0-blue)
+![Version](https://img.shields.io/badge/version-8.0.0-blue)
 ![Anti-Brick](https://img.shields.io/badge/Anti--Brick-12%2F12%20✓-brightgreen)
 ![Platform](https://img.shields.io/badge/platform-ESP32--C3-orange)
 ![Logo](https://img.shields.io/badge/Logos-32bit%20Aligned%20✓-brightgreen)
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-CC--FW--7.7.0-blue" alt="Version">
+  <img src="https://img.shields.io/badge/version-CCFirm-v8.0.0-blue" alt="Version">
   <img src="https://img.shields.io/badge/status-[UNLOCKED]%20UNLOCKED-blue" alt="Unlocked">
   <img src="https://img.shields.io/badge/Anti--Brick-12%2F12%20✓-brightgreen" alt="Anti-Brick">
   <img src="https://img.shields.io/badge/platform-ESP32--C3-orange" alt="Platform">
@@ -28,7 +28,7 @@ CCFirm™ is the custom firmware that runs on TRMNL e-ink display hardware to po
 - **Zone-based rendering** — Server renders, device displays
 - **Anti-brick compliance** — 12/12 safety rules enforced
 
-> CC-FW-7.7.0 is the current production firmware, now unlocked for development. See DEVELOPMENT-RULES.md Section 5.6 for modification guidelines.
+> CCFirm v8.0.0 is the current production firmware, now unlocked for development. See DEVELOPMENT-RULES.md Section 5.6 for modification guidelines.
 
 ---
 
@@ -43,7 +43,7 @@ CCFirm™ is the custom firmware that runs on TRMNL e-ink display hardware to po
 │   │   TRMNL      │  WiFi   │        Vercel Server             │ │
 │   │   Device     │ ◄─────► │                                  │ │
 │   │              │         │  ┌─────────────────────────────┐ │ │
-│   │  CC-FW-7.7.0 │         │  │ CommuteCompute™ Engine      │ │ │
+│   │  CCFirm v8.0 │         │  │ CommuteCompute™ Engine      │ │ │
 │   │              │         │  │ • Journey calculation       │ │ │
 │   │  • Display   │         │  │ • Coffee decision           │ │ │
 │   │  • Refresh   │         │  │ • Real-time departures      │ │ │
@@ -66,7 +66,7 @@ CCFirm™ is the custom firmware that runs on TRMNL e-ink display hardware to po
 
 | Attribute | Value |
 |-----------|-------|
-| **Version** | CC-FW-7.7.0 |
+| **Version** | CCFirm v8.0.0 |
 | **Status** | [UNLOCKED] UNLOCKED (2026-02-20) |
 | **Commit** | pending |
 | **Refresh Interval** | 60 seconds (HARDCODED) |
@@ -165,7 +165,7 @@ screen /dev/cu.usbmodem* 115200          # macOS
 ### Expected Boot Output
 
 ```
-=== Commute Compute v7.7.0 ===
+=== Commute Compute v8.0.0 ===
 BLE Provisioning Firmware
 [Display] Initializing...
 [Display] Full refresh complete

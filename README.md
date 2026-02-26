@@ -19,7 +19,7 @@
   &nbsp;
   <img src="https://img.shields.io/badge/Spec-CCDash%20V15.0-purple.svg?style=for-the-badge" alt="Spec: CCDash V15.0">
   &nbsp;
-  <img src="https://img.shields.io/badge/Firmware-CC--FW--7.7.0-green.svg?style=for-the-badge" alt="Firmware: CC-FW-7.7.0">
+  <img src="https://img.shields.io/badge/Firmware-CCFirm-v8.0.0-green.svg?style=for-the-badge" alt="Firmware: CCFirm v8.0.0">
 </p>
 
 <p align="center">
@@ -340,6 +340,12 @@ This makes Commute Compute&#8482; one of the first commuter tools to fully suppo
 
 - Review [PRIVACY.md](PRIVACY.md) to understand data handling practices
 
+> **Register for your Transport Victoria OpenData API key first.**
+> The API key is required for live departure data and takes **24-48 hours** to be approved.
+> Register at [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au) before starting the setup below,
+> so your key is ready when you reach the Setup Wizard.
+> See [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed API key instructions.
+
 ### 1. Deploy to Vercel
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://gitlab.com/angusbergman/commute-compute-system)
@@ -563,7 +569,7 @@ See [LEGAL.md](LEGAL.md) for complete trade mark and intellectual property detai
 <p align="center">
   <strong>Commute Compute&#8482; System v4.2.0</strong><br>
   V15.0 Complete Journey Intelligence<br>
-  CommuteCompute&#8482; Engine v3.1 | CCDash&#8482; Renderer v2.1 | CC LiveDash&#8482; v3.0 | Admin Panel v5.0 | CCFirm&#8482; CC-FW-7.7.0<br>
+  CommuteCompute&#8482; Engine v3.1 | CCDash&#8482; Renderer v2.1 | CC LiveDash&#8482; v3.0 | Admin Panel v5.0 | CCFirm&#8482; v8.0.0<br>
   <br>
   Copyright (c) 2026 Angus Bergman. All rights reserved.<br>
   <em>Built in Melbourne, Australia.</em>

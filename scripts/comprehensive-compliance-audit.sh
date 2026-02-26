@@ -5,7 +5,7 @@
 # Licensed under AGPL-3.0
 #
 # Systematically checks ALL 26 sections of DEVELOPMENT-RULES.md
-# 260+ automated checks across 11 groups:
+# 280+ automated checks across 11 groups:
 #   G1: Static Analysis (Sections 0-3, 14, 20)
 #   G2: Per-Page Verification (all HTML pages)
 #   G3: Per-Endpoint Verification (all API endpoints)
