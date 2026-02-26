@@ -1,12 +1,12 @@
 # Commute Compute Firmware Version
 # Copyright (c) 2026 Angus Bergman - AGPL-3.0
 
-VERSION=7.7.0
+VERSION=8.0.0
 BUILD_DATE=2026-02-16
 STATUS=PRODUCTION-UNLOCKED
 COMMIT=pending
 
-# v7.7.0 Changes (2026-02-16):
+# v8.0.0 Changes (2026-02-27):
 # - Canonical firmware version declared by founder directive
 
 # v7.4.3 Changes (2026-02-06):

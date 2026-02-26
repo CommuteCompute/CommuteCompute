@@ -2,24 +2,24 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (c) 2026 Angus Bergman
 """
-Commute Compute™ Compliance Scanner v1.1
+Commute Compute™ Compliance Scanner v1.2
 
 Comprehensive Python compliance scanning covering all requirements from:
 - DEVELOPMENT-RULES.md (26 sections)
 - Project compliance standards and critical patterns
 
 Categories:
-- A: Trademark and branding compliance
+- A: Trademark and branding compliance (per-file first-reference tracking)
 - B: Australian English spelling enforcement
 - C: Security (secrets, XSS, CSP, .env files)
 - D: Licensing (SPDX headers, copyright, AGPL compliance)
 - E: Prohibited terms (PTV naming, TRMNL server references)
-- F: Version consistency and user-facing accuracy
+- F: Version consistency, user-facing accuracy, firmware version consistency
 - G: Privacy and regulatory compliance
-- H: CI/CD and dependency management
+- H: CI/CD, dependency management, npm test vs CI alignment
 - I: Accessibility (WCAG, emoji prohibition)
 - J: Code quality and patterns
-- K: Docker and deployment consistency
+- K: Docker and deployment consistency, Vercel function configs
 - L: Numeric legal claim validation
 
 Run from repository root:
@@ -401,17 +401,17 @@ def is_code_identifier(line: str, word: str, pos: int) -> bool:
 
 def check_trademark_symbols(repo_root: Path, results: AuditResults):
     """
-    Verify that required trademarks have TM symbol in public-facing docs.
-    Per DEVELOPMENT-RULES.md: Commute Compute™, CCDash™, CC LiveDash™, CCFirm™
-    must always carry trademark symbols in user-facing text.
+    Verify that required trademarks have TM symbol on first prose reference
+    per file. Per DEVELOPMENT-RULES.md: all 10 unregistered TMs must carry
+    the TM symbol on first reference in each document.
+
+    v1.2: Per-file first-reference tracking (reduces noise from ~43 WARNs
+    to ~10 actionable findings).
     """
-    print("\n--- Trademark Symbol Enforcement ---")
+    print("\n--- Trademark Symbol Enforcement (per-file first-reference) ---")
     doc_files = get_files(repo_root, DOC_EXTENSIONS)
 
     for mark in REQUIRED_TM_MARKS:
-        # Find occurrences of the mark WITHOUT the TM symbol
-        # Pattern: the mark followed by anything that is NOT the TM symbol
-        # We check for the mark as a whole word, not followed by (TM) or the actual symbol
         bare_pattern = re.compile(
             rf'\b{re.escape(mark)}\b(?!\s*[\u2122]|&trade;|\(TM\))',
             re.IGNORECASE
@@ -421,8 +421,8 @@ def check_trademark_symbols(repo_root: Path, results: AuditResults):
             re.IGNORECASE
         )
 
-        violations = []
-        has_tm_usage = False
+        first_ref_violations = []
+        has_tm_usage_anywhere = False
 
         for fpath in doc_files:
             content = read_file_safe(fpath)
@@ -430,53 +430,53 @@ def check_trademark_symbols(repo_root: Path, results: AuditResults):
                 continue
             rel = fpath.relative_to(repo_root)
 
+            # Exclude DEVELOPMENT-RULES definition tables
+            if "DEVELOPMENT-RULES" in str(rel):
+                continue
+
+            # Per-file tracking: has the TM symbol appeared yet in THIS file?
+            tm_seen_in_file = False
+            first_bare_flagged = False
+
             for i, line in enumerate(content.splitlines(), 1):
+                stripped = line.strip()
                 # Skip code blocks
-                if line.strip().startswith("```"):
+                if stripped.startswith("```"):
                     continue
-                # Skip lines that are in code context
-                if "`" in line and line.count("`") >= 2:
-                    # Check if the mark is inside backticks
-                    pass
+                # Skip headings
+                if stripped.startswith("#"):
+                    continue
 
                 if tm_pattern.search(line):
-                    has_tm_usage = True
+                    tm_seen_in_file = True
+                    has_tm_usage_anywhere = True
 
-                bare_matches = bare_pattern.finditer(line)
-                for m in bare_matches:
-                    # Exclude if inside backticks or code block
-                    before = line[:m.start()]
-                    if before.count("`") % 2 == 1:
-                        continue
-                    # Exclude if in a heading defining the term
-                    if line.strip().startswith("#"):
-                        continue
-                    # Exclude DEVELOPMENT-RULES definition tables
-                    if "DEVELOPMENT-RULES" in str(rel):
-                        continue
-                    violations.append(f"  {rel}:{i}: {line.strip()[:80]}")
+                # Only flag if TM has NOT yet appeared in this file
+                if not tm_seen_in_file and not first_bare_flagged:
+                    for m in bare_pattern.finditer(line):
+                        # Exclude if inside backticks
+                        before = line[:m.start()]
+                        if before.count("`") % 2 == 1:
+                            continue
+                        first_ref_violations.append(
+                            f"  {rel}:{i}: {stripped[:80]}"
+                        )
+                        first_bare_flagged = True
+                        break  # Only flag first bare ref per file
 
-        if violations and has_tm_usage:
-            # Only flag if we see some TM usage (confirming the doc uses TM)
-            # but also bare references
-            if len(violations) > 10:
-                results.warn_check(
-                    f"'{mark}' has {len(violations)} bare references (no TM symbol) "
-                    f"across docs — review manually",
-                    "\n".join(violations[:5])
-                )
-            else:
-                results.pass_check(
-                    f"'{mark}' TM symbol usage acceptable ({len(violations)} "
-                    f"bare refs may be in non-public context)"
-                )
-        elif not has_tm_usage and doc_files:
+        if first_ref_violations:
+            results.warn_check(
+                f"'{mark}' missing TM symbol on first reference in "
+                f"{len(first_ref_violations)} file(s)",
+                "\n".join(first_ref_violations[:5])
+            )
+        elif not has_tm_usage_anywhere and doc_files:
             results.warn_check(
                 f"'{mark}' TM symbol not found in any document — "
                 f"verify trademark usage in public docs"
             )
         else:
-            results.pass_check(f"'{mark}' TM symbol correctly applied")
+            results.pass_check(f"'{mark}' TM symbol on first reference: OK")
 
 
 # ============================================================================
@@ -1161,6 +1161,73 @@ def check_version_consistency(repo_root: Path, results: AuditResults):
         results.skip_check("No version numbers found to compare")
 
 
+def check_firmware_version_consistency(repo_root: Path, results: AuditResults):
+    """
+    F.2: Check firmware version string consistency across current-version files.
+    Detects stale CC-FW-* versions in non-historical files (e.g. 7.7.0 vs 8.0.0).
+    Historical/frozen files (changelogs, audit reports, version history) are excluded
+    as they legitimately reference older versions.
+    """
+    print("\n--- Firmware Version Consistency ---")
+    all_files = get_files(repo_root, ALL_TEXT_EXTENSIONS)
+    fw_refs = {}  # version -> [file:line, ...]
+    pattern = re.compile(r'CC-FW-(\d+\.\d+\.\d+)')
+
+    # Files/patterns that legitimately contain historical firmware version references
+    HISTORICAL_FILE_PATTERNS = {
+        "FIRMWARE-VERSION-HISTORY",
+        "CHANGELOG",
+        "AUDIT-REPORT-",
+        "REMEDIATION-INDEX",
+        "BOOT-WELCOME-SCREEN",  # ASCII art diagrams with embedded versions
+        "ANTI-BRICK-REQUIREMENTS",  # Frozen compliance spec
+        "E-INK-REFRESH-GUIDE",  # Guide frozen to specific firmware version
+    }
+
+    for fpath in all_files:
+        rel = str(fpath.relative_to(repo_root))
+        # Exclude files with historical entries by design
+        if any(hp in rel for hp in HISTORICAL_FILE_PATTERNS):
+            continue
+        content = read_file_safe(fpath)
+        if not content:
+            continue
+        for i, line in enumerate(content.splitlines(), 1):
+            # Skip lines that are clearly historical changelog entries
+            # (e.g. "| 1.29 | 2026-02-09 |" table rows in DEVELOPMENT-RULES)
+            stripped = line.strip()
+            if stripped.startswith("|") and re.search(r'\d{4}-\d{2}-\d{2}', stripped):
+                continue
+            # Skip lines referencing "Previous:" or "unchanged at"
+            if "Previous:" in line or "unchanged at" in line:
+                continue
+            # Skip VERSION.json historical entries
+            if rel.endswith("VERSION.json") and '"Firmware CC-FW-' in line:
+                continue
+            # Skip ASCII art / diagram lines (common in admin.html comments)
+            if "--->" in line or "<---" in line:
+                continue
+            for m in pattern.finditer(line):
+                ver = m.group(1)
+                fw_refs.setdefault(ver, []).append(f"{rel}:{i}")
+
+    if len(fw_refs) > 1:
+        detail = "\n".join(
+            f"  CC-FW-{v}: {len(locs)} ref(s)"
+            for v, locs in sorted(fw_refs.items())
+        )
+        results.warn_check(
+            f"Firmware version inconsistency: {len(fw_refs)} distinct versions "
+            f"(review for stale references)",
+            detail
+        )
+    elif fw_refs:
+        ver = list(fw_refs.keys())[0]
+        results.pass_check(f"Firmware version consistent: CC-FW-{ver}")
+    else:
+        results.skip_check("No CC-FW-* version references found")
+
+
 def check_setup_time_estimates(repo_root: Path, results: AuditResults):
     """
     Flag inconsistent setup time estimates across guides.
@@ -1603,6 +1670,40 @@ def check_npm_audit_in_cicd(repo_root: Path, results: AuditResults):
         results.warn_check(
             "npm audit not in CI/CD -- add 'npm audit --audit-level=critical' "
             "to audit-job for supply chain security"
+        )
+
+
+def check_npm_test_ci_alignment(repo_root: Path, results: AuditResults):
+    """
+    H.6: Verify package.json test script runs the same test files as CI test-job.
+    Prevents divergence where CI runs tests that npm test skips (or vice versa).
+    """
+    print("\n--- npm test vs CI Test Alignment ---")
+    pkg_content = read_file_safe(repo_root / "package.json")
+    ci_content = read_file_safe(repo_root / ".gitlab-ci.yml")
+    if not pkg_content or not ci_content:
+        results.skip_check("Cannot compare npm test vs CI (missing file)")
+        return
+
+    npm_files = set(re.findall(r'tests/[\w-]+\.js', pkg_content))
+    ci_files = set(re.findall(r'tests/[\w-]+\.js', ci_content))
+
+    missing_from_npm = ci_files - npm_files
+    missing_from_ci = npm_files - ci_files
+
+    if missing_from_npm:
+        results.fail_check(
+            f"npm test missing {len(missing_from_npm)} CI test file(s)",
+            "\n".join(f"  {f}" for f in sorted(missing_from_npm))
+        )
+    elif missing_from_ci:
+        results.warn_check(
+            f"CI missing {len(missing_from_ci)} npm test file(s)",
+            "\n".join(f"  {f}" for f in sorted(missing_from_ci))
+        )
+    else:
+        results.pass_check(
+            f"npm test and CI test-job run identical test files ({len(npm_files)})"
         )
 
 
@@ -2122,6 +2223,48 @@ def check_docker_node_version(repo_root: Path, results: AuditResults):
             results.warn_check(f"{nf} not found -- cannot verify Node.js version consistency")
 
 
+def check_vercel_function_configs(repo_root: Path, results: AuditResults):
+    """
+    K.2: Verify all api/*.js endpoints have includeFiles in vercel.json.
+    Missing configs can cause serverless function failures due to missing
+    bundled dependencies.
+    """
+    print("\n--- Vercel Function Config Completeness ---")
+    vercel_json = repo_root / "vercel.json"
+    if not vercel_json.exists():
+        results.skip_check("vercel.json not found")
+        return
+    content = read_file_safe(vercel_json)
+    if not content:
+        results.skip_check("vercel.json could not be read")
+        return
+    try:
+        config = json.loads(content)
+    except json.JSONDecodeError:
+        results.fail_check("vercel.json is not valid JSON")
+        return
+
+    declared = set(config.get("functions", {}).keys())
+    api_dir = repo_root / "api"
+    if not api_dir.exists():
+        results.skip_check("api/ directory not found")
+        return
+
+    actual = set()
+    for f in api_dir.rglob("*.js"):
+        rel = str(f.relative_to(repo_root))
+        actual.add(rel)
+
+    missing = actual - declared
+    if missing:
+        results.warn_check(
+            f"{len(missing)} API endpoint(s) lack includeFiles config",
+            "\n".join(f"  {f}" for f in sorted(missing)[:10])
+        )
+    else:
+        results.pass_check("All API endpoints have vercel.json function configs")
+
+
 # ============================================================================
 # CHECK FUNCTIONS -- CATEGORY L: NUMERIC LEGAL CLAIM VALIDATION
 # ============================================================================
@@ -2199,7 +2342,7 @@ def run_all_checks(repo_root: Path) -> int:
     results = AuditResults()
 
     print("=" * 66)
-    print("COMMUTE COMPUTE COMPLIANCE SCANNER v1.1")
+    print("COMMUTE COMPUTE COMPLIANCE SCANNER v1.2")
     print(f"Repository: {repo_root}")
     print("=" * 66)
 
@@ -2249,6 +2392,7 @@ def run_all_checks(repo_root: Path) -> int:
     print("CATEGORY 6: DOCUMENTATION CONSISTENCY")
     print("=" * 66)
     check_version_consistency(repo_root, results)
+    check_firmware_version_consistency(repo_root, results)
     check_setup_time_estimates(repo_root, results)
     check_api_key_messaging(repo_root, results)
     check_device_naming(repo_root, results)
@@ -2274,6 +2418,7 @@ def run_all_checks(repo_root: Path) -> int:
     check_dependency_freshness(repo_root, results)
     check_node_version_pinning(repo_root, results)
     check_npm_audit_in_cicd(repo_root, results)
+    check_npm_test_ci_alignment(repo_root, results)
 
     # Category 9: UI/UX & Accessibility
     print("\n" + "=" * 66)
@@ -2303,6 +2448,7 @@ def run_all_checks(repo_root: Path) -> int:
     print("CATEGORY K: DOCKER & DEPLOYMENT CONSISTENCY")
     print("=" * 66)
     check_docker_node_version(repo_root, results)
+    check_vercel_function_configs(repo_root, results)
 
     # Category L: Numeric Legal Claim Validation
     print("\n" + "=" * 66)
@@ -2315,7 +2461,7 @@ def run_all_checks(repo_root: Path) -> int:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Commute Compute Compliance Scanner v1.1"
+        description="Commute Compute Compliance Scanner v1.2"
     )
     parser.add_argument(
         "--repo-root",

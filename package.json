@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "node --test tests/test-redis-kv.js && node --test tests/test-render-smoke.js && node --test tests/test-screen-smoke.js",
+    "test": "node --test tests/test-redis-kv.js && node --test tests/test-render-smoke.js && node --test tests/test-screen-smoke.js && node --test tests/test-auth-middleware.js && node --test tests/test-opendata-client-unit.js",
     "monitor": "node monitor/monitor.mjs",
     "monitor:continuous": "node monitor/monitor.mjs --continuous",
     "monitor:watch": "node monitor/monitor.mjs --watch",
