@@ -7118,7 +7118,12 @@
                     coffeeEnabled: config.coffeeEnabled !== false
                 });
 
-                const response = await fetch(BASE_URL + '/api/routes?' + params.toString());
+                const controller = new AbortController();
+                const fetchTimeout = setTimeout(() => controller.abort(), 15000);
+                const response = await fetch(BASE_URL + '/api/routes?' + params.toString(), {
+                    signal: controller.signal
+                });
+                clearTimeout(fetchTimeout);
                 const result = await response.json();
 
                 if (loadingEl) loadingEl.style.display = 'none';

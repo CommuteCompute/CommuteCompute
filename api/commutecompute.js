@@ -15,13 +15,14 @@
  */
 
 import { CommuteCompute } from '../src/engines/commute-compute.js';
-import { getTransitApiKey } from '../src/data/kv-preferences.js';
+import { getTransitApiKey, getPreferences } from '../src/data/kv-preferences.js';
 import CafeBusyDetector from '../src/services/cafe-busy-detector.js';
 import DepartureConfidence from '../src/engines/departure-confidence.js';
 import LifestyleContext from '../src/engines/lifestyle-context.js';
 import AltTransit from '../src/engines/alt-transit.js';
 import SleepOptimiser from '../src/engines/sleep-optimiser.js';
-import { getStopNameById } from '../src/data/gtfs-stop-names.js';
+import { getStopNameById, detectStopIdsFromAddress } from '../src/data/gtfs-stop-names.js';
+import { getDepartures } from '../src/services/opendata-client.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -65,6 +66,21 @@ export default async function handler(req, res) {
     try { apiKey = await getTransitApiKey(); } catch (e) {}
     if (!apiKey && params.apiKey) apiKey = params.apiKey;
 
+    // Get stop IDs from KV storage (user-configured) + auto-detect from address
+    const kvPrefs = await getPreferences();
+    let trainStopId = kvPrefs?.trainStopId || null;
+    let tramStopId = kvPrefs?.tramStopId || null;
+    let busStopId = kvPrefs?.busStopId || null;
+
+    let detectedTramRoute = null;
+    if (!trainStopId || !tramStopId || !busStopId) {
+      const detected = detectStopIdsFromAddress(home);
+      if (!trainStopId && detected.trainStopId) trainStopId = detected.trainStopId;
+      if (!tramStopId && detected.tramStopId) tramStopId = detected.tramStopId;
+      if (!busStopId && detected.busStopId) busStopId = detected.busStopId;
+      detectedTramRoute = detected.tramRouteNumber || null;
+    }
+
     // Build preferences
     const preferences = {
       homeAddress: home,
@@ -86,6 +102,9 @@ export default async function handler(req, res) {
       multiModal: modes.multiModal || 'allow',
       walkingSpeed: advanced.walkingSpeed || 80,
       maxWalkingDistance: advanced.maxWalkingDistance || 600,
+      trainStopId,
+      tramStopId,
+      busStopId,
       api: { key: apiKey },
       transitApiKey: apiKey
     };
@@ -103,6 +122,34 @@ export default async function handler(req, res) {
 
     // Get live transit data
     const result = await engine.getJourneyRecommendation({ forceRefresh });
+
+    // Direct departure fetch if engine returned no transit data but we have stop IDs
+    const selectedRoute = engine.getSelectedRoute();
+    const activeRoute = selectedRoute || result.route;
+    const engineTransit = result.transit || {};
+    let directTrains = engineTransit.trains || [];
+    let directTrams = engineTransit.trams || [];
+    let directBuses = engineTransit.buses || [];
+
+    if (directTrains.length === 0 && directTrams.length === 0 && directBuses.length === 0 &&
+        (trainStopId || tramStopId || busStopId)) {
+      const apiOptions = apiKey ? { apiKey } : {};
+      const tramRouteNum = activeRoute?.legs?.find(l => l.type === 'tram')?.routeNumber || detectedTramRoute;
+      const tramApiOptions = { ...apiOptions };
+      if (tramRouteNum) tramApiOptions.routeNumber = tramRouteNum;
+
+      [directTrains, directTrams, directBuses] = await Promise.all([
+        getDepartures(trainStopId, 0, apiOptions).catch(() => []),
+        getDepartures(tramStopId, 1, tramApiOptions).catch(() => []),
+        getDepartures(busStopId, 2, apiOptions).catch(() => [])
+      ]);
+      result.transit = {
+        ...engineTransit,
+        trains: directTrains,
+        trams: directTrams,
+        buses: directBuses
+      };
+    }
 
     // Check cafe hours FIRST (before building legs)
     const hour = melbourneNow.getHours();
@@ -125,8 +172,7 @@ export default async function handler(req, res) {
     }
 
     // Build CCDash-compatible journey_legs (use selected route if available)
-    const selectedRoute = engine.getSelectedRoute();
-    const journeyLegs = buildCCDashLegs(result, preferences, melbourneNow, selectedRoute || result.route);
+    const journeyLegs = buildCCDashLegs(result, preferences, melbourneNow, activeRoute);
 
     // Build status bar text (matches CCDash status bar format)
     const statusBar = buildStatusBar(result, journeyLegs, preferences, melbourneNow);
@@ -157,7 +203,9 @@ export default async function handler(req, res) {
     const lifestyle = lifestyleEngine.calculate({
       weather: result.weather,
       currentTime: now,
-      state: state || 'VIC'
+      state: state || 'VIC',
+      localHour: melbourneNow.getHours(),
+      localMinute: melbourneNow.getMinutes()
     });
 
     // V15.0: Alternative Transit - rideshare/bike/scooter costs when transit disrupted
@@ -225,15 +273,42 @@ export default async function handler(req, res) {
         skipReason: result.skipReason || coffeeDecision.reason || ''
       },
       
-      // Journey summary
-      summary: {
-        leaveNow: formatTime12h(melbourneNow),
-        arriveAt: formatTime12h(arriveTime),
-        totalMinutes,
-        onTime: arrivalDiff <= 5,
-        diffMinutes: arrivalDiff,
-        status: arrivalDiff > 5 ? 'late' : arrivalDiff < -10 ? 'early' : 'on-time'
-      },
+      // Journey summary (with evening/off-peak detection)
+      summary: (() => {
+        const currentMins = melbourneNow.getHours() * 60 + melbourneNow.getMinutes();
+        const targetMins = targetH * 60 + targetM;
+        const isEvening = currentMins > targetMins + 120;
+
+        if (isEvening) {
+          // Evening mode: show next morning's departure time
+          const leaveAtMins = targetMins - totalMinutes;
+          const leaveH = Math.floor(((leaveAtMins % 1440) + 1440) % 1440 / 60);
+          const leaveM = ((leaveAtMins % 1440) + 1440) % 1440 % 60;
+          const nextLeave = new Date(melbourneNow);
+          nextLeave.setDate(nextLeave.getDate() + 1);
+          nextLeave.setHours(leaveH, leaveM, 0, 0);
+          return {
+            leaveNow: formatTime12h(nextLeave),
+            arriveAt: arrivalTime,
+            totalMinutes,
+            onTime: true,
+            diffMinutes: 0,
+            status: 'off-peak',
+            isEvening: true,
+            nextMorningLeave: formatTime12h(nextLeave),
+            alarmTime: sleep.alarmTime || formatTime12h(nextLeave)
+          };
+        }
+
+        return {
+          leaveNow: formatTime12h(melbourneNow),
+          arriveAt: formatTime12h(arriveTime),
+          totalMinutes,
+          onTime: arrivalDiff <= 5,
+          diffMinutes: arrivalDiff,
+          status: arrivalDiff > 5 ? 'late' : arrivalDiff < -10 ? 'early' : 'on-time'
+        };
+      })(),
       
       // Next departure info
       nextDeparture: getNextDeparture(result.transit, melbourneNow),
@@ -522,9 +597,10 @@ function buildCCDashLegs(result, prefs, now, route = null) {
           cumulativeMinutes += waitMinutes;
         }
 
-        // Build subtitle with next departures
-        const nextTimes = liveDepartures.slice(0, 3).map(d => d.minutes);
-        const nextDepartureTimesMs = liveDepartures.slice(0, 3).map(d => d.departureTimeMs).filter(Boolean);
+        // Build subtitle with CATCHABLE next departures only
+        const catchableDepartures = liveDepartures.filter(d => d.minutes >= cumulativeMinutes + 1);
+        const nextTimes = catchableDepartures.slice(0, 3).map(d => d.minutes);
+        const nextDepartureTimesMs = catchableDepartures.slice(0, 3).map(d => d.departureTimeMs).filter(Boolean);
         let transitSubtitle = originName;
         if (nextTimes.length >= 2) {
           transitSubtitle += ` • Next: ${nextTimes[0]}, ${nextTimes[1]} min`;
@@ -560,8 +636,8 @@ function buildCCDashLegs(result, prefs, now, route = null) {
         });
         cumulativeMinutes += transitDuration;
       } else {
-        // No live departure found — use scheduled estimate
-        let transitSubtitle = `${originName} • Check timetable`;
+        // No live departure — use timetable estimate fallback
+        let transitSubtitle = `${originName} • Scheduled ~${transitDuration}min`;
         legs.push({
           number: legNumber++,
           type: legType,
@@ -577,7 +653,8 @@ function buildCCDashLegs(result, prefs, now, route = null) {
           minutes: transitDuration,
           journeyContribution: transitDuration,
           state: 'normal',
-          isLive: false
+          isLive: false,
+          isTimetableEstimate: true
         });
         cumulativeMinutes += transitDuration;
       }
@@ -655,10 +732,12 @@ function buildFallbackLegs(result, prefs, now) {
       number: 2,
       type: 'transit',
       title: 'Take Transit',
-      subtitle: 'Check timetable',
+      subtitle: 'Scheduled ~20min',
       minutes: 20,
       journeyContribution: 20,
-      state: 'normal'
+      state: 'normal',
+      isLive: false,
+      isTimetableEstimate: true
     });
   }
 
