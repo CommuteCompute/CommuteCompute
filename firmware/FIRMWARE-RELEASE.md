@@ -4,9 +4,9 @@
 
 # Commute Compute™ Firmware Releases
 
-## [UNLOCKED] Current Production: CC-FW-7.7.0
+## [UNLOCKED] Current Production: CCFirm v8.0.0
 
-**Version:** 7.7.0
+**Version:** 8.0.0
 **Commit:** (pending)
 **Date:** 2026-02-20
 **Status:** [UNLOCKED] UNLOCKED — PRODUCTION RELEASE
@@ -66,7 +66,7 @@ pio run -e trmnl -t upload --upload-port /dev/cu.usbmodem*
 
 | Version | Date | Status | Notes |
 |---------|------|--------|-------|
-| **7.7.0** | 2026-02-20 | [UNLOCKED] UNLOCKED | Current production. Credential redaction, version alignment, stability. |
+| **8.0.0** | 2026-02-27 | [UNLOCKED] UNLOCKED | Current production. Deep sleep 60s interval, CCFirm rename. |
 | 7.2.0 | 2026-02-02 | Superseded | Added button handler, reduced partial count |
 | 7.1.0 | 2026-02-01 | Superseded | Redis Cloud KV, Transit API validation |
 | 7.0.0 | 2026-02-01 | Superseded | Hybrid BLE + Pairing provisioning |

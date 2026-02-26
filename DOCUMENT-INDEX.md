@@ -151,7 +151,7 @@
 | `firmware/ANTI-BRICK-REQUIREMENTS.md` | Anti-brick safety rules |
 | `firmware/BOOT-SEQUENCE.md` | Boot sequence documentation |
 | `firmware/PAIRING-SPEC.md` | Device pairing specification |
-| `firmware/VERSION.txt` | Current version: CC-FW-7.7.0 (UNLOCKED) |
+| `firmware/VERSION.txt` | Current version: CCFirm v8.0.0 (UNLOCKED) |
 
 ### firmware/docs/
 
