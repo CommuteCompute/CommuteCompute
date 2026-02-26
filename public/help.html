@@ -627,6 +627,7 @@
             
             <div class="sidebar-title" style="margin-top: 24px;">Setup</div>
             <ul class="sidebar-nav">
+                <li><a href="#authentication">Authentication</a></li>
                 <li><a href="#setup-wizard">Setup Wizard</a></li>
                 <li><a href="#api-keys">API Keys</a></li>
                 <li><a href="#configuration">Configuration</a></li>
@@ -764,6 +765,45 @@
                 </div>
             </section>
             
+            <!-- Authentication -->
+            <section class="section" id="authentication">
+                <h2 class="section-title">Authentication</h2>
+                <div class="section-content">
+                    <p>
+                        The admin dashboard is protected by an authentication token. This prevents unauthorised access to your journey configuration and API keys.
+                    </p>
+
+                    <h3 style="margin-top: 16px; font-size: 16px; font-weight: 600; color: var(--text-primary);">Setting Up Your Token</h3>
+                    <p style="margin-top: 8px;">
+                        1. Go to your <strong>Vercel Dashboard</strong> &rarr; your project &rarr; <strong>Settings</strong> &rarr; <strong>Environment Variables</strong><br>
+                        2. Add a new variable: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">CC_ADMIN_TOKEN</code><br>
+                        3. Set it to a strong, random string (e.g. 32+ characters)<br>
+                        4. Save and redeploy your project
+                    </p>
+
+                    <h3 style="margin-top: 16px; font-size: 16px; font-weight: 600; color: var(--text-primary);">Using the Token</h3>
+                    <p style="margin-top: 8px;">
+                        When you visit the admin panel, you will be prompted to enter your token. This is the same value you set as <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">CC_ADMIN_TOKEN</code> in your environment variables.
+                    </p>
+                    <p>
+                        You can choose to have the browser remember the token persistently (stored in <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">localStorage</code>) or only for the current session (cleared when you close the browser).
+                    </p>
+
+                    <h3 style="margin-top: 16px; font-size: 16px; font-weight: 600; color: var(--text-primary);">Rotating Your Token</h3>
+                    <p style="margin-top: 8px;">
+                        To change your token:<br>
+                        1. Update the <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">CC_ADMIN_TOKEN</code> value in Vercel environment variables<br>
+                        2. Redeploy your project<br>
+                        3. In the admin panel, go to <strong>System &amp; Support</strong> &rarr; <strong>Authentication</strong> and click <strong>Change Token</strong><br>
+                        4. Enter your new token
+                    </p>
+
+                    <div class="info-box" style="margin-top: 16px;">
+                        <strong>Note:</strong> The token is required after the initial setup wizard completes. During first-time setup, some endpoints allow unauthenticated access so you can configure your deployment.
+                    </div>
+                </div>
+            </section>
+
             <!-- FAQ -->
             <section class="section" id="faq">
                 <h2 class="section-title">Frequently Asked Questions</h2>
