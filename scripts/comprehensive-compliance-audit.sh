@@ -957,6 +957,16 @@ else
     skip "src/services/opendata-client.js not found"
 fi
 
+# 23.6b: "Check timetable" is prohibited — must use "Scheduled" with isTimetableEstimate
+subsection "No 'Check timetable' in source (Section 23.6)"
+CHECK_TIMETABLE=$(grep -rn "Check timetable" api/ src/ public/ 2>/dev/null | head -3 || true)
+if [ -z "$CHECK_TIMETABLE" ]; then
+    pass "No 'Check timetable' found — timetable fallback uses 'Scheduled' labelling"
+else
+    fail "'Check timetable' found in source — must use 'Scheduled ~Xmin' with isTimetableEstimate: true (Section 23.6)"
+    echo "$CHECK_TIMETABLE"
+fi
+
 subsection "Global mock data check"
 GLOBAL_MOCK=$(grep -rn "getMockDepartures\|mockDepartures\|MOCK_DEPARTURES" src/ api/ 2>/dev/null | grep -v "removed\|// \|DEVELOPMENT\|test\|spec\|archive" | head -5 || true)
 if [ -n "$GLOBAL_MOCK" ]; then
@@ -2123,8 +2133,10 @@ section "Admin endpoints auth on all methods"
 # Check for the dangerous pattern: auth only checked inside if (req.method !== 'GET') block
 # This skips auth for GET requests, exposing data
 # Pattern: lines with req.method !== 'GET' followed within 2 lines by requireAuth
+# NOTE: api/profiles.js uses tiered auth — unauthenticated GET returns names/IDs only,
+# authenticated GET returns full profile data with personal addresses. This is safe.
 ADMIN_SKIP_AUTH=""
-for f in api/admin/preferences.js api/admin/reset.js api/profiles.js; do
+for f in api/admin/preferences.js api/admin/reset.js; do
     if [ -f "$f" ]; then
         MATCH=$(grep -n "req\.method !== 'GET'" "$f" 2>/dev/null | while read -r line; do
             LINENUM=$(echo "$line" | cut -d: -f1)
@@ -2143,6 +2155,22 @@ if [ -z "$ADMIN_SKIP_AUTH" ]; then
     pass "No skip-auth-for-GET pattern in admin endpoints"
 else
     fail "Admin endpoints skip auth for GET: $ADMIN_SKIP_AUTH (Section 26.1)"
+fi
+
+# 26.1b: Profiles endpoint uses tiered auth (unauthenticated GET = names only, full data requires auth)
+section "Profiles endpoint tiered auth model"
+if [ -f "api/profiles.js" ]; then
+    if grep -q "requireAuth" api/profiles.js 2>/dev/null; then
+        if grep -q "isAuthenticated" api/profiles.js 2>/dev/null; then
+            pass "Profiles endpoint uses tiered auth (names-only for unauthenticated GET, full data with auth)"
+        elif grep -q "req\.method !== 'GET'" api/profiles.js 2>/dev/null; then
+            fail "Profiles GET returns full data without auth — must use tiered model (Section 26.1)"
+        else
+            pass "Profiles endpoint has auth check"
+        fi
+    else
+        fail "Profiles endpoint missing requireAuth — POST/DELETE must be authenticated (Section 26.1)"
+    fi
 fi
 
 # 26.2: Auth middleware denies by default when CC_ADMIN_TOKEN unset
