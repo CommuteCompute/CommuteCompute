@@ -1750,6 +1750,9 @@
         <symbol id="icon-bus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/>
         </symbol>
+        <symbol id="icon-ferry" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 20c2-1 4-1 6 0s4 1 6 0 4-1 6 0"/><path d="M4 18l-1-5h18l-1 5"/><path d="M12 2v6"/><path d="M8 8h8l-2-4H10L8 8z"/>
+        </symbol>
         <symbol id="icon-tram" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="4" y="3" width="16" height="16" rx="2"/><path d="M4 11h16"/><path d="M12 3v8"/><circle cx="8" cy="15" r="1"/><circle cx="16" cy="15" r="1"/><path d="m9 19-2 3"/><path d="m15 19 2 3"/><path d="M9 3 5 1"/><path d="M15 3l4-2"/>
         </symbol>
@@ -1852,6 +1855,45 @@
 
     <!-- Show Tutorial Again Button (hidden by default) -->
     <button id="show-tutorial-btn" class="show-tutorial-btn" onclick="restartTutorial()" style="display: none;">? Show Tutorial</button>
+
+    <!-- Admin Authentication Modal -->
+    <div id="auth-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: var(--bg-primary); border-radius: 16px; padding: 40px; max-width: 480px; width: 90%; box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5); border: 2px solid rgba(79, 178, 142, 0.3);">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <div style="width: 56px; height: 56px; border-radius: 14px; background: rgba(79, 178, 142, 0.2); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                    <svg width="28" height="28" style="color: #4fb28e;"><use href="#icon-key"/></svg>
+                </div>
+                <h2 style="font-size: 22px; font-weight: 600; margin: 0 0 8px; color: var(--text-primary);">Admin Authentication</h2>
+                <p style="font-size: 14px; color: var(--text-secondary); margin: 0; line-height: 1.6;">
+                    Enter your admin token to access the dashboard.<br>
+                    This is the <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 12px;">CC_ADMIN_TOKEN</code> value from your deployment environment variables.
+                </p>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px;">Admin Token</label>
+                <input id="auth-token-input" type="password" placeholder="Enter your CC_ADMIN_TOKEN value"
+                    style="width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-family: 'Inter', monospace; font-size: 14px;"
+                    onkeydown="if(event.key==='Enter'){submitAuthToken();}">
+            </div>
+            <div id="auth-error" style="display: none; padding: 10px 14px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; font-size: 13px; color: #fca5a5; margin-bottom: 16px;"></div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--text-secondary);">
+                    <input id="auth-persist-check" type="checkbox" style="width: 16px; height: 16px; accent-color: var(--accent);">
+                    Remember on this device
+                </label>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; padding-left: 24px;">
+                    When checked, the token is stored persistently. Otherwise it is cleared when you close the browser.
+                </div>
+            </div>
+            <button id="auth-submit-btn" onclick="submitAuthToken()" class="btn btn-block" style="padding: 14px; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <svg width="18" height="18"><use href="#icon-key"/></svg>
+                Authenticate
+            </button>
+            <div style="margin-top: 16px; text-align: center;">
+                <a href="/help.html#authentication" style="font-size: 12px; color: var(--accent); text-decoration: none;">Where do I find my admin token?</a>
+            </div>
+        </div>
+    </div>
 
     <div class="container" id="main-content" role="main">
         <!-- Sidebar Navigation (matches privacy/help pages) -->
@@ -2581,7 +2623,7 @@
                         </div>
                         <div style="padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
                             <div style="font-size: 10px; text-transform: uppercase; opacity: 0.6; margin-bottom: 4px;">Firmware</div>
-                            <div style="font-size: 14px; font-weight: 600; color: #f1f5f9;">CC-FW-7.7.0</div>
+                            <div style="font-size: 14px; font-weight: 600; color: #f1f5f9;">CC-FW-8.0.0</div>
                         </div>
                     </div>
 
@@ -2654,6 +2696,50 @@
                             <span id="tram-status-badge" style="padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: rgba(102, 126, 234, 0.2); color: #667eea;">Live</span>
                         </div>
                         <div id="tram-departures" style="min-height: 100px;">
+                            <div class="loading" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 30px; color: #cbd5e1;">
+                                <div class="spinner"></div>
+                                <span>Loading departures...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bus Departures Card -->
+                    <div id="bus-departures-card" class="card" style="display: none; background: rgba(30, 41, 59, 0.8); border-radius: 12px; padding: 20px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(251, 191, 36, 0.2); display: flex; align-items: center; justify-content: center;">
+                                    <svg width="22" height="22" style="color: #fbbf24;"><use href="#icon-bus"/></svg>
+                                </div>
+                                <div>
+                                    <h3 style="font-size: 16px; font-weight: 600; color: #f1f5f9; margin: 0;" id="bus-stop-name">Bus Departures</h3>
+                                    <span style="font-size: 12px; color: #cbd5e1;" id="bus-stop-subtitle">Loading...</span>
+                                </div>
+                            </div>
+                            <span id="bus-status-badge" style="padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: rgba(251, 191, 36, 0.2); color: #fbbf24;">Live</span>
+                        </div>
+                        <div id="bus-departures" style="min-height: 100px;">
+                            <div class="loading" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 30px; color: #cbd5e1;">
+                                <div class="spinner"></div>
+                                <span>Loading departures...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ferry Departures Card -->
+                    <div id="ferry-departures-card" class="card" style="display: none; background: rgba(30, 41, 59, 0.8); border-radius: 12px; padding: 20px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(56, 189, 248, 0.2); display: flex; align-items: center; justify-content: center;">
+                                    <svg width="22" height="22" style="color: #38bdf8;"><use href="#icon-ferry"/></svg>
+                                </div>
+                                <div>
+                                    <h3 style="font-size: 16px; font-weight: 600; color: #f1f5f9; margin: 0;" id="ferry-stop-name">Ferry Departures</h3>
+                                    <span style="font-size: 12px; color: #cbd5e1;" id="ferry-stop-subtitle">Loading...</span>
+                                </div>
+                            </div>
+                            <span id="ferry-status-badge" style="padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: rgba(56, 189, 248, 0.2); color: #38bdf8;">Live</span>
+                        </div>
+                        <div id="ferry-departures" style="min-height: 100px;">
                             <div class="loading" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 30px; color: #cbd5e1;">
                                 <div class="spinner"></div>
                                 <span>Loading departures...</span>
@@ -3151,7 +3237,7 @@
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                     <span id="cc-badge-system-version" style="padding: 6px 14px; background: rgba(79, 178, 142, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #4fb28e;">v4.2.0</span>
                     <span id="cc-badge-renderer-version" style="padding: 6px 14px; background: rgba(102, 126, 234, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #667eea;">CCDash&#8482; v2.1</span>
-                    <span id="cc-badge-firmware-version" style="padding: 6px 14px; background: rgba(251, 191, 36, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #fbbf24;">CCFirm&#8482; CC-FW-7.7.0</span>
+                    <span id="cc-badge-firmware-version" style="padding: 6px 14px; background: rgba(251, 191, 36, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #fbbf24;">CCFirm&#8482; CC-FW-8.0.0</span>
                     <span style="padding: 6px 14px; background: rgba(168, 85, 247, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #a855f7;">Redis</span>
                 </div>
             </div>
@@ -3258,10 +3344,10 @@
                 <div style="padding: 16px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0.05) 100%); border-radius: 10px; border: 1px solid rgba(168, 85, 247, 0.3);">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
                         <svg width="24" height="24" style="color: #a855f7;"><use href="#icon-cpu"/></svg>
-                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #a855f7;">CCFirm&#8482; CC-FW-7.7.0 Firmware</h3>
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #a855f7;">CCFirm&#8482; CC-FW-8.0.0 Firmware</h3>
                     </div>
                     <p style="font-size: 13px; color: #e2e8f0; line-height: 1.7; margin-bottom: 12px;">
-                        The ESP32-C3 firmware that runs on TRMNL devices. CCFirm&#8482; handles WiFi connectivity, HTTPS image fetching, BMP rendering, and partial display refresh. Includes device pairing via 6-character codes and anti-brick safety measures.
+                        The ESP32-C3 firmware that runs on TRMNL devices. CCFirm&#8482; handles WiFi connectivity, HTTPS image fetching, BMP rendering, partial display refresh, and 60-second deep sleep power management. Includes device pairing via 6-character codes and anti-brick safety measures.
                     </p>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
                         <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
@@ -3838,7 +3924,7 @@
                         <strong>docs/CCDashDesignV15.0.md</strong> — Dashboard specification (UNLOCKED 2026-02-06)
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="padding: 3px 8px; background: rgba(168, 85, 247, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #a855f7;">CC-FW-7.7.0</span>
+                        <span style="padding: 3px 8px; background: rgba(168, 85, 247, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #a855f7;">CC-FW-8.0.0</span>
                         <strong>docs/FIRMWARE.md</strong> — CCFirm&#8482; device firmware documentation
                     </div>
                 </div>
@@ -3873,7 +3959,7 @@
                     </div>
                     <div style="padding: 15px; background: rgba(251, 191, 36, 0.15); border-radius: 8px; text-align: center;">
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">CCFirm&#8482; Firmware</div>
-                        <div id="cc-grid-firmware-version" style="font-size: 20px; font-weight: 700; color: #fbbf24;">CC-FW-7.7.0</div>
+                        <div id="cc-grid-firmware-version" style="font-size: 20px; font-weight: 700; color: #fbbf24;">CC-FW-8.0.0</div>
                     </div>
                     <div style="padding: 15px; background: rgba(236, 72, 153, 0.15); border-radius: 8px; text-align: center;">
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">System Version</div>
@@ -3922,7 +4008,7 @@
 │          └─────────────────────┼─────────────────────┘                  │
 │                                ▼                                        │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                 CCFirm&#8482; Firmware CC-FW-7.7.0                   │   │
+│   │                 CCFirm&#8482; Firmware CC-FW-8.0.0                   │   │
 │   │  TRMNL OG         │ Kindle (WIP) │ Inkplate (WIP)               │   │
 │   └─────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
@@ -4095,7 +4181,7 @@
                 <div style="padding: 15px; background: rgba(251, 191, 36, 0.1); border-radius: 8px; margin-bottom: 15px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <div style="font-weight: 600; font-size: 16px;">CC-FW-7.7.0</div>
+                            <div style="font-weight: 600; font-size: 16px;">CC-FW-8.0.0</div>
                             <div style="font-size: 12px; opacity: 0.8;">Current Production Firmware</div>
                         </div>
                         <div style="text-align: right;">
@@ -4152,6 +4238,35 @@
                         <div style="font-weight: 600; margin-bottom: 4px;">Google Places API (Optional)</div>
                         <div style="font-size: 12px; opacity: 0.8;">Enhanced geocoding, cafe busyness detection</div>
                         <div style="font-size: 11px; opacity: 0.6; margin-top: 4px;">Requires API key</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Authentication Management -->
+            <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
+                <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
+                    <svg width="22" height="22" style="color: #fbbf24;"><use href="#icon-key"/></svg>
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Authentication</h2>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+                        Admin access is secured with a token stored in your deployment environment variables.
+                    </div>
+                    <div id="auth-status-indicator" style="margin-bottom: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 8px; height: 8px; background: #64748b; border-radius: 50%;"></div>
+                            <span style="font-size: 13px; color: #cbd5e1;">Checking...</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="clearAdminToken(); updateAuthStatusDisplay(); showAuthModal().then(() => loadAllData());" class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                            <svg width="14" height="14"><use href="#icon-refresh"/></svg>
+                            Change Token
+                        </button>
+                        <a href="/help.html#authentication" class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                            <svg width="14" height="14"><use href="#icon-file-text"/></svg>
+                            Token Help
+                        </a>
                     </div>
                 </div>
             </div>
@@ -4528,6 +4643,108 @@
         const BASE_URL = window.location.origin;
         let refreshInterval;
 
+        // === Admin Authentication ===
+        function getAdminToken() { return sessionStorage.getItem('cc-admin-token') || localStorage.getItem('cc-admin-token') || ''; }
+        function setAdminToken(t, persist) {
+            if (persist) { localStorage.setItem('cc-admin-token', t); sessionStorage.removeItem('cc-admin-token'); }
+            else { sessionStorage.setItem('cc-admin-token', t); }
+        }
+        function clearAdminToken() { localStorage.removeItem('cc-admin-token'); sessionStorage.removeItem('cc-admin-token'); }
+        function hasStoredToken() { return !!(localStorage.getItem('cc-admin-token') || sessionStorage.getItem('cc-admin-token')); }
+
+        async function authFetch(url, opts = {}) {
+            const token = getAdminToken();
+            if (!opts.headers) opts.headers = {};
+            if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+            const resp = await fetch(url, opts);
+            if (resp.status === 401) {
+                clearAdminToken();
+                const newToken = await showAuthModal();
+                if (newToken) {
+                    opts.headers['Authorization'] = 'Bearer ' + newToken;
+                    return fetch(url, opts);
+                }
+            }
+            return resp;
+        }
+
+        let _authModalResolve = null;
+
+        function showAuthModal() {
+            return new Promise((resolve) => {
+                _authModalResolve = resolve;
+                const overlay = document.getElementById('auth-overlay');
+                if (overlay) {
+                    overlay.style.display = 'flex';
+                    const input = document.getElementById('auth-token-input');
+                    if (input) { input.value = ''; input.focus(); }
+                    const errEl = document.getElementById('auth-error');
+                    if (errEl) errEl.style.display = 'none';
+                }
+            });
+        }
+
+        async function submitAuthToken() {
+            const input = document.getElementById('auth-token-input');
+            const errEl = document.getElementById('auth-error');
+            const btn = document.getElementById('auth-submit-btn');
+            const persist = document.getElementById('auth-persist-check')?.checked || false;
+            const token = (input?.value || '').trim();
+
+            if (!token) {
+                if (errEl) { errEl.textContent = 'Please enter an admin token.'; errEl.style.display = 'block'; }
+                return;
+            }
+
+            if (btn) { btn.disabled = true; btn.textContent = 'Validating...'; }
+
+            try {
+                const resp = await authFetch(BASE_URL + '/api/admin/preferences', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (resp.ok) {
+                    setAdminToken(token, persist);
+                    const overlay = document.getElementById('auth-overlay');
+                    if (overlay) overlay.style.display = 'none';
+                    updateAuthStatusDisplay();
+                    if (_authModalResolve) { _authModalResolve(token); _authModalResolve = null; }
+                } else {
+                    if (errEl) { errEl.textContent = 'Invalid token. Check your CC_ADMIN_TOKEN value.'; errEl.style.display = 'block'; }
+                }
+            } catch (e) {
+                if (errEl) { errEl.textContent = 'Connection error. Check that your deployment is online.'; errEl.style.display = 'block'; }
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Authenticate'; }
+            }
+        }
+
+        async function checkAuthStatus() {
+            if (hasStoredToken()) {
+                updateAuthStatusDisplay();
+                return;
+            }
+            await showAuthModal();
+            try { await loadAllData(); } catch (e) { console.error('[Admin] loadAllData after auth failed:', e); }
+        }
+
+        function updateAuthStatusDisplay() {
+            const indicator = document.getElementById('auth-status-indicator');
+            if (!indicator) return;
+            if (hasStoredToken()) {
+                const storage = localStorage.getItem('cc-admin-token') ? 'persistent' : 'session';
+                indicator.innerHTML = '<div style="display: flex; align-items: center; gap: 8px;">' +
+                    '<div style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%;"></div>' +
+                    '<span style="font-size: 13px; color: #cbd5e1;">Authenticated (' + sanitize(storage) + ')</span>' +
+                    '</div>';
+            } else {
+                indicator.innerHTML = '<div style="display: flex; align-items: center; gap: 8px;">' +
+                    '<div style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%;"></div>' +
+                    '<span style="font-size: 13px; color: #cbd5e1;">Not authenticated</span>' +
+                    '</div>';
+            }
+        }
+
         // ==================== ONBOARDING SYSTEM ====================
 
         const ONBOARDING_STEPS = [
@@ -4882,7 +5099,7 @@
         // Load all profiles
         async function loadProfiles() {
             try {
-                const response = await fetch(BASE_URL + '/api/profiles');
+                const response = await authFetch(BASE_URL + '/api/profiles');
                 const data = await response.json();
 
                 if (data.success) {
@@ -5022,7 +5239,7 @@
             }
 
             try {
-                const response = await fetch(BASE_URL + '/api/profiles', {
+                const response = await authFetch(BASE_URL + '/api/profiles', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -5052,7 +5269,7 @@
         // Activate profile
         async function activateProfile(profileId) {
             try {
-                const response = await fetch(BASE_URL + `/api/profiles/${profileId}/activate`, {
+                const response = await authFetch(BASE_URL + `/api/profiles/${profileId}/activate`, {
                     method: 'PUT'
                 });
 
@@ -5086,7 +5303,7 @@
         // Delete profile
         async function deleteProfile(profileId) {
             try {
-                const response = await fetch(BASE_URL + `/api/profiles/${profileId}`, {
+                const response = await authFetch(BASE_URL + `/api/profiles/${profileId}`, {
                     method: 'DELETE'
                 });
 
@@ -5108,6 +5325,10 @@
         document.addEventListener('DOMContentLoaded', async () => {
             updateClock();
             setInterval(updateClock, 1000);
+
+            // Authenticate before loading data
+            try { await checkAuthStatus(); } catch (e) { console.error('[Admin] checkAuthStatus failed:', e); }
+
             try { await loadAllData(); } catch (e) { console.error('[Admin] loadAllData failed:', e); }
             try { loadSavedPreferences(); } catch (e) { console.error('[Admin] loadSavedPreferences failed:', e); }
             try { loadDeviceBattery(); } catch (e) { console.error('[Admin] loadDeviceBattery failed:', e); }
@@ -5214,7 +5435,7 @@
                 // Per Section 3.6.4: If localStorage empty, fetch from KV via server
                 if (!config.addresses?.home) {
                     try {
-                        const prefsResponse = await fetch(BASE_URL + '/api/admin/preferences');
+                        const prefsResponse = await authFetch(BASE_URL + '/api/admin/preferences');
                         if (prefsResponse.ok) {
                             const prefsData = await prefsResponse.json();
                             if (prefsData.success && prefsData.preferences?._configured) {
@@ -5239,6 +5460,8 @@
                 if (!config.addresses?.home) {
                     document.getElementById('train-departures').innerHTML = '<div class="no-data">Complete setup first</div>';
                     document.getElementById('tram-departures').innerHTML = '<div class="no-data">Complete setup first</div>';
+                    document.getElementById('bus-departures').innerHTML = '<div class="no-data">Complete setup first</div>';
+                    document.getElementById('ferry-departures').innerHTML = '<div class="no-data">Complete setup first</div>';
                     document.getElementById('weather-display').innerHTML = '<div class="no-data">Complete setup first</div>';
                     document.getElementById('coffee-decision').innerHTML = '<div class="no-data">Complete setup first</div>';
                     return;
@@ -5449,8 +5672,82 @@
             } else {
                 tramEl.innerHTML = '<div class="no-data" style="color: #cbd5e1; text-align: center; padding: 20px;">No tram data available</div>';
             }
+
+            // Bus departures
+            const busCard = document.getElementById('bus-departures-card');
+            const busEl = document.getElementById('bus-departures');
+            const busLeg = scData.journey_legs?.find(l => l.type === 'bus');
+            const hasBusData = busLeg || scData.raw?.transit?.buses?.length > 0;
+
+            if (busCard) busCard.style.display = hasBusData ? '' : 'none';
+
+            if (busLeg) {
+                const nameEl = document.getElementById('bus-stop-name');
+                if (nameEl) nameEl.textContent = busLeg.title || 'Bus Departures';
+                const subEl = document.getElementById('bus-stop-subtitle');
+                if (subEl) subEl.textContent = busLeg.subtitle || '';
+                busEl.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px; color: #f1f5f9;">${sanitize(busLeg.title)}</div>
+                                <div style="font-size: 12px; color: #cbd5e1; margin-top: 2px;">${sanitize(busLeg.subtitle)}</div>
+                            </div>
+                            <div style="font-size: 24px; font-weight: 700; color: #fbbf24;">${sanitize(String(busLeg.minutes))}<span style="font-size: 12px; font-weight: 400; color: #cbd5e1;"> min</span></div>
+                        </div>
+                    </div>`;
+            } else if (scData.raw?.transit?.buses?.length > 0) {
+                const nextBus = scData.raw.transit.buses[0];
+                busEl.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px; color: #f1f5f9;">Next Bus</div>
+                                <div style="font-size: 12px; color: #cbd5e1; margin-top: 2px;">${sanitize(nextBus.destination || ('Route ' + (nextBus.routeNumber || '')) || 'Scheduled')}</div>
+                            </div>
+                            <div style="font-size: 24px; font-weight: 700; color: #fbbf24;">${sanitize(String(nextBus.minutes))}<span style="font-size: 12px; font-weight: 400; color: #cbd5e1;"> min</span></div>
+                        </div>
+                    </div>`;
+            }
+
+            // Ferry departures
+            const ferryCard = document.getElementById('ferry-departures-card');
+            const ferryEl = document.getElementById('ferry-departures');
+            const ferryLeg = scData.journey_legs?.find(l => l.type === 'ferry');
+            const hasFerryData = ferryLeg || scData.raw?.transit?.ferries?.length > 0;
+
+            if (ferryCard) ferryCard.style.display = hasFerryData ? '' : 'none';
+
+            if (ferryLeg) {
+                const nameEl = document.getElementById('ferry-stop-name');
+                if (nameEl) nameEl.textContent = ferryLeg.title || 'Ferry Departures';
+                const subEl = document.getElementById('ferry-stop-subtitle');
+                if (subEl) subEl.textContent = ferryLeg.subtitle || '';
+                ferryEl.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px; color: #f1f5f9;">${sanitize(ferryLeg.title)}</div>
+                                <div style="font-size: 12px; color: #cbd5e1; margin-top: 2px;">${sanitize(ferryLeg.subtitle)}</div>
+                            </div>
+                            <div style="font-size: 24px; font-weight: 700; color: #38bdf8;">${sanitize(String(ferryLeg.minutes))}<span style="font-size: 12px; font-weight: 400; color: #cbd5e1;"> min</span></div>
+                        </div>
+                    </div>`;
+            } else if (scData.raw?.transit?.ferries?.length > 0) {
+                const nextFerry = scData.raw.transit.ferries[0];
+                ferryEl.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px; color: #f1f5f9;">Next Ferry</div>
+                                <div style="font-size: 12px; color: #cbd5e1; margin-top: 2px;">${sanitize(nextFerry.destination || nextFerry.lineName || 'Scheduled')}</div>
+                            </div>
+                            <div style="font-size: 24px; font-weight: 700; color: #38bdf8;">${sanitize(String(nextFerry.minutes))}<span style="font-size: 12px; font-weight: 400; color: #cbd5e1;"> min</span></div>
+                        </div>
+                    </div>`;
+            }
         }
-        
+
         // Update weather from CommuteCompute response
         function updateWeatherFromCommuteCompute(weather) {
             const el = document.getElementById('weather-display');
@@ -6307,7 +6604,7 @@
             // If no localStorage, try server (for self-hosted mode)
             if (!prefs) {
                 try {
-                    const response = await fetch(BASE_URL + '/api/admin/preferences');
+                    const response = await authFetch(BASE_URL + '/api/admin/preferences');
                     if (response.ok) {
                         const data = await response.json();
                         prefs = data.preferences || data;
@@ -6612,7 +6909,7 @@
             }
             
             try {
-                const response = await fetch(BASE_URL + '/api/sync-config', {
+                const response = await authFetch(BASE_URL + '/api/sync-config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -6841,7 +7138,7 @@
             // Sync to Redis for server-side access
             const msg = document.getElementById('sc-settings-message');
             try {
-                fetch(BASE_URL + '/api/sync-config', {
+                authFetch(BASE_URL + '/api/sync-config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ preferences: config })
@@ -6973,7 +7270,7 @@
             // Persist to KV via API (geocodes addresses using pre-configured keys)
             try {
                 showInlineEditMessage('Saving to server...', 'info');
-                var resp = await fetch(BASE_URL + '/api/admin/preferences', {
+                var resp = await authFetch(BASE_URL + '/api/admin/preferences', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ field: field, value: value })
@@ -7169,6 +7466,7 @@
                 train: { bg: 'rgba(79, 178, 142, 0.15)', border: '#4fb28e', icon: '<svg class="icon"><use href="#icon-train"/></svg>' },
                 tram: { bg: 'rgba(102, 126, 234, 0.15)', border: '#667eea', icon: '<svg class="icon"><use href="#icon-tram"/></svg>' },
                 bus: { bg: 'rgba(251, 191, 36, 0.15)', border: '#fbbf24', icon: '<svg class="icon"><use href="#icon-bus"/></svg>' },
+                ferry: { bg: 'rgba(56, 189, 248, 0.15)', border: '#38bdf8', icon: '<svg class="icon"><use href="#icon-ferry"/></svg>' },
                 transit: { bg: 'rgba(147, 51, 234, 0.15)', border: '#9333ea', icon: '<svg class="icon"><use href="#icon-train"/></svg>' }
             };
 
@@ -7230,7 +7528,7 @@
                 }
 
                 // Call API to save selection
-                const response = await fetch(BASE_URL + '/api/routes', {
+                const response = await authFetch(BASE_URL + '/api/routes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -7596,11 +7894,11 @@
             
             // Sync to KV for serverless access
             try {
-                const prefsResp = await fetch(BASE_URL + '/api/admin/preferences');
+                const prefsResp = await authFetch(BASE_URL + '/api/admin/preferences');
                 const currentPrefs = await prefsResp.json();
                 currentPrefs.apiMode = mode;
                 
-                await fetch(BASE_URL + '/api/admin/preferences', {
+                await authFetch(BASE_URL + '/api/admin/preferences', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(currentPrefs)
@@ -7875,7 +8173,7 @@
                 }
 
                 // Sync to KV via generate-webhook
-                const response = await fetch(BASE_URL + '/api/admin/generate-webhook', {
+                const response = await authFetch(BASE_URL + '/api/admin/generate-webhook', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ config: config })
@@ -7924,13 +8222,13 @@
                 // Get current state from preferences
                 let state = 'VIC';
                 try {
-                    const prefsResp = await fetch(BASE_URL + '/admin/preferences');
+                    const prefsResp = await authFetch(BASE_URL + '/api/admin/preferences');
                     const prefs = await prefsResp.json();
                     state = prefs.location?.state || prefs.api?.state || 'VIC';
                 } catch (e) { /* Use default VIC */ }
                 
                 // Use the new validation endpoint
-                const response = await fetch(BASE_URL + '/api/save-transit-key', {
+                const response = await authFetch(BASE_URL + '/api/save-transit-key', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -8163,7 +8461,7 @@
 
         async function updateAPIKeysStatus() {
             try {
-                const response = await fetch(BASE_URL + '/admin/preferences');
+                const response = await authFetch(BASE_URL + '/api/admin/preferences');
                 const prefs = await response.json();
 
                 const statusList = document.getElementById('api-keys-status-list');
@@ -8415,7 +8713,7 @@
 
             try {
                 // Get current preferences
-                const prefsResponse = await fetch(BASE_URL + '/admin/preferences');
+                const prefsResponse = await authFetch(BASE_URL + '/api/admin/preferences');
                 const prefsData = await prefsResponse.json();
                 const prefs = prefsData.preferences || prefsData;
 
@@ -8423,9 +8721,9 @@
                 if (!prefs[section]) prefs[section] = {};
                 prefs[section][fieldName] = value;
 
-                // Save back to server using PUT method
-                const saveResponse = await fetch(BASE_URL + '/admin/preferences', {
-                    method: 'PUT',
+                // Save back to server
+                const saveResponse = await authFetch(BASE_URL + '/api/admin/preferences', {
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(prefs)
                 });
@@ -8947,7 +9245,7 @@
                     { name: 'OpenStreetMap', license: 'ODbL', required: true }
                 ]
             }));
-            const preferences = await fetch(BASE_URL + '/admin/preferences').then(r => r.json()).catch(() => null);
+            const preferences = await authFetch(BASE_URL + '/api/admin/preferences').then(r => r.json()).catch(() => null);
 
             // Use defaults if not configured to show full architecture BEFORE user configuration
             const transitAuthority = preferences?.location?.transitAuthority || 'Auto-detected based on your state';
@@ -9659,7 +9957,7 @@
                 .then(v => {
                     const scVersion = v.components?.commutecompute?.version || 'v3.1';
                     const rendererVersion = v.components?.renderer?.version || 'v2.1';
-                    const firmwareVersion = v.components?.firmware?.version || 'CC-FW-7.7.0';
+                    const firmwareVersion = v.components?.firmware?.version || 'CC-FW-8.0.0';
                     const buildDate = v.date || new Date().toISOString().split('T')[0];
                     const systemVersion = v.system?.version || '4.0.0';
 

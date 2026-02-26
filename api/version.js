@@ -63,10 +63,10 @@ export default async function handler(req, res) {
       admin: { version: 'v5.0', locked: false },
       // Firmware (UNLOCKED — runtime factory reset + BLE provisioning)
       firmware: {
-        version: 'CC-FW-7.7.0',
+        version: 'CC-FW-8.0.0',
         locked: false,
         lockedDate: null,
-        description: 'ESP32 firmware with runtime factory reset, battery reporting, zero-config BLE pairing'
+        description: 'ESP32 firmware with runtime factory reset, battery reporting, zero-config BLE pairing, 60-second deep sleep interval'
       }
     },
     specs: {
