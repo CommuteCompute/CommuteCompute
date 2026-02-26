@@ -4123,14 +4123,16 @@ function getLineName(routeId) {
 
 ### 23.6 Fallback Data Requirements
 
-When live GTFS-RT data unavailable, fallback to scheduled timetables:
+Live GTFS-RT data is the PRIMARY source. When unavailable, timetable estimates are used as fallback with clear labelling.
+
+**"Check timetable" is PROHIBITED** — never display this to users. Use "Scheduled ~Xmin" instead.
 
 | Condition | Action |
 |-----------|--------|
-| No API key | Use `fallback-timetables.js` |
+| No API key | Use `fallback-timetables.js` with `isTimetableEstimate: true` |
 | Stop ID null | Log warning, return empty array |
-| API error | Return scheduled data with `isLive: false` |
-| No departures | Return empty array (not mock data) |
+| API error | Return scheduled data with `isLive: false, isTimetableEstimate: true` |
+| No departures | Return timetable estimate or empty array (not mock data) |
 
 **Fallback Data Schema:**
 
@@ -4140,12 +4142,20 @@ When live GTFS-RT data unavailable, fallback to scheduled timetables:
   minutes: 10,
   destination: 'City Loop',  // Must use same naming
   isCitybound: true,
-  isLive: false,             // Mark as scheduled
+  isLive: false,             // Mark as NOT live
+  isTimetableEstimate: true, // Mark as timetable fallback
   source: 'fallback',        // Identify data source
   delay: 0,
   isDelayed: false
 }
 ```
+
+**Journey Leg Timetable Fallback:**
+
+When no catchable live departure exists for a transit leg, the leg remains as its transit type (not converted to walk) with timetable estimate:
+- `isLive: false`
+- `isTimetableEstimate: true`
+- Subtitle: `"<StopName> • Scheduled ~<duration>min"` (never "Check timetable")
 
 ### 23.7 Multi-Modal Journey Leg Construction (v1.18)
 

@@ -45,19 +45,34 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Profiles contain personal data — auth required on all methods (Section 26.1)
+  // Auth check — GET returns summary (name/id only) without auth,
+  // full profile data and state-mutating methods require auth.
   const authError = requireAuth(req);
-  if (authError) return res.status(401).json(authError);
+  const isAuthenticated = !authError;
+
+  if (req.method !== 'GET' && authError) {
+    return res.status(401).json(authError);
+  }
 
   try {
-    // GET - List all profiles
+    // GET - List profiles (summary without auth, full with auth)
     if (req.method === 'GET') {
       const profiles = await kvGet(KV_PROFILES_KEY) || [];
 
+      if (isAuthenticated) {
+        return res.json({
+          success: true,
+          profiles,
+          count: profiles.length
+        });
+      }
+
+      // Unauthenticated: return names and IDs only (no personal addresses)
+      const summary = profiles.map(p => ({ id: p.id, name: p.name }));
       return res.json({
         success: true,
-        profiles,
-        count: profiles.length
+        profiles: summary,
+        count: summary.length
       });
     }
 

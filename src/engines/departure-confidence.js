@@ -142,7 +142,7 @@ class DepartureConfidence {
     let total = 0;
 
     for (const leg of legs) {
-      if (!leg || leg.mode === 'walk' || leg.mode === 'walking') {
+      if (!leg || (leg.type || leg.mode) === 'walk' || (leg.type || leg.mode) === 'walking') {
         continue;
       }
 
@@ -215,7 +215,7 @@ class DepartureConfidence {
     for (const leg of legs) {
       if (!leg) continue;
 
-      const status = (leg.status || '').toLowerCase();
+      const status = (leg.state || leg.status || '').toLowerCase();
 
       // Suspended or cancelled is the worst case -- immediate -40
       if (status === 'suspended' || status === 'cancelled') {
@@ -253,7 +253,7 @@ class DepartureConfidence {
     // Check for any suspended or cancelled service first
     for (const leg of legs) {
       if (!leg) continue;
-      const status = (leg.status || '').toLowerCase();
+      const status = (leg.state || leg.status || '').toLowerCase();
       if (status === 'suspended' || status === 'cancelled') {
         return 'LOW';
       }
@@ -261,7 +261,7 @@ class DepartureConfidence {
 
     // Count transit legs (non-walking) and transfers
     const transitLegs = legs.filter(
-      (leg) => leg && leg.mode !== 'walk' && leg.mode !== 'walking'
+      (leg) => leg && (leg.type || leg.mode) !== 'walk' && (leg.type || leg.mode) !== 'walking'
     );
     const transferCount = Math.max(0, transitLegs.length - 1);
 
