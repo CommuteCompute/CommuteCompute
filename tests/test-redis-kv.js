@@ -58,7 +58,7 @@ describe('KV Preferences Storage (in-memory fallback)', () => {
   });
 
   it('should store and retrieve device status', async () => {
-    const status = { lastSeen: Date.now(), firmware: 'CC-FW-7.7.0' };
+    const status = { lastSeen: Date.now(), firmware: 'CCFirm v8.0.0' };
     await setDeviceStatus(status);
     const retrieved = await getDeviceStatus();
     // setDeviceStatus adds updated_at, so check individual fields

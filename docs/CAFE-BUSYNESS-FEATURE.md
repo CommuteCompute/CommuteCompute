@@ -346,7 +346,7 @@ Check the results for:
 
 **In Journey Segments**:
 - Get Coffee segment shows busy icon (LOW/MEDIUM/HIGH)
-- Colored text showing busy level
+- Coloured text showing busy level
 - Adjusted duration (2-8 minutes)
 
 **In Summary Stats**:
