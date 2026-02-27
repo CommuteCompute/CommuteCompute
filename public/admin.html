@@ -6932,16 +6932,17 @@
         }
 
         // Load E-Ink preview image from /api/screen
+        let einkRetryCount = 0;
         async function loadEinkPreview(forceRefresh = false) {
             // Sync config to KV in background (non-blocking)
-            
+
             const config = JSON.parse(localStorage.getItem('cc-config') || '{}');
             const device = config.device || localStorage.getItem('cc-device') || 'trmnl-og';
             const deviceConfig = DEVICE_CONFIGS[device] || DEVICE_CONFIGS['trmnl-og'];
-            
+
             // Update device info display
             updateEinkDeviceInfo(device, deviceConfig);
-            
+
             // Show loading state
             const loadingOverlay = document.getElementById('eink-loading-overlay');
             const previewImage = document.getElementById('eink-preview-image');
@@ -6952,35 +6953,51 @@
                     <span style="font-size: 13px; color: #cbd5e1;">Loading display...</span>
                 `;
             }
-            
+
+            // Reset retry counter on fresh load (not a retry)
+            if (forceRefresh || !previewImage?.dataset.retrying) {
+                einkRetryCount = 0;
+            }
+
             // Always use /api/screen endpoint (this is what generates the e-ink image)
             const baseUrl = window.location.origin;
             const timestamp = Date.now();
             const imageUrl = `${baseUrl}/api/screen?device=${device}&format=png&t=${timestamp}`;
-            
+
             // Update API URL display
             const apiUrlEl = document.getElementById('eink-api-url');
             if (apiUrlEl) apiUrlEl.textContent = imageUrl;
-            
+
             // Set image source directly with proper error handling
             if (previewImage) {
                 // Add timeout for slow connections (30 seconds)
                 const loadTimeout = setTimeout(() => {
                     handleEinkImageError('Timeout - try refreshing');
                 }, 30000);
-                
+
                 // Set up handlers on the actual image element
                 previewImage.onload = function() {
                     clearTimeout(loadTimeout);
+                    delete previewImage.dataset.retrying;
                     previewImage.style.width = Math.min(deviceConfig.width, 760) + 'px';
                     previewImage.style.height = 'auto';
                     handleEinkImageLoad();
                 };
                 previewImage.onerror = function(e) {
                     clearTimeout(loadTimeout);
-                    handleEinkImageError('Failed to load - check console');
+                    if (einkRetryCount < 1) {
+                        einkRetryCount++;
+                        previewImage.dataset.retrying = 'true';
+                        setTimeout(function() {
+                            const retryUrl = `${baseUrl}/api/screen?device=${device}&format=png&t=${Date.now()}`;
+                            previewImage.src = retryUrl;
+                        }, 3000);
+                    } else {
+                        delete previewImage.dataset.retrying;
+                        handleEinkImageError('Failed to load. The dashboard may still be initialising. Click Try Again in a few seconds.');
+                    }
                 };
-                
+
                 // Start loading - set src directly on the img element
                 previewImage.src = imageUrl;
             }

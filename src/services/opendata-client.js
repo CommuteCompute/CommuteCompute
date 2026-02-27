@@ -222,7 +222,7 @@ async function fetchGtfsRt(mode, feed, options = {}) {
   try {
     console.log(`[OpenData] Fetching GTFS-RT: ${mode}/${feed}`);
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
     const response = await fetch(url, {
       headers: {
         'KeyId': apiKey  // Case-sensitive as per dev rules Section 11.1
@@ -723,7 +723,10 @@ export async function getDisruptions(routeType, options = {}) {
 export async function getWeather(lat = MELBOURNE_LAT, lon = MELBOURNE_LON) {
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,precipitation&hourly=weather_code,precipitation,temperature_2m,apparent_temperature&forecast_days=1&timezone=Australia%2FMelbourne`;
-    const res = await fetch(url);
+    const weatherController = new AbortController();
+    const weatherTimeoutId = setTimeout(() => weatherController.abort(), 8000);
+    const res = await fetch(url, { signal: weatherController.signal });
+    clearTimeout(weatherTimeoutId);
 
     if (!res.ok) throw new Error('Weather API error');
     const data = await res.json();
