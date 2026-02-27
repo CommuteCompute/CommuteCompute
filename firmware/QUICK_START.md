@@ -113,7 +113,7 @@ If your device shows a 6-character pairing code after WiFi setup, enter it in th
 ### Normal Operation:
 - **Partial refresh** every 60 seconds (departure times update)
 - **Full refresh** every 5 minutes (complete screen redraw to prevent ghosting)
-- **USB-C power** required for continuous operation
+- **USB-C power** recommended for continuous always-on use (battery provides several days cable-free)
 
 ---
 
@@ -280,7 +280,7 @@ This is **required** for ESP32-C3. Do not change these settings.
 
 ### Power Requirements
 - **USB-C power recommended** for continuous, always-on operation
-- Battery operation provides several days of cable-free use — ideal for testing placement or portable scenarios. Deep sleep and configurable refresh intervals are planned enhancements to further extend battery duration
+- Battery operation provides several days of cable-free use — ideal for testing placement or portable scenarios. CCFirm™ v8.0.0 implements hardware deep sleep with a 60-second refresh interval. Configurable refresh intervals are a planned enhancement to further extend battery duration
 - For wall-mounted use, connect to USB-C power for uninterrupted operation
 
 ### Server URL
