@@ -135,6 +135,8 @@ Before starting setup, have these details ready:
 
 Your Commute Compute™ server runs in the cloud for free on Vercel. "The cloud" simply means the server runs on someone else's computer (Vercel's) instead of yours.
 
+**Before you begin:** Register for a Transport Victoria OpenData API key now. Approval takes 24–48 hours — start this first so your key is ready when you reach the dashboard setup step.
+
 ### Step 1.1: Create Vercel Account
 
 [TIME] Approximately 2-3 minutes.
@@ -234,7 +236,7 @@ Now you'll tell the system about your commute: where you live, where you work, a
 
 [TIME] Less than 1 minute.
 
-1. Open your web browser (any browser works: Chrome, Firefox, Safari, Edge)
+1. Open **Chrome or Edge** (required for device flashing and Bluetooth setup; Safari and Firefox cannot complete all steps)
 2. Go to: `https://YOUR-PROJECT-NAME.vercel.app/setup-wizard.html`
    - Replace `YOUR-PROJECT-NAME` with your actual Vercel project name
    - Example: `https://my-commute.vercel.app/setup-wizard.html`

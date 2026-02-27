@@ -4,8 +4,8 @@
 
 # Commute Compute System™ — Legal & Intellectual Property
 
-**Document Version:** 1.6
-**Last Updated:** 2026-02-16
+**Document Version:** 1.7
+**Last Updated:** 2026-02-27
 **Owner:** Angus Bergman
 
 ---
@@ -268,12 +268,22 @@ Commute Compute™ is operated by **Angus Bergman** as an individual sole trader
 - **Automated compliance:** 240+ automated audit checks enforce security, licensing, and data handling rules across the entire codebase.
 - **AGPL-3.0 source transparency:** The full source code is publicly auditable, providing users with complete visibility into data handling practices.
 
-### Recommended Additional Protections
+### Additional Protections for Commercial Deployments
 
-Users considering commercial deployment or handling sensitive personal information should consider:
-- Professional indemnity insurance appropriate to their risk profile
-- Independent legal advice on their obligations under the *Privacy Act 1988* (Cth) and state consumer protection laws
-- The commercial licence option for deployments requiring additional warranty or support terms
+Users considering commercial deployment or handling sensitive personal information should be aware of their obligations under:
+- *Privacy Act 1988* (Cth) and the Australian Privacy Principles
+- *Competition and Consumer Act 2010* (Cth), Schedule 2 (Australian Consumer Law)
+- State and territory consumer protection laws applicable to their jurisdiction
+- The commercial licence option, which provides additional warranty terms and dedicated support
+
+### Unfair Trading Practices Proactive Compliance
+
+The *Competition and Consumer Amendment (Unfair Trading Practices) Bill 2026* (Cth) introduces a general prohibition on unfair trading practices, with a commencement date of **1 July 2027**. The Commute Compute System™ is designed for proactive compliance with this anticipated prohibition through:
+
+- **Transparent data sourcing:** All transit data is sourced exclusively from Transport Victoria OpenData (GTFS-RT) and clearly attributed. No synthetic or estimated data is presented as live.
+- **Accurate capability representation:** Documentation accurately describes system capabilities, limitations, and requirements.
+- **Self-hosted architecture:** Users deploy and control their own instances, preventing asymmetries in data access or control.
+- **Open source auditability:** The AGPL-3.0 licence ensures full source transparency, enabling independent verification of system behaviour.
 
 ---
 
@@ -377,6 +387,7 @@ For security vulnerability reporting, see our [Responsible Disclosure Policy](SE
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.7 | 2026-02-27 | Replaced advisory subsection with legislative reference format citing Privacy Act 1988, Competition and Consumer Act 2010, and state consumer protection laws; added Unfair Trading Practices proactive compliance section (UTP Bill 2026, 1 July 2027 commencement) |
 | 1.6 | 2026-02-16 | Added Sole Trader Structure & Liability Mitigation section, supply chain integrity documentation, enhanced consumer law compliance disclosure |
 | 1.5 | 2026-02-16 | Added SECURITY.md cross-reference for responsible disclosure, added email to Contact section, corrected "inquiries" to "enquiries" (Australian English) |
 | 1.4 | 2026-02-15 | Added IP Australia TM 2627709/2627710 applications, updated trade mark heading for registration-pending status |

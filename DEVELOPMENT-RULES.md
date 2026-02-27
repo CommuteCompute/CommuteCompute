@@ -73,7 +73,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 | 9 | [E-ink Constraints](#-section-9-e-ink-constraints) | [HIGH] | 1-bit depth, partial refresh, no anti-aliasing |
 | 10 | [BMP Rendering Rules](#-section-10-bmp-rendering-rules) | [HIGH] | Output format, memory constraints, zone refresh |
 | 11 | [API & Data Rules](#-section-11-api--data-rules) | [HIGH] | GTFS-RT, caching, weather, Google Places |
-| 12 | [Business Logic](#-section-12-business-logic) | [HIGH] | CoffeeDecision, 12h time, journey math |
+| 12 | [Business Logic](#-section-12-business-logic) | [HIGH] | CoffeeDecision™, 12h time, journey math |
 | 13 | [Code Quality](#-section-13-code-quality) | [MEDIUM] | Dependencies, error states, magic numbers |
 | 14 | [Testing Requirements](#-section-14-testing-requirements) | [HIGH] | Pre-commit checklist, firmware/server testing |
 | 15 | [Deployment Rules](#-section-15-deployment-rules) | [HIGH] | Vercel, version tagging, firmware releases |
