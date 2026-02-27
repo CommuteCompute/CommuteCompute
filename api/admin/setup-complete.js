@@ -76,6 +76,8 @@ async function geocodeAddress(address, googleKey = null) {
   if (googleKey) {
     try {
       // Use Text Search to get coordinates
+      const googleController = new AbortController();
+      const googleTimeoutId = setTimeout(() => googleController.abort(), 8000);
       const response = await fetch('https://places.googleapis.com/v1/places:searchText', {
         method: 'POST',
         headers: {
@@ -92,8 +94,10 @@ async function geocodeAddress(address, googleKey = null) {
               radius: 100000.0
             }
           }
-        })
+        }),
+        signal: googleController.signal
       });
+      clearTimeout(googleTimeoutId);
 
       const data = await response.json();
 
@@ -124,9 +128,13 @@ async function geocodeAddress(address, googleKey = null) {
   try {
     const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
 
+    const nominatimController = new AbortController();
+    const nominatimTimeoutId = setTimeout(() => nominatimController.abort(), 8000);
     const response = await fetch(nominatimUrl, {
-      headers: { 'User-Agent': 'Commute Compute/1.0 (Setup Wizard)' }
+      headers: { 'User-Agent': 'Commute Compute/1.0 (Setup Wizard)' },
+      signal: nominatimController.signal
     });
+    clearTimeout(nominatimTimeoutId);
     const results = await response.json();
 
     if (results && results.length > 0) {

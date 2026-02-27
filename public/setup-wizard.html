@@ -1123,6 +1123,22 @@
         return !!localStorage.getItem('cc-terms-accepted');
     }
 
+    function showStepLoading() {
+        var overlay = document.getElementById('step-loading-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'step-loading-overlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.6);display:flex;align-items:center;justify-content:center;z-index:9999;';
+            overlay.innerHTML = '<div style="color:#4fb28e;font-size:16px;">Loading...</div>';
+            document.body.appendChild(overlay);
+        }
+        overlay.style.display = 'flex';
+    }
+    function hideStepLoading() {
+        var overlay = document.getElementById('step-loading-overlay');
+        if (overlay) overlay.style.display = 'none';
+    }
+
     function goToStep(target) {
         if (!isComplianceAccepted()) return; // Blocked until compliance gate completed
         if (target < 1 || target > TOTAL_STEPS) return;
@@ -1553,7 +1569,7 @@
 
         try {
             var controller = new AbortController();
-            var timeoutId = setTimeout(function(){ controller.abort(); }, 15000);
+            var timeoutId = setTimeout(function(){ controller.abort(); }, 25000);
             var response = await fetch('/api/save-transit-key', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ apiKey: apiKey, state: selectedAuthority || 'VIC' }),
@@ -1575,7 +1591,7 @@
                 btn.disabled = false; btn.innerHTML = '<svg class="icon-sm"><use href="#icon-save"/></svg> Save & Test';
             }
         } catch (error) {
-            var msg = error.name === 'AbortError' ? 'Request timed out. Try again or skip.' : error.message;
+            var msg = error.name === 'AbortError' ? 'Validation is taking longer than expected. Your key may have been saved — try continuing, or click Save & Test again.' : error.message;
             status.innerHTML = '<span style="color:#ef4444;"><svg class="icon-sm"><use href="#icon-x-circle"/></svg> Error: ' + sanitize(msg) + '</span>';
             btn.disabled = false; btn.innerHTML = '<svg class="icon-sm"><use href="#icon-save"/></svg> Save & Test';
         }
@@ -1667,29 +1683,33 @@
             localStorage.setItem('cc-configured', 'true');
             if (selectedDevice) localStorage.setItem('cc-device', selectedDevice);
 
-            // Sync to KV
-            try {
-                var transitKey = document.getElementById('api-key')?.value || localStorage.getItem('cc-transit-api-key') || '';
-                var gKey = document.getElementById('google-places-api-key')?.value || localStorage.getItem('cc-google-api-key') || '';
-                await fetch(baseUrl + '/api/sync-config', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ transitKey: transitKey, googleKey: gKey, state: selectedAuthority, preferences: fullConfig })
-                });
-            } catch (e) { /* KV sync failed - non-critical */ }
-
-            // Generate webhook
+            // Sync to KV + Generate webhook in parallel (both non-critical)
             var webhookUrl = '';
-            try {
-                var webhookResponse = await fetch(baseUrl + '/api/admin/generate-webhook', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ config: fullConfig })
-                });
-                var webhookResult = await webhookResponse.json();
-                if (webhookResult.success) {
-                    webhookUrl = webhookResult.webhookUrl;
-                    localStorage.setItem('cc-webhook-url', webhookUrl);
-                }
-            } catch (e) { /* webhook generation failed - non-critical */ }
+            var transitKey = document.getElementById('api-key')?.value || localStorage.getItem('cc-transit-api-key') || '';
+            var gKey = document.getElementById('google-places-api-key')?.value || localStorage.getItem('cc-google-api-key') || '';
+            await Promise.all([
+                (async function() {
+                    try {
+                        await fetch(baseUrl + '/api/sync-config', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ transitKey: transitKey, googleKey: gKey, state: selectedAuthority, preferences: fullConfig })
+                        });
+                    } catch (e) { /* KV sync failed - non-critical */ }
+                })(),
+                (async function() {
+                    try {
+                        var webhookResponse = await fetch(baseUrl + '/api/admin/generate-webhook', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ config: fullConfig })
+                        });
+                        var webhookResult = await webhookResponse.json();
+                        if (webhookResult.success) {
+                            webhookUrl = webhookResult.webhookUrl;
+                            localStorage.setItem('cc-webhook-url', webhookUrl);
+                        }
+                    } catch (e) { /* webhook generation failed - non-critical */ }
+                })()
+            ]);
 
             // Store for Step 6
             window._webhookUrl = webhookUrl;
@@ -2004,12 +2024,14 @@
             if (!home) { showInlineError('home-address', 'Please enter your home address'); return; }
             if (!work) { showInlineError('work-address', 'Please enter your work address'); return; }
 
+            showStepLoading();
             addresses = { home: home, work: work, cafe: document.getElementById('cafe-address').value };
-            await progressiveSave({ preferences: { addresses: addresses } });
+            progressiveSave({ preferences: { addresses: addresses } });
             localStorage.setItem('cc-addresses', JSON.stringify(addresses));
             resolveStopsFromAddress(home);
             showAuthorities();
             goToStep(4);
+            hideStepLoading();
         });
 
         // Step 4 events
@@ -2017,10 +2039,12 @@
         document.getElementById('step-4-next-btn').addEventListener('click', async function() {
             clearInlineError('authority');
             if (!selectedAuthority) { showInlineError('authority', 'Please select a transit authority'); return; }
-            await progressiveSave({ state: selectedAuthority });
+            showStepLoading();
+            progressiveSave({ state: selectedAuthority });
             localStorage.setItem('cc-state', selectedAuthority);
             showAPIForm();
             goToStep(5);
+            hideStepLoading();
         });
 
         // Step 5 events
