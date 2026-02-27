@@ -104,7 +104,7 @@ async function testApiKey(apiKey, state) {
 
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+  const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 second timeout
 
   try {
     const headers = validator.makeHeaders(apiKey.trim());
