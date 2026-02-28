@@ -576,7 +576,8 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       stopName: leg.stopName,
       stationName: leg.stationName,
       lineName: leg.lineName || liveData?.lineName,
-      routeNumber: leg.routeNumber || liveData?.routeNumber
+      routeNumber: leg.routeNumber || liveData?.routeNumber,
+      destinationName: leg.destination?.name || null
     };
 
     // Handle coffee leg state based on coffee decision
@@ -1675,8 +1676,10 @@ export default async function handler(req, res) {
     }
 
     // Per Section 11.8: Zero-Config compliant - load API key from KV storage
+    // getTransitApiKey() returns { devId, apiKey } object — extract the string
     const transitApiKey = await getTransitApiKey();
-    const apiOptions = transitApiKey ? { apiKey: transitApiKey } : {};
+    const apiKeyStr = transitApiKey?.apiKey || null;
+    const apiOptions = apiKeyStr ? { apiKey: apiKeyStr } : {};
 
     // V15.0: Extract tram/bus route numbers from journey legs for GTFS-RT route-level matching
     // When stop-level matching fails (common for trams), route-level matching can find live data
