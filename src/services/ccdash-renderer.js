@@ -1281,6 +1281,15 @@ function getLegTitle(leg) {
 }
 
 /**
+ * Check if a stop name is generic/unhelpful for display
+ */
+function isGenericStop(name) {
+  if (!name) return true;
+  const generic = ['station', 'tram stop', 'bus stop', 'platform', 'stop', 'city', 'terminus'];
+  return generic.includes(name.toLowerCase().trim());
+}
+
+/**
  * Generate leg subtitle from leg data (V10 Spec Section 5.5)
  */
 function getLegSubtitle(leg) {
@@ -1376,7 +1385,9 @@ function getLegSubtitle(leg) {
       const hasLiveData = leg.isLive === true;
       const liveIndicator = hasLiveData ? ' LIVE' : '';
       const tilde = hasLiveData ? '' : '~';
-      if (nextDepartures.length >= 2) {
+      if (nextDepartures.length >= 3) {
+        parts.push(`${tilde}Next: ${nextDepartures[0]}, ${nextDepartures[1]}, ${nextDepartures[2]} min${liveIndicator}`);
+      } else if (nextDepartures.length === 2) {
         parts.push(`${tilde}Next: ${nextDepartures[0]}, ${nextDepartures[1]} min${liveIndicator}`);
       } else if (nextDepartures.length === 1) {
         parts.push(`${tilde}Next: ${nextDepartures[0]} min${liveIndicator}`);
@@ -2341,25 +2352,24 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   ctx.fillText(`${data.temp || '--'}°`, weatherBoxX + weatherBoxW / 2, weatherBoxY + 26);
 
   // Condition - below temp
-  // V15.0 SPEC FIX: Per CCDashDesignV15.0 Section 2.9.2 — 11px
-  ctx.font = '11px Inter, sans-serif';
+  ctx.font = '15px Inter, sans-serif';
   let condition = data.condition || '';
   while (ctx.measureText(condition).width > weatherBoxW - 12 && condition.length > 3) {
     condition = condition.slice(0, -1);
   }
-  ctx.fillText(condition, weatherBoxX + weatherBoxW / 2, weatherBoxY + 54);
+  ctx.fillText(condition, weatherBoxX + weatherBoxW / 2, weatherBoxY + 52);
 
   // V15.0: Feels-like temperature from mindset engine (wind chill)
   if (data.mindset_feels_like) {
-    ctx.font = '12px Inter, sans-serif';
+    ctx.font = '15px Inter, sans-serif';
     ctx.fillStyle = '#000';
-    ctx.fillText(data.mindset_feels_like, weatherBoxX + weatherBoxW / 2, weatherBoxY + 68);
+    ctx.fillText(data.mindset_feels_like, weatherBoxX + weatherBoxW / 2, weatherBoxY + 66);
   }
 
   // V14.0: Lifestyle context suggestions (replaces simple umbrella indicator)
   const needsUmbrella = data.rain_expected || data.precipitation > 30 ||
     (data.condition && /rain|shower|storm|drizzle/i.test(data.condition));
-  const umbrellaY = weatherBoxY + weatherBoxH - 18;
+  const umbrellaY = weatherBoxY + weatherBoxH - 22;
 
   const lifestyleDisplay = data.lifestyle_display;
   const displayText = lifestyleDisplay || (needsUmbrella ? 'BRING UMBRELLA' : 'NO UMBRELLA');
@@ -2367,15 +2377,15 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   // White/plain text for passive notices (NO UMBRELLA, etc.)
   const isObligation = needsUmbrella || (lifestyleDisplay && !/^NO\s/i.test(lifestyleDisplay) && /UMBRELLA|JACKET|HYDRAT|SUNGLASSES|SUNSCREEN|LAYERS/i.test(lifestyleDisplay));
 
-  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.font = 'bold 14px Inter, sans-serif';
   if (isObligation) {
     ctx.fillStyle = '#000';
-    ctx.fillRect(weatherBoxX + 4, umbrellaY, weatherBoxW - 8, 14);
+    ctx.fillRect(weatherBoxX + 4, umbrellaY, weatherBoxW - 8, 18);
     ctx.fillStyle = '#FFF';
   } else {
     ctx.fillStyle = '#000';
   }
-  ctx.fillText(displayText, weatherBoxX + weatherBoxW / 2, umbrellaY + 7);
+  ctx.fillText(displayText, weatherBoxX + weatherBoxW / 2, umbrellaY + 9);
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
@@ -2601,8 +2611,8 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   const walkIconSize = Math.max(24, Math.round(28 * scale));     // V13.3: Normal size for walk
   const iconSize = Math.max(28, Math.round(36 * scale));         // Default fallback
   const numberSize = 32;       // V15.1: Increased from 28px for device legibility
-  const departLabelSize = 16;  // V15.1: Increased from 14px for glanceability
-  const departTimeSize = 30;   // V15.1: Increased from 26px for better e-ink visibility
+  const departLabelSize = 14;  // Reduced from 16px — was too large on device
+  const departTimeSize = 24;   // Reduced from 30px — was too large on device
   // V15.1: Larger duration numbers and label for e-ink visibility
   const durationSize = Math.max(36, Math.round(42 * scale));  // V15.1: Increased from 32→38
   const durationLabelSize = Math.max(14, Math.round(16 * scale));  // V15.1: Increased from 12→14
@@ -2997,14 +3007,16 @@ function _renderFullScreenCanvas(data, prefs = {}) {
             .slice(0, 3)  // Max 3 departures
             .map(depMs => Math.max(0, Math.round((depMs - nowMs) / 60000)));
 
-          if (catchableDepartures.length >= 2) {
+          if (catchableDepartures.length >= 3) {
+            parts.push(`Next: ${catchableDepartures[0]}, ${catchableDepartures[1]}, ${catchableDepartures[2]} min${liveIndicator}`);
+          } else if (catchableDepartures.length === 2) {
             parts.push(`Next: ${catchableDepartures[0]}, ${catchableDepartures[1]} min${liveIndicator}`);
           } else if (catchableDepartures.length === 1) {
             parts.push(`Next: ${catchableDepartures[0]} min${liveIndicator}`);
           }
         } else if (leg.nextDepartures && leg.nextDepartures.length > 0) {
           // Fallback to raw nextDepartures if no absolute times (timetable data)
-          parts.push(`${tilde}Next: ${leg.nextDepartures.slice(0, 2).join(', ')} min${liveIndicator}`);
+          parts.push(`${tilde}Next: ${leg.nextDepartures.slice(0, 3).join(', ')} min${liveIndicator}`);
         }
 
         legSubtitle = parts.join(' • ') || getLegSubtitle(leg);
@@ -3039,7 +3051,9 @@ function _renderFullScreenCanvas(data, prefs = {}) {
           .slice(0, 3)
           .map(depMs => Math.max(0, Math.round((depMs - nowMs) / 60000)));
 
-        if (catchableDepartures.length >= 2) {
+        if (catchableDepartures.length >= 3) {
+          nextStr = `${tilde}Next: ${catchableDepartures[0]}, ${catchableDepartures[1]}, ${catchableDepartures[2]} min${liveIndicator}`;
+        } else if (catchableDepartures.length === 2) {
           nextStr = `${tilde}Next: ${catchableDepartures[0]}, ${catchableDepartures[1]} min${liveIndicator}`;
         } else if (catchableDepartures.length === 1) {
           nextStr = `${tilde}Next: ${catchableDepartures[0]} min${liveIndicator}`;
@@ -3047,11 +3061,18 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       } else if (leg.nextDepartures && leg.nextDepartures.length > 0) {
         // Fallback to pre-computed nextDepartures from screen.js
         const filtered = leg.nextDepartures.filter(m => m >= 0 && m <= 60);
-        if (filtered.length >= 2) {
+        if (filtered.length >= 3) {
+          nextStr = `${tilde}Next: ${filtered[0]}, ${filtered[1]}, ${filtered[2]} min${liveIndicator}`;
+        } else if (filtered.length === 2) {
           nextStr = `${tilde}Next: ${filtered[0]}, ${filtered[1]} min${liveIndicator}`;
         } else if (filtered.length === 1) {
           nextStr = `${tilde}Next: ${filtered[0]} min${liveIndicator}`;
         }
+      }
+
+      // Add "Alight at [stop]" for transit legs with known destination
+      if (leg.destinationName && !isGenericStop(leg.destinationName)) {
+        legSubtitle += ` \u2022 Alight at ${leg.destinationName}`;
       }
 
       if (nextStr) {
