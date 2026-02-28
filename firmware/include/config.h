@@ -13,7 +13,7 @@
 // VERSION
 // =============================================================================
 
-#define FIRMWARE_VERSION "8.0.0"
+#define FIRMWARE_VERSION "8.1.0"
 
 // =============================================================================
 // SERVER CONFIGURATION
@@ -112,6 +112,15 @@
 #define SLEEP_INTERVAL_BATTERY_SEC 60          // 60s deep sleep (matches USB refresh)
 #define SLEEP_US_TO_S_FACTOR 1000000ULL        // Microsecond-to-second conversion
 #define VCOM_MAINTENANCE_INTERVAL 5            // VCOM cycle every N deep sleep wakes
+
+// =============================================================================
+// BATTERY OPTIMISATION (v8.1.0)
+// =============================================================================
+
+#define WIFI_FAST_RECONNECT_ATTEMPTS 3         // Fast reconnect tries before full scan fallback
+#define NTP_RESYNC_INTERVAL 30                 // Force NTP resync every N deep sleep cycles
+#define RTC_SETTINGS_MAGIC 0xCC55AA01          // Magic number for NVS cache validation
+#define RTC_WEBHOOK_BUF_SIZE 256               // RTC buffer size for cached webhook URL
 
 // =============================================================================
 // ZONE LAYOUT (V10 Dashboard)

@@ -1,10 +1,17 @@
 # Commute Compute Firmware Version
 # Copyright (c) 2026 Angus Bergman - AGPL-3.0
 
-VERSION=8.0.0
-BUILD_DATE=2026-02-16
+VERSION=8.1.0
+BUILD_DATE=2026-02-28
 STATUS=PRODUCTION-UNLOCKED
 COMMIT=pending
+
+# v8.1.0 Changes (2026-02-28):
+# - WiFi fast reconnect via RTC-cached BSSID/channel
+# - NTP skip on deep sleep wake (resync every 30 cycles)
+# - NVS settings cache in RTC memory
+# - Static BMP buffer (replaces malloc/free)
+# - Serial suppression on battery deep sleep wake
 
 # v8.0.0 Changes (2026-02-27):
 # - Canonical firmware version declared by founder directive
