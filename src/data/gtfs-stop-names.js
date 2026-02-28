@@ -50,7 +50,11 @@ export const GTFS_STOP_NAMES = (() => {
  */
 export function getStopNameById(stopId) {
   if (!stopId) return null;
-  return GTFS_STOP_NAMES[String(stopId)] || null;
+  const id = String(stopId);
+  if (GTFS_STOP_NAMES[id]) return GTFS_STOP_NAMES[id];
+  // Station code lookup (3-letter codes like 'SYR' → 'South Yarra Station')
+  if (VIC_METRO_STATIONS[id]) return VIC_METRO_STATIONS[id].name;
+  return null;
 }
 
 /**

@@ -80,6 +80,11 @@ class DepartureConfidence {
     if (currentMins > targetArrivalMins) {
       // Target is tomorrow: buffer = (minutes until midnight) + targetArrival - journey
       bufferMins = (1440 - currentMins) + targetArrivalMins - totalMinutes;
+      // Past today's window check: if buffer exceeds 12 hours, it's afternoon/evening
+      // and the target has already passed — not genuinely tomorrow's commute
+      if (bufferMins > 720) {
+        bufferMins = targetArrivalMins - currentMins - totalMinutes; // negative = late
+      }
     }
 
     const timeBuffer = this._calcTimeBuffer(bufferMins);
