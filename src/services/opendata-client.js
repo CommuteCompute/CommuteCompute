@@ -25,6 +25,7 @@
 
 import GtfsRealtimeBindings from 'gtfs-realtime-bindings';
 import { getTransitApiKey } from '../data/kv-preferences.js';
+import { VIC_METRO_STATIONS, getPlatformIds } from '../data/vic/gtfs-reference.js';
 
 // Transport Victoria OpenData API Configuration
 // Per Development Rules Section 1.1 & 11.1 - GTFS-RT via OpenData
@@ -35,7 +36,8 @@ const MELBOURNE_LAT = -37.8136;
 const MELBOURNE_LON = 144.9631;
 
 // Melbourne Metro line names (GTFS route ID suffix → line name)
-const METRO_LINE_NAMES = {
+// Exported for train line code passthrough in api/screen.js
+export const METRO_LINE_NAMES = {
   'SHM': 'Sandringham', 'SAM': 'Sandringham', 'FKN': 'Frankston', 'PKM': 'Pakenham',
   'CBE': 'Cranbourne', 'BEG': 'Belgrave', 'LIL': 'Lilydale', 'GWY': 'Glen Waverley',
   'ALM': 'Alamein', 'HBE': 'Hurstbridge', 'SUY': 'Sunbury', 'CGB': 'Craigieburn',
@@ -58,24 +60,18 @@ const VLINE_LINE_NAMES = {
  * no longer via City Loop.
  * Richmond is included as the gateway between suburban and inner-city stops.
  */
-const CITY_LOOP_STOP_IDS = new Set([
-  '26001', '26002', '26003', '26004', // Parliament, Melbourne Central, Flagstaff, Southern Cross
-  '12204', '12205'                     // Flinders Street platforms
-]);
+// City Loop: Parliament (PAR), Melbourne Central (MCE), Flagstaff (FGS),
+// Southern Cross (SSS), Flinders Street (FSS) — all platform IDs from verified GTFS
+const CITY_LOOP_STOP_IDS = getPlatformIds('PAR', 'MCE', 'FGS', 'SSS', 'FSS');
 
-// Metro Tunnel station stop IDs (per api/admin/resolve-stops.js)
-const METRO_TUNNEL_STOP_IDS = new Set([
-  '26010',                              // Arden
-  '26011',                              // Parkville
-  '26012',                              // State Library
-  '26013',                              // Town Hall
-  '26014'                               // Anzac
-]);
+// Metro Tunnel: Arden (ARN), Parkville (PKV), State Library (STL),
+// Town Hall (THL), Anzac (AZC) — all platform IDs from verified GTFS
+const METRO_TUNNEL_STOP_IDS = getPlatformIds('ARN', 'PKV', 'STL', 'THL', 'AZC');
 
+// Richmond (RMD) — gateway to city for SE lines
 const INNER_CITY_STOP_IDS = new Set([
-  ...CITY_LOOP_STOP_IDS,
-  ...METRO_TUNNEL_STOP_IDS,
-  '12173'                               // Richmond — gateway to city for SE lines
+  ...CITY_LOOP_STOP_IDS, ...METRO_TUNNEL_STOP_IDS,
+  ...VIC_METRO_STATIONS.RMD.platforms
 ]);
 
 /**
@@ -148,6 +144,18 @@ function getRouteNumber(routeId) {
   if (!routeId) return null;
   // Match trailing number before optional colon (e.g., "-58:" or "-58")
   const match = routeId.match(/-(\d+):?$/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Extract 3-letter line code from GTFS route ID.
+ * Used for train route-level fallback (e.g., "aus:vic:vic-02-SHM:" → "SHM")
+ * @param {string} routeId - GTFS route ID
+ * @returns {string|null} - 3-letter line code or null
+ */
+function getLineCode(routeId) {
+  if (!routeId) return null;
+  const match = routeId.match(/-([A-Z]{3}):?$/);
   return match ? match[1] : null;
 }
 
@@ -307,30 +315,27 @@ export async function getDepartures(stopId, routeType, options = {}) {
       }
     }
 
-    // V15.0: Route-level fallback for trams/buses when stop-level match fails.
+    // V15.0: Route-level fallback when stop-level match fails.
     // When the GTFS-RT feed has entities but none match the stop ID, search by
-    // route number. Tram feeds may use different stop ID schemes than the static GTFS.
-    // If we find trips on the matching route, extract departure estimates from any
-    // stop time update on that trip.
-    if (departures.length === 0 && feedEntityCount > 0 && options.routeNumber) {
+    // route number or line code. Works for all modes (tram, bus, train).
+    if (departures.length === 0 && feedEntityCount > 0 && (options.routeNumber || options.lineCode)) {
       const routeFallbackDepartures = processRouteLevelDepartures(
-        feed, stopId, options.routeNumber, routeType
+        feed, stopId, options.routeNumber, routeType, options.lineCode
       );
       if (routeFallbackDepartures.length > 0) {
-        console.log(`[OpenData] Route-level fallback found ${routeFallbackDepartures.length} departures for route ${options.routeNumber} (stopId=${stopId} not matched directly)`);
+        console.log(`[OpenData] Route-level fallback found ${routeFallbackDepartures.length} departures for ${options.routeNumber || options.lineCode} (stopId=${stopId} not matched directly)`);
         // Copy results to departures array (preserving array identity for _feedInfo)
         routeFallbackDepartures.forEach(d => departures.push(d));
       }
     }
 
-    // V15.0: Broad tram fallback — GTFS-RT tram stop IDs differ from static GTFS.
-    // When stop-level AND route-level both fail for trams and no route number is
-    // configured, collect approximate timing from all routes in the feed.
-    // This ensures tram legs are preserved in the display with live timing.
-    if (departures.length === 0 && feedEntityCount > 0 && routeType === 1 && !options.routeNumber) {
+    // V15.0: Broad fallback — when stop-level AND route-level both fail and no
+    // route number/line code is configured, collect approximate timing from all
+    // routes in the feed. Ensures transit legs are preserved with live timing.
+    if (departures.length === 0 && feedEntityCount > 0 && !options.routeNumber && !options.lineCode) {
       const broadDepartures = processAnyRouteDepartures(feed);
       if (broadDepartures.length > 0) {
-        console.log(`[OpenData] Tram broad fallback: ${broadDepartures.length} departures from mixed routes (stopId=${stopId}, no route number configured)`);
+        console.log(`[OpenData] Broad fallback: ${broadDepartures.length} departures from mixed routes in ${mode} feed (stopId=${stopId})`);
         broadDepartures.forEach(d => departures.push(d));
       }
     }
@@ -341,6 +346,7 @@ export async function getDepartures(stopId, routeType, options = {}) {
       sampleRouteIds: [...routeIds].slice(0, 10),
       queriedStopId: String(stopId),
       queriedRouteNumber: options.routeNumber || null,
+      queriedLineCode: options.lineCode || null,
       mode,
       matchMethod: departures.length > 0 && departures[0]?.source === 'gtfs-rt-route'
         ? 'route-level' : departures.length > 0 && departures[0]?.source === 'gtfs-rt-broad'
@@ -377,12 +383,19 @@ function matchesStopId(gtfsStopId, queriedStopId) {
   const gtfsStr = String(gtfsStopId);
   const stopIdStr = String(queriedStopId);
 
+  // Direct match
   if (gtfsStr === stopIdStr) return true;
+
+  // Station code match — resolve to all platform IDs via GTFS reference
+  if (VIC_METRO_STATIONS[stopIdStr]) {
+    return VIC_METRO_STATIONS[stopIdStr].platforms.includes(gtfsStr);
+  }
+
+  // Suffix matching for flexibility (tram/bus stop IDs)
   if (gtfsStr.endsWith(`:${stopIdStr}`)) return true;
   if (gtfsStr.endsWith(`-${stopIdStr}`)) return true;
-  if (gtfsStr.endsWith(`_${stopIdStr}`)) return true;
-  if (gtfsStr.endsWith(`/${stopIdStr}`)) return true;
 
+  // Trailing numeric match
   if (/^\d+$/.test(stopIdStr)) {
     const numMatch = gtfsStr.match(/(\d+)$/);
     if (numMatch && numMatch[1] === stopIdStr) return true;
@@ -399,16 +412,17 @@ function matchesStopId(gtfsStopId, queriedStopId) {
  *
  * @param {Object} feed - Decoded GTFS-RT FeedMessage
  * @param {string|number} stopId - Original stop ID (for stop matching within trips)
- * @param {string} routeNumber - Expected route number (e.g., "58" for tram)
+ * @param {string} routeNumber - Expected route number (e.g., "58" for tram) or null
  * @param {number} routeType - 0=metro, 1=tram, 2=bus
+ * @param {string} lineCode - Expected 3-letter line code (e.g., "SHM" for train) or null
  * @returns {Array} - Departure objects from route-level matching
  */
-function processRouteLevelDepartures(feed, stopId, routeNumber, routeType) {
+function processRouteLevelDepartures(feed, stopId, routeNumber, routeType, lineCode) {
   const nowMs = getNowMs();
   const departures = [];
-  if (!feed?.entity || !routeNumber) return departures;
+  if (!feed?.entity || (!routeNumber && !lineCode)) return departures;
 
-  const targetRoute = String(routeNumber);
+  const targetRoute = routeNumber ? String(routeNumber) : null;
   const stopIdStr = String(stopId);
 
   for (const entity of feed.entity) {
@@ -416,10 +430,15 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType) {
     if (!tripUpdate?.stopTimeUpdate?.length) continue;
 
     const routeId = tripUpdate.trip?.routeId;
-    const extractedRoute = getRouteNumber(routeId);
 
-    // Match by route number
-    if (extractedRoute !== targetRoute) continue;
+    // Match by route number (tram/bus) or line code (train)
+    if (targetRoute) {
+      const extractedRoute = getRouteNumber(routeId);
+      if (extractedRoute !== targetRoute) continue;
+    } else if (lineCode) {
+      const extractedCode = getLineCode(routeId);
+      if (extractedCode !== lineCode) continue;
+    }
 
     const stus = tripUpdate.stopTimeUpdate;
 
@@ -832,4 +851,4 @@ export async function getDashboardData(config = {}) {
   };
 }
 
-export default { getDepartures, getDisruptions, getWeather, getDashboardData, setApiKey };
+export default { getDepartures, getDisruptions, getWeather, getDashboardData, setApiKey, METRO_LINE_NAMES };

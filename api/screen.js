@@ -11,7 +11,7 @@
  * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  */
 
-import { getDepartures, getDisruptions, getWeather } from '../src/services/opendata-client.js';
+import { getDepartures, getDisruptions, getWeather, METRO_LINE_NAMES } from '../src/services/opendata-client.js';
 import CommuteCompute from '../src/engines/commute-compute.js';
 import { GTFS_STOP_NAMES, getStopNameById, MELBOURNE_STOP_IDS, detectStopIdsFromAddress } from '../src/data/gtfs-stop-names.js';
 import { getTransitApiKey, getPreferences, getUserState, setDeviceStatus, getClient } from '../src/data/kv-preferences.js';
@@ -486,10 +486,10 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       }
     }
 
-    // V15.0: No timetable estimate fallback. If GTFS-RT has no live data for this
-    // transit leg, departure times remain null. filterUnavailableTransitLegs() will
-    // have already removed legs where GTFS-RT confirms no services running.
-    // Per Section 23.6: No mock data. Only verified live GTFS-RT departures shown.
+    // V15.0: Timetable fallback. If GTFS-RT has no live data for this transit leg,
+    // departure times remain null. filterUnavailableTransitLegs() will have marked
+    // the leg with isTimetableEstimate: true (keeping the transit leg, not converting
+    // to walk). Per Section 23.6: No mock data. Live GTFS-RT or timetable estimate.
 
     // V13.6: Calculate the actual journey contribution for this leg
     // For display: show minutes from NOW to departure
@@ -534,7 +534,7 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       actualDepartureMs,           // V13.6: Actual departure timestamp for stable arrival calc
       // V15.0: Live data flags — transit legs only exist here when GTFS-RT matched
       isLive: isTransitLeg && !!liveData,
-      isTimetableEstimate: false,  // V15.0: No timetable estimates — all data is live or absent
+      isTimetableEstimate: leg.isTimetableEstimate || false,
       // V13.6: Stop/station names for renderer display
       originStop: leg.originStop,
       originStation: leg.originStation,
@@ -1039,21 +1039,13 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
       const isLastService = routeDepartures && routeDepartures.length === 1;
 
       if (!hasDepartures) {
-        // V15.0: No live GTFS-RT data — service not running.
-        // Convert to estimated walk so total distance remains accurate for
-        // alt-transit cost calculations and walk-only journey display.
-        // Speed ratios: how much longer walking takes vs transit for same distance.
-        const originalType = leg.type;
-        const walkSpeedRatio = (originalType === 'train' || originalType === 'vline') ? 4 :
-                               originalType === 'tram' ? 2.5 : 3;
-        const transitMins = leg.minutes || leg.durationMinutes || 0;
-        leg.type = 'walk';
-        leg.minutes = Math.round(transitMins * walkSpeedRatio);
-        leg.durationMinutes = leg.minutes;
-        leg.dataSource = 'none';
+        // V15.0: No live GTFS-RT data — keep transit leg with timetable estimate.
+        // The leg retains its original type and duration so journey time remains
+        // accurate. The renderer shows "Scheduled ~Xmin" via isTimetableEstimate.
+        leg.dataSource = 'timetable';
         leg.isLive = false;
-        removedTypes.push(originalType);
-        // Fall through — add as walk. mergeConsecutiveWalkLegs() will combine.
+        leg.isTimetableEstimate = true;
+        removedTypes.push(leg.type);
       } else {
         // Live data is available - mark the leg accordingly
         leg.dataSource = 'live';
@@ -1101,7 +1093,7 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
   if (removedTypes.length > 0) {
     const uniqueTypes = [...new Set(removedTypes)];
     const typeLabel = uniqueTypes.map(t => t.toUpperCase()).join(' + ');
-    transitNotice = `${typeLabel} NOT RUNNING`;
+    transitNotice = `${typeLabel} SCHEDULED`;
   }
 
   // If walk-faster was detected on any leg, append to notice
@@ -1660,8 +1652,18 @@ export default async function handler(req, res) {
     const busApiOptions = { ...apiOptions };
     if (busLeg?.routeNumber) busApiOptions.routeNumber = busLeg.routeNumber;
 
+    // V15.0: Extract train line code for route-level fallback
+    const trainLeg = route?.legs?.find(l => l.type === 'train' || l.type === 'vline');
+    const trainApiOptions = { ...apiOptions };
+    if (trainLeg?.lineName) {
+      const lineEntry = Object.entries(METRO_LINE_NAMES).find(
+        ([, name]) => name.toLowerCase() === trainLeg.lineName.toLowerCase()
+      );
+      if (lineEntry) trainApiOptions.lineCode = lineEntry[0];
+    }
+
     const [trains, trams, buses, weather, metroDisruptions, tramDisruptions, busDisruptions] = await Promise.all([
-      getDepartures(trainStopId, 0, apiOptions),
+      getDepartures(trainStopId, 0, trainApiOptions),
       getDepartures(tramStopId, 1, tramApiOptions),
       getDepartures(busStopId, 2, busApiOptions),
       getWeather(locations.home?.lat, locations.home?.lon),
