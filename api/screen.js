@@ -410,6 +410,24 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       leg.originStop = actualName;
     }
 
+    // Resolve destination names via GTFS when engine provides generic ones
+    if (leg.type === 'tram' && leg.destination) {
+      const genericDestNames = ['station', 'tram stop', 'bus stop', 'platform', 'stop'];
+      const isDestGeneric = (name) => !name || genericDestNames.includes(name.toLowerCase().trim());
+      if (isDestGeneric(leg.destination.name)) {
+        const gtfsDest = getStopNameById(stopIds.trainStopId);
+        if (gtfsDest) leg.destination.name = gtfsDest;
+      }
+    }
+    if (leg.type === 'train' && leg.destination) {
+      const genericDestNames = ['station', 'tram stop', 'bus stop', 'platform', 'stop', 'city'];
+      const isDestGeneric = (name) => !name || genericDestNames.includes(name.toLowerCase().trim());
+      if (isDestGeneric(leg.destination.name)) {
+        const workSuburb = extractSuburb(locations.work?.address);
+        if (workSuburb) leg.destination.name = `${workSuburb} Station`;
+      }
+    }
+
     // Update origin after coffee leg (we're now leaving from cafe location)
     if (leg.type === 'coffee') {
       currentOrigin = 'cafe';
@@ -465,7 +483,7 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         minutesToDeparture = rawMinutes;
 
         // V13.6 FIX: Format departure as local clock time (state-aware)
-        const departDate = new Date(nowMs + minutesToDeparture * 60000);  // Use corrected minutes
+        const departDate = new Date(actualDepartureMs);  // Use actual GTFS-RT timestamp for precise clock time
         const departMelb = getMelbourneDisplayTime(departDate, state);
         const departH12 = departMelb.hour % 12 || 12;
         const departAmPm = departMelb.hour >= 12 ? 'pm' : 'am';
@@ -487,9 +505,18 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     }
 
     // V15.0: Timetable fallback. If GTFS-RT has no live data for this transit leg,
-    // departure times remain null. filterUnavailableTransitLegs() will have marked
-    // the leg with isTimetableEstimate: true (keeping the transit leg, not converting
-    // to walk). Per Section 23.6: No mock data. Live GTFS-RT or timetable estimate.
+    // estimate departure as arrival + 2 min average wait. Per Section 23.6: No mock
+    // data. Live GTFS-RT or timetable estimate with "Scheduled ~Xmin" display.
+    if (isTransitLeg && !actualDepartureMs) {
+      const estWaitMins = 2;
+      const estDepartMins = nowMins + cumulativeMinutes + estWaitMins;
+      const estH = Math.floor(estDepartMins / 60) % 24;
+      const estM = estDepartMins % 60;
+      const estH12 = estH % 12 || 12;
+      const estAmPm = estH >= 12 ? 'pm' : 'am';
+      departTime = `~${estH12}:${estM.toString().padStart(2, '0')}${estAmPm}`;
+      minutesToDeparture = cumulativeMinutes + estWaitMins;
+    }
 
     // V13.6: Calculate the actual journey contribution for this leg
     // For display: show minutes from NOW to departure
@@ -502,6 +529,9 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       // Journey contribution = wait time + original transit duration from route
       const transitDuration = leg.minutes || leg.durationMinutes || 5;
       journeyContribution = waitMinutes + transitDuration;
+    } else if (isTransitLeg && !actualDepartureMs) {
+      // No live data — add average wait estimate to journey contribution
+      journeyContribution = legDuration + 2;
     }
 
     // V15.0: Populate route/line info from live data BEFORE title/subtitle generation
