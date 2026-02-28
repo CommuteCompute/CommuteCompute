@@ -2084,11 +2084,13 @@ else
     fail "Missing METRO_TUNNEL_STOP_IDS in opendata-client.js (Section 25.4)"
 fi
 
-for stopid in 26010 26011 26012 26013 26014; do
-    if grep -q "'$stopid'" src/services/opendata-client.js 2>/dev/null; then
-        pass "Metro Tunnel stop ID $stopid present"
+# Metro Tunnel station codes — verified against Transport Victoria GTFS (2026-02-28)
+# Station codes resolve to platform IDs via getPlatformIds() from gtfs-reference.js
+for code in ARN PKV STL THL AZC; do
+    if grep -q "'$code'" src/services/opendata-client.js 2>/dev/null; then
+        pass "Metro Tunnel station code $code present"
     else
-        fail "Missing Metro Tunnel stop ID $stopid in opendata-client.js"
+        fail "Missing Metro Tunnel station code $code in opendata-client.js"
     fi
 done
 
