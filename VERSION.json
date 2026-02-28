@@ -57,10 +57,10 @@
     }
   },
   "firmware": {
-    "version": "8.0.0",
-    "description": "ESP32-C3 CCFirm - BLE Provisioning + BMP Text Renderer",
+    "version": "8.1.0",
+    "description": "ESP32-C3 CCFirm - BLE Provisioning + BMP Text Renderer + Battery Optimisation",
     "locked": false,
-    "lastUpdated": "2026-02-20",
+    "lastUpdated": "2026-02-28",
     "features": [
       "BLE provisioning (WiFi + server config)",
       "Pairing code display and verification",

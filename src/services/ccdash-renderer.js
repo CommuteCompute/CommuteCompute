@@ -1680,8 +1680,8 @@ function renderStatus(data, prefs) {
     ctx.textAlign = 'right';
     const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
     const needsAttention = confidenceScore < 75;
-    // V15.0: Bold only when action needed (AT RISK / UNLIKELY). Subtle for ON TIME.
-    ctx.font = needsAttention ? 'bold 14px Inter, sans-serif' : '13px Inter, sans-serif';
+    // V15.1: Bold only when action needed (AT RISK / UNLIKELY). Subtle for ON TIME.
+    ctx.font = needsAttention ? 'bold 17px Inter, sans-serif' : '16px Inter, sans-serif';
     // V15.0: Only append mindset when stress is not LOW (action-needed only)
     const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
     const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
@@ -1691,7 +1691,7 @@ function renderStatus(data, prefs) {
   // Right text - Total journey time (V10 Spec Section 4.2)
   if (totalMinutes) {
     ctx.textAlign = 'right';
-    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.font = 'bold 16px Inter, sans-serif';
     ctx.fillText(`${totalMinutes} min`, zone.w - 16, zone.h / 2);
     ctx.textAlign = 'left';
   }
@@ -1963,19 +1963,19 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   if (locationText !== locationTextRaw) locationText += '\u2026';
   ctx.fillText(locationText, 12, 4);
 
-  // V13.6: Battery indicator next to location (if provided by device)
+  // V15.1: Battery indicator next to location (if provided by device)
   const batteryPercent = data.battery_percent;
   if (batteryPercent !== null && batteryPercent !== undefined) {
     const locationWidth = ctx.measureText(locationText).width;
-    const batteryX = 12 + locationWidth + 8;
-    const batteryY = 3;
+    const batteryX = 12 + locationWidth + 10;
+    const batteryY = 2;
 
-    // Draw battery icon
-    drawBatteryIcon(ctx, batteryX, batteryY, batteryPercent, 10);
+    // Draw battery icon (larger for device legibility)
+    drawBatteryIcon(ctx, batteryX, batteryY, batteryPercent, 13);
 
     // Draw percentage text
-    ctx.font = 'bold 11px Inter, sans-serif';
-    ctx.fillText(`${batteryPercent}%`, batteryX + 22, 4);
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.fillText(`${batteryPercent}%`, batteryX + 26, 4);
   }
   
   // Convert to 12-hour format (DEVELOPMENT-RULES.md: 12-hour time MANDATORY)
@@ -2550,8 +2550,8 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     ctx.textAlign = 'right';
     const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
     const needsAttention = confidenceScore < 75;
-    // V15.0: Bold only when action needed (AT RISK / UNLIKELY). Subtle for ON TIME.
-    ctx.font = needsAttention ? 'bold 14px Inter, sans-serif' : '13px Inter, sans-serif';
+    // V15.1: Bold only when action needed (AT RISK / UNLIKELY). Subtle for ON TIME.
+    ctx.font = needsAttention ? 'bold 17px Inter, sans-serif' : '16px Inter, sans-serif';
     // V15.0: Only append mindset when stress is not LOW (action-needed only)
     const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
     const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
@@ -2562,7 +2562,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   // Right: Total journey time - LARGER font
   // -----------------------------------------------------------------------
   ctx.textAlign = 'right';
-  ctx.font = 'bold 16px Inter, sans-serif';  // V13.2: Increased from 13px
+  ctx.font = 'bold 18px Inter, sans-serif';  // V15.1: Increased from 16px for device legibility
   const statusRight = `${totalMinutes} min`;
   ctx.fillText(statusRight, 784, 112);
   ctx.textAlign = 'left';
@@ -2592,20 +2592,20 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   const baseLegs = 5;
   const scale = Math.min(1, Math.max(0.8, baseLegs / Math.max(legCount, 3)));
 
-  // V13.6: Significantly increased font sizes for e-ink readability
-  const titleSize = 22;        // V13.6: Increased from 20px for glanceability
-  const subtitleSize = 18;     // V13.6: Increased from 16px for "Next: x,y,z" visibility
-  const subtitleSize2 = 14;    // V13.2: Increased from 12px
+  // V15.1: Significantly increased font sizes for e-ink readability at device scale
+  const titleSize = 26;        // V15.1: Increased from 22px for physical device legibility
+  const subtitleSize = 22;     // V15.1: Increased from 18px for "Next: x,y,z" visibility
+  const subtitleSize2 = 16;    // V15.1: Increased from 14px
   // V13.3: Transit icons double height to match two text lines; walk icons normal
   const transitIconSize = Math.max(48, Math.round(56 * scale));  // V13.3: Double height for transit
   const walkIconSize = Math.max(24, Math.round(28 * scale));     // V13.3: Normal size for walk
   const iconSize = Math.max(28, Math.round(36 * scale));         // Default fallback
-  const numberSize = 28;       // V13.2: Increased from 24px
-  const departLabelSize = 14;  // V13.3: Increased from 12px for glanceability
-  const departTimeSize = 26;   // V13.6: Increased from 22px for better e-ink visibility
-  // V13.6: Larger duration numbers and label for e-ink visibility
-  const durationSize = Math.max(32, Math.round(38 * scale));  // V13.6: Increased from 30
-  const durationLabelSize = Math.max(12, Math.round(14 * scale));  // V13.6: Increased from 13
+  const numberSize = 32;       // V15.1: Increased from 28px for device legibility
+  const departLabelSize = 16;  // V15.1: Increased from 14px for glanceability
+  const departTimeSize = 30;   // V15.1: Increased from 26px for better e-ink visibility
+  // V15.1: Larger duration numbers and label for e-ink visibility
+  const durationSize = Math.max(36, Math.round(42 * scale));  // V15.1: Increased from 32→38
+  const durationLabelSize = Math.max(14, Math.round(16 * scale));  // V15.1: Increased from 12→14
   
   // V13.1: Pre-calculate "minutes until departure" for each leg
   // This represents how long from NOW until the user needs to leave for/catch this leg
@@ -2635,31 +2635,33 @@ function _renderFullScreenCanvas(data, prefs = {}) {
         if (validDeparture) {
           // Minutes from NOW until that departure
           const minsUntilDepart = Math.max(0, Math.round((validDeparture - nowMs) / 60000));
-          cumulativeMinutes += (leg.minutes || leg.durationMinutes || 0);
+          cumulativeMinutes += (leg.journeyContribution || leg.minutes || leg.durationMinutes || 0);
           return minsUntilDepart;
         }
       }
 
       // Fallback: use cumulative time + leg duration
-      cumulativeMinutes += (leg.minutes || leg.durationMinutes || 0);
+      cumulativeMinutes += (leg.journeyContribution || leg.minutes || leg.durationMinutes || 0);
       return cumulativeMinutes;
     }
 
     // If leg has explicit departTime, calculate minutes from now
     if (leg.departTime && typeof leg.departTime === 'string') {
-      const [h, m] = leg.departTime.replace(/[ap]m/i, '').split(':').map(Number);
-      const isPM = leg.departTime.toLowerCase().includes('pm') && h !== 12;
-      const isAM = leg.departTime.toLowerCase().includes('am') && h === 12;
+      // Strip ~ prefix from timetable estimates before parsing
+      const cleanDepartTime = leg.departTime.replace(/^~/, '');
+      const [h, m] = cleanDepartTime.replace(/[ap]m/i, '').split(':').map(Number);
+      const isPM = cleanDepartTime.toLowerCase().includes('pm') && h !== 12;
+      const isAM = cleanDepartTime.toLowerCase().includes('am') && h === 12;
       const hour24 = isPM ? h + 12 : (isAM ? 0 : h);
       const now = new Date();
       const departMs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour24, m).getTime();
       const minsUntilDepart = Math.max(0, Math.round((departMs - nowMs) / 60000));
-      cumulativeMinutes += (leg.minutes || leg.durationMinutes || 0);
+      cumulativeMinutes += (leg.journeyContribution || leg.minutes || leg.durationMinutes || 0);
       return minsUntilDepart;
     }
 
     // Otherwise, use cumulative time (legacy behaviour)
-    cumulativeMinutes += (leg.minutes || leg.durationMinutes || 0);
+    cumulativeMinutes += (leg.journeyContribution || leg.minutes || leg.durationMinutes || 0);
     return cumulativeMinutes;
   });
 
@@ -3010,6 +3012,54 @@ function _renderFullScreenCanvas(data, prefs = {}) {
         legSubtitle = getLegSubtitle(leg);
       }
     }
+
+    // V15.1: ALWAYS append "Next:" live departure times to transit leg subtitles
+    // When API provides stop name as subtitle, "Next:" departures must still be appended
+    // This is the PRIMARY mechanism for showing live/timetable departure info on the e-ink display
+    if (['train', 'tram', 'bus', 'vline', 'ferry'].includes(leg.type) &&
+        legSubtitle && !legSubtitle.includes('Next:') && !isSuspended) {
+      const hasLiveData = leg.isLive === true;
+      const liveIndicator = hasLiveData ? ' LIVE' : '';
+      const tilde = hasLiveData ? '' : '~';
+      let nextStr = '';
+
+      if (leg.nextDepartureTimesMs && leg.nextDepartureTimesMs.length > 0) {
+        // Calculate cumulative time to reach this leg's stop
+        let cumulativeMinsToStop = 0;
+        for (let i = 0; i < idx; i++) {
+          if (!legs[i].skippedForTiming) {
+            cumulativeMinsToStop += (legs[i].journeyContribution || legs[i].minutes || legs[i].durationMinutes || 0);
+          }
+        }
+        const arrivalAtStopMs = nowMs + (cumulativeMinsToStop * 60000);
+
+        // Find departures user can catch (depart AFTER arrival + 1 min buffer)
+        const catchableDepartures = leg.nextDepartureTimesMs
+          .filter(depMs => depMs >= arrivalAtStopMs + 60000)
+          .slice(0, 3)
+          .map(depMs => Math.max(0, Math.round((depMs - nowMs) / 60000)));
+
+        if (catchableDepartures.length >= 2) {
+          nextStr = `${tilde}Next: ${catchableDepartures[0]}, ${catchableDepartures[1]} min${liveIndicator}`;
+        } else if (catchableDepartures.length === 1) {
+          nextStr = `${tilde}Next: ${catchableDepartures[0]} min${liveIndicator}`;
+        }
+      } else if (leg.nextDepartures && leg.nextDepartures.length > 0) {
+        // Fallback to pre-computed nextDepartures from screen.js
+        const filtered = leg.nextDepartures.filter(m => m >= 0 && m <= 60);
+        if (filtered.length >= 2) {
+          nextStr = `${tilde}Next: ${filtered[0]}, ${filtered[1]} min${liveIndicator}`;
+        } else if (filtered.length === 1) {
+          nextStr = `${tilde}Next: ${filtered[0]} min${liveIndicator}`;
+        }
+      }
+
+      if (nextStr) {
+        // Always append "Next:" to existing subtitle (API already handles delay prefix)
+        legSubtitle += ` \u2022 ${nextStr}`;
+      }
+    }
+
     // v1.27: Calculate max width with scaled elements
     // V13.1: DEPART column now shows for transit AND coffee legs
     const hasDepart = (['train', 'tram', 'bus', 'vline', 'ferry', 'coffee'].includes(leg.type) && leg.departTime) ||
@@ -3022,15 +3072,17 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       legSubtitle = legSubtitle.slice(0, -4) + '...';
     }
 
-    // V13.6: Render "Next: x,y,z min" portion in BOLD for glanceability
-    // Split subtitle at " • Next:" or if it starts with "Next:"
-    const nextIdx = legSubtitle.indexOf(' • Next:');
-    const startsWithNext = legSubtitle.startsWith('Next:');
+    // V13.6: Render "Next:" portion in BOLD for glanceability
+    // V15.1: Also match "~Next:" (timetable estimates with tilde prefix)
+    const nextIdx = legSubtitle.indexOf(' \u2022 Next:') > -1
+      ? legSubtitle.indexOf(' \u2022 Next:')
+      : legSubtitle.indexOf(' \u2022 ~Next:');
+    const startsWithNext = legSubtitle.startsWith('Next:') || legSubtitle.startsWith('~Next:');
 
     if (nextIdx > -1) {
-      // Render part before "Next:" in normal font
-      const beforeNext = legSubtitle.substring(0, nextIdx + 3); // Include " • "
-      const nextPart = legSubtitle.substring(nextIdx + 3);       // "Next: x,y,z min"
+      // Render part before "Next:" in normal font (include " • ")
+      const beforeNext = legSubtitle.substring(0, nextIdx + 3);
+      const nextPart = legSubtitle.substring(nextIdx + 3);
 
       ctx.font = `${subtitleSize}px Inter, sans-serif`;
       ctx.fillText(beforeNext, textX, subtitleY);

@@ -19,7 +19,7 @@
   &nbsp;
   <img src="https://img.shields.io/badge/Spec-CCDash%20V15.0-purple.svg?style=for-the-badge" alt="Spec: CCDash V15.0">
   &nbsp;
-  <img src="https://img.shields.io/badge/Firmware-CCFirm-v8.0.0-green.svg?style=for-the-badge" alt="Firmware: CCFirm v8.0.0">
+  <img src="https://img.shields.io/badge/Firmware-CCFirm-v8.1.0-green.svg?style=for-the-badge" alt="Firmware: CCFirm v8.1.0">
 </p>
 
 <p align="center">
@@ -589,7 +589,7 @@ See [LEGAL.md](LEGAL.md) for complete trade mark and intellectual property detai
 <p align="center">
   <strong>Commute Compute&#8482; System v4.2.0</strong><br>
   V15.0 Complete Journey Intelligence<br>
-  CommuteCompute&#8482; Engine v3.1 | CCDash&#8482; Renderer v2.1 | CC LiveDash&#8482; v3.0 | Admin Panel v5.0 | CCFirm&#8482; v8.0.0<br>
+  CommuteCompute&#8482; Engine v3.1 | CCDash&#8482; Renderer v2.1 | CC LiveDash&#8482; v3.0 | Admin Panel v5.0 | CCFirm&#8482; v8.1.0<br>
   <br>
   Copyright (c) 2026 Angus Bergman. All rights reserved.<br>
   <em>Built in Melbourne, Australia.</em>

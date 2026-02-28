@@ -416,7 +416,8 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       const isDestGeneric = (name) => !name || genericDestNames.includes(name.toLowerCase().trim());
       if (isDestGeneric(leg.destination.name)) {
         const gtfsDest = getStopNameById(stopIds.trainStopId);
-        if (gtfsDest) leg.destination.name = gtfsDest;
+        const workSuburb = extractSuburb(locations.work?.address);
+        leg.destination.name = gtfsDest || (workSuburb ? `${workSuburb} Station` : leg.destination.name);
       }
     }
     if (leg.type === 'train' && leg.destination) {
@@ -516,6 +517,10 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       const estAmPm = estH >= 12 ? 'pm' : 'am';
       departTime = `~${estH12}:${estM.toString().padStart(2, '0')}${estAmPm}`;
       minutesToDeparture = cumulativeMinutes + estWaitMins;
+      // Provide estimated departure timestamp so renderer can calculate countdown correctly
+      const estDepartMs = nowMs + (minutesToDeparture * 60000);
+      nextDepartureTimesMs = [estDepartMs];
+      leg.isTimetableEstimate = true;
     }
 
     // V13.6: Calculate the actual journey contribution for this leg
@@ -1586,9 +1591,11 @@ export default async function handler(req, res) {
     // =========================================================================
     // DEVICE INFO - battery status from device request
     // =========================================================================
-    // TRMNL devices send battery info via query params or headers
-    const batteryPercent = parseInt(req.query?.battery || req.headers?.['x-battery'] || req.headers?.['battery']) || null;
-    const batteryVoltage = parseFloat(req.query?.voltage || req.headers?.['x-voltage']) || null;
+    // CCFirm sends battery info via X-Battery-Percent and X-Battery-Voltage headers
+    // Node.js/Vercel lowercases all headers, so X-Battery-Percent becomes x-battery-percent
+    const batteryPercent = parseInt(req.query?.bat_pct || req.query?.battery || req.headers?.['x-battery-percent'] || req.headers?.['x-battery'] || req.headers?.['battery']) || null;
+    const batteryVoltage = parseFloat(req.query?.bat_v || req.query?.voltage || req.headers?.['x-battery-voltage'] || req.headers?.['x-voltage']) || null;
+    const powerSource = req.headers?.['x-power-source'] || null;
     const deviceId = req.query?.device_id || req.headers?.['x-device-id'] || null;
 
     // V13.6: Store device status when battery info is reported (async, non-blocking)

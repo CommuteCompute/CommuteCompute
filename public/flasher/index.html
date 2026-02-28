@@ -8,46 +8,91 @@
   <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
   <style>
     :root {
-      --bg-0: #f4f7fb;
-      --bg-1: #ffffff;
-      --ink-0: #0f1a2a;
-      --ink-1: #344158;
-      --line: #d7e0eb;
-      --brand: #1f6feb;
-      --brand-strong: #1454b8;
-      --ok: #1a7f37;
-      --warn: #b35900;
+      --bg-primary: #1a2744;
+      --bg-secondary: #1e293b;
+      --bg-card: #2a3d5f;
+      --accent: #4fb28e;
+      --accent-hover: #6ec9a8;
+      --purple: #667eea;
+      --text-primary: #f1f5f9;
+      --text-secondary: #b8cbe0;
+      --border: #3d5278;
+      --warning: #fbbf24;
+      --error: #ef4444;
+      --success: #22c55e;
     }
 
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      margin: 0;
       font-family: Inter, "Segoe UI", "Avenir Next", "Helvetica Neue", sans-serif;
-      color: var(--ink-0);
-      background:
-        radial-gradient(circle at 0 0, #dce8fb 0%, transparent 40%),
-        radial-gradient(circle at 100% 100%, #e9f6ef 0%, transparent 35%),
-        var(--bg-0);
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      min-height: 100vh;
     }
+
+    .skip-link {
+      position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden;
+    }
+    .skip-link:focus {
+      position: fixed; top: 10px; left: 10px; z-index: 9999;
+      padding: 8px 16px; background: var(--accent); color: #000;
+      border-radius: 6px; width: auto; height: auto; overflow: visible;
+    }
+
+    /* Navigation header matching admin/setup pattern */
+    .nav-header {
+      position: sticky; top: 0; z-index: 100;
+      background: linear-gradient(180deg, rgba(26,39,68,0.98) 0%, rgba(30,41,59,0.95) 100%);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 12px;
+      text-decoration: none; color: var(--text-primary);
+    }
+    .nav-brand-text {
+      font-size: 1.1rem; font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .nav-links {
+      display: flex; gap: 6px; flex-wrap: wrap;
+    }
+    .nav-links a {
+      color: var(--text-secondary); text-decoration: none;
+      padding: 6px 14px; border-radius: 8px; font-size: 0.9rem; font-weight: 500;
+      transition: all 0.15s;
+    }
+    .nav-links a:hover { color: var(--text-primary); background: rgba(79,178,142,0.1); }
+    .nav-links a.active { color: var(--accent); background: rgba(79,178,142,0.15); }
 
     .wrap {
       max-width: 880px;
       margin: 0 auto;
-      padding: 32px 20px 48px;
+      padding: 32px 20px 80px;
     }
 
-    h1 { margin: 0 0 8px; font-size: 2rem; }
-    p { margin: 0; color: var(--ink-1); line-height: 1.5; }
+    h1 {
+      font-size: 1.8rem; font-weight: 700; margin: 0 0 8px;
+      letter-spacing: -0.02em;
+    }
+    .subtitle { color: var(--text-secondary); line-height: 1.6; font-size: 0.95rem; }
+    .tagline { margin-top: 8px; font-size: 0.88rem; color: var(--text-secondary); opacity: 0.8; }
 
     .card {
-      background: var(--bg-1);
-      border: 1px solid var(--line);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 14px;
-      padding: 20px;
-      margin-top: 16px;
-      box-shadow: 0 8px 30px rgba(12, 27, 48, 0.06);
+      padding: 24px;
+      margin-top: 20px;
     }
+    .card h2 {
+      font-size: 1.2rem; font-weight: 600; margin-bottom: 8px;
+    }
+    .card p { color: var(--text-secondary); line-height: 1.5; font-size: 0.92rem; }
 
     .grid {
       display: grid;
@@ -56,67 +101,114 @@
       margin-top: 12px;
     }
 
-    label { display: block; font-size: 0.9rem; margin-bottom: 6px; color: var(--ink-1); }
+    label { display: block; font-size: 0.88rem; margin-bottom: 6px; color: var(--text-secondary); font-weight: 500; }
 
     select, button {
       width: 100%;
-      padding: 10px 12px;
+      padding: 10px 14px;
       border-radius: 10px;
-      border: 1px solid #bfd0e6;
-      font-size: 0.96rem;
-      background: #fff;
-      color: var(--ink-0);
+      font-size: 0.94rem;
+      font-family: inherit;
+      transition: all 0.15s;
     }
+    select {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
     button {
       cursor: pointer;
       font-weight: 600;
-      background: var(--brand);
-      color: #fff;
-      border: 1px solid var(--brand);
+      background: var(--accent);
+      color: #000;
+      border: 1px solid var(--accent);
     }
+    button:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    button.secondary {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+    button.secondary:hover { background: rgba(79,178,142,0.1); }
 
-    button:hover { background: var(--brand-strong); }
-    button.secondary { background: #fff; color: var(--brand-strong); }
-
-    .hint { font-size: 0.86rem; color: var(--ink-1); margin-top: 8px; }
+    .flash-btn {
+      background: var(--purple);
+      border-color: var(--purple);
+      color: #fff;
+      font-size: 1rem;
+      padding: 14px;
+    }
+    .flash-btn:hover { background: #7c93f0; border-color: #7c93f0; }
 
     .status {
-      margin-top: 10px;
-      font-size: 0.9rem;
-      padding: 10px 12px;
+      margin-top: 12px;
+      font-size: 0.88rem;
+      padding: 10px 14px;
       border-radius: 10px;
-      border: 1px solid var(--line);
-      background: #f7faff;
+      border: 1px solid var(--border);
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
     }
-
-    .status.ok { border-color: #cfead5; background: #effaf1; color: var(--ok); }
-    .status.warn { border-color: #f6dfc1; background: #fff7ea; color: var(--warn); }
+    .status.ok { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.08); color: var(--success); }
+    .status.warn { border-color: rgba(251,191,36,0.4); background: rgba(251,191,36,0.08); color: var(--warning); }
 
     .hidden { display: none; }
 
-    .steps { margin: 10px 0 0; padding-left: 20px; color: var(--ink-1); }
-    .steps li { margin: 6px 0; }
-
-    footer {
-      margin-top: 18px;
-      border-top: 1px solid var(--line);
-      padding-top: 12px;
-      color: #5b6676;
-      font-size: 0.85rem;
+    .steps {
+      margin: 14px 0 0; padding-left: 22px;
+      color: var(--text-secondary); font-size: 0.92rem; line-height: 1.7;
     }
+    .steps li { margin: 4px 0; }
+    .steps a { color: var(--accent); text-decoration: none; }
+    .steps a:hover { text-decoration: underline; }
+
+    /* Global system footer */
+    .cc-system-footer {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
+      background: linear-gradient(180deg, rgba(26,39,68,0.95) 0%, rgba(18,28,51,0.98) 100%);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--border);
+      padding: 8px 20px;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px;
+      text-align: center;
+    }
+    .cc-system-footer a { color: var(--text-secondary); text-decoration: none; }
+    .cc-system-footer a:hover { color: var(--accent); }
+    .cc-footer-version-value { color: var(--accent); font-weight: 600; font-family: monospace; }
+    .cc-footer-update-notice { color: var(--warning); font-weight: 600; }
 
     @media (max-width: 640px) {
-      h1 { font-size: 1.7rem; }
-      .wrap { padding: 20px 14px 36px; }
+      h1 { font-size: 1.5rem; }
+      .wrap { padding: 20px 14px 80px; }
+      .nav-header { padding: 10px 14px; }
     }
   </style>
 </head>
 <body>
-  <main class="wrap" role="main">
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <nav class="nav-header" role="navigation" aria-label="Main navigation">
+    <a href="/" class="nav-brand">
+      <span class="nav-brand-text">Commute Compute&#8482;</span>
+    </a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/setup-wizard.html">Setup</a>
+      <a href="/admin.html">Dashboard</a>
+      <a href="/flasher/" class="active" aria-current="page">Flasher</a>
+      <a href="/help.html">Help</a>
+      <a href="/privacy.html">Privacy</a>
+    </div>
+  </nav>
+
+  <main class="wrap" id="main-content" role="main">
     <h1>CommuteCompute&#8482; Device Installer</h1>
-    <p>Plug in your device, pick the target model, then install firmware ready for pairing.</p>
-    <p style="margin-top: 8px; font-size: 0.92rem;">Other apps show delays. CommuteCompute&#8482; reacts to them. Live data flows into every decision- coffee, timing, connections. 1 glance. No app switching. Open Source.</p>
+    <p class="subtitle">Plug in your device, pick the target model, then install firmware ready for setup.</p>
+    <p class="tagline">Other apps show delays. CommuteCompute&#8482; reacts to them. Live data flows into every decision &mdash; coffee, timing, connections. 1 glance. No app switching. Open Source.</p>
 
     <section class="card">
       <div class="grid">
@@ -151,24 +243,24 @@
     <section id="esp-panel" class="card">
       <h2>Flash CommuteCompute&#8482; Firmware (TRMNL Display / ESP32-C3)</h2>
       <p>Use Chrome, Edge, or Opera. Put the board in bootloader mode if needed, then install.</p>
-      <div style="margin-top: 14px;">
+      <div style="margin-top: 16px;">
         <esp-web-install-button manifest="/flasher/manifest.json">
-          <button slot="activate">Flash ESP32 Firmware</button>
+          <button slot="activate" class="flash-btn">Flash ESP32 Firmware</button>
           <span slot="unsupported">Web Serial is unavailable in this browser.</span>
           <span slot="not-allowed">Serial permission denied. Retry and allow serial access.</span>
         </esp-web-install-button>
       </div>
       <ol class="steps">
-        <li>After flash, connect to WiFi network <strong>CommuteCompute-Setup</strong>.</li>
-        <li>Open <strong>192.168.4.1</strong> and complete setup.</li>
-        <li>Pair the device in your Commute Compute&#8482; server setup flow.</li>
+        <li>After flash, open the <a href="/setup-wizard.html"><strong>Setup Wizard</strong></a> to connect your device via Bluetooth.</li>
+        <li>The Setup Wizard will send your WiFi credentials and server URL to the device.</li>
+        <li>Your device will connect automatically and begin displaying your dashboard.</li>
       </ol>
     </section>
 
     <section id="kindle-panel" class="card hidden">
       <h2>Install CommuteCompute&#8482; Kindle Package</h2>
-      <p>This writes Commute Compute files to your mounted Kindle at <code>extensions/commute-compute</code>.</p>
-      <div style="margin-top: 12px;">
+      <p>This writes Commute Compute files to your mounted Kindle at <code style="color: var(--accent);">extensions/commute-compute</code>.</p>
+      <div style="margin-top: 14px;">
         <button id="install-kindle" type="button">Install To Mounted Kindle</button>
       </div>
       <div id="kindle-status" class="status" aria-live="polite">Awaiting install.</div>
@@ -180,9 +272,13 @@
     </section>
 
     <footer class="cc-system-footer">
-      <div>CCFirm&#8482; <span id="cc-footer-firmware-version">CCFirm v8.0.0</span> | System <span id="cc-footer-system-version">v4.2.0</span> | Build <span id="cc-footer-build-date">--</span></div>
-      <div style="margin-top: 6px;">Data: <a href="https://opendata.transport.vic.gov.au" target="_blank" rel="noopener">Transport Victoria OpenData</a> (CC BY 4.0)</div>
-      <div style="margin-top: 6px;">&#169; 2026 Angus Bergman | CommuteCompute&#8482; IP | <a href="/attribution.html" style="color: inherit;">Licensing</a></div>
+      <span>CommuteCompute&#8482; <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.1</span></span>
+      <span>CCDash&#8482; Renderer <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.1</span></span>
+      <span>CCFirm&#8482; <span class="cc-footer-version-value" id="cc-footer-firmware-version">CC-FW-8.1.0</span></span>
+      <span>System <span class="cc-footer-version-value" id="cc-footer-system-version">v4.2.0</span></span>
+      <span>Build <span id="cc-footer-build-date">--</span></span>
+      <span id="cc-footer-update-notice"></span>
+      <span>&#169; 2026 Angus Bergman | <a href="/attribution.html">Licensing</a> | <a href="/privacy.html">Privacy</a> | <a href="/legal.html">Legal</a></span>
     </footer>
   </main>
 
@@ -306,16 +402,76 @@
     document.getElementById('detect-btn').addEventListener('click', detectDevice);
     document.getElementById('install-kindle').addEventListener('click', installKindlePackage);
 
-    fetch('/api/version').then(r => r.json()).then(v => {
-      const fw = document.getElementById('cc-footer-firmware-version');
-      const sys = document.getElementById('cc-footer-system-version');
-      const build = document.getElementById('cc-footer-build-date');
-      if (fw) fw.textContent = v.components?.firmware?.version || 'CCFirm v8.0.0';
-      if (sys) sys.textContent = 'v' + (v.system?.version || '4.2.0');
-      if (build) build.textContent = v.date || new Date().toISOString().split('T')[0];
-    }).catch(() => {});
+    // Dynamic version loading from /api/version
+    function updateGlobalFooterVersions() {
+      fetch('/api/version').then(r => r.json()).then(v => {
+        const commutecompute = document.getElementById('cc-footer-commutecompute-version');
+        const renderer = document.getElementById('cc-footer-renderer-version');
+        const firmware = document.getElementById('cc-footer-firmware-version');
+        const sys = document.getElementById('cc-footer-system-version');
+        const build = document.getElementById('cc-footer-build-date');
+        if (commutecompute) commutecompute.textContent = v.components?.commutecompute?.version || 'v3.1';
+        if (renderer) renderer.textContent = v.components?.renderer?.version || 'v2.1';
+        if (firmware) firmware.textContent = v.components?.firmware?.version || 'CC-FW-8.1.0';
+        if (sys) sys.textContent = 'v' + (v.system?.version || '4.2.0');
+        if (build) build.textContent = v.date || new Date().toISOString().split('T')[0];
+
+        // Upstream update check (once per session)
+        if (v.repoUrls) checkForUpstreamUpdates(v.system?.version, v.repoUrls);
+      }).catch(() => {});
+    }
+
+    function checkForUpstreamUpdates(localVersion, repoUrls) {
+      if (!localVersion || !repoUrls) return;
+      const cacheKey = 'cc-upstream-check';
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const data = JSON.parse(cached);
+          if (Date.now() - data.ts < 3600000) {
+            if (data.updateAvailable) showUpdateNotice(data.upstreamVersion, data.source);
+            return;
+          }
+        } catch (e) { /* ignore parse errors */ }
+      }
+
+      const urls = [
+        { url: repoUrls.github, source: 'GitHub' },
+        { url: repoUrls.gitlab, source: 'GitLab' }
+      ];
+
+      Promise.any(urls.map(({ url, source }) =>
+        fetch(url, { signal: AbortSignal.timeout(5000) })
+          .then(r => r.ok ? r.json() : Promise.reject())
+          .then(data => ({ version: data.system?.version, source }))
+      )).then(({ version, source }) => {
+        const updateAvailable = version && compareVersions(version, localVersion) > 0;
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          ts: Date.now(), updateAvailable, upstreamVersion: version, source
+        }));
+        if (updateAvailable) showUpdateNotice(version, source);
+      }).catch(() => {
+        sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), updateAvailable: false }));
+      });
+    }
+
+    function compareVersions(a, b) {
+      const pa = a.split('.').map(Number);
+      const pb = b.split('.').map(Number);
+      for (let i = 0; i < 3; i++) {
+        if ((pa[i] || 0) > (pb[i] || 0)) return 1;
+        if ((pa[i] || 0) < (pb[i] || 0)) return -1;
+      }
+      return 0;
+    }
+
+    function showUpdateNotice(version, source) {
+      const el = document.getElementById('cc-footer-update-notice');
+      if (el) el.textContent = 'Update available (v' + sanitize(version) + ') \u2014 pull latest from ' + sanitize(source);
+    }
 
     renderPanels();
+    updateGlobalFooterVersions();
   </script>
 </body>
 </html>
