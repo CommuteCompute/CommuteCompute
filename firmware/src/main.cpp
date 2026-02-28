@@ -1117,13 +1117,18 @@ void loop() {
                 // Never returns
             }
 
-            // === USB MODE: refresh aligned to minute boundary ===
-            if (now - lastRefresh >= 60000) {
+            // === USB MODE: refresh aligned to local time minute boundary ===
+            // v8.1.0: Refresh at start of each minute using local time
+            // Minimum 55s between refreshes to prevent double-triggering
+            if (now - lastRefresh >= 55000) {
                 struct tm timeinfo;
-                if (getLocalTime(&timeinfo, 100) && timeinfo.tm_sec < 5) {
-                    currentState = STATE_FETCH_DASHBOARD;
-                } else if (now - lastRefresh >= 65000) {
-                    // Fallback: don't wait forever if NTP unavailable
+                if (getLocalTime(&timeinfo, 100)) {
+                    // Trigger when seconds are 0-4 (start of minute)
+                    if (timeinfo.tm_sec <= 4) {
+                        currentState = STATE_FETCH_DASHBOARD;
+                    }
+                } else if (now - lastRefresh >= 60000) {
+                    // NTP unavailable fallback: refresh after 60s regardless
                     currentState = STATE_FETCH_DASHBOARD;
                 }
             }

@@ -93,7 +93,7 @@
 #define PIN_BATTERY 3
 
 // =============================================================================
-// BATTERY MONITORING (v8.0.0)
+// BATTERY MONITORING (v8.1.0)
 // =============================================================================
 
 #define BATTERY_ADC_SAMPLES 8          // Averaged ADC reads for stable voltage
@@ -106,7 +106,7 @@
 #define BATTERY_ABSENT_MV 1000         // Below this = no battery connected
 
 // =============================================================================
-// DEEP SLEEP (v8.0.0)
+// DEEP SLEEP (v8.1.0)
 // =============================================================================
 
 #define SLEEP_INTERVAL_BATTERY_SEC 60          // 60s deep sleep (matches USB refresh)

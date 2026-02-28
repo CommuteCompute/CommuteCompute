@@ -689,8 +689,50 @@
                 document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v2.0';
                 document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
                 document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '4.0.0');
+                if (v.repoUrls) checkForUpstreamUpdates(v.system?.version, v.repoUrls);
             })
             .catch(() => {});
+    }
+    function checkForUpstreamUpdates(localVersion, repoUrls) {
+        if (!localVersion || !repoUrls) return;
+        var cacheKey = 'cc-upstream-check';
+        var cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+            try {
+                var data = JSON.parse(cached);
+                if (Date.now() - data.ts < 3600000) {
+                    if (data.updateAvailable) showUpdateNotice(data.upstreamVersion, data.source);
+                    return;
+                }
+            } catch (e) { /* ignore */ }
+        }
+        Promise.any([
+            { url: repoUrls.github, source: 'GitHub' },
+            { url: repoUrls.gitlab, source: 'GitLab' }
+        ].map(function(r) {
+            return fetch(r.url, { signal: AbortSignal.timeout(5000) })
+                .then(function(res) { return res.ok ? res.json() : Promise.reject(); })
+                .then(function(d) { return { version: d.system?.version, source: r.source }; });
+        })).then(function(result) {
+            var updateAvailable = result.version && compareVersions(result.version, localVersion) > 0;
+            sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), updateAvailable: updateAvailable, upstreamVersion: result.version, source: result.source }));
+            if (updateAvailable) showUpdateNotice(result.version, result.source);
+        }).catch(function() {
+            sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), updateAvailable: false }));
+        });
+    }
+    function compareVersions(a, b) {
+        var pa = a.split('.').map(Number);
+        var pb = b.split('.').map(Number);
+        for (var i = 0; i < 3; i++) {
+            if ((pa[i] || 0) > (pb[i] || 0)) return 1;
+            if ((pa[i] || 0) < (pb[i] || 0)) return -1;
+        }
+        return 0;
+    }
+    function showUpdateNotice(version, source) {
+        var el = document.getElementById('cc-footer-update-notice');
+        if (el) el.textContent = 'Update available (v' + sanitize(version) + ') \u2014 pull latest from ' + sanitize(source);
     }
     function updateGlobalFooterAttributions() {
         const config = JSON.parse(localStorage.getItem('cc-config') || '{}');
@@ -732,6 +774,7 @@
             <span>&#8226;</span>
             <a href="/help.html" style="color: #4fb28e; text-decoration: none;">Help</a>
         </div>
+        <span id="cc-footer-update-notice" style="color: #fbbf24; font-weight: 600; font-size: 12px;"></span>
         <div class="cc-footer-attribution" id="cc-footer-attributions">
             © 2026 Angus Bergman • <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank">AGPL-3.0 (Dual Licence)</a>
         </div>
