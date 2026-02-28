@@ -97,6 +97,10 @@ export default async function handler(req, res) {
       }
     },
     environment: process.env.VERCEL ? 'vercel-production' : 'development',
-    commit: process.env.VERCEL_GIT_COMMIT_SHA?.substring(0, 7) || 'local'
+    commit: process.env.VERCEL_GIT_COMMIT_SHA?.substring(0, 7) || 'local',
+    repoUrls: {
+      github: 'https://raw.githubusercontent.com/CommuteCompute/CommuteCompute/main/VERSION.json',
+      gitlab: 'https://gitlab.com/angusbergman/commute-compute-system/-/raw/main/VERSION.json'
+    }
   });
 }

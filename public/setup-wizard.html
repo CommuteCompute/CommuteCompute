@@ -546,6 +546,12 @@
                     <div style="background: rgba(30, 41, 59, 0.8); border: 1px solid #3d5278; border-radius: 8px; padding: 10px; font-size: 12px; color: #cbd5e1;">
                         <strong>Requires Chrome or Edge browser</strong> -- Web Bluetooth is not supported in Safari or Firefox.
                     </div>
+                    <div style="margin-top: 10px;">
+                        <a href="/flasher/" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: rgba(102,126,234,0.15); border: 1px solid #667eea; border-radius: 8px; color: #667eea; text-decoration: none; font-size: 13px; font-weight: 600; transition: all 0.15s;" onmouseover="this.style.background='rgba(102,126,234,0.25)'" onmouseout="this.style.background='rgba(102,126,234,0.15)'">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                            Flash Firmware
+                        </a>
+                    </div>
                 </div>
 
                 <!-- BLE WiFi Provisioning (Phase 1 ONLY - no pairing code here) -->
@@ -925,6 +931,7 @@
                     Attributions
                 </a>
             </div>
+            <span id="cc-footer-update-notice" style="color: #fbbf24; font-weight: 600; font-size: 12px;"></span>
             <div class="cc-footer-attribution" id="cc-footer-attributions">
                 &#169; 2026 Angus Bergman &#8226; <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0 (Dual Licence)</a>
             </div>
@@ -945,7 +952,49 @@
             document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v2.1';
             document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
             document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '4.2.0');
+            if (v.repoUrls) checkForUpstreamUpdates(v.system?.version, v.repoUrls);
         }).catch(function(){});
+    }
+    function checkForUpstreamUpdates(localVersion, repoUrls) {
+        if (!localVersion || !repoUrls) return;
+        var cacheKey = 'cc-upstream-check';
+        var cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+            try {
+                var data = JSON.parse(cached);
+                if (Date.now() - data.ts < 3600000) {
+                    if (data.updateAvailable) showUpdateNotice(data.upstreamVersion, data.source);
+                    return;
+                }
+            } catch (e) { /* ignore */ }
+        }
+        Promise.any([
+            { url: repoUrls.github, source: 'GitHub' },
+            { url: repoUrls.gitlab, source: 'GitLab' }
+        ].map(function(r) {
+            return fetch(r.url, { signal: AbortSignal.timeout(5000) })
+                .then(function(res) { return res.ok ? res.json() : Promise.reject(); })
+                .then(function(d) { return { version: d.system?.version, source: r.source }; });
+        })).then(function(result) {
+            var updateAvailable = result.version && compareVersions(result.version, localVersion) > 0;
+            sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), updateAvailable: updateAvailable, upstreamVersion: result.version, source: result.source }));
+            if (updateAvailable) showUpdateNotice(result.version, result.source);
+        }).catch(function() {
+            sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), updateAvailable: false }));
+        });
+    }
+    function compareVersions(a, b) {
+        var pa = a.split('.').map(Number);
+        var pb = b.split('.').map(Number);
+        for (var i = 0; i < 3; i++) {
+            if ((pa[i] || 0) > (pb[i] || 0)) return 1;
+            if ((pa[i] || 0) < (pb[i] || 0)) return -1;
+        }
+        return 0;
+    }
+    function showUpdateNotice(version, source) {
+        var el = document.getElementById('cc-footer-update-notice');
+        if (el) el.textContent = 'Update available (v' + version + ') \u2014 pull latest from ' + source;
     }
     function updateGlobalFooterAttributions() {
         var config = JSON.parse(localStorage.getItem('cc-config') || '{}');
