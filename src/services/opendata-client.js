@@ -216,7 +216,9 @@ function decodeGtfsRt(buffer) {
  */
 async function fetchGtfsRt(mode, feed, options = {}) {
   if (options.apiKey) {
-    setApiKey(options.apiKey);
+    // Defensive: handle both string and { devId, apiKey } object formats
+    const keyStr = typeof options.apiKey === 'object' ? options.apiKey.apiKey : options.apiKey;
+    setApiKey(keyStr);
   }
 
   const apiKey = await getApiKey();
@@ -224,6 +226,9 @@ async function fetchGtfsRt(mode, feed, options = {}) {
     console.warn('[OpenData] No API key available for GTFS-RT fetch');
     return null;
   }
+
+  // Type guard: ensure apiKey is a string before use as HTTP header
+  const keyStr = typeof apiKey === 'object' ? apiKey.apiKey : String(apiKey);
 
   const url = `${API_BASE}/${mode}/${feed}`;
 
@@ -233,7 +238,7 @@ async function fetchGtfsRt(mode, feed, options = {}) {
     const timeoutId = setTimeout(() => controller.abort(), 10000);
     const response = await fetch(url, {
       headers: {
-        'KeyId': apiKey  // Case-sensitive as per dev rules Section 11.1
+        'KeyId': keyStr  // Case-sensitive as per dev rules Section 11.1
       },
       signal: controller.signal
     });
