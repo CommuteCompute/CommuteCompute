@@ -102,13 +102,16 @@ async function testApiKey(apiKey, state) {
     return { success: true, message: 'API key saved (no validation available for this state)', validated: false };
   }
 
+  // VIC: test all 4 transit modes in parallel
+  if (state === 'VIC') {
+    return testApiKeyAllModes(apiKey);
+  }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 second timeout
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
 
   try {
     const headers = validator.makeHeaders(apiKey.trim());
-    // Note: Full headers not logged to prevent API key exposure in server logs
 
     const response = await fetch(validator.testUrl, {
       method: 'GET',
@@ -118,7 +121,6 @@ async function testApiKey(apiKey, state) {
 
     clearTimeout(timeoutId);
 
-
     if (response.ok) {
       return { success: true, message: 'API key validated successfully', validated: true };
     }
@@ -127,7 +129,6 @@ async function testApiKey(apiKey, state) {
       return { success: false, message: 'Invalid API key or unauthorized', validated: true };
     }
 
-    // Other errors - accept the key but note the issue
     return { success: true, message: `API returned ${response.status} - key saved, will retry on use`, validated: false };
 
   } catch (error) {
@@ -139,6 +140,46 @@ async function testApiKey(apiKey, state) {
 
     return { success: true, message: `Validation error: ${error.message} - key saved`, validated: false };
   }
+}
+
+const VIC_MODES = ['metro', 'tram', 'bus', 'vline'];
+
+async function testApiKeyAllModes(apiKey) {
+  const baseUrl = 'https://api.opendata.transport.vic.gov.au/opendata/public-transport/gtfs/realtime/v1';
+  const headers = { 'Accept': '*/*', 'KeyId': apiKey.trim() };
+  const results = {};
+
+  await Promise.all(VIC_MODES.map(async (mode) => {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const response = await fetch(`${baseUrl}/${mode}/trip-updates`, {
+        method: 'GET', headers, signal: controller.signal
+      });
+      clearTimeout(timeout);
+      results[mode] = { success: response.ok, status: response.status };
+    } catch (error) {
+      results[mode] = { success: false, error: error.name === 'AbortError' ? 'timeout' : error.message };
+    }
+  }));
+
+  const passedModes = Object.entries(results).filter(([, r]) => r.success).map(([m]) => m);
+  const failedModes = Object.entries(results).filter(([, r]) => !r.success).map(([m]) => m);
+  const allPassed = passedModes.length === VIC_MODES.length;
+
+  return {
+    success: passedModes.length > 0,
+    validated: true,
+    allModesPassed: allPassed,
+    modeResults: results,
+    passedModes,
+    failedModes,
+    message: allPassed
+      ? `API key validated for all modes: ${passedModes.join(', ')}`
+      : passedModes.length > 0
+        ? `Partial: ${passedModes.join(', ')} OK; ${failedModes.join(', ')} failed`
+        : `All modes failed: ${failedModes.join(', ')}`
+  };
 }
 
 export default async function handler(req, res) {

@@ -1446,7 +1446,7 @@ function renderHeaderLocation(data, prefs) {
   ctx.fillRect(0, 0, zone.w, zone.h);
 
   ctx.fillStyle = '#000';
-  ctx.font = 'bold 10px Inter, sans-serif';
+  ctx.font = 'bold 14px Inter, sans-serif';
   ctx.textBaseline = 'top';
 
   const location = (data.location || data.origin || 'HOME').toUpperCase();
@@ -1463,7 +1463,7 @@ function renderHeaderLocation(data, prefs) {
     drawBatteryIcon(ctx, batteryX, batteryY, batteryPercent, 10);
 
     // Draw percentage text
-    ctx.font = 'bold 9px Inter, sans-serif';
+    ctx.font = 'bold 11px Inter, sans-serif';
     ctx.fillText(`${batteryPercent}%`, batteryX + 22, 4);
   }
 
@@ -1548,7 +1548,7 @@ function renderHeaderWeather(data, prefs) {
   ctx.fillText(`${temp}°`, zone.w / 2, 4);
   
   // Condition (below temp with clear separation)
-  ctx.font = '12px Inter, sans-serif';
+  ctx.font = '14px Inter, sans-serif';
   let condition = data.condition || data.weather || '';
   // Truncate if too long for box width
   while (ctx.measureText(condition).width > zone.w - 16 && condition.length > 3) {
@@ -1558,7 +1558,7 @@ function renderHeaderWeather(data, prefs) {
 
   // V15.0: Feels-like temperature from mindset engine (wind chill)
   if (data.mindset_feels_like) {
-    ctx.font = '10px Inter, sans-serif';
+    ctx.font = '12px Inter, sans-serif';
     ctx.fillStyle = '#000';
     ctx.fillText(data.mindset_feels_like, zone.w / 2, 56);
   }
@@ -1583,14 +1583,14 @@ function renderHeaderWeather(data, prefs) {
     ctx.fillStyle = '#000';
     ctx.fillRect(umbrellaX, umbrellaY, umbrellaW, umbrellaH);
     ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 10px Inter, sans-serif';
+    ctx.font = 'bold 12px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(displayText, umbrellaX + umbrellaW / 2, umbrellaY + umbrellaH / 2);
   } else {
     // V15.0: Subtle text only — no action needed (no box, no border)
     ctx.fillStyle = '#000';
-    ctx.font = '9px Inter, sans-serif';
+    ctx.font = '11px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(displayText, umbrellaX + umbrellaW / 2, umbrellaY + umbrellaH / 2);
@@ -1681,7 +1681,7 @@ function renderStatus(data, prefs) {
     const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
     const needsAttention = confidenceScore < 75;
     // V15.0: Bold only when action needed (AT RISK / UNLIKELY). Subtle for ON TIME.
-    ctx.font = needsAttention ? 'bold 12px Inter, sans-serif' : '11px Inter, sans-serif';
+    ctx.font = needsAttention ? 'bold 14px Inter, sans-serif' : '13px Inter, sans-serif';
     // V15.0: Only append mindset when stress is not LOW (action-needed only)
     const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
     const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
@@ -1691,7 +1691,7 @@ function renderStatus(data, prefs) {
   // Right text - Total journey time (V10 Spec Section 4.2)
   if (totalMinutes) {
     ctx.textAlign = 'right';
-    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.font = 'bold 14px Inter, sans-serif';
     ctx.fillText(`${totalMinutes} min`, zone.w - 16, zone.h / 2);
     ctx.textAlign = 'left';
   }
@@ -1974,7 +1974,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     drawBatteryIcon(ctx, batteryX, batteryY, batteryPercent, 10);
 
     // Draw percentage text
-    ctx.font = 'bold 9px Inter, sans-serif';
+    ctx.font = 'bold 11px Inter, sans-serif';
     ctx.fillText(`${batteryPercent}%`, batteryX + 22, 4);
   }
   
@@ -2351,7 +2351,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
 
   // V15.0: Feels-like temperature from mindset engine (wind chill)
   if (data.mindset_feels_like) {
-    ctx.font = '10px Inter, sans-serif';
+    ctx.font = '12px Inter, sans-serif';
     ctx.fillStyle = '#000';
     ctx.fillText(data.mindset_feels_like, weatherBoxX + weatherBoxW / 2, weatherBoxY + 68);
   }
@@ -2551,7 +2551,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
     const needsAttention = confidenceScore < 75;
     // V15.0: Bold only when action needed (AT RISK / UNLIKELY). Subtle for ON TIME.
-    ctx.font = needsAttention ? 'bold 12px Inter, sans-serif' : '11px Inter, sans-serif';
+    ctx.font = needsAttention ? 'bold 14px Inter, sans-serif' : '13px Inter, sans-serif';
     // V15.0: Only append mindset when stress is not LOW (action-needed only)
     const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
     const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';

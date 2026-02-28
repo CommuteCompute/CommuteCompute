@@ -800,6 +800,7 @@
                     </div>
                     <input type="hidden" id="train-stop-id" value="">
                     <input type="hidden" id="tram-stop-id" value="">
+                    <input type="hidden" id="bus-stop-id" value="">
                     <div id="cc-stop-manual-toggle" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
                         <a href="#" id="cc-toggle-manual-stops" style="color: #cbd5e1; font-size: 12px; text-decoration: none;">
                             Advanced: Enter stop IDs manually
@@ -814,9 +815,13 @@
                             <label for="cc-manual-train-stop" class="form-label" style="font-size: 13px;">Train Stop ID (citybound platform)</label>
                             <input type="text" id="cc-manual-train-stop" class="form-input" placeholder="e.g. 12179" autocomplete="off" inputmode="numeric">
                         </div>
-                        <div class="form-group" style="margin-bottom: 0;">
+                        <div class="form-group" style="margin-bottom: 12px;">
                             <label for="cc-manual-tram-stop" class="form-label" style="font-size: 13px;">Tram Stop ID (citybound platform)</label>
                             <input type="text" id="cc-manual-tram-stop" class="form-input" placeholder="e.g. 2505" autocomplete="off" inputmode="numeric">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="cc-manual-bus-stop" class="form-label" style="font-size: 13px;">Bus Stop ID (citybound)</label>
+                            <input type="text" id="cc-manual-bus-stop" class="form-input" placeholder="e.g. 5555" autocomplete="off" inputmode="numeric">
                         </div>
                         <a href="#" id="clear-override-link" style="color: #4fb28e; font-size: 12px; display: block; margin-top: 8px;">
                             Clear override and use auto-detected stops
@@ -1582,12 +1587,37 @@
                 localStorage.setItem('cc-transit-api-key', apiKey);
                 localStorage.setItem('cc-transit-api-validated', 'true');
                 localStorage.setItem('cc-transit-state', selectedAuthority);
-                status.innerHTML = '<span style="color:#22c55e;"><svg class="icon-sm"><use href="#icon-check-circle"/></svg> API key saved and validated!</span>';
+                // Per-mode results display for VIC multi-mode validation
+                var modeHtml = '';
+                if (result.testResult?.modeResults) {
+                    var modes = result.testResult.modeResults;
+                    modeHtml = '<div style="margin-top:8px;font-size:12px;">';
+                    Object.entries(modes).forEach(function(entry) {
+                        var mode = entry[0], r = entry[1];
+                        var icon = r.success ? '#icon-check-circle' : '#icon-x-circle';
+                        var colour = r.success ? '#22c55e' : '#ef4444';
+                        modeHtml += '<span style="color:' + colour + ';margin-right:10px;"><svg class="icon-sm"><use href="' + icon + '"/></svg> ' + sanitize(mode) + '</span>';
+                    });
+                    modeHtml += '</div>';
+                }
+                status.innerHTML = '<span style="color:#22c55e;"><svg class="icon-sm"><use href="#icon-check-circle"/></svg> ' + sanitize(result.testResult.message || 'API key saved and validated!') + '</span>' + modeHtml;
                 btn.innerHTML = '<svg class="icon-sm"><use href="#icon-check-circle"/></svg> Saved';
                 btn.style.background = '#4fb28e';
                 document.getElementById('skip-transit-btn').style.display = 'none';
             } else {
-                status.innerHTML = '<span style="color:#ef4444;"><svg class="icon-sm"><use href="#icon-x-circle"/></svg> Validation failed: ' + sanitize(result.testResult?.message || result.message || 'Unknown error') + '</span>';
+                var failHtml = '';
+                if (result.testResult?.modeResults) {
+                    var modes = result.testResult.modeResults;
+                    failHtml = '<div style="margin-top:8px;font-size:12px;">';
+                    Object.entries(modes).forEach(function(entry) {
+                        var mode = entry[0], r = entry[1];
+                        var icon = r.success ? '#icon-check-circle' : '#icon-x-circle';
+                        var colour = r.success ? '#22c55e' : '#ef4444';
+                        failHtml += '<span style="color:' + colour + ';margin-right:10px;"><svg class="icon-sm"><use href="' + icon + '"/></svg> ' + sanitize(mode) + '</span>';
+                    });
+                    failHtml += '</div>';
+                }
+                status.innerHTML = '<span style="color:#ef4444;"><svg class="icon-sm"><use href="#icon-x-circle"/></svg> Validation failed: ' + sanitize(result.testResult?.message || result.message || 'Unknown error') + '</span>' + failHtml;
                 btn.disabled = false; btn.innerHTML = '<svg class="icon-sm"><use href="#icon-save"/></svg> Save & Test';
             }
         } catch (error) {
@@ -1676,7 +1706,8 @@
                 apiMode: apiMode,
                 device: selectedDevice,
                 trainStopId: document.getElementById('train-stop-id')?.value?.trim() || result.detectedStops?.trainStopId || null,
-                tramStopId: document.getElementById('tram-stop-id')?.value?.trim() || result.detectedStops?.tramStopId || null
+                tramStopId: document.getElementById('tram-stop-id')?.value?.trim() || result.detectedStops?.tramStopId || null,
+                busStopId: document.getElementById('bus-stop-id')?.value?.trim() || result.detectedStops?.busStopId || null
             };
 
             localStorage.setItem('cc-config', JSON.stringify(fullConfig));
@@ -1888,10 +1919,12 @@
     function applyManualStopOverride() {
         var mt = document.getElementById('cc-manual-train-stop')?.value?.trim() || '';
         var mm = document.getElementById('cc-manual-tram-stop')?.value?.trim() || '';
-        if (mt || mm) {
+        var mb = document.getElementById('cc-manual-bus-stop')?.value?.trim() || '';
+        if (mt || mm || mb) {
             manualStopOverride = true;
             document.getElementById('train-stop-id').value = mt;
             document.getElementById('tram-stop-id').value = mm;
+            document.getElementById('bus-stop-id').value = mb;
         }
     }
 
@@ -1899,14 +1932,17 @@
         manualStopOverride = false;
         document.getElementById('cc-manual-train-stop').value = '';
         document.getElementById('cc-manual-tram-stop').value = '';
+        document.getElementById('cc-manual-bus-stop').value = '';
         document.getElementById('cc-manual-stop-fields').style.display = 'none';
         document.getElementById('cc-toggle-manual-stops').textContent = 'Advanced: Enter stop IDs manually';
         if (detectedStops) {
             document.getElementById('train-stop-id').value = detectedStops.trainStopId || '';
             document.getElementById('tram-stop-id').value = detectedStops.tramStopId || '';
+            document.getElementById('bus-stop-id').value = detectedStops.busStopId || '';
         } else {
             document.getElementById('train-stop-id').value = '';
             document.getElementById('tram-stop-id').value = '';
+            document.getElementById('bus-stop-id').value = '';
         }
     }
 
@@ -2059,6 +2095,7 @@
         document.getElementById('cc-toggle-manual-stops').addEventListener('click', function(e){ e.preventDefault(); toggleManualStopOverride(); });
         document.getElementById('cc-manual-train-stop').addEventListener('input', applyManualStopOverride);
         document.getElementById('cc-manual-tram-stop').addEventListener('input', applyManualStopOverride);
+        document.getElementById('cc-manual-bus-stop').addEventListener('input', applyManualStopOverride);
         document.getElementById('clear-override-link').addEventListener('click', function(e){ e.preventDefault(); clearManualOverride(); });
     });
     </script>

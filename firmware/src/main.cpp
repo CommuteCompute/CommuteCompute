@@ -1097,7 +1097,7 @@ void loop() {
                 lowBatteryWarningShown = true;
             }
 
-            // === BATTERY MODE: deep sleep for 60s ===
+            // === BATTERY MODE: deep sleep aligned to minute boundary ===
             if (onBatteryPower) {
                 // VCOM maintenance every N deep sleep cycles
                 rtcVcomCycles++;
@@ -1105,14 +1105,27 @@ void loop() {
                     doVcomMaintenance();
                     rtcVcomCycles = 0;
                 }
-                // Enter deep sleep — device will reset and run setup() on wake
-                enterDeepSleep(SLEEP_INTERVAL_BATTERY_SEC);
+                // Calculate seconds to next minute boundary for aligned refresh
+                struct tm timeinfo;
+                int sleepSec = SLEEP_INTERVAL_BATTERY_SEC;
+                if (getLocalTime(&timeinfo, 100)) {
+                    int secsToNextMin = 60 - timeinfo.tm_sec;
+                    if (secsToNextMin < 5) secsToNextMin += 60; // avoid too-short sleep
+                    sleepSec = secsToNextMin;
+                }
+                enterDeepSleep(sleepSec);
                 // Never returns
             }
 
-            // === USB MODE: existing 60-second poll behaviour ===
+            // === USB MODE: refresh aligned to minute boundary ===
             if (now - lastRefresh >= 60000) {
-                currentState = STATE_FETCH_DASHBOARD;
+                struct tm timeinfo;
+                if (getLocalTime(&timeinfo, 100) && timeinfo.tm_sec < 5) {
+                    currentState = STATE_FETCH_DASHBOARD;
+                } else if (now - lastRefresh >= 65000) {
+                    // Fallback: don't wait forever if NTP unavailable
+                    currentState = STATE_FETCH_DASHBOARD;
+                }
             }
 
             if (WiFi.status() != WL_CONNECTED) {
