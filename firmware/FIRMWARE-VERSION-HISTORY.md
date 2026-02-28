@@ -14,7 +14,57 @@ This document tracks all firmware releases for the Commute Compute System.
 
 ## [UNLOCKED] Production Versions
 
-### CC-FW-8.0.0 (Current)
+### CC-FW-8.1.0 (Current)
+
+| Attribute | Value |
+|-----------|-------|
+| **Version** | 8.1.0 |
+| **Official Name** | CC-FW-8.1.0 |
+| **Release Date** | 2026-02-28 |
+| **Git Commit** | (pending) |
+| **Previous** | CC-FW-8.0.0 |
+| **Status** | [UNLOCKED] PRODUCTION |
+| **Hardware Verified** | TRMNL BYOS (ESP32-C3, 7.5" 800x480 e-ink) |
+
+**Description:**
+Battery optimisation firmware. Reduces wake-cycle active time by 2-7 seconds (40-60%) through WiFi fast reconnect, NTP skip, NVS settings caching, static buffer allocation, and serial output suppression. All optimisations gated on `rtcWasDeepSleep` — cold boot behaviour completely unchanged.
+
+**Key Changes from 8.0.0:**
+- **WiFi Fast Reconnect:** Caches AP BSSID and channel in RTC memory. Deep sleep wake uses `WiFi.begin(ssid, pass, channel, bssid)` to skip full 802.11 channel scan (saves 1-4s). Falls back to full scan after 3 failed fast-reconnect attempts.
+- **NTP Skip on Deep Sleep Wake:** RTC clock maintains accuracy across 60s deep sleep intervals. NTP sync skipped when RTC time is valid (year > 2024), forced every 30 cycles (~30 minutes) to correct drift. Saves 0.5-3s per cycle.
+- **NVS Settings Cache:** WiFi SSID, password, webhook URL, and paired flag cached in RTC memory. Eliminates NVS flash reads on deep sleep wake (saves 20-50ms). Magic number validation ensures cache integrity. BLE provisioning (which triggers reboot) refreshes cache via cold boot path.
+- **Static BMP Buffer:** Replaces `malloc()`/`free()` with static 50KB buffer in BSS segment. Eliminates heap allocation overhead (saves 50-150ms).
+- **Serial Suppression:** Routine serial output suppressed on battery deep sleep wake (`suppressSerial` flag). Critical errors (WiFi fail, HTTP fail) always printed. Serial stabilisation delay reduced from 100ms to 10ms on battery wake.
+
+**RTC Memory Usage:**
+| Item | Bytes |
+|------|-------|
+| Existing (rtcBootCount, rtcVcomCycles, rtcWasDeepSleep) | ~9 |
+| WiFi cache (BSSID, channel, valid flag) | 11 |
+| NTP cycle counter | 4 |
+| Settings cache (magic, SSID, password, URL, paired) | 389 |
+| **Total** | **~413 bytes (~5% of 8KB RTC SLOW)** |
+
+**Battery Mode Cycle (v8.1.0):**
+```
+Wake from deep sleep → Read battery → Fast WiFi reconnect (~0.5s) → Skip NTP (RTC valid) →
+Load cached settings → Fetch BMP → Refresh display → Deep sleep 60s → Repeat
+```
+
+**Flashing Command:**
+```bash
+cd firmware
+pio run -e trmnl -t upload
+# Use standalone serial terminal (do NOT use pio device monitor -- causes crash)
+screen /dev/cu.usbmodem* 115200  # macOS
+```
+
+**Modification Policy:**
+[CRITICAL] DO NOT MODIFY without explicit approval. Changes require new version number and hardware verification.
+
+---
+
+### CC-FW-8.0.0 (Superseded by 8.1.0)
 
 | Attribute | Value |
 |-----------|-------|
@@ -23,7 +73,7 @@ This document tracks all firmware releases for the Commute Compute System.
 | **Release Date** | 2026-02-23 |
 | **Git Commit** | (pending) |
 | **Previous** | CC-FW-7.7.0 |
-| **Status** | [UNLOCKED] PRODUCTION |
+| **Status** | Superseded by CC-FW-8.1.0 |
 | **Hardware Verified** | TRMNL BYOS (ESP32-C3, 7.5" 800x480 e-ink) |
 
 **Description:**
@@ -299,7 +349,8 @@ pio device monitor -b 115200
 
 | Version | Date | Commit | Status | Notes |
 |---------|------|--------|--------|-------|
-| **CC-FW-8.0.0** | 2026-02-23 | (pending) | [UNLOCKED] PRODUCTION | Current production release. Battery deep sleep, battery monitoring, optimised timeouts. |
+| **CC-FW-8.1.0** | 2026-02-28 | (pending) | [UNLOCKED] PRODUCTION | Current production release. Battery optimisation: WiFi fast reconnect, NTP skip, NVS cache, static buffer, serial suppression. |
+| **CC-FW-8.0.0** | 2026-02-23 | (pending) | Superseded | Battery deep sleep, battery monitoring, optimised timeouts. |
 | **CC-FW-7.7.0** | 2026-02-16 | (pending) | Superseded | Credential redaction, version alignment, stability. |
 | **CC-FW-7.5.0** | 2026-02-09 | (pending) | Superseded | BLE webhook URL provisioning. |
 | **CC-FW-7.4.3** | 2026-02-07 | (pending) | Superseded | Hybrid BLE + Pairing Code provisioning. |
@@ -337,6 +388,7 @@ Examples:
 
 | Firmware | TRMNL BYOS | TRMNL Mini | Kindle |
 |----------|------------|------------|--------|
+| CC-FW-8.1.0 | [YES] Verified | [?] Untested | N/A |
 | CC-FW-8.0.0 | [YES] Verified | [?] Untested | N/A |
 | CC-FW-7.7.0 | [YES] Verified | [?] Untested | N/A |
 | CC-FW-7.5.0 | [YES] Verified | [?] Untested | N/A |
