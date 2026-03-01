@@ -78,7 +78,7 @@ Complete mapping of each trade mark to its constituent files in the codebase.
 
 | File | Type | Purpose |
 |------|------|---------|
-| `firmware/src/main.cpp` | Core | Primary CCFirmTRMNL firmware (CCFirm v8.0.0) |
+| `firmware/src/main.cpp` | Core | Primary CCFirmTRMNL firmware (CCFirm v8.1.0) |
 | `firmware/kindle/` | Variant | CCFirmKindle for jailbroken Kindles |
 | `firmware/include/config.h` | Config | Build configuration |
 | `firmware/include/prerendered-screens.h` | Asset | Prerendered screens (boot, error) |
@@ -463,7 +463,7 @@ commute-compute/
 │   │   └── renderer.js           # Display rendering
 │   ├── services/                 # Service layer
 │   │   ├── cafe-busy-detector.js # Cafe busy status
-│   │   ├── ccdash-renderer.js    # CCDash(TM) consolidated renderer v2.0
+│   │   ├── ccdash-renderer.js    # CCDash(TM) consolidated renderer v2.1
 │   │   ├── dashboard-service.js  # Dashboard aggregation
 │   │   ├── geocoding-service.js  # Address resolution
 │   │   ├── health-monitor.js     # System health

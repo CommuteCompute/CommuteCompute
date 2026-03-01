@@ -256,6 +256,8 @@ async function handlePost(req, res) {
       updated.trainStopId = value || null;
     } else if (field === 'tramStopId') {
       updated.tramStopId = value || null;
+    } else if (field === 'apiMode') {
+      updated.apiMode = (value === 'live' || value === 'cached') ? value : 'cached';
     } else {
       return res.status(400).json({ success: false, error: `Unknown field: ${field}` });
     }

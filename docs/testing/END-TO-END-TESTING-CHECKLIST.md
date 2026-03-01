@@ -6,9 +6,9 @@
 
 **Version**: 2.0.0  
 **Last Updated**: 2026-02-03  
-**System**: Commute Compute System v3.1.0  
-**Spec**: CCDashDesignV15.0 (LOCKED)
-**Firmware**: CCFirm v8.0.0 (UNLOCKED)
+**System**: Commute Compute System v4.2.0
+**Spec**: CCDashDesignV15.0 (UNLOCKED)
+**Firmware**: CCFirm v8.1.0 (UNLOCKED)
 **Architecture**: Zero-Config Serverless (Vercel + KV)
 
 ---
@@ -384,7 +384,7 @@ curl "https://your-project.vercel.app/api/screen?token=BASE64_CONFIG_TOKEN"
 
 ## Phase 5: Firmware Testing
 
-### 5.1 Firmware Verification (CCFirm v8.0.0)
+### 5.1 Firmware Verification (CCFirm v8.1.0)
 
 **Firmware is UNLOCKED** for development and updates.
 
@@ -536,7 +536,7 @@ Vercel serverless cold start:
 2. [ ] User imports to Vercel
 3. [ ] User creates Redis database
 4. [ ] User deploys (auto or manual)
-5. [ ] User flashes device with CCFirm v8.0.0 (if not pre-flashed)
+5. [ ] User flashes device with CCFirm v8.1.0 (if not pre-flashed)
 6. [ ] **Phase 1 (BLE)**: User provisions device WiFi via Bluetooth
    - [ ] Device shows BLE setup screen
    - [ ] User connects phone to device via BLE
@@ -599,8 +599,8 @@ Vercel serverless cold start:
 
 **Tester**: _________________  
 **Date**: ____ / ____ / 2026  
-**Version**: v3.1.0  
-**Firmware**: CCFirm v8.0.0
+**Version**: v4.2.0
+**Firmware**: CCFirm v8.1.0
 **Spec**: CCDashDesignV15.0
 
 **Overall Result**:

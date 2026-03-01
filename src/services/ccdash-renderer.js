@@ -1116,9 +1116,14 @@ function renderLegZone(ctx, leg, zone, legNumber = 1, isHighlighted = false) {
   // V15.0: screen.js provides subtitle with "Next: X, Y min LIVE" (catchable only)
   let subtitle = leg.subtitle || getLegSubtitle(leg);
 
-  // Truncate subtitle if too long
-  while (ctx.measureText(subtitle).width > subtitleMaxWidth && subtitle.length > 10) {
-    subtitle = subtitle.slice(0, -4) + '...';
+  // Truncate subtitle if too long (pixel-aware with Unicode ellipsis)
+  if (ctx.measureText(subtitle).width > subtitleMaxWidth) {
+    const ellipsis = '\u2026';
+    const ellipsisW = ctx.measureText(ellipsis).width;
+    while (ctx.measureText(subtitle).width + ellipsisW > subtitleMaxWidth && subtitle.length > 5) {
+      subtitle = subtitle.slice(0, -1);
+    }
+    subtitle = subtitle.trimEnd() + ellipsis;
   }
   ctx.fillText(subtitle, textX, subtitleY);
   
@@ -1460,7 +1465,18 @@ function renderHeaderLocation(data, prefs) {
   ctx.font = 'bold 14px Inter, sans-serif';
   ctx.textBaseline = 'top';
 
-  const location = (data.location || data.origin || 'HOME').toUpperCase();
+  let location = (data.location || data.origin || 'HOME').toUpperCase();
+
+  // B4: Truncate location text to zone width (Section 7.2-7.3 compliance)
+  const locationMaxWidth = zone.w - 40;
+  if (ctx.measureText(location).width > locationMaxWidth) {
+    const ellipsis = '\u2026';
+    const ellipsisW = ctx.measureText(ellipsis).width;
+    while (ctx.measureText(location).width + ellipsisW > locationMaxWidth && location.length > 3) {
+      location = location.slice(0, -1);
+    }
+    location = location.trimEnd() + ellipsis;
+  }
   ctx.fillText(location, 0, 4);
 
   // V13.6: Battery indicator (if provided by device)
@@ -1586,8 +1602,19 @@ function renderHeaderWeather(data, prefs) {
     (data.condition && /rain|shower|storm|drizzle/i.test(data.condition));
 
   // Determine display text: prefer lifestyle engine output, fallback to basic umbrella
-  const displayText = lifestyleDisplay || (needsUmbrella ? 'BRING UMBRELLA' : 'NO UMBRELLA');
+  let displayText = lifestyleDisplay || (needsUmbrella ? 'BRING UMBRELLA' : 'NO UMBRELLA');
   const isAlert = needsUmbrella || (lifestyleDisplay && /UMBRELLA|JACKET|HYDRAT/i.test(lifestyleDisplay));
+
+  // B4: Truncate lifestyle text to weather zone width (Section 7.2-7.3 compliance)
+  ctx.font = 'bold 12px Inter, sans-serif';
+  if (ctx.measureText(displayText).width > umbrellaW - 8) {
+    const ellipsis = '\u2026';
+    const ellipsisW = ctx.measureText(ellipsis).width;
+    while (ctx.measureText(displayText).width + ellipsisW > umbrellaW - 8 && displayText.length > 3) {
+      displayText = displayText.slice(0, -1);
+    }
+    displayText = displayText.trimEnd() + ellipsis;
+  }
 
   if (isAlert) {
     // V15.0: Black background with white text — action needed (bring umbrella, jacket, etc.)
@@ -1684,6 +1711,17 @@ function renderStatus(data, prefs) {
 
   // Left text (status message)
   ctx.font = 'bold 14px Inter, sans-serif';
+
+  // B4: Truncate status text to available width (Section 7.2-7.3 compliance)
+  const statusZoneMaxWidth = zone.w - 200;
+  if (ctx.measureText(statusText).width > statusZoneMaxWidth) {
+    const ellipsis = '\u2026';
+    const ellipsisW = ctx.measureText(ellipsis).width;
+    while (ctx.measureText(statusText).width + ellipsisW > statusZoneMaxWidth && statusText.length > 10) {
+      statusText = statusText.slice(0, -1);
+    }
+    statusText = statusText.trimEnd() + ellipsis;
+  }
   ctx.fillText(statusText, 16, zone.h / 2);
 
   // V14.0: Confidence score (before total minutes)
@@ -1697,7 +1735,9 @@ function renderStatus(data, prefs) {
     // V15.0: Only append mindset when stress is not LOW (action-needed only)
     const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
     const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
-    ctx.fillText(`${confidenceScore}% ${confLabel}${mindsetText}`, zone.w - 80, zone.h / 2);
+    // C1: Append walk steps when available and stress is low
+    const stepsText = (stressIsLow && data.mindset_steps) ? ` \u2022 ${data.mindset_steps}` : '';
+    ctx.fillText(`${confidenceScore}% ${confLabel}${mindsetText}${stepsText}`, zone.w - 80, zone.h / 2);
   }
 
   // Right text - Total journey time (V10 Spec Section 4.2)
@@ -1765,7 +1805,18 @@ async function renderFooter(data, prefs) {
 
   const dest = (data.destination || data.work || 'WORK').toUpperCase();
   const destAddress = data.destination_address || data.destinationAddress || '';
-  const footerDest = destAddress ? `${dest} — ${destAddress.toUpperCase()}` : dest;
+  let footerDest = destAddress ? `${dest} — ${destAddress.toUpperCase()}` : dest;
+
+  // B4: Truncate footer destination to available width (Section 7.2-7.3 compliance)
+  const footerDestMaxWidth = zone.w / 2 - 32;
+  if (ctx.measureText(footerDest).width > footerDestMaxWidth) {
+    const ellipsis = '\u2026';
+    const ellipsisW = ctx.measureText(ellipsis).width;
+    while (ctx.measureText(footerDest).width + ellipsisW > footerDestMaxWidth && footerDest.length > 5) {
+      footerDest = footerDest.slice(0, -1);
+    }
+    footerDest = footerDest.trimEnd() + ellipsis;
+  }
   ctx.fillText(footerDest, 16, zone.h / 2);
 
   // V13.6: Load and draw exact BMP icon - no modification
@@ -2037,7 +2088,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     serviceStatus.toUpperCase().includes('DISRUPTION') || serviceStatus.toUpperCase().includes('DELAY');
   // Per Section 23.6: Only show LIVE DATA badge when data actually comes from GTFS-RT,
   // never for fallback/timetable data. Default to false (timetable) unless explicitly marked live.
-  const isLiveData = data.isLive === true || data.dataSource === 'live';
+  const isLiveData = data.isLive === true || data.dataSource === 'gtfs-rt';
 
   // V15.0 SPEC FIX: Service status and data source indicators per CCDashDesignV15.0 Section 2.6-2.7
   // Size: 115×16px each, positioned below day/date
@@ -2087,7 +2138,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     ctx.lineWidth = 1;
     ctx.strokeRect(statusBoxX, dataBoxY, statusBoxW, dataBoxH);
     ctx.fillStyle = '#000';
-    ctx.fillText('\u25CB TIMETABLE FALLBACK', statusBoxX + 6, dataBoxY + dataBoxH / 2);
+    ctx.fillText('\u25CB SCHEDULED DATA', statusBoxX + 6, dataBoxY + dataBoxH / 2);
   }
   
   ctx.fillStyle = '#000';
@@ -2388,6 +2439,19 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   const isObligation = needsUmbrella || (lifestyleDisplay && !/^NO\s/i.test(lifestyleDisplay) && /UMBRELLA|JACKET|HYDRAT|SUNGLASSES|SUNSCREEN|LAYERS/i.test(lifestyleDisplay));
 
   ctx.font = 'bold 14px Inter, sans-serif';
+
+  // B1: Truncate lifestyle display text to weather box width (Section 7.2-7.3 compliance)
+  let lifestyleText = displayText;
+  const lifestyleMaxWidth = weatherBoxW - 16;
+  if (ctx.measureText(lifestyleText).width > lifestyleMaxWidth) {
+    const ellipsis = '\u2026';
+    const ellipsisW = ctx.measureText(ellipsis).width;
+    while (ctx.measureText(lifestyleText).width + ellipsisW > lifestyleMaxWidth && lifestyleText.length > 3) {
+      lifestyleText = lifestyleText.slice(0, -1);
+    }
+    lifestyleText = lifestyleText.trimEnd() + ellipsis;
+  }
+
   if (isObligation) {
     ctx.fillStyle = '#000';
     ctx.fillRect(weatherBoxX + 4, umbrellaY, weatherBoxW - 8, 18);
@@ -2395,12 +2459,12 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   } else {
     ctx.fillStyle = '#000';
   }
-  ctx.fillText(displayText, weatherBoxX + weatherBoxW / 2, umbrellaY + 9);
+  ctx.fillText(lifestyleText, weatherBoxX + weatherBoxW / 2, umbrellaY + 9);
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = '#000';
-  
+
   // Divider line
   ctx.fillRect(0, 94, 800, 2);
   
@@ -2540,6 +2604,16 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     statusText = `LEAVE NOW → Arrive ${calculatedArrival}`;
   }
 
+  // B1: Truncate status bar text to prevent overflow (Section 7.2-7.3 compliance)
+  const statusMaxWidth = 600;
+  if (ctx.measureText(statusText).width > statusMaxWidth) {
+    const ellipsis = '\u2026';
+    const ellipsisW = ctx.measureText(ellipsis).width;
+    while (ctx.measureText(statusText).width + ellipsisW > statusMaxWidth && statusText.length > 10) {
+      statusText = statusText.slice(0, -1);
+    }
+    statusText = statusText.trimEnd() + ellipsis;
+  }
   ctx.fillText(statusText, 16, 112);
 
   // -----------------------------------------------------------------------
@@ -2579,7 +2653,9 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     ctx.font = needsAttention ? 'bold 17px Inter, sans-serif' : '16px Inter, sans-serif';
     const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
     const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
-    ctx.fillText(`${confidenceScore}% ${confLabel}${mindsetText}`, 690, 112, 200);
+    // C1: Append walk steps when available and stress is low (otherwise mindsetText has priority)
+    const stepsText = (stressIsLow && data.mindset_steps) ? ` \u2022 ${data.mindset_steps}` : '';
+    ctx.fillText(`${confidenceScore}% ${confLabel}${mindsetText}${stepsText}`, 690, 112, 200);
   }
 
   // -----------------------------------------------------------------------
@@ -2924,6 +3000,17 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       } else if (walkDuration > 0 && !legTitle.includes('min')) {
         legTitle = `${legTitle} (${walkDuration} min)`;
       }
+
+      // B3: Truncate walk title to available width (Section 7.2-7.3 compliance)
+      const walkTitleMaxWidth = zone.w - textX - 20;
+      if (ctx.measureText(legTitle).width > walkTitleMaxWidth) {
+        const ellipsis = '\u2026';
+        const ellipsisW = ctx.measureText(ellipsis).width;
+        while (ctx.measureText(legTitle).width + ellipsisW > walkTitleMaxWidth && legTitle.length > 5) {
+          legTitle = legTitle.slice(0, -1);
+        }
+        legTitle = legTitle.trimEnd() + ellipsis;
+      }
       ctx.fillText(legTitle, textX, titleY);
     } else {
       // V13: Transit/Coffee - multi-line layout
@@ -2937,7 +3024,21 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       const verticalPadding = Math.max(4, Math.round(zone.h * 0.08));
 
       if (idx === 0) leg.isFirst = true;
-      const legTitle = leg.title || getLegTitle(leg);
+      let legTitle = leg.title || getLegTitle(leg);
+
+      // B3: Truncate title to available width (Section 7.2-7.3 compliance)
+      // Compute inline to avoid referencing timeBoxW/departColW before declaration
+      const titleTimeBoxW = isWalkLeg ? 0 : Math.max(72, Math.round(88 * scale));
+      const titleDepartColW = (['train', 'tram', 'bus', 'vline', 'ferry', 'coffee'].includes(leg.type) && leg.departTime) ? Math.max(40, Math.round(50 * scale)) : 0;
+      const titleMaxWidth = zone.w - textX - titleTimeBoxW - titleDepartColW - 20;
+      if (ctx.measureText(legTitle).width > titleMaxWidth) {
+        const ellipsis = '\u2026';
+        const ellipsisW = ctx.measureText(ellipsis).width;
+        while (ctx.measureText(legTitle).width + ellipsisW > titleMaxWidth && legTitle.length > 5) {
+          legTitle = legTitle.slice(0, -1);
+        }
+        legTitle = legTitle.trimEnd() + ellipsis;
+      }
       ctx.fillText(legTitle, textX, titleY);
 
       // -----------------------------------------------------------------------
@@ -3122,8 +3223,13 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       }
     }
 
-    while (ctx.measureText(legSubtitle).width > subtitleMaxWidth && legSubtitle.length > 10) {
-      legSubtitle = legSubtitle.slice(0, -4) + '...';
+    if (ctx.measureText(legSubtitle).width > subtitleMaxWidth) {
+      const ellipsis = '\u2026';
+      const ellipsisW = ctx.measureText(ellipsis).width;
+      while (ctx.measureText(legSubtitle).width + ellipsisW > subtitleMaxWidth && legSubtitle.length > 5) {
+        legSubtitle = legSubtitle.slice(0, -1);
+      }
+      legSubtitle = legSubtitle.trimEnd() + ellipsis;
     }
 
     // V13.6: Render "Next:" portion in BOLD for glanceability
@@ -3132,6 +3238,12 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       ? legSubtitle.indexOf(' \u2022 Next:')
       : legSubtitle.indexOf(' \u2022 ~Next:');
     const startsWithNext = legSubtitle.startsWith('Next:') || legSubtitle.startsWith('~Next:');
+
+    // B1: Canvas clipping region for subtitle zone (Section 7.2-7.3 compliance)
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(textX, subtitleY - 2, subtitleMaxWidth, subtitleSize + 4);
+    ctx.clip();
 
     if (nextIdx > -1) {
       // Render part before "Next:" in normal font (include " • ")
@@ -3157,6 +3269,8 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       ctx.fillText(legSubtitle, textX, subtitleY, subtitleMaxWidth);
     }
 
+    ctx.restore();
+
     // -----------------------------------------------------------------------
     // DEPART TIME COLUMN - V13.1: Now shows for transit AND coffee legs
     // Shows the scheduled departure time for this leg in sequence
@@ -3165,6 +3279,12 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       // V13.6: DEPART column much further left for clear separation from countdown box
       const departColCenter = zone.x + zone.w - timeBoxW - departColW - 30;
       const departBlockY = zone.y + (zone.h - departLabelSize - departTimeSize - 1) / 2;
+
+      // B1: Canvas clipping region for DEPART column (Section 7.2-7.3 compliance)
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(departColCenter - departColW, zone.y, departColW * 2, zone.h);
+      ctx.clip();
 
       // "DEPART" label - for coffee, show "LEAVE" instead
       ctx.font = `bold ${departLabelSize}px Inter, sans-serif`;
@@ -3191,6 +3311,8 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       ctx.font = `bold ${departTimeSize}px Inter, sans-serif`;
       ctx.fillText(displayDepartTime, departColCenter, departBlockY + departLabelSize + 1);
       ctx.textAlign = 'left';
+
+      ctx.restore();
     }
     }  // V13: Close else block for transit/coffee legs
 
@@ -3207,6 +3329,12 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     // V13.6: More spacing between number and 'MIN' label
     const minOffset = Math.round(6 * scale);
     const labelOffset = Math.round(16 * scale);
+
+    // B1: Canvas clipping region for time box (Section 7.2-7.3 compliance)
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(timeBoxX, zone.y, timeBoxW, zone.h);
+    ctx.clip();
 
     // V13.1: Transit/Coffee = minutes until departure
     const displayMinutes = departureCountdowns[idx];
@@ -3271,6 +3399,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       const normalTimeLabel = leg.type === 'walk' ? 'MIN WALK' : 'MIN';
       ctx.fillText(normalTimeLabel, timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 + labelOffset);
     }
+    ctx.restore();
     }  // V13.3: End of !isWalkLeg block for time box
 
     ctx.textAlign = 'left';

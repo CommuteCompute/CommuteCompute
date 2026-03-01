@@ -1639,7 +1639,7 @@ ctx.font = 'bold 16px Inter';
 | Static GTFS | 24 hours | Schedule data |
 
 **Rate Limits:**
-- No official limit, but respect fair use
+- 24 calls per 60 seconds per mode (metro, tram, bus). Source: opendata.transport.vic.gov.au
 - Batch requests where possible
 - Cache aggressively
 
@@ -4150,6 +4150,18 @@ function getLineName(routeId) {
 Live GTFS-RT data is the PRIMARY source. When unavailable, timetable estimates are used as fallback with clear labelling.
 
 **"Check timetable" is PROHIBITED** — never display this to users. Use "Scheduled ~Xmin" instead.
+
+**User-Facing Data Source Labels (MANDATORY):**
+
+Users must NEVER see internal technical terms like "GTFS-RT", "gtfs-rt", "gtfs-rt-route", "gtfs-rt-broad", "no-data", or "no-key". All user-visible labels must use plain language:
+
+| Internal Value | User-Facing Label |
+|---------------|-------------------|
+| `isLive: true` / `dataSource: 'gtfs-rt'` | "Live" / "Live Data" / "LIVE DATA" |
+| `isLive: false` / timetable fallback | "Scheduled" / "Scheduled Data" / "SCHEDULED DATA" |
+| No API key configured | "Timetable" |
+
+The `dataSource` field in the API response is a machine-readable flag for renderer/admin logic — never rendered directly to users. E-ink badges: "LIVE DATA" / "SCHEDULED DATA". Admin panel badges: "Live" / "Scheduled".
 
 | Condition | Action |
 |-----------|--------|

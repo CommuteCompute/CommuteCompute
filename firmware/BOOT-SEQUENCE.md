@@ -4,7 +4,7 @@
 
 # Commute Compute™ Boot Sequence and Initialization Protocol
 
-> **Note:** This document describes the legacy WiFiManager boot sequence used in firmware versions prior to v7.0. Current firmware (CCFirm v8.0.0) uses BLE provisioning. See [QUICK_START.md](QUICK_START.md) for current setup instructions.
+> **Note:** This document describes the legacy WiFiManager boot sequence used in firmware versions prior to v7.0. Current firmware (CCFirm v8.1.0) uses BLE provisioning. See [QUICK_START.md](QUICK_START.md) for current setup instructions.
 
 **Version**: CC-FW-7.4.3
 **Last Updated**: 2026-02-01

@@ -2581,9 +2581,9 @@
                             </div>
                         </div>
                         <div style="display: flex; gap: 8px; align-items: center;">
-                            <div id="eink-live-indicator" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(34, 197, 94, 0.15); border-radius: 20px; font-size: 11px; color: #22c55e;">
-                                <div style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: pulse 1.5s infinite;"></div>
-                                Live
+                            <div id="eink-live-indicator" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(251, 191, 36, 0.15); border-radius: 20px; font-size: 11px; color: #fbbf24;">
+                                <div id="eink-live-dot" style="width: 8px; height: 8px; background: #fbbf24; border-radius: 50%;"></div>
+                                <span id="eink-live-text">Scheduled</span>
                             </div>
                             <button onclick="refreshEinkPreview()" class="btn btn-secondary" style="padding: 8px 14px; font-size: 12px;">
                                 <svg width="14" height="14"><use href="#icon-refresh"/></svg>
@@ -2826,12 +2826,13 @@
                         <span class="cc-badge cc-badge-info">V15.0</span>
                     </div>
                     <div class="cc-card-body" style="padding: 16px;">
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px;">
                             <!-- Departure Confidence -->
                             <div style="text-align: center; padding: 12px; background: rgba(79, 178, 142, 0.1); border-radius: 8px;">
                                 <div style="font-size: 28px; font-weight: 700; color: #4fb28e;" id="analytics-confidence">--</div>
                                 <div style="font-size: 11px; color: #cbd5e1; margin-top: 4px;">Departure Confidence</div>
                                 <div style="font-size: 10px; color: #64748b; margin-top: 2px;" id="analytics-confidence-label">--</div>
+                                <div style="font-size: 11px; font-weight: 600; margin-top: 6px; padding: 2px 8px; border-radius: 4px; display: inline-block; background: rgba(100, 116, 139, 0.2); color: #94a3b8;" id="analytics-confidence-text">--</div>
                             </div>
                             <!-- Journey Resilience -->
                             <div style="text-align: center; padding: 12px; background: rgba(102, 126, 234, 0.1); border-radius: 8px;">
@@ -2844,6 +2845,18 @@
                                 <div style="font-size: 16px; font-weight: 700; color: #fbbf24;" id="analytics-lifestyle">--</div>
                                 <div style="font-size: 11px; color: #cbd5e1; margin-top: 4px;">Lifestyle Context</div>
                                 <div style="font-size: 10px; color: #64748b; margin-top: 2px;" id="analytics-lifestyle-detail">Weather-aware suggestions</div>
+                            </div>
+                            <!-- Commute Stress -->
+                            <div style="text-align: center; padding: 12px; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
+                                <div style="font-size: 16px; font-weight: 700; color: #94a3b8;" id="analytics-stress">--</div>
+                                <div style="font-size: 11px; color: #cbd5e1; margin-top: 4px;">Commute Stress</div>
+                                <div style="font-size: 10px; color: #64748b; margin-top: 2px;" id="analytics-stress-detail">Mindset assessment</div>
+                            </div>
+                            <!-- Walk Activity -->
+                            <div style="text-align: center; padding: 12px; background: rgba(34, 197, 94, 0.1); border-radius: 8px;">
+                                <div style="font-size: 14px; font-weight: 700; color: #22c55e;" id="analytics-steps">--</div>
+                                <div style="font-size: 11px; color: #cbd5e1; margin-top: 4px;">Walk Activity</div>
+                                <div style="font-size: 10px; color: #64748b; margin-top: 2px;" id="analytics-feels-like">Apparent temperature</div>
                             </div>
                         </div>
                         <div style="margin-top: 16px; padding: 12px; background: rgba(100, 116, 139, 0.1); border-radius: 8px;">
@@ -3981,7 +3994,7 @@
 │          └─────────────────┼─────────────────┘                          │
 │                            ▼                                            │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                   CommuteCompute Engine v3.0                       │   │
+│   │                   CommuteCompute Engine v3.1                       │   │
 │   │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │   │
 │   │  │ Route       │  │ Coffee      │  │ Cafe Busy   │              │   │
 │   │  │ Recommender │  │ Decision    │  │ Detector    │              │   │
@@ -3990,7 +4003,7 @@
 │                                │                                        │
 │                                ▼                                        │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                   CCDash&#8482; Renderer v2.0                          │   │
+│   │                   CCDash&#8482; Renderer v2.1                          │   │
 │   │  • 800×480 1-bit BMP      • Zone-based partial refresh          │   │
 │   │  • V15.0 Dashboard Spec   • 60-second cycle                     │   │
 │   └────────────────────────────┬────────────────────────────────────┘   │
@@ -4652,8 +4665,8 @@
         function sanitize(str) {
             if (str === null || str === undefined) return '';
             if (typeof str !== 'string') str = String(str);
-            const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'};
-            return str.replace(/[&<>"'`=/]/g, c => map[c]);
+            const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;'};
+            return str.replace(/[&<>"']/g, c => map[c]);
         }
 
         const BASE_URL = window.location.origin;
@@ -5135,7 +5148,7 @@
             if (profiles.length === 0) {
                 container.innerHTML = `
                     <div style="padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: center; opacity: 0.6;">
-                        No profiles yet. Create your first journey profile!
+                        Default journey active. Create additional profiles for different routes or schedules.
                     </div>
                 `;
                 return;
@@ -5510,6 +5523,8 @@
                     const hasActualLiveBuses = (rawTransit.buses || []).some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad') && t.isLive === true);
                     const hasActualLiveData = hasActualLiveTrains || hasActualLiveTrams || hasActualLiveBuses;
                     const isLive = hasActualLiveData && !scData.fallbackMode;
+                    // Store diagnostics for the banner to display reasons
+                    window.ccLatestDiag = scData._liveDataDiag || null;
                     // Single source of truth for live/fallback status across the admin page.
                     window.ccLiveStatus = {
                         isLive,
@@ -5525,6 +5540,25 @@
                     if (liveDot) {
                         liveDot.style.background = isLive ? 'var(--success)' : '#fbbf24';
                         liveDot.style.animation = isLive ? 'pulse 1.5s infinite' : 'none';
+                    }
+                    // Update e-ink preview indicator to match actual data state
+                    const einkLiveText = document.getElementById('eink-live-text');
+                    const einkLiveDot = document.getElementById('eink-live-dot');
+                    const einkLiveInd = document.getElementById('eink-live-indicator');
+                    if (einkLiveText && einkLiveDot && einkLiveInd) {
+                        if (isLive) {
+                            einkLiveText.textContent = 'Live';
+                            einkLiveDot.style.background = '#22c55e';
+                            einkLiveDot.style.animation = 'pulse 1.5s infinite';
+                            einkLiveInd.style.background = 'rgba(34, 197, 94, 0.15)';
+                            einkLiveInd.style.color = '#22c55e';
+                        } else {
+                            einkLiveText.textContent = 'Scheduled';
+                            einkLiveDot.style.background = '#fbbf24';
+                            einkLiveDot.style.animation = 'none';
+                            einkLiveInd.style.background = 'rgba(251, 191, 36, 0.15)';
+                            einkLiveInd.style.color = '#fbbf24';
+                        }
                     }
                     updateLiveDataBanner(isLive, hasTransitKey, transitValidated);
                     updateCommuteComputeStatus(config, window.ccLiveStatus);
@@ -5638,7 +5672,7 @@
             const tramEl = document.getElementById('tram-departures');
 
             // Update status badges and subtitles based on actual live data status
-            const isLive = scData.isLive === true || scData.dataSource === 'live';
+            const isLive = scData.isLive === true || scData.dataSource === 'gtfs-rt';
             const trainBadge = document.getElementById('train-status-badge');
             const tramBadge = document.getElementById('tram-status-badge');
             const trainSub = document.getElementById('train-station-subtitle');
@@ -6089,7 +6123,7 @@
                 indicator.style.borderLeft = '4px solid #fbbf24';
                 icon.innerHTML = '<svg class="icon" style="color: #fbbf24;"><use href="#icon-refresh"/></svg>';
                 title.textContent = 'Checking Live Data...';
-                subtitle.textContent = 'API key configured. Fetching GTFS-RT data...';
+                subtitle.textContent = 'API key configured. Fetching live departure data...';
                 actionBtn.innerHTML = '<svg class="icon-sm"><use href="#icon-refresh"/></svg> Refresh Now';
                 actionBtn.onclick = () => loadAllData();
             } else {
@@ -6114,22 +6148,50 @@
 
             if (!indicator) return;
 
+            // Check if user explicitly selected Free Mode
+            const currentApiMode = localStorage.getItem('cc-api-mode') || 'live';
+            if (currentApiMode === 'cached') {
+                indicator.style.background = 'linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)';
+                indicator.style.borderLeft = '4px solid #667eea';
+                icon.innerHTML = '<svg class="icon" style="color: #667eea;"><use href="#icon-clock"/></svg>';
+                title.textContent = 'Free Mode Active';
+                subtitle.textContent = 'Using timetable data. Switch to Live Mode in API Settings for real-time updates.';
+                actionBtn.textContent = '→ API Settings';
+                actionBtn.onclick = () => showTab('api');
+                return;
+            }
+
             if (isLive) {
                 indicator.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)';
                 indicator.style.borderLeft = '4px solid #22c55e';
                 icon.innerHTML = '<svg class="icon" style="color: #22c55e;"><use href="#icon-check-circle"/></svg>';
                 title.textContent = 'Live Data Active';
-                subtitle.textContent = 'GTFS-RT real-time departures received';
+                subtitle.textContent = 'Real-time departure data received';
                 actionBtn.innerHTML = '<svg class="icon-sm"><use href="#icon-refresh"/></svg> Refresh Now';
                 actionBtn.onclick = () => loadAllData();
             } else if (hasKey && isValidated) {
-                // API key exists and validated, but no live GTFS-RT data returned
-                // This can happen when: GTFS-RT fetch fails, no matching stops, late night, etc.
+                // API key exists and validated, but no live data returned
                 indicator.style.background = 'linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%)';
                 indicator.style.borderLeft = '4px solid #fbbf24';
                 icon.innerHTML = '<svg class="icon" style="color: #fbbf24;"><use href="#icon-warning"/></svg>';
                 title.textContent = 'No Live Data Available';
-                subtitle.textContent = 'API key valid but no GTFS-RT departures received. May be late night or stop ID mismatch.';
+                // Build diagnostic subtitle from _liveDataDiag if available
+                const diag = window.ccLatestDiag;
+                if (diag) {
+                    const reasons = [];
+                    if (diag.trainError) reasons.push('Train: ' + diag.trainError.substring(0, 40));
+                    if (diag.tramError) reasons.push('Tram: ' + diag.tramError.substring(0, 40));
+                    if (diag.busError) reasons.push('Bus: ' + diag.busError.substring(0, 40));
+                    if (reasons.length > 0) {
+                        subtitle.textContent = reasons.join(' | ');
+                    } else if (diag.trainFeedEntities === 0 && diag.tramFeedEntities === 0) {
+                        subtitle.textContent = 'API connected but no departures at this time. Likely late night or reduced services.';
+                    } else {
+                        subtitle.textContent = 'Feed received (' + diag.trainFeedEntities + ' train, ' + diag.tramFeedEntities + ' tram entities) but no matches for your stops.';
+                    }
+                } else {
+                    subtitle.textContent = 'API key valid but no live departures available. Try refreshing.';
+                }
                 actionBtn.innerHTML = '<svg class="icon-sm"><use href="#icon-refresh"/></svg> Retry';
                 actionBtn.onclick = () => loadAllData();
             } else if (hasKey && !isValidated) {
@@ -6813,7 +6875,7 @@
                 iconContainer.style.background = '#fbbf24';
                 iconContainer.innerHTML = '<svg width="18" height="18" style="color: white;"><use href="#icon-warning"/></svg>';
                 title.textContent = 'No Live Data';
-                subtitle.textContent = 'Using fallback timetable data until GTFS-RT resumes';
+                subtitle.textContent = 'Using scheduled timetable data until live data resumes';
             } else if (hasTransitKey) {
                 banner.style.background = 'linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%)';
                 banner.style.borderLeftColor = '#fbbf24';
@@ -8011,14 +8073,10 @@
             
             // Sync to KV for serverless access
             try {
-                const prefsResp = await authFetch(BASE_URL + '/api/admin/preferences');
-                const currentPrefs = await prefsResp.json();
-                currentPrefs.apiMode = mode;
-                
                 await authFetch(BASE_URL + '/api/admin/preferences', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(currentPrefs)
+                    body: JSON.stringify({ field: 'apiMode', value: mode })
                 });
                 console.log('[Admin] API mode synced to KV:', mode);
             } catch (err) {
@@ -8427,7 +8485,7 @@
 
         async function testTransitApi() {
             const data = await fetch(BASE_URL + '/api/status').then(r => r.json());
-            showMessage('api-message', data.dataMode === 'Live' ? 'Connected!' : 'Not connected', data.dataMode === 'Live' ? 'success' : 'error');
+            showMessage('api-message', data.services?.transit?.status === 'live' ? 'Connected!' : 'Not connected', data.services?.transit?.status === 'live' ? 'success' : 'error');
         }
 
         async function saveGtfsRealtimeConfig() {
@@ -8772,6 +8830,24 @@
                 confEl.style.color = dashboard.confidence_score >= 75 ? '#22c55e' : dashboard.confidence_score >= 50 ? '#fbbf24' : '#f87171';
             }
 
+            // Confidence status text from engine (e.g. "ON TIME", "AT RISK", "UNLIKELY")
+            const confTextEl = document.getElementById('analytics-confidence-text');
+            if (confTextEl && dashboard.confidence_text) {
+                const ct = sanitize(String(dashboard.confidence_text));
+                confTextEl.textContent = ct;
+                const ctUpper = ct.toUpperCase();
+                if (ctUpper === 'ON TIME') {
+                    confTextEl.style.background = 'rgba(34, 197, 94, 0.15)';
+                    confTextEl.style.color = '#22c55e';
+                } else if (ctUpper === 'AT RISK') {
+                    confTextEl.style.background = 'rgba(251, 191, 36, 0.15)';
+                    confTextEl.style.color = '#fbbf24';
+                } else if (ctUpper === 'UNLIKELY') {
+                    confTextEl.style.background = 'rgba(248, 113, 113, 0.15)';
+                    confTextEl.style.color = '#f87171';
+                }
+            }
+
             if (resEl && dashboard.confidence_resilience) {
                 resEl.textContent = sanitize(String(dashboard.confidence_resilience));
                 resEl.style.color = dashboard.confidence_resilience === 'HIGH' ? '#22c55e' : dashboard.confidence_resilience === 'MEDIUM' ? '#fbbf24' : '#f87171';
@@ -8792,6 +8868,28 @@
                 if (lifeDetailEl && dashboard.lifestyle_primary) {
                     lifeDetailEl.textContent = sanitize(String(dashboard.lifestyle_primary));
                 }
+            }
+
+            // C3: Commute Stress metric
+            const stressEl = document.getElementById('analytics-stress');
+            const stressDetailEl = document.getElementById('analytics-stress-detail');
+            if (stressEl && dashboard.mindset_display) {
+                stressEl.textContent = sanitize(String(dashboard.mindset_display));
+                const stressLevel = dashboard.mindset_stress || 'LOW';
+                stressEl.style.color = stressLevel === 'LOW' ? '#22c55e' : stressLevel === 'MEDIUM' ? '#fbbf24' : '#f87171';
+                if (stressDetailEl) {
+                    stressDetailEl.textContent = sanitize(String(stressLevel)) + ' stress';
+                }
+            }
+
+            // C3: Walk Activity metric
+            const stepsEl = document.getElementById('analytics-steps');
+            const feelsLikeEl = document.getElementById('analytics-feels-like');
+            if (stepsEl && dashboard.mindset_steps) {
+                stepsEl.textContent = sanitize(String(dashboard.mindset_steps));
+            }
+            if (feelsLikeEl && dashboard.mindset_feels_like) {
+                feelsLikeEl.textContent = sanitize(String(dashboard.mindset_feels_like));
             }
         }
 
@@ -10137,7 +10235,7 @@
                     const rendererVersion = v.components?.renderer?.version || 'v2.1';
                     const firmwareVersion = v.components?.firmware?.version || 'CC-FW-8.1.0';
                     const buildDate = v.date || new Date().toISOString().split('T')[0];
-                    const systemVersion = v.system?.version || '4.0.0';
+                    const systemVersion = v.system?.version || '4.2.0';
 
                     // Global footer
                     document.getElementById('cc-footer-commutecompute-version').textContent = scVersion;
@@ -10275,11 +10373,11 @@
                 <div class="cc-footer-version-item">
                     <div class="cc-footer-live-dot"></div>
                     <span class="cc-footer-version-label">CommuteCompute</span>
-                    <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.0</span>
+                    <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.1</span>
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">CCDash&#8482; Renderer</span>
-                    <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.0</span>
+                    <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.1</span>
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">System</span>
