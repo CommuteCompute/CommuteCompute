@@ -3286,7 +3286,7 @@
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
                         <svg width="24" height="24" style="color: #667eea;"><use href="#icon-sliders"/></svg>
                         <h3 id="cc-detail-renderer-version" style="margin: 0; font-size: 16px; font-weight: 700; color: #667eea;">CCDash&#8482; Renderer v2.1</h3>
-                        <span style="padding: 3px 8px; background: rgba(239, 68, 68, 0.2); border-radius: 8px; font-size: 10px; font-weight: 600; color: #ef4444;">LOCKED 2026-02-01</span>
+                        <span id="renderer-lock-badge" style="padding: 3px 8px; background: rgba(34, 197, 94, 0.2); border-radius: 8px; font-size: 10px; font-weight: 600; color: #22c55e;">UNLOCKED</span>
                     </div>
                     <p style="font-size: 13px; color: #e2e8f0; line-height: 1.7; margin-bottom: 12px;">
                         The server-side rendering engine that generates 1-bit black and white dashboard images optimised for e-ink displays. CCDash&#8482; implements zone-based partial refresh for battery efficiency and flicker-free updates.
@@ -3575,7 +3575,7 @@
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #fbbf24;"><use href="#icon-sliders"/></svg>
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Zone Layout (CCDash&#8482; V15.0)</h2>
-                    <span style="padding: 4px 10px; background: rgba(239, 68, 68, 0.2); border-radius: 12px; font-size: 11px; font-weight: 600; color: #ef4444;">LOCKED 2026-02-01</span>
+                    <span style="padding: 4px 10px; background: rgba(34, 197, 94, 0.2); border-radius: 12px; font-size: 11px; font-weight: 600; color: #22c55e;">UNLOCKED</span>
                 </div>
                 <p style="margin: 15px 0; font-size: 14px; color: #cbd5e1;">
                     800x480 display divided into 4 zones for efficient partial refresh. Each zone updates independently to minimise e-ink flicker and battery usage.
@@ -5633,10 +5633,35 @@
         function updateCommuteComputeDepartures(scData) {
             const trainEl = document.getElementById('train-departures');
             const tramEl = document.getElementById('tram-departures');
-            
+
+            // Update status badges and subtitles based on actual live data status
+            const isLive = scData.isLive === true || scData.dataSource === 'live';
+            const trainBadge = document.getElementById('train-status-badge');
+            const tramBadge = document.getElementById('tram-status-badge');
+            const trainSub = document.getElementById('train-station-subtitle');
+            const tramSub = document.getElementById('tram-station-subtitle');
+            if (trainBadge) {
+                trainBadge.textContent = isLive ? 'Live' : 'Scheduled';
+                trainBadge.style.background = isLive ? 'rgba(34, 197, 94, 0.2)' : 'rgba(251, 191, 36, 0.2)';
+                trainBadge.style.color = isLive ? '#22c55e' : '#fbbf24';
+            }
+            if (tramBadge) {
+                tramBadge.textContent = isLive ? 'Live' : 'Scheduled';
+                tramBadge.style.background = isLive ? 'rgba(102, 126, 234, 0.2)' : 'rgba(251, 191, 36, 0.2)';
+                tramBadge.style.color = isLive ? '#667eea' : '#fbbf24';
+            }
+
             // Extract departure info from journey legs
             const trainLeg = scData.journey_legs?.find(l => l.type === 'train');
             const tramLeg = scData.journey_legs?.find(l => l.type === 'tram');
+
+            // Update subtitles with route info (replaces "Loading...")
+            if (trainSub) {
+                trainSub.textContent = trainLeg ? sanitize(trainLeg.subtitle || '') : (isLive ? '' : 'Scheduled departures');
+            }
+            if (tramSub) {
+                tramSub.textContent = tramLeg ? sanitize(tramLeg.subtitle || '') : (isLive ? '' : 'Scheduled departures');
+            }
             
             if (trainLeg) {
                 trainEl.innerHTML = `
