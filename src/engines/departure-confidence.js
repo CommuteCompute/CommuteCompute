@@ -72,7 +72,8 @@ class DepartureConfidence {
       totalMinutes = 0,
       targetArrivalMins = 0,
       currentMins = 0,
-      isCommuteDay = true
+      isCommuteDay = true,
+      hasLiveData = false
     } = params || {};
 
     // Non-commute day: confidence is not applicable — return neutral result
@@ -109,12 +110,16 @@ class DepartureConfidence {
 
     const label = this._getLabel(score);
     const resilience = this._calcResilience(legs);
+    const context = this._generateContext({ legs, weather, disruptionImpact, weatherImpact, timeBuffer, bufferMins, hasLiveData });
+    const resilienceDetail = this._generateResilienceDetail(legs);
 
     return {
       score,
       label,
       statusText: `${score}%`,
       resilience,
+      context,
+      resilienceDetail,
       factors: {
         timeBuffer,
         serviceFrequency,
@@ -310,6 +315,52 @@ class DepartureConfidence {
     if (score > LABEL_HIGH_THRESHOLD) return 'ON TIME';
     if (score >= LABEL_MEDIUM_THRESHOLD) return 'AT RISK';
     return 'UNLIKELY';
+  }
+
+  _generateContext({ legs, weather, disruptionImpact, weatherImpact, timeBuffer, bufferMins, hasLiveData }) {
+    // Priority 1: Disruption
+    if (disruptionImpact <= -40) return 'Service suspended';
+    if (disruptionImpact <= -15) return 'Service delayed';
+    if (disruptionImpact < 0) return 'Active service alert';
+
+    // Priority 2: No live data
+    if (!hasLiveData) return 'No live data — timetable only';
+
+    // Priority 3: Weather
+    const condition = (weather?.condition || '').toLowerCase();
+    if (condition.includes('storm') || condition.includes('thunder')) {
+      return bufferMins < 10 ? 'Storm forecast, tight schedule' : 'Storm forecast';
+    }
+    if (weatherImpact < 0 && condition.includes('rain')) {
+      return 'Rain forecast';
+    }
+
+    // Priority 4: Time/frequency
+    if (bufferMins < 0) return 'Running late — no buffer';
+    if (bufferMins < 5) return 'Tight schedule';
+    if (timeBuffer >= 25) return 'Comfortable buffer, frequent services';
+    return 'On schedule';
+  }
+
+  _generateResilienceDetail(legs) {
+    if (!Array.isArray(legs) || legs.length === 0) return 'No transit legs';
+
+    const transitLegs = legs.filter(
+      (leg) => leg && (leg.type || leg.mode) !== 'walk' && (leg.type || leg.mode) !== 'walking'
+    );
+    const transferCount = Math.max(0, transitLegs.length - 1);
+    const allFrequent = transitLegs.every((leg) => {
+      const nextDepartures = leg.nextDepartures || [];
+      return nextDepartures.length >= FREQUENT_SERVICE_COUNT;
+    });
+
+    if (transferCount === 0) {
+      return allFrequent ? 'Direct route, frequent service' : 'Direct route';
+    }
+    if (transferCount === 1) {
+      return allFrequent ? '1 transfer, frequent services' : '1 transfer';
+    }
+    return allFrequent ? `${transferCount} transfers` : `${transferCount} transfers, limited frequency`;
   }
 
   /**

@@ -1220,6 +1220,9 @@ screen /dev/cu.usbmodem* 115200          # macOS
 # [VCOM] Display in light sleep - safe for power-off
 ```
 
+### 5.7 Dual Subtitle Pipeline
+
+`buildLegSubtitle()` in `api/screen.js` sets `leg.subtitle` for JSON API consumers (admin dashboard). `getLegSubtitle()` in `src/services/ccdash-renderer.js` generates departure-focused subtitles independently for e-ink BMP rendering. Both must be kept consistent when modifying subtitle content. The screen.js subtitle includes origin/destination stop names; the renderer subtitle includes line names, routing, and departure times. Changes to one pipeline must be assessed for impact on the other.
 
 ---
 
@@ -1868,6 +1871,10 @@ On non-commute days (`isCommuteDay === false`), the system MUST suppress: coffee
 - Journey legs and departure times
 - Weather data and alerts
 - Walk/transit duration information
+
+### 12.7 DepartureConfidence Context (MANDATORY)
+
+The DepartureConfidence™ engine MUST return a `context` string and `resilienceDetail` string alongside the numeric score. The context must be a single concise line explaining the primary scoring factor for glanceability. Priority order: disruption > no live data > weather > time/frequency. The `resilienceDetail` replaces static text with a dynamic summary of transfer count and service frequency.
 
 ---
 
@@ -4466,6 +4473,18 @@ for (const route of alternatives) {
   }
 }
 ```
+
+### 23.10 GTFS-RT Source Completeness
+
+**[CRITICAL]:** All three GTFS-RT sources (`gtfs-rt`, `gtfs-rt-route`, `gtfs-rt-broad`) MUST be included in live data detection. The `hasAnyLiveData` check in `api/screen.js` must cover all tiers of the three-tier matching fallback. Missing any tier causes that mode's live data to be discarded as non-live, triggering incorrect "No Live Data" state.
+
+### 23.11 Stop ID Map Consistency
+
+**[CRITICAL]:** All stop ID maps (`src/data/gtfs-stop-names.js`, `api/admin/setup-complete.js`, `api/admin/resolve-stops.js`) MUST use 3-letter GTFS station codes for trains and verified GTFS stop IDs for trams. The canonical source is `src/data/gtfs-stop-names.js`. New stop ID maps MUST NOT use raw numeric platform IDs (which change between GTFS versions). Metro Tunnel stations use their assigned 3-letter codes (ARN, PKV, STL, THL, AZC), not numeric platform IDs.
+
+### 23.12 Transit Leg Subtitle Completeness
+
+Transit leg subtitles MUST include both the origin (boarding) stop name and the destination (alighting) stop name when available. Format: `OriginStop → DestStop`. Generic fallback names ("Station", "Tram Stop", "Bus Stop") MUST be filtered using the existing `isGenericName()` check. The destination name comes from `leg.destination?.name`, populated by the automated stop resolution in `api/screen.js`.
 
 ---
 
