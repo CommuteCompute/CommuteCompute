@@ -142,7 +142,7 @@ The system was previously known as "Commute Compute". Update any remaining refer
 - 5.3 Flashing Procedure
 - 5.4 Critical bb_epaper ESP32-C3 Findings (2026-01-29)
 - 5.5 ESP32-C3 Troubleshooting Guide (2026-01-30)
-- 5.6 **Production Firmware: CCFirm v8.0.0** [UNLOCKED]
+- 5.6 **Production Firmware: CCFirm v8.1.0** [UNLOCKED]
 </details>
 
 <details>
@@ -1105,12 +1105,12 @@ The renderer creates a minimal 1-bit BMP in RAM (62-byte header + pixel data), r
 | Display shows garbage | allocBuffer() called | Remove allocBuffer() calls |
 | Text rotated 90° | FONT_12x16 bug | Use FONT_8x8 only |
 
-### 5.6 Production Firmware: CCFirm v8.0.0 (2026-02-16)
+### 5.6 Production Firmware: CCFirm v8.1.0 (2026-02-16)
 
 **[UNLOCKED] — Production Release**
 
-**Official Name:** `CCFirm v8.0.0`
-**Version:** 8.0.0
+**Official Name:** `CCFirm v8.1.0`
+**Version:** 8.1.0
 **Commit:** (pending)
 **Previous:** `CC-FW-7.6.0`
 **Verified On:** TRMNL OG hardware
