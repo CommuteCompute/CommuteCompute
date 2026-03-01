@@ -23,6 +23,9 @@ import SleepOptimiser from '../src/engines/sleep-optimiser.js';
 import AltTransit from '../src/engines/alt-transit.js';
 import crypto from 'node:crypto';
 
+// Vercel serverless config: extend max duration beyond default 10s for cold starts
+export const config = { maxDuration: 60 };
+
 // Engine cache - re-initialized when preferences change
 let journeyEngine = null;
 let lastPrefsHash = null;
@@ -2101,14 +2104,14 @@ export default async function handler(req, res) {
             lineName: t.lineName,
             isCitybound: t.isCitybound,
             isMetroTunnel: t.isMetroTunnel,
-            isLive: !!t.departureTimeMs
+            isLive: t.isLive === true
           })),
           trams: transitData.trams?.slice(0, 3)?.map(t => ({
             minutes: t.minutes,
             departureTimeMs: t.departureTimeMs,
             destination: t.destination,
             routeNumber: t.routeNumber,
-            isLive: !!t.departureTimeMs,
+            isLive: t.isLive === true,
             source: t.source || null
           })),
           _diagnostics: {
