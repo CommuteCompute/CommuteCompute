@@ -1,6 +1,7 @@
 {
   "_comment": "CC Shared Constants — canonical brand and compliance data for the Commute Compute System.",
   "required_tm_marks": [
+    "Commute Compute System",
     "Commute Compute",
     "CommuteCompute",
     "CCDash",

@@ -251,6 +251,22 @@ else
     warn "Some required localStorage keys may be missing"
 fi
 
+# ---------- ESLint: Temporal Dead Zone Detection ----------
+section "ESLINT: VARIABLE USE-BEFORE-DEFINE (TDZ PREVENTION)"
+
+subsection "no-use-before-define on critical rendering files"
+if command -v npx >/dev/null 2>&1; then
+    ESLINT_OUTPUT=$(ESLINT_USE_FLAT_CONFIG=false npx eslint --no-eslintrc --rule '{"no-use-before-define": ["error", {"variables": true, "functions": false, "classes": false}]}' --env es2020 --env node --parser-options=ecmaVersion:2020,sourceType:module src/services/ccdash-renderer.js api/screen.js 2>&1 || true)
+    if echo "$ESLINT_OUTPUT" | grep -q "error.*no-use-before-define"; then
+        fail "Variables used before definition (temporal dead zone risk):"
+        echo "$ESLINT_OUTPUT" | grep "no-use-before-define" | head -5
+    else
+        pass "No use-before-define violations in ccdash-renderer.js and screen.js"
+    fi
+else
+    skip "npx not available — cannot run ESLint TDZ check"
+fi
+
 # ---------- Section 14: Final Forbidden Terms Sweep ----------
 section "SECTION 14: TESTING REQUIREMENTS"
 
@@ -2052,6 +2068,15 @@ if [ -f "api/version.js" ]; then
     fi
 else
     fail "api/version.js not found"
+fi
+
+subsection "Canvas fillText maxWidth:0 safety"
+FILLTEXT_ZERO=$(grep -n 'fillText' src/services/ccdash-renderer.js 2>/dev/null | grep -i 'Math\.max(0,' | head -5 || true)
+if [ -n "$FILLTEXT_ZERO" ]; then
+    warn "Potential maxWidth:0 in fillText — Math.max(0,...) allows zero width which crashes node-canvas:"
+    echo "$FILLTEXT_ZERO" | head -3
+else
+    pass "No Math.max(0,...) pattern near fillText in ccdash-renderer.js"
 fi
 
 # ============================================================================

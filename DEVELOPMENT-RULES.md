@@ -216,6 +216,8 @@ The system was previously known as "Commute Compute". Update any remaining refer
 - 12.2 12-hour Time Format (User-Facing Only)
 - 12.3 Walking Time Buffer
 - 12.4 Journey Math is Critical
+- 12.5 User Intent Timing Window (Status Bar)
+- 12.6 Non-Commute Day Behaviour
 </details>
 
 <details>
@@ -1851,6 +1853,21 @@ if (farFromDeparture) {
   evaluateLateOnTimeAgainstTarget();
 }
 ```
+
+### 12.6 Non-Commute Day Behaviour (CRITICAL)
+
+On non-commute days (`isCommuteDay === false`), the system MUST suppress: coffee messaging (GET A COFFEE, NO TIME FOR COFFEE, CAFE CLOSED, CAFE STATUS), LATE/EARLY/ON TIME status messaging, and DepartureConfidence™ scoring. Journey legs, departure times, weather, and alerts MUST continue to display normally. The `isCommuteDay` guard must be applied at both the API response level (`api/screen.js`) and the renderer level (`src/services/ccdash-renderer.js`).
+
+**Suppressed on non-commute days:**
+- All coffee rendering flags: `hasCoffee`, `cafeClosed`, `coffeeSkipped`, `showCafeBusynessOnly`
+- `coffee_decision` and `coffee_subtext` in API response
+- LATE/ON TIME status bar text against target arrival
+- DepartureConfidence™ percentage display
+
+**Always displayed regardless of commute day:**
+- Journey legs and departure times
+- Weather data and alerts
+- Walk/transit duration information
 
 ---
 

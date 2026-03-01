@@ -8,7 +8,8 @@
     "sourceType": "module"
   },
   "rules": {
-    "no-undef": "error"
+    "no-undef": "error",
+    "no-use-before-define": ["error", { "variables": true, "functions": false, "classes": false }]
   },
   "globals": {
     "console": "readonly",

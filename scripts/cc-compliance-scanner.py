@@ -61,6 +61,7 @@ if _CONSTANTS_JSON.exists():
 # Trademarks that MUST have the TM symbol
 # P1-6: Load from JSON (single source of truth) with inline fallback
 REQUIRED_TM_MARKS = (_LOADED_CONSTANTS or {}).get("required_tm_marks", [
+    "Commute Compute System",
     "Commute Compute",
     "CommuteCompute",
     "CCDash",
