@@ -3085,8 +3085,9 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       }
 
       // Build subtitle parts separately so we can drop alight info if too wide
+      // FIX-7: Skip "Alight at" when subtitle already contains origin → destination
       let alightSuffix = '';
-      if (leg.destinationName && !isGenericStop(leg.destinationName)) {
+      if (leg.destinationName && !isGenericStop(leg.destinationName) && !legSubtitle.includes(' \u2192 ')) {
         alightSuffix = ` \u2022 Alight at ${leg.destinationName}`;
       }
 
@@ -3101,9 +3102,9 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     // V13.1: DEPART column now shows for transit AND coffee legs
     const hasDepart = (['train', 'tram', 'bus', 'vline', 'ferry', 'coffee'].includes(leg.type) && leg.departTime) ||
                       (leg.type === 'coffee' && leg.canGet !== false);
-    const timeBoxW = Math.max(56, Math.round(72 * scale));
+    const timeBoxW = isWalkLeg ? 0 : Math.max(72, Math.round(88 * scale));
     const departColW = hasDepart ? Math.max(40, Math.round(50 * scale)) : 0;
-    const subtitleMaxWidth = zone.w - textX - timeBoxW - departColW - 10;
+    const subtitleMaxWidth = zone.w - textX - timeBoxW - departColW - 20;
 
     // If subtitle is too wide, drop "Alight at" first (departure times are more useful)
     ctx.font = `${subtitleSize}px Inter, sans-serif`;
