@@ -1614,10 +1614,10 @@ export class CommuteCompute {
     const nearestTramStop = locations?.cafe?.nearbyStops?.tram?.name ||
                            locations?.home?.nearbyStops?.tram?.name ||
                            getStopNameById(homeDetected.tramStopId) ||
-                           (homeArea ? `${homeArea} Tram Stop` : 'Tram Stop');
+                           (homeArea ? `${homeArea} Tram Stop` : null);
     const nearestTrainStation = locations?.home?.nearbyStops?.train?.name ||
                                getStopNameById(homeDetected.trainStopId) ||
-                               (homeArea ? `${homeArea} Station` : 'Station');
+                               (homeArea ? `${homeArea} Station` : null);
     const workStation = locations?.work?.nearbyStops?.train?.name ||
                        getStopNameById(workDetected.trainStopId) ||
                        (workArea ? `${workArea} Station` : 'Flinders Street Station');

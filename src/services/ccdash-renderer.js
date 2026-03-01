@@ -1676,11 +1676,12 @@ function renderStatus(data, prefs) {
     statusText = delayMin > 0
       ? `[!] TRAM DIVERSION → Arrive ${arriveBy} (+${delayMin} min)`
       : `[!] DIVERSION → Arrive ${arriveBy}`;
+  } else if (data.isCommuteDay === false) {
+    statusText = `NOT TODAY → Next commute: ${data.arrive_by || '9:00am'}`;
   } else {
-    // Always show "LEAVE NOW" - per Angus 2026-02-01
     statusText = `LEAVE NOW → Arrive ${arriveBy}`;
   }
-  
+
   // Left text (status message)
   ctx.font = 'bold 14px Inter, sans-serif';
   ctx.fillText(statusText, 16, zone.h / 2);
@@ -2053,17 +2054,25 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   ctx.textBaseline = 'middle';
 
   // Service status box — per spec Section 2.6
+  // Only show "SERVICES OK" when we have live data confirming it.
+  // Without live data, services cannot be confirmed — show "NO DATA" instead.
   if (hasDisruption) {
     ctx.fillStyle = '#000';
     ctx.fillRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
     ctx.fillStyle = '#FFF';
     ctx.fillText('\u26A0 DISRUPTIONS', statusBoxX + 6, statusBoxY + statusBoxH / 2);
-  } else {
+  } else if (isLiveData) {
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 1;
     ctx.strokeRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
     ctx.fillStyle = '#000';
     ctx.fillText('\u2713 SERVICES OK', statusBoxX + 6, statusBoxY + statusBoxH / 2);
+  } else {
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
+    ctx.fillStyle = '#000';
+    ctx.fillText('\u25CB NO DATA', statusBoxX + 6, statusBoxY + statusBoxH / 2);
   }
 
   // Data source indicator — per spec Section 2.7
@@ -2449,10 +2458,11 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   const isObscenelyFarFromDeparture = Number.isFinite(leaveIn) && leaveIn > ACTIONABLE_DEPARTURE_WINDOW_MINS;
   // V13.2: Only consider late/early relative to arrive-by time when target timing is actionable.
   const diffMins = arrivalMins - targetMins;
-  const hasArriveByTarget = data.arrive_by && targetArrival !== '09:00' && !isObscenelyFarFromDeparture;
-  const isLate = hasArriveByTarget && diffMins > 5;
-  const isEarly = hasArriveByTarget && diffMins < -5;
-  const isOnTime = hasArriveByTarget && !isLate && !isEarly;
+  // Use explicit flag from screen.js — any user-configured arrival time counts, including 09:00
+  const hasArriveByTarget = (data.hasExplicitArrivalTarget || data.arrive_by) && !isObscenelyFarFromDeparture;
+  const isLate = isCommuteDay && hasArriveByTarget && diffMins > 5;
+  const isEarly = isCommuteDay && hasArriveByTarget && diffMins < -5;
+  const isOnTime = isCommuteDay && hasArriveByTarget && !isLate && !isEarly;
 
   // V15.0 SPEC FIX: Status bar per CCDashDesignV15.0 Section 3 — 28px height, 13px bold
   ctx.fillStyle = '#000';
@@ -2464,11 +2474,13 @@ function _renderFullScreenCanvas(data, prefs = {}) {
 
   // -----------------------------------------------------------------------
   // V13.2: Simplified status display
+  // - Non-commute day: show "NOT TODAY" message
   // - Only show LATE if user has arrive-by time set and would miss it
   // - Service alerts shown for transit disruptions
   // - Otherwise just "LEAVE NOW → Arrive X:XX"
   // -----------------------------------------------------------------------
   let statusText;
+  const isCommuteDay = data.isCommuteDay !== false; // default true for backwards compat
 
   // Check for service alerts (transit disruptions only)
   const legsForStatus = data.journey_legs || data.legs || [];
@@ -2510,6 +2522,9 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     disruptionText = `${delayedService} +${delayedLeg?.delayMinutes || totalLegDelay} MIN`;
     statusText = `[!] ${delayedService} DELAYED → Arrive ${calculatedArrival}`;
     if (totalLegDelay > 0) statusText += ` (+${totalLegDelay} min)`;
+  } else if (!isCommuteDay) {
+    // Non-commute day — don't show LEAVE NOW or LATE
+    statusText = `NOT TODAY → Next commute: ${targetArrivalDisplay}`;
   } else if (isLate) {
     // V13.2: Only show LATE if user has arrive-by time set
     disruptionType = 'late';
@@ -2556,16 +2571,14 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   // V15.0: Confidence score + mindset stress indicator
   // -----------------------------------------------------------------------
   const confidenceScore = data.confidence_score;
-  if (confidenceScore !== undefined && confidenceScore !== null) {
+  if (confidenceScore !== undefined && confidenceScore !== null && isCommuteDay) {
     ctx.textAlign = 'right';
     const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
     const needsAttention = confidenceScore < 75;
-    // V15.1: Bold only when action needed (AT RISK / UNLIKELY). Subtle for ON TIME.
     ctx.font = needsAttention ? 'bold 17px Inter, sans-serif' : '16px Inter, sans-serif';
-    // V15.0: Only append mindset when stress is not LOW (action-needed only)
     const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
     const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
-    ctx.fillText(`${confidenceScore}% ${confLabel}${mindsetText}`, 690, 112);
+    ctx.fillText(`${confidenceScore}% ${confLabel}${mindsetText}`, 690, 112, 200);
   }
 
   // -----------------------------------------------------------------------
@@ -3070,15 +3083,17 @@ function _renderFullScreenCanvas(data, prefs = {}) {
         }
       }
 
-      // Add "Alight at [stop]" for transit legs with known destination
+      // Build subtitle parts separately so we can drop alight info if too wide
+      let alightSuffix = '';
       if (leg.destinationName && !isGenericStop(leg.destinationName)) {
-        legSubtitle += ` \u2022 Alight at ${leg.destinationName}`;
+        alightSuffix = ` \u2022 Alight at ${leg.destinationName}`;
       }
 
-      if (nextStr) {
-        // Always append "Next:" to existing subtitle (API already handles delay prefix)
-        legSubtitle += ` \u2022 ${nextStr}`;
-      }
+      // Assemble full subtitle: stop name + alight + next departures
+      let fullSubtitle = legSubtitle + alightSuffix;
+      if (nextStr) fullSubtitle += ` \u2022 ${nextStr}`;
+
+      legSubtitle = fullSubtitle;
     }
 
     // v1.27: Calculate max width with scaled elements
@@ -3088,6 +3103,22 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     const timeBoxW = Math.max(56, Math.round(72 * scale));
     const departColW = hasDepart ? Math.max(40, Math.round(50 * scale)) : 0;
     const subtitleMaxWidth = zone.w - textX - timeBoxW - departColW - 10;
+
+    // If subtitle is too wide, drop "Alight at" first (departure times are more useful)
+    ctx.font = `${subtitleSize}px Inter, sans-serif`;
+    if (ctx.measureText(legSubtitle).width > subtitleMaxWidth) {
+      const alightIdx = legSubtitle.indexOf(' \u2022 Alight at ');
+      if (alightIdx > -1) {
+        const nextIdx2 = legSubtitle.indexOf(' \u2022 Next:', alightIdx);
+        const tildeNextIdx2 = legSubtitle.indexOf(' \u2022 ~Next:', alightIdx);
+        const nextStart = nextIdx2 > -1 ? nextIdx2 : tildeNextIdx2;
+        if (nextStart > -1) {
+          legSubtitle = legSubtitle.substring(0, alightIdx) + legSubtitle.substring(nextStart);
+        } else {
+          legSubtitle = legSubtitle.substring(0, alightIdx);
+        }
+      }
+    }
 
     while (ctx.measureText(legSubtitle).width > subtitleMaxWidth && legSubtitle.length > 10) {
       legSubtitle = legSubtitle.slice(0, -4) + '...';
@@ -3109,16 +3140,17 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       ctx.fillText(beforeNext, textX, subtitleY);
       const beforeWidth = ctx.measureText(beforeNext).width;
 
-      // Render "Next:" portion in bold
+      // Render "Next:" portion in bold with maxWidth protection
       ctx.font = `bold ${subtitleSize}px Inter, sans-serif`;
-      ctx.fillText(nextPart, textX + beforeWidth, subtitleY);
+      const remainingWidth = Math.max(0, subtitleMaxWidth - beforeWidth);
+      ctx.fillText(nextPart, textX + beforeWidth, subtitleY, remainingWidth);
     } else if (startsWithNext) {
       // Entire subtitle is "Next: x,y,z min" - render all bold
       ctx.font = `bold ${subtitleSize}px Inter, sans-serif`;
-      ctx.fillText(legSubtitle, textX, subtitleY);
+      ctx.fillText(legSubtitle, textX, subtitleY, subtitleMaxWidth);
     } else {
       // No "Next:" - render normally
-      ctx.fillText(legSubtitle, textX, subtitleY);
+      ctx.fillText(legSubtitle, textX, subtitleY, subtitleMaxWidth);
     }
 
     // -----------------------------------------------------------------------
