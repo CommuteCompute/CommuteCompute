@@ -576,7 +576,7 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       nextDepartureTimesMs,        // V13.6: Catchable departures in ms (for Next: x,y,z)
       actualDepartureMs,           // V13.6: Actual departure timestamp for stable arrival calc
       // V15.0: Live data flags — transit legs only exist here when GTFS-RT matched
-      isLive: isTransitLeg && !!liveData,
+      isLive: isTransitLeg && liveData?.isLive === true,
       isTimetableEstimate: leg.isTimetableEstimate || false,
       // V13.6: Stop/station names for renderer display
       originStop: leg.originStop,
@@ -1558,6 +1558,27 @@ async function handleDemoMode(req, res, scenarioName) {
 }
 
 /**
+ * Retry wrapper for GTFS-RT fetches — single retry with exponential backoff.
+ * Returns [] on exhaustion so Promise.all() never rejects.
+ */
+async function fetchWithRetry(fetchFn, label, retries = 1, delayMs = 1500) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fetchFn();
+    } catch (e) {
+      if (attempt < retries) {
+        console.warn(`[${label}] Fetch attempt ${attempt + 1} failed: ${e.message} — retrying in ${delayMs}ms`);
+        await new Promise(r => setTimeout(r, delayMs));
+        delayMs *= 2;
+      } else {
+        console.error(`[${label}] All ${retries + 1} fetch attempts failed: ${e.message}`);
+        return [];
+      }
+    }
+  }
+}
+
+/**
  * Main handler - Vercel serverless function
  */
 export default async function handler(req, res) {
@@ -1709,6 +1730,10 @@ export default async function handler(req, res) {
     const apiKeyStr = typeof transitApiKey === 'string' ? transitApiKey : (transitApiKey?.apiKey || null);
     const apiOptions = apiKeyStr ? { apiKey: apiKeyStr } : {};
 
+    // Respect Free Mode: skip GTFS-RT when user explicitly selected cached mode
+    const apiMode = kvPrefs?.apiMode || 'live';
+    const skipLiveData = apiMode === 'cached';
+
     // V15.0: Extract tram/bus route numbers from journey legs for GTFS-RT route-level matching
     // When stop-level matching fails (common for trams), route-level matching can find live data
     // Fallback chain: engine route leg → auto-detected from address suburb
@@ -1731,13 +1756,13 @@ export default async function handler(req, res) {
     }
 
     const [trains, trams, buses, weather, metroDisruptions, tramDisruptions, busDisruptions] = await Promise.all([
-      getDepartures(trainStopId, 0, trainApiOptions),
-      getDepartures(tramStopId, 1, tramApiOptions),
-      getDepartures(busStopId, 2, busApiOptions),
+      skipLiveData ? Promise.resolve([]) : fetchWithRetry(() => getDepartures(trainStopId, 0, trainApiOptions), 'screen-train'),
+      skipLiveData ? Promise.resolve([]) : fetchWithRetry(() => getDepartures(tramStopId, 1, tramApiOptions), 'screen-tram'),
+      skipLiveData ? Promise.resolve([]) : fetchWithRetry(() => getDepartures(busStopId, 2, busApiOptions), 'screen-bus'),
       getWeather(locations.home?.lat, locations.home?.lon),
-      getDisruptions(0, apiOptions).catch(() => []),
-      getDisruptions(1, apiOptions).catch(() => []),
-      getDisruptions(2, apiOptions).catch(() => [])
+      skipLiveData ? Promise.resolve([]) : getDisruptions(0, apiOptions).catch(() => []),
+      skipLiveData ? Promise.resolve([]) : getDisruptions(1, apiOptions).catch(() => []),
+      skipLiveData ? Promise.resolve([]) : getDisruptions(2, apiOptions).catch(() => [])
     ]);
     const disruptions = [...metroDisruptions, ...tramDisruptions, ...busDisruptions];
 
@@ -2035,7 +2060,23 @@ export default async function handler(req, res) {
       // Data source accuracy: only mark as live when GTFS-RT data was actually received
       // Per Section 23.6: LIVE badge must reflect actual data source, not API key existence
       isLive: hasAnyLiveData,
-      dataSource: hasAnyLiveData ? 'live' : (transitApiKey ? 'no-data' : 'no-key'),
+      dataSource: hasAnyLiveData ? 'gtfs-rt' : (transitApiKey ? 'no-data' : 'no-key'),
+      // Diagnostic: surface feed info for admin panel troubleshooting
+      _liveDataDiag: {
+        hasApiKey: !!transitApiKey,
+        apiMode: kvPrefs?.apiMode || 'live',
+        trainFeedEntities: trains?._feedInfo?.entityCount ?? (trains?.length > 0 ? trains.length : 0),
+        tramFeedEntities: trams?._feedInfo?.entityCount ?? (trams?.length > 0 ? trams.length : 0),
+        busFeedEntities: buses?._feedInfo?.entityCount ?? (buses?.length > 0 ? buses.length : 0),
+        trainStopId: trainStopId || null,
+        tramStopId: tramStopId || null,
+        trainMatches: trains?.filter(t => t.isLive === true).length || 0,
+        tramMatches: trams?.filter(t => t.isLive === true).length || 0,
+        busMatches: buses?.filter(t => t.isLive === true).length || 0,
+        trainError: trains?._feedInfo?.error || null,
+        tramError: trams?._feedInfo?.error || null,
+        busError: buses?._feedInfo?.error || null
+      },
       // V13.6: Device battery status (from TRMNL device request)
       battery_percent: batteryPercent,
       battery_voltage: batteryVoltage,

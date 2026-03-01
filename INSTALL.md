@@ -44,7 +44,7 @@
 | Hardware | TRMNL OG or TRMNL Mini |
 | MCU | ESP32-C3 |
 | Display | 7.5" e-ink (800×480) or 4.2" (400×300) |
-| Firmware | CCFirm v8.0.0 (custom) |
+| Firmware | CCFirm v8.1.0 (custom) |
 
 ### Development
 

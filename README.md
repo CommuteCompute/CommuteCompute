@@ -272,6 +272,47 @@ OUTPUT: Rideshare: $18-24 (1.4x surge, peak morning)
 DISPLAY: ALT TRANSIT | Uber ~$21 | Scooter ~$9 | Bike $3.50
 ```
 
+---
+
+### 6. CoffeeDecision&#8482; Engine
+
+Real-time coffee feasibility calculator integrated into the CommuteCompute&#8482; Engine, determining whether the commuter has time to stop at their configured cafe without missing their target arrival.
+
+| | |
+|---|---|
+| **Inputs** | Target arrival time, configured commute segment timings (walk to cafe, cafe wait, cafe to transit), next transit departure, upcoming tram departures, service alert text, cafe operating hours, current local time and day of week |
+| **Outputs** | Decision label (GET COFFEE / SKIP COFFEE / FRIDAY TREAT / CAFE CLOSED / LATE FOR WORK), explanatory subtext, canGet flag, urgency flag, skip reason |
+
+**Example Scenario:**
+
+```
+INPUT:  Target arrival: 9:00am, Current: 8:12am, Day: Friday
+        Walk to cafe: 5 min, Cafe wait: 5 min, Cafe to tram: 2 min
+        Tram in: 14 min, Train ride: 15 min, Walk to work: 5 min
+        Trip with coffee: 47 min, Time remaining: 48 min
+        No service alerts
+
+OUTPUT: Decision: FRIDAY TREAT
+        Subtext: "Transit in 14m -> arrive on time"
+        canGet: true
+        urgent: false
+
+DISPLAY: [C] FRIDAY TREAT | Transit in 14m
+```
+
+```
+INPUT:  Target arrival: 9:00am, Current: 8:31am, Day: Wednesday
+        Trip with coffee: 47 min, Trip direct: 35 min
+        Time remaining: 29 min
+
+OUTPUT: Decision: SKIP COFFEE
+        Subtext: "Need 47m. Have 29m."
+        canGet: false
+        urgent: true
+
+DISPLAY: [C] SKIP COFFEE | Need 47m. Have 29m.
+```
+
 <br>
 
 ---

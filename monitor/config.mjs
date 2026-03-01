@@ -159,9 +159,9 @@ export default {
 
         RESOLUTION:
         1. Check src/services/zone-renderer.js
-        2. Verify CCDashDesignV10 zone boundaries
+        2. Verify CCDashDesignV15.0 zone boundaries
         3. Check 1-bit BMP encoding logic
-        4. Review ccdash-renderer-v13.js for errors
+        4. Review ccdash-renderer.js for errors
       `
     },
 
@@ -646,7 +646,7 @@ export default {
 
         RESOLUTION:
         1. Check zone-renderer.js boundaries
-        2. Verify CCDashDesignV10 zone spec
+        2. Verify CCDashDesignV15.0 zone spec
         3. Test individual zone with /api/zone/[id]
       `
     },

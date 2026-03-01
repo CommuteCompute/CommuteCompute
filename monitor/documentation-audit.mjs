@@ -3,8 +3,8 @@
  * Tracks versions, validates docs, diagrams, and legal compliance
  *
  * Tests against:
- * - DEVELOPMENT-RULES.md v1.17
- * - CCDashDesignV10.md (LOCKED)
+ * - DEVELOPMENT-RULES.md v1.28
+ * - CCDashDesignV15.md (UNLOCKED)
  * - Architecture documentation
  * - Legal/licensing compliance
  *
@@ -33,7 +33,7 @@ const DOC_SPEC = {
     'README.md',
     'DEVELOPMENT-RULES.md',
     'LICENSE',
-    'specs/CCDashDesignV10.md',
+    'specs/CCDashDesignV15.md',
   ],
 
   // License requirements
@@ -48,7 +48,7 @@ const DOC_SPEC = {
   versionFiles: {
     'package.json': ['version'],
     'DEVELOPMENT-RULES.md': ['Version:', 'v1.'],
-    'specs/CCDashDesignV10.md': ['v10', 'LOCKED'],
+    'specs/CCDashDesignV15.md': ['v15', 'UNLOCKED'],
     'src/server.js': ['version', 'VERSION'],
   },
 
@@ -63,7 +63,7 @@ const DOC_SPEC = {
   // Architecture diagrams/docs
   architectureDocs: [
     'docs/ARCHITECTURE.md',
-    'specs/CCDashDesignV10.md',
+    'specs/CCDashDesignV15.md',
   ],
 
   // API documentation
@@ -356,35 +356,35 @@ const documentationAudits = {
       details: [],
     };
 
-    // Check CCDashDesignV10
-    const designSpec = readFile('specs/CCDashDesignV10.md');
+    // Check CCDashDesignV15
+    const designSpec = readFile('specs/CCDashDesignV15.md');
     if (designSpec) {
       result.passed = true;
 
-      // Check for LOCKED status
-      if (designSpec.includes('LOCKED') || designSpec.includes('🔒')) {
-        result.details.push('✓ CCDashDesignV10: LOCKED status present');
+      // Check for UNLOCKED status
+      if (designSpec.includes('UNLOCKED') || designSpec.includes('LOCKED')) {
+        result.details.push('✓ CCDashDesignV15: Status marker present');
       } else {
         result.passed = false;
-        result.details.push('✗ CCDashDesignV10: Missing LOCKED status');
+        result.details.push('✗ CCDashDesignV15: Missing status marker');
       }
 
       // Check for version
-      if (designSpec.includes('v10') || designSpec.includes('V10')) {
-        result.details.push('✓ CCDashDesignV10: Version V10 confirmed');
+      if (designSpec.includes('v15') || designSpec.includes('V15')) {
+        result.details.push('✓ CCDashDesignV15: Version V15 confirmed');
       }
 
       // Check for key dimensions
       if (designSpec.includes('800') && designSpec.includes('480')) {
-        result.details.push('✓ CCDashDesignV10: Display dimensions (800x480) present');
+        result.details.push('✓ CCDashDesignV15: Display dimensions (800x480) present');
       }
 
       // Check for zone definitions
       if (designSpec.includes('header') && designSpec.includes('footer') && designSpec.includes('journey')) {
-        result.details.push('✓ CCDashDesignV10: Zone definitions present');
+        result.details.push('✓ CCDashDesignV15: Zone definitions present');
       }
     } else {
-      result.details.push('✗ specs/CCDashDesignV10.md not found');
+      result.details.push('✗ specs/CCDashDesignV15.md not found');
     }
 
     return result;

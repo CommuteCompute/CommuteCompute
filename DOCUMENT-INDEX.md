@@ -97,7 +97,7 @@
 | File | Description |
 |------|-------------|
 | `specs/README.md` | Specs folder readme |
-| `specs/CCDashDesignV13.md` | **CURRENT** Dashboard design spec (V12) |
+| `specs/CCDashDesignV15.md` | **CURRENT** Dashboard design spec (V15.0) |
 
 ### specs/archive/
 
@@ -151,7 +151,7 @@
 | `firmware/ANTI-BRICK-REQUIREMENTS.md` | Anti-brick safety rules |
 | `firmware/BOOT-SEQUENCE.md` | Boot sequence documentation |
 | `firmware/PAIRING-SPEC.md` | Device pairing specification |
-| `firmware/VERSION.txt` | Current version: CCFirm v8.0.0 (UNLOCKED) |
+| `firmware/VERSION.txt` | Current version: CCFirm v8.1.0 (UNLOCKED) |
 
 ### firmware/docs/
 

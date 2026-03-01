@@ -15,7 +15,7 @@
  * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  */
 
-import { VIC_METRO_STATIONS, VIC_TRAM_STOPS, VIC_BUS_STOPS } from './vic/gtfs-reference.js';
+import { VIC_METRO_STATIONS, VIC_TRAM_STOPS, VIC_BUS_STOPS, VIC_SUBURB_STOPS } from './vic/gtfs-reference.js';
 
 /**
  * GTFS Stop ID to actual stop NAME mapping
@@ -61,75 +61,21 @@ export function getStopNameById(stopId) {
  * Melbourne suburb to station/stop mapping
  * Per DEVELOPMENT-RULES Section 23.1.1 - Auto-detect stop IDs from address
  *
+ * AUTO-GENERATED from GTFS .txt stop files via generate-gtfs-reference.js.
+ * Covers ALL 226 metro stations + nearest tram/bus stops by coordinates.
+ * No hardcoding — regenerate with: node scripts/generate-gtfs-reference.js
+ *
  * trainStation: 3-letter GTFS station code (resolved to platform IDs at runtime)
- * tram: primary tram stop ID for the suburb (verified against GTFS)
- * tramRoute: tram route number for GTFS-RT route-level fallback
- * bus: bus stop ID (null where not applicable)
- * line: train line name(s) serving the station
+ * tram: nearest tram stop ID within 1km (by haversine distance)
+ * bus: nearest bus stop ID within 500m (by haversine distance)
  */
-export const MELBOURNE_STOP_IDS = {
-  // Inner suburbs - Sandringham line
-  'south yarra': { trainStation: 'SYR', tram: '18606', tramRoute: '78', bus: null, line: 'Sandringham/Pakenham/Cranbourne' },
-  'prahran': { trainStation: 'PRA', tram: '18611', tramRoute: '78', bus: null, line: 'Sandringham' },
-  'windsor': { trainStation: 'WIN', tram: '18614', tramRoute: '78', bus: null, line: 'Sandringham' },
-  'balaclava': { trainStation: 'BCV', tram: '18632', tramRoute: '67', bus: null, line: 'Sandringham' },
-  'ripponlea': { trainStation: 'RIP', tram: null, tramRoute: null, bus: null, line: 'Sandringham' },
-  'elsternwick': { trainStation: 'ELS', tram: null, tramRoute: null, bus: null, line: 'Sandringham' },
-  'brighton beach': { trainStation: 'BBH', tram: null, tramRoute: null, bus: null, line: 'Sandringham' },
-  'sandringham': { trainStation: 'SHM', tram: null, tramRoute: null, bus: null, line: 'Sandringham' },
-
-  // Inner east - Glen Waverley/Alamein
-  'richmond': { trainStation: 'RMD', tram: '19278', tramRoute: '70', bus: null, line: 'All lines' },
-  'burnley': { trainStation: 'BLY', tram: null, tramRoute: null, bus: null, line: 'Glen Waverley/Alamein' },
-  'hawthorn': { trainStation: 'HAW', tram: '20566', tramRoute: '16', bus: null, line: 'Glen Waverley/Alamein' },
-  'camberwell': { trainStation: 'CAM', tram: '18964', tramRoute: '72', bus: null, line: 'Glen Waverley/Alamein' },
-  'glen iris': { trainStation: 'GIR', tram: null, tramRoute: null, bus: null, line: 'Glen Waverley/Alamein' },
-
-  // South east - Frankston/Pakenham/Cranbourne
-  'malvern': { trainStation: 'MAL', tram: '18946', tramRoute: '5', bus: null, line: 'Pakenham/Cranbourne/Frankston' },
-  'caulfield': { trainStation: 'CFD', tram: '18457', tramRoute: '67', bus: null, line: 'Pakenham/Cranbourne/Frankston' },
-  'carnegie': { trainStation: 'CNE', tram: null, tramRoute: null, bus: null, line: 'Pakenham/Cranbourne' },
-  'murrumbeena': { trainStation: 'MRB', tram: null, tramRoute: null, bus: null, line: 'Pakenham/Cranbourne' },
-  'hughesdale': { trainStation: 'HUG', tram: null, tramRoute: null, bus: null, line: 'Pakenham/Cranbourne' },
-  'oakleigh': { trainStation: 'OAK', tram: null, tramRoute: null, bus: null, line: 'Pakenham/Cranbourne' },
-
-  // North - Hurstbridge/Mernda
-  'clifton hill': { trainStation: 'CHL', tram: '6046', tramRoute: '86', bus: null, line: 'Hurstbridge/Mernda' },
-  'collingwood': { trainStation: 'CWD', tram: '6052', tramRoute: '86', bus: null, line: 'Hurstbridge/Mernda' },
-  'fitzroy north': { trainStation: null, tram: '6142', tramRoute: '96', bus: null, line: 'Tram' },
-  'northcote': { trainStation: 'NCE', tram: '6040', tramRoute: '86', bus: null, line: 'Hurstbridge/Mernda' },
-  'fairfield': { trainStation: 'FFD', tram: null, tramRoute: null, bus: null, line: 'Hurstbridge/Mernda' },
-  'alphington': { trainStation: 'ALP', tram: null, tramRoute: null, bus: null, line: 'Hurstbridge/Mernda' },
-  'ivanhoe': { trainStation: 'IVA', tram: null, tramRoute: null, bus: null, line: 'Hurstbridge' },
-
-  // West - Werribee/Williamstown
-  'footscray': { trainStation: 'FSY', tram: null, tramRoute: null, bus: null, line: 'Werribee/Williamstown/Sunbury' },
-  'seddon': { trainStation: 'SEN', tram: null, tramRoute: null, bus: null, line: 'Werribee/Williamstown' },
-  'yarraville': { trainStation: 'YVE', tram: null, tramRoute: null, bus: null, line: 'Werribee/Williamstown' },
-  'newport': { trainStation: 'NPT', tram: null, tramRoute: null, bus: null, line: 'Werribee/Williamstown' },
-  'spotswood': { trainStation: 'SPT', tram: null, tramRoute: null, bus: null, line: 'Williamstown' },
-
-  // North west - Craigieburn/Sunbury/Upfield
-  'brunswick': { trainStation: 'BWK', tram: '16719', tramRoute: '19', bus: null, line: 'Upfield' },
-  'coburg': { trainStation: 'COB', tram: null, tramRoute: null, bus: null, line: 'Upfield' },
-  'fawkner': { trainStation: 'FAK', tram: null, tramRoute: null, bus: null, line: 'Upfield' },
-  'glenroy': { trainStation: 'GRY', tram: null, tramRoute: null, bus: null, line: 'Craigieburn' },
-  'broadmeadows': { trainStation: 'BMS', tram: null, tramRoute: null, bus: null, line: 'Craigieburn' },
-
-  // CBD/Inner
-  'melbourne': { trainStation: 'FSS', tram: '18090', tramRoute: null, bus: null, line: 'All lines' },
-  'cbd': { trainStation: 'FSS', tram: '18090', tramRoute: null, bus: null, line: 'All lines' },
-  'carlton': { trainStation: null, tram: '18789', tramRoute: '1', bus: null, line: 'Tram' },
-  'fitzroy': { trainStation: null, tram: '6056', tramRoute: '86', bus: null, line: 'Tram' },
-  'st kilda': { trainStation: null, tram: '20506', tramRoute: '96', bus: null, line: 'Tram' },
-  'port melbourne': { trainStation: null, tram: '20496', tramRoute: '109', bus: null, line: 'Tram' },
-  'south melbourne': { trainStation: null, tram: '18483', tramRoute: '1', bus: null, line: 'Tram' },
-};
+export const MELBOURNE_STOP_IDS = VIC_SUBURB_STOPS;
 
 /**
  * Auto-detect stop IDs from home address
  * Per DEVELOPMENT-RULES Section 23.1.1 - detectTrainStopId() fallback
  *
+ * Searches ALL 226 GTFS-derived suburb entries (auto-generated from .txt stop files).
  * Returns station codes for trains (resolved to platform IDs by opendata-client.js)
  * and direct stop IDs for trams/buses.
  *
@@ -141,15 +87,21 @@ export function detectStopIdsFromAddress(address) {
 
   const addressLower = address.toLowerCase();
 
-  for (const [suburb, ids] of Object.entries(MELBOURNE_STOP_IDS)) {
+  // Search auto-generated VIC_SUBURB_STOPS (226 suburbs from GTFS)
+  // Longest suburb name match first to prevent partial matches
+  const suburbs = Object.keys(MELBOURNE_STOP_IDS).sort((a, b) => b.length - a.length);
+
+  for (const suburb of suburbs) {
     if (addressLower.includes(suburb)) {
+      const ids = MELBOURNE_STOP_IDS[suburb];
       return {
-        trainStopId: ids.trainStation,  // 3-letter station code (or null)
-        tramStopId: ids.tram,
-        tramRouteNumber: ids.tramRoute || null,
+        trainStopId: ids.trainStation || null,
+        tramStopId: ids.tram || null,
+        tramRouteNumber: null,
         busStopId: ids.bus || null,
         detectedSuburb: suburb,
-        line: ids.line
+        stationName: ids.stationName || null,
+        line: null
       };
     }
   }
@@ -161,6 +113,7 @@ export function detectStopIdsFromAddress(address) {
     tramRouteNumber: null,
     busStopId: null,
     detectedSuburb: null,
+    stationName: null,
     line: null
   };
 }

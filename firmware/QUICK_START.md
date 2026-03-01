@@ -280,7 +280,7 @@ This is **required** for ESP32-C3. Do not change these settings.
 
 ### Power Requirements
 - **USB-C power recommended** for continuous, always-on operation
-- Battery operation provides several days of cable-free use — ideal for testing placement or portable scenarios. CCFirm™ v8.0.0 implements hardware deep sleep with a 60-second refresh interval. Configurable refresh intervals are a planned enhancement to further extend battery duration
+- Battery operation provides several days of cable-free use — ideal for testing placement or portable scenarios. CCFirm™ v8.1.0 implements hardware deep sleep with a 60-second refresh interval. Configurable refresh intervals are a planned enhancement to further extend battery duration
 - For wall-mounted use, connect to USB-C power for uninterrupted operation
 
 ### Server URL
@@ -301,7 +301,7 @@ If you need to change the server URL, factory reset the device (hold button 10 s
 
 ## Current Status
 
-[DONE] Firmware flashed (CCFirm v8.0.0)
+[DONE] Firmware flashed (CCFirm v8.1.0)
 [DONE] USB CDC enabled
 [DONE] Configuration corrected
 [DONE] Documentation complete

@@ -24,6 +24,27 @@ import SleepOptimiser from '../src/engines/sleep-optimiser.js';
 import { getStopNameById, detectStopIdsFromAddress } from '../src/data/gtfs-stop-names.js';
 import { getDepartures } from '../src/services/opendata-client.js';
 
+/**
+ * Retry wrapper for GTFS-RT fetches — single retry with exponential backoff.
+ * Returns [] on exhaustion so Promise.all() never rejects.
+ */
+async function fetchWithRetry(fetchFn, label, retries = 1, delayMs = 1500) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fetchFn();
+    } catch (e) {
+      if (attempt < retries) {
+        console.warn(`[${label}] Fetch attempt ${attempt + 1} failed: ${e.message} — retrying in ${delayMs}ms`);
+        await new Promise(r => setTimeout(r, delayMs));
+        delayMs *= 2;
+      } else {
+        console.error(`[${label}] All ${retries + 1} fetch attempts failed: ${e.message}`);
+        return [];
+      }
+    }
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -131,7 +152,11 @@ export default async function handler(req, res) {
     let directTrams = engineTransit.trams || [];
     let directBuses = engineTransit.buses || [];
 
-    if (directTrains.length === 0 && directTrams.length === 0 && directBuses.length === 0 &&
+    // Respect Free Mode: skip GTFS-RT when user explicitly selected cached mode
+    const ccApiMode = kvPrefs?.apiMode || 'live';
+    const ccSkipLive = ccApiMode === 'cached';
+
+    if (!ccSkipLive && directTrains.length === 0 && directTrams.length === 0 && directBuses.length === 0 &&
         (trainStopId || tramStopId || busStopId)) {
       const apiOptions = apiKey ? { apiKey } : {};
       const tramRouteNum = activeRoute?.legs?.find(l => l.type === 'tram')?.routeNumber || detectedTramRoute;
@@ -139,9 +164,9 @@ export default async function handler(req, res) {
       if (tramRouteNum) tramApiOptions.routeNumber = tramRouteNum;
 
       [directTrains, directTrams, directBuses] = await Promise.all([
-        getDepartures(trainStopId, 0, apiOptions).catch(() => []),
-        getDepartures(tramStopId, 1, tramApiOptions).catch(() => []),
-        getDepartures(busStopId, 2, apiOptions).catch(() => [])
+        fetchWithRetry(() => getDepartures(trainStopId, 0, apiOptions), 'cc-train'),
+        fetchWithRetry(() => getDepartures(tramStopId, 1, tramApiOptions), 'cc-tram'),
+        fetchWithRetry(() => getDepartures(busStopId, 2, apiOptions), 'cc-bus')
       ]);
       result.transit = {
         ...engineTransit,
@@ -370,6 +395,24 @@ export default async function handler(req, res) {
       mindset_display: mindset.stressDisplay,
       mindset_steps: mindset.stepsDisplay,
       mindset_feels_like: mindset.feelsLikeDisplay,
+
+      // Live data status — truthful indicators per Section 23.6
+      isLive: hasAnyLiveData,
+      dataSource: hasAnyLiveData ? 'gtfs-rt' : (apiOptions.apiKey ? 'no-data' : 'no-key'),
+      _liveDataDiag: {
+        hasApiKey: !!apiOptions.apiKey,
+        trainStopId: trainStopId || null,
+        tramStopId: tramStopId || null,
+        trainFeedEntities: directTrains?._feedInfo?.entityCount ?? directTrains?.length ?? 0,
+        tramFeedEntities: directTrams?._feedInfo?.entityCount ?? directTrams?.length ?? 0,
+        busFeedEntities: directBuses?._feedInfo?.entityCount ?? directBuses?.length ?? 0,
+        trainMatches: directTrains?.filter(t => t.isLive === true).length || 0,
+        tramMatches: directTrams?.filter(t => t.isLive === true).length || 0,
+        busMatches: directBuses?.filter(t => t.isLive === true).length || 0,
+        trainError: directTrains?._feedInfo?.error || null,
+        tramError: directTrams?._feedInfo?.error || null,
+        busError: directBuses?._feedInfo?.error || null
+      },
 
       // Raw data for debugging
       raw: {
@@ -642,7 +685,7 @@ function buildCCDashLegs(result, prefs, now, route = null) {
           minutes: transitDuration,
           journeyContribution,
           state: catchableDeparture.isDelayed ? 'delayed' : 'normal',
-          isLive: catchableDeparture.source === 'live'
+          isLive: (catchableDeparture.source === 'gtfs-rt' || catchableDeparture.source === 'gtfs-rt-route' || catchableDeparture.source === 'gtfs-rt-broad') && catchableDeparture.isLive === true
         });
         cumulativeMinutes += transitDuration;
       } else {
@@ -831,7 +874,7 @@ function getNextDeparture(transit, now) {
     destination: next.destination || 'City',
     platform: next.platform,
     departureTime: formatTime12h(addMinutes(now, next.minutes)),
-    isLive: next.source === 'live'
+    isLive: (next.source === 'gtfs-rt' || next.source === 'gtfs-rt-route' || next.source === 'gtfs-rt-broad') && next.isLive === true
   };
 }
 

@@ -11,7 +11,7 @@
 #   G3: Per-Endpoint Verification (all API endpoints)
 #   G4: Data Flow Verification (config, rendering, admin, KV, mock data)
 #   G5: Caching Verification (headers, refresh timing, TTLs)
-#   G6: Version Consistency (cross-file version checks)
+#   G6: Version Consistency (comprehensive: VERSION.json, all HTML, MD, JS, package.json)
 #   G7: Security (Section 17 expanded + BLE provisioning URL checks)
 #   G8: Architecture & Design (Sections 4-5, 7-10, 21-24)
 #   G9: Metro Tunnel Compliance (Section 25)
@@ -1115,13 +1115,47 @@ else
 fi
 
 # ============================================================================
-# GROUP 6: VERSION CONSISTENCY
+# GROUP 6: VERSION CONSISTENCY (Comprehensive)
 # ============================================================================
-group_header "GROUP 6: VERSION CONSISTENCY"
+group_header "GROUP 6: VERSION CONSISTENCY (Comprehensive)"
 
-section "6.1 VERSION SOURCE OF TRUTH"
+section "6.1 VERSION SOURCE OF TRUTH (VERSION.json)"
 
-# Read versions from api/version.js
+# --------------------------------------------------------------------------
+# Read ALL authoritative versions from VERSION.json using node -e
+# VERSION.json is the single source of truth; api/version.js must match it.
+# --------------------------------------------------------------------------
+VJ_SYSTEM_VERSION=""
+VJ_ENGINE_VERSION=""
+VJ_RENDERER_VERSION=""
+VJ_ADMIN_VERSION=""
+VJ_SETUP_VERSION=""
+VJ_JOURNEY_VERSION=""
+VJ_LIVEDASH_VERSION=""
+VJ_FIRMWARE_VERSION=""
+VJ_SPEC_VERSION=""
+VJ_SERVER_VERSION=""
+
+if [ -f "VERSION.json" ]; then
+    VJ_SYSTEM_VERSION=$(node -e "const v=require('./VERSION.json'); process.stdout.write(v.system.version);" 2>/dev/null || true)
+    VJ_ENGINE_VERSION=$(node -e "const v=require('./VERSION.json'); process.stdout.write(v.components.commutecompute.version);" 2>/dev/null || true)
+    VJ_RENDERER_VERSION=$(node -e "const v=require('./VERSION.json'); process.stdout.write(v.components.renderer.version);" 2>/dev/null || true)
+    VJ_ADMIN_VERSION=$(node -e "const v=require('./VERSION.json'); process.stdout.write(v.components.adminPanel.version);" 2>/dev/null || true)
+    VJ_SETUP_VERSION=$(node -e "const v=require('./VERSION.json'); process.stdout.write(v.components.setupWizard.version);" 2>/dev/null || true)
+    VJ_JOURNEY_VERSION=$(node -e "const v=require('./VERSION.json'); process.stdout.write(v.components.journeyDisplay.version);" 2>/dev/null || true)
+    VJ_LIVEDASH_VERSION=$(node -e "const v=require('./VERSION.json'); process.stdout.write(v.components.livedash.version);" 2>/dev/null || true)
+    VJ_FIRMWARE_VERSION=$(node -e "const v=require('./VERSION.json'); process.stdout.write(v.firmware.version);" 2>/dev/null || true)
+    VJ_SPEC_VERSION=$(node -e "const v=require('./VERSION.json'); process.stdout.write(v.specs.dashboard.version);" 2>/dev/null || true)
+    VJ_SERVER_VERSION=$(node -e "const v=require('./VERSION.json'); process.stdout.write(v.backend.server.version);" 2>/dev/null || true)
+
+    pass "VERSION.json loaded: System=$VJ_SYSTEM_VERSION Engine=$VJ_ENGINE_VERSION Renderer=$VJ_RENDERER_VERSION"
+    echo "    Admin=$VJ_ADMIN_VERSION Setup=$VJ_SETUP_VERSION Journey=$VJ_JOURNEY_VERSION LiveDash=$VJ_LIVEDASH_VERSION"
+    echo "    Firmware=$VJ_FIRMWARE_VERSION Spec=$VJ_SPEC_VERSION Server=$VJ_SERVER_VERSION"
+else
+    fail "VERSION.json not found — cannot determine authoritative versions"
+fi
+
+# Also read api/version.js for cross-check
 SYSTEM_VERSION=""
 ENGINE_VERSION=""
 RENDERER_VERSION=""
@@ -1136,82 +1170,403 @@ if [ -f "api/version.js" ]; then
     ADMIN_VERSION=$(grep -A2 "admin:" api/version.js 2>/dev/null | grep "version:" | head -1 | sed "s/.*version: '//;s/'.*//" || true)
     FIRMWARE_VERSION=$(grep -A2 "firmware:" api/version.js 2>/dev/null | grep "version:" | head -1 | sed "s/.*version: '//;s/'.*//" || true)
     SPEC_VERSION=$(grep -o "CCDashDesignV[0-9.]*" api/version.js 2>/dev/null | head -1 || true)
-
-    pass "api/version.js: System=$SYSTEM_VERSION Engine=$ENGINE_VERSION Renderer=$RENDERER_VERSION"
-    echo "    Admin=$ADMIN_VERSION Firmware=$FIRMWARE_VERSION Spec=$SPEC_VERSION"
+    pass "api/version.js loaded: System=$SYSTEM_VERSION Engine=$ENGINE_VERSION Renderer=$RENDERER_VERSION"
 else
-    fail "api/version.js not found - cannot determine authoritative versions"
+    fail "api/version.js not found — cannot check endpoint versions"
 fi
 
-section "6.2 CROSS-FILE VERSION CONSISTENCY"
-
-subsection "VERSION.json consistency"
-if [ -f "VERSION.json" ]; then
-    VJ_SYSTEM=$(grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' VERSION.json 2>/dev/null | head -1 | sed 's/.*"version"[[:space:]]*:[[:space:]]*"//;s/"//' || true)
-    if [ -n "$SYSTEM_VERSION" ] && [ -n "$VJ_SYSTEM" ]; then
-        # Strip leading 'v' for comparison
-        SV_CLEAN=$(echo "$SYSTEM_VERSION" | sed 's/^v//')
-        VJ_CLEAN=$(echo "$VJ_SYSTEM" | sed 's/^v//')
-        if [ "$SV_CLEAN" = "$VJ_CLEAN" ]; then
-            pass "VERSION.json system version matches api/version.js ($VJ_SYSTEM)"
-        else
-            fail "VERSION.json system version mismatch: $VJ_SYSTEM vs api/version.js $SYSTEM_VERSION"
-        fi
+# --------------------------------------------------------------------------
+# 6.1a: api/version.js must match VERSION.json
+# --------------------------------------------------------------------------
+subsection "api/version.js vs VERSION.json cross-check"
+if [ -n "$VJ_SYSTEM_VERSION" ] && [ -n "$SYSTEM_VERSION" ]; then
+    SV_CLEAN=$(echo "$SYSTEM_VERSION" | sed 's/^v//')
+    if [ "$SV_CLEAN" = "$VJ_SYSTEM_VERSION" ]; then
+        pass "api/version.js system version ($SYSTEM_VERSION) matches VERSION.json ($VJ_SYSTEM_VERSION)"
     else
-        warn "Could not compare VERSION.json versions"
+        fail "api/version.js system version ($SYSTEM_VERSION) does NOT match VERSION.json ($VJ_SYSTEM_VERSION)"
+    fi
+
+    EV_CLEAN=$(echo "$ENGINE_VERSION" | sed 's/^v//')
+    if [ "$EV_CLEAN" = "$VJ_ENGINE_VERSION" ]; then
+        pass "api/version.js engine version ($ENGINE_VERSION) matches VERSION.json ($VJ_ENGINE_VERSION)"
+    else
+        fail "api/version.js engine version ($ENGINE_VERSION) does NOT match VERSION.json ($VJ_ENGINE_VERSION)"
+    fi
+
+    RV_CLEAN=$(echo "$RENDERER_VERSION" | sed 's/^v//')
+    if [ "$RV_CLEAN" = "$VJ_RENDERER_VERSION" ]; then
+        pass "api/version.js renderer version ($RENDERER_VERSION) matches VERSION.json ($VJ_RENDERER_VERSION)"
+    else
+        fail "api/version.js renderer version ($RENDERER_VERSION) does NOT match VERSION.json ($VJ_RENDERER_VERSION)"
+    fi
+
+    if [ -n "$SPEC_VERSION" ] && [ -n "$VJ_SPEC_VERSION" ]; then
+        if [ "$SPEC_VERSION" = "$VJ_SPEC_VERSION" ]; then
+            pass "api/version.js spec version ($SPEC_VERSION) matches VERSION.json ($VJ_SPEC_VERSION)"
+        else
+            fail "api/version.js spec version ($SPEC_VERSION) does NOT match VERSION.json ($VJ_SPEC_VERSION)"
+        fi
+    fi
+
+    FW_CLEAN=$(echo "$FIRMWARE_VERSION" | sed 's/^CC-FW-//')
+    if [ "$FW_CLEAN" = "$VJ_FIRMWARE_VERSION" ]; then
+        pass "api/version.js firmware version ($FIRMWARE_VERSION) matches VERSION.json ($VJ_FIRMWARE_VERSION)"
+    else
+        fail "api/version.js firmware version ($FIRMWARE_VERSION) does NOT match VERSION.json ($VJ_FIRMWARE_VERSION)"
     fi
 else
-    warn "VERSION.json not found"
+    warn "Cannot cross-check api/version.js vs VERSION.json — one or both missing"
 fi
 
-subsection "HTML footer version fallbacks"
-for page in public/admin.html public/index.html public/setup-wizard.html; do
+# --------------------------------------------------------------------------
+# 6.1b: package.json version must match VERSION.json system version
+# --------------------------------------------------------------------------
+subsection "package.json version vs VERSION.json"
+if [ -f "package.json" ] && [ -n "$VJ_SYSTEM_VERSION" ]; then
+    PKG_VERSION=$(node -e "const p=require('./package.json'); process.stdout.write(p.version);" 2>/dev/null || true)
+    if [ -n "$PKG_VERSION" ]; then
+        if [ "$PKG_VERSION" = "$VJ_SYSTEM_VERSION" ]; then
+            pass "package.json version ($PKG_VERSION) matches VERSION.json system version ($VJ_SYSTEM_VERSION)"
+        else
+            fail "package.json version ($PKG_VERSION) does NOT match VERSION.json system version ($VJ_SYSTEM_VERSION)"
+        fi
+    else
+        warn "Could not read package.json version"
+    fi
+else
+    warn "package.json or VERSION.json missing — cannot compare"
+fi
+
+section "6.2 HTML FOOTER VERSION CONSISTENCY (ALL 10 PAGES)"
+
+# --------------------------------------------------------------------------
+# Check ALL HTML pages for three types of version references:
+#   1. Hardcoded fallback values in footer HTML elements
+#   2. JavaScript fallback values in loadFooterVersions / catch blocks
+#   3. System version in footer elements
+# --------------------------------------------------------------------------
+
+# All pages to check (all HTML files in public/ and flasher)
+HTML_PAGES=(
+    "public/admin.html"
+    "public/setup-wizard.html"
+    "public/journey-display.html"
+    "public/help.html"
+    "public/privacy.html"
+    "public/legal.html"
+    "public/preview.html"
+    "public/index.html"
+    "public/attribution.html"
+    "public/flasher/index.html"
+)
+
+# Clean versions for comparison (strip leading 'v')
+SYS_CLEAN=$(echo "$VJ_SYSTEM_VERSION" | sed 's/^v//')
+ENG_CLEAN=$(echo "$VJ_ENGINE_VERSION" | sed 's/^v//')
+REN_CLEAN=$(echo "$VJ_RENDERER_VERSION" | sed 's/^v//')
+FW_CLEAN_VJ="$VJ_FIRMWARE_VERSION"
+
+subsection "Footer system version references (all pages)"
+for page in "${HTML_PAGES[@]}"; do
     if [ -f "$page" ]; then
         PAGE_NAME=$(basename "$page")
-        # Check if page hardcodes versions that don't match
-        if [ -n "$SYSTEM_VERSION" ]; then
-            SV_CLEAN=$(echo "$SYSTEM_VERSION" | sed 's/^v//')
-            PAGE_HAS_VERSION=$(grep -c "v$SV_CLEAN\|$SV_CLEAN" "$page" 2>/dev/null || echo "0")
-            if [ "$PAGE_HAS_VERSION" -gt 0 ]; then
-                pass "$PAGE_NAME: Version reference $SV_CLEAN found"
+        [ "$PAGE_NAME" = "index.html" ] && [ "$(dirname "$page")" = "public/flasher" ] && PAGE_NAME="flasher/index.html"
+
+        # Check system version in footer HTML — match v4.2.0 OR 4.2.0 (JS fallback prepends 'v')
+        SYS_FOUND=$(grep -c "${SYS_CLEAN}" "$page" 2>/dev/null || echo "0")
+        if [ "$SYS_FOUND" -gt 0 ]; then
+            pass "$PAGE_NAME: System version ${SYS_CLEAN} found"
+        else
+            fail "$PAGE_NAME: System version ${SYS_CLEAN} NOT found in page"
+        fi
+    else
+        skip "$page not found"
+    fi
+done
+
+subsection "Footer engine version fallbacks (all pages)"
+for page in "${HTML_PAGES[@]}"; do
+    if [ -f "$page" ]; then
+        PAGE_NAME=$(basename "$page")
+        [ "$PAGE_NAME" = "index.html" ] && [ "$(dirname "$page")" = "public/flasher" ] && PAGE_NAME="flasher/index.html"
+
+        # Check for engine version in JS fallback (e.g., || 'v3.1' or >v3.1<)
+        ENG_FOUND=$(grep -c "v${ENG_CLEAN}" "$page" 2>/dev/null || echo "0")
+        if [ "$ENG_FOUND" -gt 0 ]; then
+            pass "$PAGE_NAME: Engine version v${ENG_CLEAN} found"
+        else
+            # Some pages use placeholder '--' and load dynamically — only warn
+            HAS_DYNAMIC=$(grep -c "api/version" "$page" 2>/dev/null || echo "0")
+            if [ "$HAS_DYNAMIC" -gt 0 ]; then
+                warn "$PAGE_NAME: Engine version v${ENG_CLEAN} not in static fallback (dynamic load present)"
             else
-                warn "$PAGE_NAME: Version $SV_CLEAN not found in fallback"
+                fail "$PAGE_NAME: Engine version v${ENG_CLEAN} NOT found and no dynamic loading"
             fi
         fi
     fi
 done
 
+subsection "Footer renderer version fallbacks (all pages)"
+for page in "${HTML_PAGES[@]}"; do
+    if [ -f "$page" ]; then
+        PAGE_NAME=$(basename "$page")
+        [ "$PAGE_NAME" = "index.html" ] && [ "$(dirname "$page")" = "public/flasher" ] && PAGE_NAME="flasher/index.html"
+
+        REN_FOUND=$(grep -c "v${REN_CLEAN}" "$page" 2>/dev/null || echo "0")
+        if [ "$REN_FOUND" -gt 0 ]; then
+            pass "$PAGE_NAME: Renderer version v${REN_CLEAN} found"
+        else
+            HAS_DYNAMIC=$(grep -c "api/version" "$page" 2>/dev/null || echo "0")
+            if [ "$HAS_DYNAMIC" -gt 0 ]; then
+                warn "$PAGE_NAME: Renderer version v${REN_CLEAN} not in static fallback (dynamic load present)"
+            else
+                fail "$PAGE_NAME: Renderer version v${REN_CLEAN} NOT found and no dynamic loading"
+            fi
+        fi
+    fi
+done
+
+subsection "Footer firmware version (flasher page)"
+if [ -f "public/flasher/index.html" ] && [ -n "$FW_CLEAN_VJ" ]; then
+    FW_FOUND=$(grep -c "$FW_CLEAN_VJ" "public/flasher/index.html" 2>/dev/null || echo "0")
+    if [ "$FW_FOUND" -gt 0 ]; then
+        pass "flasher/index.html: Firmware version $FW_CLEAN_VJ found"
+    else
+        fail "flasher/index.html: Firmware version $FW_CLEAN_VJ NOT found"
+    fi
+fi
+
+subsection "Stale version detection in HTML JS fallbacks"
+# Check for obviously stale engine/renderer fallback versions in JS
+# Current engine is VJ_ENGINE_VERSION; stale would be anything older
+for page in "${HTML_PAGES[@]}"; do
+    if [ -f "$page" ]; then
+        PAGE_NAME=$(basename "$page")
+        [ "$PAGE_NAME" = "index.html" ] && [ "$(dirname "$page")" = "public/flasher" ] && PAGE_NAME="flasher/index.html"
+
+        # Look for JS fallback patterns like || 'v3.0' or || 'v2.0' that don't match current
+        STALE_ENGINE=$(grep -n "|| 'v[0-9]" "$page" 2>/dev/null | grep "commutecompute-version\|commutecompute\.version" | grep -v "v${ENG_CLEAN}" | head -3 || true)
+        if [ -n "$STALE_ENGINE" ]; then
+            fail "$PAGE_NAME: Stale engine fallback (expected v${ENG_CLEAN}):"
+            echo "    $STALE_ENGINE"
+        fi
+
+        STALE_RENDERER=$(grep -n "|| 'v[0-9]" "$page" 2>/dev/null | grep "renderer-version\|renderer\.version" | grep -v "v${REN_CLEAN}" | head -3 || true)
+        if [ -n "$STALE_RENDERER" ]; then
+            fail "$PAGE_NAME: Stale renderer fallback (expected v${REN_CLEAN}):"
+            echo "    $STALE_RENDERER"
+        fi
+
+        STALE_SYSTEM=$(grep -n "|| '[0-9]\||| 'v[0-9]" "$page" 2>/dev/null | grep "system.version\|system-version" | grep -v "${SYS_CLEAN}" | head -3 || true)
+        if [ -n "$STALE_SYSTEM" ]; then
+            fail "$PAGE_NAME: Stale system fallback (expected ${SYS_CLEAN}):"
+            echo "    $STALE_SYSTEM"
+        fi
+    fi
+done
+
+section "6.3 ADMIN ARCHITECTURE DIAGRAM VERSIONS"
+
+# --------------------------------------------------------------------------
+# admin.html contains ASCII architecture diagrams with inline version strings
+# These must match VERSION.json values.
+# --------------------------------------------------------------------------
+subsection "Architecture diagram version strings"
+if [ -f "public/admin.html" ] && [ -n "$VJ_SYSTEM_VERSION" ]; then
+    # System architecture header (e.g., "ARCHITECTURE v4.2.0")
+    ARCH_SYS=$(grep -c "ARCHITECTURE v${SYS_CLEAN}" "public/admin.html" 2>/dev/null || echo "0")
+    if [ "$ARCH_SYS" -gt 0 ]; then
+        pass "admin.html: Architecture diagram system version v${SYS_CLEAN} found"
+    else
+        fail "admin.html: Architecture diagram missing system version v${SYS_CLEAN}"
+    fi
+
+    # Engine version in diagram (e.g., "CommuteCompute Engine v3.1")
+    ARCH_ENG=$(grep -c "Engine v${ENG_CLEAN}" "public/admin.html" 2>/dev/null || echo "0")
+    if [ "$ARCH_ENG" -gt 0 ]; then
+        pass "admin.html: Architecture diagram engine version v${ENG_CLEAN} found"
+    else
+        fail "admin.html: Architecture diagram missing engine version v${ENG_CLEAN}"
+    fi
+
+    # Renderer version in diagram (e.g., "Renderer v2.1")
+    ARCH_REN=$(grep -c "Renderer v${REN_CLEAN}" "public/admin.html" 2>/dev/null || echo "0")
+    if [ "$ARCH_REN" -gt 0 ]; then
+        pass "admin.html: Architecture diagram renderer version v${REN_CLEAN} found"
+    else
+        fail "admin.html: Architecture diagram missing renderer version v${REN_CLEAN}"
+    fi
+
+    # Firmware version in diagram (e.g., "CC-FW-8.1.0")
+    ARCH_FW=$(grep -c "CC-FW-${FW_CLEAN_VJ}" "public/admin.html" 2>/dev/null || echo "0")
+    if [ "$ARCH_FW" -gt 0 ]; then
+        pass "admin.html: Architecture diagram firmware version CC-FW-${FW_CLEAN_VJ} found"
+    else
+        fail "admin.html: Architecture diagram missing firmware version CC-FW-${FW_CLEAN_VJ}"
+    fi
+
+    # Grid system version element (e.g., "v4.2.0" in cc-grid-system-version)
+    GRID_SYS=$(grep -c "cc-grid-system-version" "public/admin.html" 2>/dev/null || echo "0")
+    if [ "$GRID_SYS" -gt 0 ]; then
+        GRID_VER=$(grep "cc-grid-system-version" "public/admin.html" 2>/dev/null | grep -o "v[0-9][0-9.]*" | head -1 || true)
+        if [ "$GRID_VER" = "v${SYS_CLEAN}" ]; then
+            pass "admin.html: Grid system version display ($GRID_VER) matches VERSION.json"
+        else
+            fail "admin.html: Grid system version display ($GRID_VER) does NOT match VERSION.json (expected v${SYS_CLEAN})"
+        fi
+    fi
+fi
+
+section "6.4 MARKDOWN FILE VERSION REFERENCES"
+
+# --------------------------------------------------------------------------
+# Check README.md for all key version references
+# --------------------------------------------------------------------------
 subsection "README.md version references"
 if [ -f "README.md" ]; then
-    if [ -n "$SYSTEM_VERSION" ]; then
-        SV_CLEAN=$(echo "$SYSTEM_VERSION" | sed 's/^v//')
-        README_VERSION=$(grep -c "$SV_CLEAN" README.md 2>/dev/null || echo "0")
-        if [ "$README_VERSION" -gt 0 ]; then
-            pass "README.md references current system version $SV_CLEAN"
-        else
-            warn "README.md may not reference current version $SV_CLEAN"
-        fi
+    README_SYS=$(grep -Ec "v${SYS_CLEAN}|System v${SYS_CLEAN}|System&#8482; v${SYS_CLEAN}" README.md 2>/dev/null | head -1 || echo "0")
+    if [ "$README_SYS" -gt 0 ]; then
+        pass "README.md: System version v${SYS_CLEAN} referenced"
+    else
+        warn "README.md: System version v${SYS_CLEAN} not found"
+    fi
+
+    README_ENG=$(grep -c "Engine v${ENG_CLEAN}" README.md 2>/dev/null || echo "0")
+    if [ "$README_ENG" -gt 0 ]; then
+        pass "README.md: Engine version v${ENG_CLEAN} referenced"
+    else
+        warn "README.md: Engine version v${ENG_CLEAN} not found"
+    fi
+
+    README_REN=$(grep -c "Renderer v${REN_CLEAN}" README.md 2>/dev/null || echo "0")
+    if [ "$README_REN" -gt 0 ]; then
+        pass "README.md: Renderer version v${REN_CLEAN} referenced"
+    else
+        warn "README.md: Renderer version v${REN_CLEAN} not found"
+    fi
+
+    README_FW=$(grep -Ec "v${FW_CLEAN_VJ}|CCFirm.*${FW_CLEAN_VJ}" README.md 2>/dev/null | head -1 || echo "0")
+    if [ "$README_FW" -gt 0 ]; then
+        pass "README.md: Firmware version ${FW_CLEAN_VJ} referenced"
+    else
+        warn "README.md: Firmware version ${FW_CLEAN_VJ} not found"
+    fi
+
+    # Check for badge version strings (e.g., shield.io badge URLs)
+    README_BADGE_FW=$(grep -Ec "Firmware.*${FW_CLEAN_VJ}|CCFirm.*v${FW_CLEAN_VJ}" README.md 2>/dev/null | head -1 || echo "0")
+    if [ "$README_BADGE_FW" -gt 0 ]; then
+        pass "README.md: Firmware badge references v${FW_CLEAN_VJ}"
+    else
+        warn "README.md: Firmware badge may not reference v${FW_CLEAN_VJ}"
     fi
 else
     warn "README.md not found"
 fi
 
-section "6.3 SPEC VERSION"
+# --------------------------------------------------------------------------
+# Check CONTRIBUTING.md for spec version references
+# --------------------------------------------------------------------------
+subsection "CONTRIBUTING.md spec version"
+if [ -f "CONTRIBUTING.md" ] && [ -n "$VJ_SPEC_VERSION" ]; then
+    CONTRIB_SPEC=$(grep -c "$VJ_SPEC_VERSION" CONTRIBUTING.md 2>/dev/null || echo "0")
+    if [ "$CONTRIB_SPEC" -gt 0 ]; then
+        pass "CONTRIBUTING.md: Spec version $VJ_SPEC_VERSION referenced"
+    else
+        # Check for major version match (e.g., CCDashDesignV15 without .0)
+        SPEC_MAJOR=$(echo "$VJ_SPEC_VERSION" | sed 's/\.0$//')
+        CONTRIB_SPEC_MAJOR=$(grep -c "$SPEC_MAJOR" CONTRIBUTING.md 2>/dev/null || echo "0")
+        if [ "$CONTRIB_SPEC_MAJOR" -gt 0 ]; then
+            pass "CONTRIBUTING.md: Spec version $SPEC_MAJOR referenced (major version match)"
+        else
+            warn "CONTRIBUTING.md: Spec version $VJ_SPEC_VERSION not found"
+        fi
+    fi
+elif [ -f "CONTRIBUTING.md" ]; then
+    warn "CONTRIBUTING.md: Cannot check spec version — VJ_SPEC_VERSION not available"
+else
+    skip "CONTRIBUTING.md not found"
+fi
+
+# --------------------------------------------------------------------------
+# Check docs/ markdown files for version references
+# --------------------------------------------------------------------------
+subsection "Documentation files version references"
+for docfile in docs/CHANGELOG.md docs/COMMUTE-COMPUTE-COMPLETE-OVERVIEW.md docs/PROJECT-VISION.md docs/hardware/DEVICE-COMPATIBILITY.md docs/setup/SETUP-WIZARD-ARCHITECTURE.md; do
+    if [ -f "$docfile" ]; then
+        DOC_NAME=$(basename "$docfile")
+        DOC_SYS=$(grep -c "${SYS_CLEAN}" "$docfile" 2>/dev/null | head -1 || echo "0")
+        if [ "$DOC_SYS" -gt 0 ]; then
+            pass "$DOC_NAME: References current system version ${SYS_CLEAN}"
+        else
+            warn "$DOC_NAME: Does not reference current system version ${SYS_CLEAN}"
+        fi
+    fi
+done
+
+section "6.5 JAVASCRIPT SOURCE FILE VERSION CONSISTENCY"
+
+# --------------------------------------------------------------------------
+# Check ccdash-renderer.js for correct CCDashDesignV spec reference
+# --------------------------------------------------------------------------
+subsection "ccdash-renderer.js spec reference"
+if [ -f "src/services/ccdash-renderer.js" ] && [ -n "$VJ_SPEC_VERSION" ]; then
+    RENDERER_SPEC_REFS=$(grep -c "$VJ_SPEC_VERSION" "src/services/ccdash-renderer.js" 2>/dev/null || echo "0")
+    if [ "$RENDERER_SPEC_REFS" -gt 0 ]; then
+        pass "ccdash-renderer.js: References $VJ_SPEC_VERSION ($RENDERER_SPEC_REFS occurrences)"
+    else
+        # Check for major version match
+        SPEC_MAJOR=$(echo "$VJ_SPEC_VERSION" | sed 's/\.0$//')
+        RENDERER_SPEC_MAJOR=$(grep -c "$SPEC_MAJOR" "src/services/ccdash-renderer.js" 2>/dev/null || echo "0")
+        if [ "$RENDERER_SPEC_MAJOR" -gt 0 ]; then
+            pass "ccdash-renderer.js: References $SPEC_MAJOR ($RENDERER_SPEC_MAJOR occurrences)"
+        else
+            fail "ccdash-renderer.js: Does NOT reference spec $VJ_SPEC_VERSION or $SPEC_MAJOR"
+        fi
+    fi
+
+    # Check for stale spec references (any CCDashDesignV that is NOT the current version)
+    SPEC_NUM=$(echo "$VJ_SPEC_VERSION" | grep -o "[0-9]\+" | head -1)
+    STALE_SPEC=$(grep -n "CCDashDesignV[0-9]" "src/services/ccdash-renderer.js" 2>/dev/null | grep -v "CCDashDesignV${SPEC_NUM}" | head -5 || true)
+    if [ -n "$STALE_SPEC" ]; then
+        fail "ccdash-renderer.js: Stale spec references found (expected V${SPEC_NUM}):"
+        echo "    $STALE_SPEC"
+    else
+        pass "ccdash-renderer.js: No stale CCDashDesignV references"
+    fi
+fi
+
+# --------------------------------------------------------------------------
+# Check ALL JS files for stale CCDashDesignV references
+# --------------------------------------------------------------------------
+subsection "All JS files: stale CCDashDesignV references"
+if [ -n "$VJ_SPEC_VERSION" ]; then
+    SPEC_NUM=$(echo "$VJ_SPEC_VERSION" | grep -o "[0-9]\+" | head -1)
+    STALE_JS_SPECS=$(grep -rn "CCDashDesignV[0-9]" src/ api/ 2>/dev/null | grep -v "CCDashDesignV${SPEC_NUM}" | grep -v "node_modules" | head -10 || true)
+    if [ -n "$STALE_JS_SPECS" ]; then
+        fail "Stale CCDashDesignV references in JS files (expected V${SPEC_NUM}):"
+        echo "$STALE_JS_SPECS" | while read -r line; do echo "    $line"; done
+    else
+        pass "No stale CCDashDesignV references in src/ or api/"
+    fi
+fi
+
+section "6.6 SPEC FILE"
 
 subsection "Current spec file exists"
-if [ -n "$SPEC_VERSION" ]; then
+if [ -n "$VJ_SPEC_VERSION" ]; then
     # Check for the spec file matching current version (e.g., CCDashDesignV15.md)
-    SPEC_FILE=$(find specs/ -name "${SPEC_VERSION}*" -o -name "$(echo "$SPEC_VERSION" | sed 's/\.0$//')*" 2>/dev/null | head -1 || true)
+    SPEC_FILE=$(find specs/ -name "${VJ_SPEC_VERSION}*" -o -name "$(echo "$VJ_SPEC_VERSION" | sed 's/\.0$//')*" 2>/dev/null | head -1 || true)
     if [ -n "$SPEC_FILE" ]; then
         pass "Current spec file found: $SPEC_FILE"
     else
         # Try common patterns
-        SPEC_NUM=$(echo "$SPEC_VERSION" | grep -o "[0-9]\+" | head -1)
+        SPEC_NUM=$(echo "$VJ_SPEC_VERSION" | grep -o "[0-9]\+" | head -1)
         SPEC_FILE_ALT=$(find specs/ -name "*V${SPEC_NUM}*" 2>/dev/null | head -1 || true)
         if [ -n "$SPEC_FILE_ALT" ]; then
             pass "Spec file found: $SPEC_FILE_ALT"
         else
-            fail "Spec file for $SPEC_VERSION not found in specs/"
+            fail "Spec file for $VJ_SPEC_VERSION not found in specs/"
         fi
     fi
 else
