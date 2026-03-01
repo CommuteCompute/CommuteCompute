@@ -843,25 +843,36 @@ function buildLegSubtitle(leg, transitData) {
     case 'coffee':
       return 'TIME FOR COFFEE';
     case 'train': {
-      // V15.0: Subtitle = stop/station name ONLY. "Next:" is appended later in
+      // V15.0: Subtitle = line name + origin → destination. "Next:" appended later in
       // buildJourneyLegs() using catchable departures (filtered by user arrival time).
-      // This prevents showing uncatchable departures like "Next: 0, 20 min" when user
-      // needs 20 min to reach the station.
       const parts = [];
       const lineName = leg.lineName || leg.routeNumber || '';
       const originName = getStopName() || 'Station';
       if (lineName) parts.push(lineName);
-      parts.push(originName);
+      const destName = leg.destination?.name;
+      if (destName && !isGenericName(destName) && destName !== originName) {
+        parts.push(`${originName} → ${destName}`);
+      } else {
+        parts.push(originName);
+      }
       return parts.join(' • ');
     }
     case 'tram': {
-      // V15.0: Stop name only — "Next:" appended later from catchable departures
+      // V15.0: Origin → destination. "Next:" appended later from catchable departures
       const originName = getStopName() || 'Tram Stop';
+      const destName = leg.destination?.name;
+      if (destName && !isGenericName(destName) && destName !== originName) {
+        return `${originName} → ${destName}`;
+      }
       return originName;
     }
     case 'bus': {
-      // V15.0: Stop name only — "Next:" appended later from catchable departures
+      // V15.0: Origin → destination. "Next:" appended later from catchable departures
       const originName = getStopName() || 'Bus Stop';
+      const destName = leg.destination?.name;
+      if (destName && !isGenericName(destName) && destName !== originName) {
+        return `${originName} → ${destName}`;
+      }
       return originName;
     }
     default:
@@ -1731,9 +1742,9 @@ export default async function handler(req, res) {
 
     // Determine if we actually have live transit data (from GTFS-RT, not fallback)
     // Per Section 23.6: "LIVE" indicators must reflect actual data source
-    const hasLiveTrainData = trains.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route') && t.isLive === true);
-    const hasLiveTramData = trams.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route') && t.isLive === true);
-    const hasLiveBusData = buses.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route') && t.isLive === true);
+    const hasLiveTrainData = trains.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad') && t.isLive === true);
+    const hasLiveTramData = trams.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad') && t.isLive === true);
+    const hasLiveBusData = buses.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad') && t.isLive === true);
     const hasAnyLiveData = hasLiveTrainData || hasLiveTramData || hasLiveBusData;
 
     // =========================================================================
@@ -1931,7 +1942,8 @@ export default async function handler(req, res) {
       totalMinutes,
       targetArrivalMins: targetMins,
       currentMins: nowMinsForLeave,
-      isCommuteDay
+      isCommuteDay,
+      hasLiveData: hasAnyLiveData
     });
     // V14.0: Calculate Lifestyle Context Suggestions
     const lifestyleEngine = new LifestyleContext();
@@ -2030,6 +2042,8 @@ export default async function handler(req, res) {
       confidence_label: confidence.label,
       confidence_text: confidence.statusText,
       confidence_resilience: confidence.resilience,
+      confidence_context: confidence.context || '',
+      confidence_resilience_detail: confidence.resilienceDetail || '',
       // V14.0: Lifestyle Context Suggestions
       lifestyle_display: lifestyle.displayLine,
       lifestyle_primary: lifestyle.primarySuggestion,

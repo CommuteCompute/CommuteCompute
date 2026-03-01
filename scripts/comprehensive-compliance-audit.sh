@@ -1964,6 +1964,80 @@ if [ -f "src/services/opendata-client.js" ]; then
     fi
 fi
 
+subsection "23.10 GTFS-RT source completeness (gtfs-rt-broad)"
+if [ -f "api/screen.js" ]; then
+    BROAD_CHECKS=$(grep -c "gtfs-rt-broad" api/screen.js 2>/dev/null || echo "0")
+    if [ "$BROAD_CHECKS" -ge 3 ]; then
+        pass "gtfs-rt-broad included in all hasLive*Data checks ($BROAD_CHECKS occurrences)"
+    else
+        fail "gtfs-rt-broad missing from hasLive*Data checks (found $BROAD_CHECKS, need >= 3)"
+    fi
+else
+    skip "api/screen.js not found"
+fi
+
+subsection "23.11 Stop ID maps use 3-letter station codes"
+STOP_ID_FAIL=0
+for file in api/admin/setup-complete.js api/admin/resolve-stops.js; do
+    if [ -f "$file" ]; then
+        NUMERIC_TRAIN=$(grep "train:" "$file" 2>/dev/null | grep -E "train: '[0-9]+'" | head -3 || true)
+        if [ -n "$NUMERIC_TRAIN" ]; then
+            fail "$file: Train stop IDs use numeric platform IDs instead of 3-letter station codes"
+            echo "$NUMERIC_TRAIN" | head -2
+            ((STOP_ID_FAIL++))
+        else
+            pass "$file: Train stop IDs use 3-letter station codes"
+        fi
+    fi
+done
+
+subsection "23.12 Transit leg subtitle includes destination"
+if [ -f "api/screen.js" ]; then
+    DEST_REF=$(grep -n "leg.destination" api/screen.js 2>/dev/null | grep -i "subtitle\|buildLeg" || true)
+    if [ -z "$DEST_REF" ]; then
+        DEST_IN_BUILDLEG=$(grep -A50 "function buildLegSubtitle" api/screen.js 2>/dev/null | grep "destination" || true)
+        if [ -n "$DEST_IN_BUILDLEG" ]; then
+            pass "buildLegSubtitle references leg.destination for transit legs"
+        else
+            fail "buildLegSubtitle does not reference leg.destination (Section 23.12)"
+        fi
+    else
+        pass "Transit leg subtitle references destination stop name"
+    fi
+else
+    skip "api/screen.js not found"
+fi
+
+subsection "12.7 DepartureConfidence context and resilienceDetail"
+if [ -f "src/engines/departure-confidence.js" ]; then
+    CTX_CHECK=$(grep -c "_generateContext\|context:" src/engines/departure-confidence.js 2>/dev/null || echo "0")
+    RES_CHECK=$(grep -c "_generateResilienceDetail\|resilienceDetail:" src/engines/departure-confidence.js 2>/dev/null || echo "0")
+    if [ "$CTX_CHECK" -ge 2 ] && [ "$RES_CHECK" -ge 2 ]; then
+        pass "DepartureConfidence returns context and resilienceDetail"
+    else
+        fail "DepartureConfidence missing context ($CTX_CHECK refs) or resilienceDetail ($RES_CHECK refs)"
+    fi
+else
+    skip "src/engines/departure-confidence.js not found"
+fi
+
+subsection "5.7 Dual subtitle pipeline (renderer getLegSubtitle)"
+if [ -f "src/services/ccdash-renderer.js" ]; then
+    GET_LEG_SUB=$(grep -c "getLegSubtitle" src/services/ccdash-renderer.js 2>/dev/null || echo "0")
+    if [ "$GET_LEG_SUB" -ge 1 ]; then
+        TRANSIT_TYPES=$(grep -A100 "getLegSubtitle" src/services/ccdash-renderer.js 2>/dev/null | grep -c "train\|tram\|bus" || echo "0")
+        if [ "$TRANSIT_TYPES" -ge 3 ]; then
+            pass "ccdash-renderer getLegSubtitle handles all transit types ($TRANSIT_TYPES type refs)"
+        else
+            warn "ccdash-renderer getLegSubtitle may not handle all transit types ($TRANSIT_TYPES refs)"
+        fi
+    else
+        fail "ccdash-renderer.js missing getLegSubtitle (dual subtitle pipeline broken)"
+    fi
+else
+    skip "src/services/ccdash-renderer.js not found"
+fi
+
 # ---------- Section 24: System Architecture Principles ----------
 section "SECTION 24: SYSTEM ARCHITECTURE PRINCIPLES"
 
