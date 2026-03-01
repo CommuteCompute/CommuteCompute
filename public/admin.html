@@ -5505,9 +5505,9 @@
                     // Update Live Data banner - check ACTUAL data source, not just API key existence
                     // Per Section 23.6: LIVE indicators must reflect actual data, not configuration state
                     const rawTransit = scData.raw?.transit || {};
-                    const hasActualLiveTrains = (rawTransit.trains || []).some(t => t.source === 'live' || t.source === 'opendata');
-                    const hasActualLiveTrams = (rawTransit.trams || []).some(t => t.source === 'live' || t.source === 'opendata');
-                    const hasActualLiveBuses = (rawTransit.buses || []).some(t => t.source === 'live' || t.source === 'opendata');
+                    const hasActualLiveTrains = (rawTransit.trains || []).some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad') && t.isLive === true);
+                    const hasActualLiveTrams = (rawTransit.trams || []).some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad') && t.isLive === true);
+                    const hasActualLiveBuses = (rawTransit.buses || []).some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad') && t.isLive === true);
                     const hasActualLiveData = hasActualLiveTrains || hasActualLiveTrams || hasActualLiveBuses;
                     const isLive = hasActualLiveData && !scData.fallbackMode;
                     // Single source of truth for live/fallback status across the admin page.
@@ -5520,6 +5520,12 @@
                     };
                     const dataMode = document.getElementById('data-mode');
                     if (dataMode) dataMode.textContent = isLive ? 'Live Data' : (hasTransitKey ? 'No Live Data' : 'Timetable');
+                    // FIX-6a: Update live dot colour and animation to match actual live state
+                    const liveDot = document.querySelector('.live-indicator .live-dot');
+                    if (liveDot) {
+                        liveDot.style.background = isLive ? 'var(--success)' : '#fbbf24';
+                        liveDot.style.animation = isLive ? 'pulse 1.5s infinite' : 'none';
+                    }
                     updateLiveDataBanner(isLive, hasTransitKey, transitValidated);
                     updateCommuteComputeStatus(config, window.ccLiveStatus);
                     

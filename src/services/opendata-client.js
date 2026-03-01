@@ -217,6 +217,8 @@ function decodeGtfsRt(buffer) {
 async function fetchGtfsRt(mode, feed, options = {}) {
   if (options.apiKey) {
     // Defensive: handle both string and { devId, apiKey } object formats
+    // Clear stale runtimeApiKey to prevent warm-invocation key caching (FIX-4)
+    runtimeApiKey = null;
     const keyStr = typeof options.apiKey === 'object' ? options.apiKey.apiKey : options.apiKey;
     setApiKey(keyStr);
   }
@@ -463,8 +465,9 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType, lineC
     const routeId = tripUpdate.trip?.routeId;
 
     // Match by route number (tram/bus) or line code (train)
+    let extractedRoute = null;
     if (targetRoute) {
-      const extractedRoute = getRouteNumber(routeId);
+      extractedRoute = getRouteNumber(routeId);
       if (extractedRoute !== targetRoute) continue;
     } else if (lineCode) {
       const extractedCode = getLineCode(routeId);
@@ -523,7 +526,7 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType, lineC
         departureTimeMs: depMs,
         destination: lineName,
         lineName,
-        routeNumber: extractedRoute,
+        routeNumber: extractedRoute || getRouteNumber(routeId) || null,
         routeId,
         tripId: tripUpdate.trip?.tripId,
         finalStop,
@@ -759,6 +762,7 @@ export async function getDisruptions(routeType, options = {}) {
     });
     
   } catch (error) {
+    console.error(`[OpenData] getDisruptions error for ${mode}: ${error.message}`);
     return [];
   }
 }
@@ -850,6 +854,7 @@ export async function getWeather(lat = MELBOURNE_LAT, lon = MELBOURNE_LON) {
     };
 
   } catch (e) {
+    console.error(`[OpenData] Weather API error: ${e.message}`);
     return {
       temp: 20,
       condition: 'Unknown',
@@ -857,6 +862,7 @@ export async function getWeather(lat = MELBOURNE_LAT, lon = MELBOURNE_LON) {
       windSpeed: null,
       uvIndex: null,
       umbrella: false,
+      precipitation: 0,
       dayForecast: [],
       source: 'fallback',
       error: true

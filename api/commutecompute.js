@@ -188,6 +188,12 @@ export default async function handler(req, res) {
     const arrivalDiff = Math.round((arriveTime - targetArrival) / 60000);
 
     // V15.0: Analytics engines for admin dashboard
+    // FIX-2a: Compute hasAnyLiveData from transit sources for DepartureConfidence context
+    const hasAnyLiveData = ['trains', 'trams', 'buses'].some(mode =>
+      (result.transit?.[mode] || []).some(t =>
+        (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad') && t.isLive === true
+      )
+    );
     const confidenceEngine = new DepartureConfidence();
     const confidence = confidenceEngine.calculate({
       legs: journeyLegs,
@@ -196,7 +202,8 @@ export default async function handler(req, res) {
       coffeeDecision,
       totalMinutes,
       targetArrivalMins: targetH * 60 + targetM,
-      currentMins: melbourneNow.getHours() * 60 + melbourneNow.getMinutes()
+      currentMins: melbourneNow.getHours() * 60 + melbourneNow.getMinutes(),
+      hasLiveData: hasAnyLiveData
     });
 
     const lifestyleEngine = new LifestyleContext();
@@ -335,6 +342,9 @@ export default async function handler(req, res) {
       confidence_score: confidence.score,
       confidence_label: confidence.label,
       confidence_resilience: confidence.resilience,
+      confidence_context: confidence.context || '',
+      confidence_resilience_detail: confidence.resilienceDetail || '',
+      confidence_text: confidence.statusText || '',
       lifestyle_display: lifestyle.displayLine,
       lifestyle_primary: lifestyle.primarySuggestion,
 
