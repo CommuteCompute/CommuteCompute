@@ -71,8 +71,20 @@ class DepartureConfidence {
       coffeeDecision = {},
       totalMinutes = 0,
       targetArrivalMins = 0,
-      currentMins = 0
+      currentMins = 0,
+      isCommuteDay = true
     } = params || {};
+
+    // Non-commute day: confidence is not applicable — return neutral result
+    if (!isCommuteDay) {
+      return {
+        score: 0,
+        label: 'N/A',
+        statusText: 'Not today',
+        resilience: 'N/A',
+        factors: { timeBuffer: 0, serviceFrequency: 0, weatherImpact: 0, disruptionImpact: 0, base: 0 }
+      };
+    }
 
     // Handle overnight/next-day scenario: if target is tomorrow (current > target),
     // add 1440 minutes (24 hours) to get the real buffer

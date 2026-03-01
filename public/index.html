@@ -1367,17 +1367,20 @@
                 
                 if (data.journey?.legs?.length > 0) {
                     renderJourneyLegs(data.journey);
-                    
+
                     // Update ETA
                     if (data.journey.arrivalTime) {
-                        document.getElementById('journey-eta').textContent = 
+                        document.getElementById('journey-eta').textContent =
                             'Arrive by ' + data.journey.arrivalTime;
                     }
-                    
+
                     // Update summary
                     const totalMins = data.journey.totalDuration || '--';
-                    document.getElementById('journey-summary').textContent = 
+                    document.getElementById('journey-summary').textContent =
                         `${totalMins} min commute to ${data.preferences?.addresses?.work || 'work'}`;
+                } else {
+                    document.getElementById('journey-legs').innerHTML =
+                        '<p style="color: var(--text-secondary);">No journey data available</p>';
                 }
                 
                 // Update last update time

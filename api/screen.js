@@ -277,7 +277,7 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
 
   // V13.6: Extract location names for both home AND cafe
   // Per CommuteCompute pattern: link stops to nearest origin location
-  const homeSuburb = extractSuburb(locations.home?.address) || 'Home';
+  const homeSuburb = extractSuburb(locations.home?.address) || null;
   const cafeSuburb = extractSuburb(locations.cafe?.address) ||
                      locations.cafe?.name?.split(',')[0] ||
                      locations.cafe?.name || null;
@@ -316,8 +316,8 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     // V13.6: Determine which location to derive stop names from
     // Per CommuteCompute pattern: link to nearest origin (home or cafe)
     const originSuburb = currentOrigin === 'cafe' && cafeSuburb ? cafeSuburb : homeSuburb;
-    const derivedTramStop = `${originSuburb} Tram Stop`;
-    const derivedStation = `${originSuburb} Station`;
+    const derivedTramStop = originSuburb ? `${originSuburb} Tram Stop` : null;
+    const derivedStation = originSuburb ? `${originSuburb} Station` : null;
 
     // V13.6: Walk leg destinations - show where we're walking TO
     // Priority: 1) GTFS lookup by stopId, 2) suburb-derived fallback
@@ -343,11 +343,10 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       const commuteComputeName = leg.origin?.name;                    // 2) CommuteCompute provided
       const suburbName = stopSuburb ? `${stopSuburb} Tram Stop` : null; // 3) Suburb-derived
 
-      // Use first non-generic name, or first available if all generic
+      // Use first non-generic name, or null if all generic
       const actualName = gtfsName ||
                          (!isGeneric(commuteComputeName) ? commuteComputeName : null) ||
                          suburbName ||
-                         commuteComputeName ||  // Use even if generic as last resort
                          null;
 
       leg.originStop = actualName;
@@ -366,11 +365,10 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       const commuteComputeName = leg.origin?.name;                    // 2) CommuteCompute provided
       const suburbName = stopSuburb ? `${stopSuburb} Station` : null; // 3) Suburb-derived
 
-      // Use first non-generic name, or first available if all generic
+      // Use first non-generic name, or null if all generic
       const actualName = gtfsName ||
                          (!isGeneric(commuteComputeName) ? commuteComputeName : null) ||
                          suburbName ||
-                         commuteComputeName ||  // Use even if generic as last resort
                          null;
 
       leg.originStation = actualName;
@@ -517,9 +515,14 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       const estAmPm = estH >= 12 ? 'pm' : 'am';
       departTime = `~${estH12}:${estM.toString().padStart(2, '0')}${estAmPm}`;
       minutesToDeparture = cumulativeMinutes + estWaitMins;
-      // Provide estimated departure timestamp so renderer can calculate countdown correctly
+      // Provide estimated departure timestamps so renderer can show 3 departures
       const estDepartMs = nowMs + (minutesToDeparture * 60000);
-      nextDepartureTimesMs = [estDepartMs];
+      const headway = leg.type === 'tram' ? 8 : (leg.type === 'train' ? 10 : 15);
+      nextDepartureTimesMs = [
+        estDepartMs,
+        estDepartMs + (headway * 60000),
+        estDepartMs + (headway * 2 * 60000)
+      ];
       leg.isTimetableEstimate = true;
     }
 
@@ -1676,9 +1679,10 @@ export default async function handler(req, res) {
     }
 
     // Per Section 11.8: Zero-Config compliant - load API key from KV storage
-    // getTransitApiKey() returns { devId, apiKey } object — extract the string
+    // getTransitApiKey() returns a string from Redis (the raw API key)
+    // Defensive: also handles legacy { devId, apiKey } object format if stored
     const transitApiKey = await getTransitApiKey();
-    const apiKeyStr = transitApiKey?.apiKey || null;
+    const apiKeyStr = typeof transitApiKey === 'string' ? transitApiKey : (transitApiKey?.apiKey || null);
     const apiOptions = apiKeyStr ? { apiKey: apiKeyStr } : {};
 
     // V15.0: Extract tram/bus route numbers from journey legs for GTFS-RT route-level matching
@@ -1754,7 +1758,16 @@ export default async function handler(req, res) {
     // V13.6 FIX: Use local time for business hours check (state-aware)
     const melbDisplayTime = getMelbourneDisplayTime(now, userState);
     const hour = melbDisplayTime.hour;
-    const dayOfWeek = now.getDay(); // 0 = Sunday
+    // FIX: Use Melbourne-local dayOfWeek (not UTC) — on Vercel, now.getDay() is UTC
+    // which can differ from Melbourne day (e.g. Saturday 11pm AEST = Sunday UTC)
+    const timezone = STATE_TIMEZONES[userState] || 'Australia/Melbourne';
+    const localDateStr = now.toLocaleDateString('en-AU', { timeZone: timezone, weekday: 'short' });
+    const dayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    const dayOfWeek = dayMap[localDateStr.slice(0, 3)] ?? now.getDay();
+
+    // Weekend / non-commute day detection
+    const commuteDays = config?.journey?.commuteDays || [1, 2, 3, 4, 5]; // Mon-Fri default
+    const isCommuteDay = commuteDays.includes(dayOfWeek);
     const cafeOpenHour = config?.coffee?.openHour || 6;
     const cafeCloseHour = config?.coffee?.closeHour || 17;
     const cafeOpenDays = config?.coffee?.openDays || [1, 2, 3, 4, 5, 6]; // Mon-Sat
@@ -1801,8 +1814,11 @@ export default async function handler(req, res) {
           const walkToCafeMins = bypassLeg.minutes || bypassLeg.durationMinutes || 0;
           bypassLeg.minutes = walkToCafeMins + walkFromCafeMins;
           bypassLeg.durationMinutes = bypassLeg.minutes;
-          // Update destination to the post-cafe leg's location
-          bypassLeg.to = postCafeLeg.stopName || postCafeLeg.stationName || postCafeLeg.to || postCafeLeg.origin?.name || 'transit';
+          // Update destination to the post-cafe leg's location (also update display name)
+          const transitStopName = postCafeLeg.stopName || postCafeLeg.stationName || postCafeLeg.to || postCafeLeg.origin?.name || 'transit';
+          bypassLeg.to = transitStopName;
+          // Ensure walk leg title reflects actual destination, not "Walk to Cafe"
+          bypassLeg.title = `Walk to ${transitStopName}`;
           bypassLeg.stopName = postCafeLeg.stopName || bypassLeg.stopName;
           bypassLeg.stationName = postCafeLeg.stationName || bypassLeg.stationName;
           bypassLeg.destinationName = null;
@@ -1866,7 +1882,8 @@ export default async function handler(req, res) {
     const targetMins = arrH * 60 + arrM;
     const melbTimeForLeave = getMelbourneDisplayTime(now, userState);
     const nowMinsForLeave = melbTimeForLeave.hour * 60 + melbTimeForLeave.minute;
-    const leaveInMinutes = Math.max(0, targetMins - totalMinutes - nowMinsForLeave);
+    // On non-commute days, leaveInMinutes is meaningless — set null to signal renderer
+    const leaveInMinutes = isCommuteDay ? Math.max(0, targetMins - totalMinutes - nowMinsForLeave) : null;
 
     // V13.6: Calculate actual arrival time (NOW + journey duration)
     // Uses journeyContribution from each leg for stable timing (doesn't decrease with time)
@@ -1903,7 +1920,8 @@ export default async function handler(req, res) {
       coffeeDecision,
       totalMinutes,
       targetArrivalMins: targetMins,
-      currentMins: nowMinsForLeave
+      currentMins: nowMinsForLeave,
+      isCommuteDay
     });
     // V14.0: Calculate Lifestyle Context Suggestions
     const lifestyleEngine = new LifestyleContext();
@@ -1968,7 +1986,9 @@ export default async function handler(req, res) {
       arrive_by: displayArrival,
       _calculatedArrival: calculatedArrival,  // V13.6: Stable arrival time from journey calculation
       total_minutes: totalMinutes,
-      leave_in_minutes: leaveInMinutes > 0 ? leaveInMinutes : null,
+      leave_in_minutes: leaveInMinutes != null && leaveInMinutes > 0 ? leaveInMinutes : null,
+      isCommuteDay,
+      hasExplicitArrivalTarget: !!(config?.journey?.arrivalTime),
       journey_legs: journeyLegs,
       destination: displayWork,
       destination_address: locations.work?.address || kvPrefs?.addresses?.work || '',
