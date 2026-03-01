@@ -1993,11 +1993,16 @@ export default async function handler(req, res) {
       destination: displayWork,
       destination_address: locations.work?.address || kvPrefs?.addresses?.work || '',
       // V13.6: Coffee decision for header box - shows CAFE CLOSED when applicable
-      coffee_decision: coffeeDecision.cafeClosed ? 'CAFE CLOSED' :
-                       coffeeDecision.canGet ? 'TIME FOR COFFEE' :
-                       'NO TIME FOR COFFEE',
-      coffee_subtext: coffeeDecision.cafeClosed ? 'Outside opening hours' :
-                      coffeeDecision.subtext || null,
+      // Non-commute days: suppress coffee messaging entirely
+      coffee_decision: isCommuteDay ? (
+          coffeeDecision.cafeClosed ? 'CAFE CLOSED' :
+          coffeeDecision.canGet ? 'TIME FOR COFFEE' :
+          'NO TIME FOR COFFEE'
+      ) : null,
+      coffee_subtext: isCommuteDay ? (
+          coffeeDecision.cafeClosed ? 'Outside opening hours' :
+          coffeeDecision.subtext || null
+      ) : null,
       // V15.0: Transit availability notice (e.g., "TRAM USING TIMETABLE DATA")
       transit_notice: transitNotice,
       timetable_types: removedTypes.length > 0 ? removedTypes : null,

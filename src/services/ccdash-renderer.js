@@ -2156,10 +2156,11 @@ function _renderFullScreenCanvas(data, prefs = {}) {
                                coffeeDecisionFromData.includes('CLOSED');
 
   // V13.3: Only show coffee decision when within ±2hr window
-  const hasCoffee = isWithinArrivalWindow && !!coffeeLegCanGet;
-  const cafeClosed = !!coffeeLegClosed || isCafeClosedFromData;  // V13.6: Also check data flag
-  const coffeeSkipped = isWithinArrivalWindow && !!coffeeLegSkipped && !isCafeClosedFromData;
-  const showCafeBusynessOnly = !isWithinArrivalWindow && coffeeLeg;
+  // Non-commute days: suppress all coffee messaging (departure times still display)
+  const hasCoffee = data.isCommuteDay !== false && isWithinArrivalWindow && !!coffeeLegCanGet;
+  const cafeClosed = data.isCommuteDay !== false && (!!coffeeLegClosed || isCafeClosedFromData);
+  const coffeeSkipped = data.isCommuteDay !== false && isWithinArrivalWindow && !!coffeeLegSkipped && !isCafeClosedFromData;
+  const showCafeBusynessOnly = data.isCommuteDay !== false && !isWithinArrivalWindow && coffeeLeg;
   
   // v1.40: Calculate arrival time early for coffee header display
   const earlyTotalMinutes = data.total_minutes || data.totalMinutes || data.journeyDuration || 20;
@@ -2460,6 +2461,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   const diffMins = arrivalMins - targetMins;
   // Use explicit flag from screen.js — any user-configured arrival time counts, including 09:00
   const hasArriveByTarget = (data.hasExplicitArrivalTarget || data.arrive_by) && !isObscenelyFarFromDeparture;
+  const isCommuteDay = data.isCommuteDay !== false; // default true for backwards compat
   const isLate = isCommuteDay && hasArriveByTarget && diffMins > 5;
   const isEarly = isCommuteDay && hasArriveByTarget && diffMins < -5;
   const isOnTime = isCommuteDay && hasArriveByTarget && !isLate && !isEarly;
@@ -2480,7 +2482,6 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   // - Otherwise just "LEAVE NOW → Arrive X:XX"
   // -----------------------------------------------------------------------
   let statusText;
-  const isCommuteDay = data.isCommuteDay !== false; // default true for backwards compat
 
   // Check for service alerts (transit disruptions only)
   const legsForStatus = data.journey_legs || data.legs || [];
@@ -3142,8 +3143,10 @@ function _renderFullScreenCanvas(data, prefs = {}) {
 
       // Render "Next:" portion in bold with maxWidth protection
       ctx.font = `bold ${subtitleSize}px Inter, sans-serif`;
-      const remainingWidth = Math.max(0, subtitleMaxWidth - beforeWidth);
-      ctx.fillText(nextPart, textX + beforeWidth, subtitleY, remainingWidth);
+      const remainingWidth = subtitleMaxWidth - beforeWidth;
+      if (remainingWidth > 0) {
+        ctx.fillText(nextPart, textX + beforeWidth, subtitleY, remainingWidth);
+      }
     } else if (startsWithNext) {
       // Entire subtitle is "Next: x,y,z min" - render all bold
       ctx.font = `bold ${subtitleSize}px Inter, sans-serif`;
