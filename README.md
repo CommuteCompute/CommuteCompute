@@ -411,6 +411,38 @@ The device connects via BLE, receives your server URL, and begins displaying you
 
 See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed step-by-step instructions including API key setup, device pairing, and troubleshooting.
 
+### Keeping Your Dashboard Warm (Free Tier)
+
+Vercel free-tier deployments can experience cold starts — a 5–10 second delay on the first request after a period of inactivity. Because the TRMNL Display fetches your dashboard every 60 seconds, functions may go cold during periods when no other traffic reaches your deployment. This is entirely optional, but a simple cron job keeps your serverless function warm by periodically hitting the `/api/screen` endpoint.
+
+**crontab (Linux/macOS):**
+
+```bash
+# Ping your dashboard every 5 minutes to prevent cold starts
+*/5 * * * * curl -s https://your-deployment.vercel.app/api/screen > /dev/null 2>&1
+```
+
+**GitHub Actions scheduled workflow (free):**
+
+```yaml
+name: Keep Dashboard Warm
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -s https://your-deployment.vercel.app/api/screen > /dev/null
+```
+
+**Hosted cron services:**
+
+- [cron-job.org](https://cron-job.org) — free hosted cron, set to ping your `/api/screen` URL every 5 minutes
+- [UptimeRobot](https://uptimerobot.com) — free monitoring service that doubles as a keepalive by checking your endpoint at regular intervals
+
+> **Note:** This is entirely optional. Your dashboard works without it — the display simply shows slightly stale data during the cold start window, then resumes normal operation on the next fetch cycle.
+
 <br>
 
 ---

@@ -410,7 +410,7 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
 
     // Resolve destination names via GTFS when engine provides generic ones
     if (leg.type === 'tram' && leg.destination) {
-      const genericDestNames = ['station', 'tram stop', 'bus stop', 'platform', 'stop'];
+      const genericDestNames = ['station', 'tram stop', 'bus stop', 'platform', 'stop', 'city'];
       const isDestGeneric = (name) => !name || genericDestNames.includes(name.toLowerCase().trim());
       if (isDestGeneric(leg.destination.name)) {
         const gtfsDest = getStopNameById(stopIds.trainStopId);
@@ -422,8 +422,10 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       const genericDestNames = ['station', 'tram stop', 'bus stop', 'platform', 'stop', 'city'];
       const isDestGeneric = (name) => !name || genericDestNames.includes(name.toLowerCase().trim());
       if (isDestGeneric(leg.destination.name)) {
+        // Use work-side stop ID for train destination (not home stop ID)
+        const gtfsWorkDest = getStopNameById(stopIds.workTrainStopId);
         const workSuburb = extractSuburb(locations.work?.address);
-        if (workSuburb) leg.destination.name = `${workSuburb} Station`;
+        leg.destination.name = gtfsWorkDest || (workSuburb ? `${workSuburb} Station` : leg.destination.name);
       }
     }
 
@@ -1678,6 +1680,14 @@ export default async function handler(req, res) {
       detectedTramRoute = detected.tramRouteNumber || null;
     }
 
+    // Auto-detect work-side stop IDs for train destination resolution
+    let workTrainStopId = null;
+    const workAddress = locations.work?.address || kvPrefs?.addresses?.work;
+    if (workAddress) {
+      const workDetected = detectStopIdsFromAddress(workAddress);
+      workTrainStopId = workDetected?.trainStopId || null;
+    }
+
     // Per Section 11.8: Zero-Config compliant - load API key from KV storage
     // getTransitApiKey() returns a string from Redis (the raw API key)
     // Defensive: also handles legacy { devId, apiKey } object format if stored
@@ -1846,7 +1856,7 @@ export default async function handler(req, res) {
     // Build journey legs with cumulative timing (Data Model v1.18)
     // V13.6: Pass locations for deriving proper stop/station names
     // V13.6: Pass stopIds for actual stop name lookup via GTFS_STOP_NAMES
-    const rawJourneyLegs = buildJourneyLegs(effectiveRoute, transitData, coffeeDecision, now, locations, { trainStopId, tramStopId, busStopId }, userState);
+    const rawJourneyLegs = buildJourneyLegs(effectiveRoute, transitData, coffeeDecision, now, locations, { trainStopId, tramStopId, busStopId, workTrainStopId }, userState);
     // Section 7.5.1: Merge consecutive walk legs after ALL filtering
     const journeyLegs = mergeConsecutiveWalkLegs(rawJourneyLegs);
     const totalMinutes = calculateTotalMinutes(journeyLegs);
@@ -2089,7 +2099,14 @@ export default async function handler(req, res) {
           })),
           _diagnostics: {
             trainFeed: transitData.trains?._feedInfo || null,
-            tramFeed: transitData.trams?._feedInfo || null
+            tramFeed: transitData.trams?._feedInfo || null,
+            busFeed: transitData.buses?._feedInfo || null
+          },
+          dataStatus: {
+            apiKeyPresent: !!transitApiKey,
+            trainFeed: transitData.trains?._feedInfo || null,
+            tramFeed: transitData.trams?._feedInfo || null,
+            busFeed: transitData.buses?._feedInfo || null
           }
         },
         dashboard: dashboardData,

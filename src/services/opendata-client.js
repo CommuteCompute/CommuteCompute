@@ -238,7 +238,8 @@ async function fetchGtfsRt(mode, feed, options = {}) {
     const timeoutId = setTimeout(() => controller.abort(), 10000);
     const response = await fetch(url, {
       headers: {
-        'KeyId': keyStr  // Case-sensitive as per dev rules Section 11.1
+        'KeyId': keyStr,  // Case-sensitive as per dev rules Section 11.1
+        'Accept': 'application/x-protobuf'
       },
       signal: controller.signal
     });
@@ -248,6 +249,13 @@ async function fetchGtfsRt(mode, feed, options = {}) {
       const errorText = await response.text().catch(() => 'no body');
       console.error(`[OpenData] GTFS-RT fetch failed: HTTP ${response.status} for ${mode}/${feed}: ${errorText.substring(0, 200)}`);
       throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 100)}`);
+    }
+
+    // Guard: check Content-Type is not HTML (error page) before protobuf decode
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('text/html')) {
+      console.error(`[OpenData] Received HTML instead of protobuf for ${mode}/${feed} — likely an error page`);
+      throw new Error(`Received HTML response instead of protobuf for ${mode}/${feed}`);
     }
 
     // Get response as ArrayBuffer for Protobuf decoding
@@ -370,7 +378,16 @@ export async function getDepartures(stopId, routeType, options = {}) {
   } catch (error) {
     console.error(`[OpenData] getDepartures error for ${mode} stopId=${stopId}: ${error.message}`);
     // V13.6 FIX: Per Section 23.6 - return empty array on error
-    return [];
+    // Attach diagnostic _feedInfo so dashboard can show WHY there's no live data
+    const errorResult = [];
+    errorResult._feedInfo = {
+      entityCount: 0,
+      queriedStopId: String(stopId),
+      mode,
+      matchMethod: 'none',
+      error: error.message
+    };
+    return errorResult;
   }
 }
 
@@ -392,8 +409,17 @@ function matchesStopId(gtfsStopId, queriedStopId) {
   if (gtfsStr === stopIdStr) return true;
 
   // Station code match — resolve to all platform IDs via GTFS reference
+  // Supports both exact and prefixed ID formats (e.g. "14293" or "aus:vic:metro:14293")
   if (VIC_METRO_STATIONS[stopIdStr]) {
-    return VIC_METRO_STATIONS[stopIdStr].platforms.includes(gtfsStr);
+    for (const pid of VIC_METRO_STATIONS[stopIdStr].platforms) {
+      if (gtfsStr === pid) return true;
+      if (gtfsStr.endsWith(`:${pid}`)) return true;
+      if (gtfsStr.endsWith(`-${pid}`)) return true;
+    }
+    // Also match parent station code in prefixed form
+    if (gtfsStr.endsWith(`:${stopIdStr}`)) return true;
+    if (gtfsStr.endsWith(`-${stopIdStr}`)) return true;
+    return false;
   }
 
   // Suffix matching for flexibility (tram/bus stop IDs)
@@ -746,7 +772,7 @@ export async function getDisruptions(routeType, options = {}) {
  */
 export async function getWeather(lat = MELBOURNE_LAT, lon = MELBOURNE_LON) {
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,precipitation&hourly=weather_code,precipitation,temperature_2m,apparent_temperature&forecast_days=1&timezone=Australia%2FMelbourne`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,precipitation,relative_humidity_2m,wind_speed_10m,uv_index&hourly=weather_code,precipitation,temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,uv_index&forecast_days=1&timezone=Australia%2FMelbourne`;
     const weatherController = new AbortController();
     const weatherTimeoutId = setTimeout(() => weatherController.abort(), 8000);
     const res = await fetch(url, { signal: weatherController.signal });
@@ -769,6 +795,9 @@ export async function getWeather(lat = MELBOURNE_LAT, lon = MELBOURNE_LON) {
     const weatherCode = data.current?.weather_code;
     const condition = codes[weatherCode] || 'Unknown';
     const precipitation = data.current?.precipitation || 0;
+    const humidity = data.current?.relative_humidity_2m ?? null;
+    const windSpeed = data.current?.wind_speed_10m ?? null;
+    const uvIndex = data.current?.uv_index ?? null;
 
     // Determine if umbrella needed (current conditions)
     const rainyConditions = ['Rain', 'Heavy Rain', 'Drizzle', 'Showers', 'Heavy Showers', 'Storm'];
@@ -781,6 +810,9 @@ export async function getWeather(lat = MELBOURNE_LAT, lon = MELBOURNE_LON) {
     const hourlyPrecip = data.hourly?.precipitation || [];
     const hourlyTemp = data.hourly?.temperature_2m || [];
     const hourlyApparent = data.hourly?.apparent_temperature || [];
+    const hourlyHumidity = data.hourly?.relative_humidity_2m || [];
+    const hourlyWindSpeed = data.hourly?.wind_speed_10m || [];
+    const hourlyUvIndex = data.hourly?.uv_index || [];
     // Use Melbourne timezone (Vercel runs UTC)
     const now = new Date();
     const melbourneTime = new Date(now.toLocaleString('en-US', { timeZone: 'Australia/Melbourne' }));
@@ -796,6 +828,9 @@ export async function getWeather(lat = MELBOURNE_LAT, lon = MELBOURNE_LON) {
           apparentTemp: Math.round(hourlyApparent[i] ?? hourlyTemp[i] ?? 0),
           condition: hCondition,
           precipitation: hourlyPrecip[i] || 0,
+          humidity: hourlyHumidity[i] ?? null,
+          windSpeed: hourlyWindSpeed[i] ?? null,
+          uvIndex: hourlyUvIndex[i] ?? null,
           isRainy: rainyConditions.includes(hCondition) || (hourlyPrecip[i] || 0) > 0
         });
       }
@@ -806,6 +841,9 @@ export async function getWeather(lat = MELBOURNE_LAT, lon = MELBOURNE_LON) {
       condition,
       umbrella,
       precipitation,
+      humidity,
+      windSpeed,
+      uvIndex,
       weatherCode,
       dayForecast,
       source: 'open-meteo'
@@ -815,6 +853,9 @@ export async function getWeather(lat = MELBOURNE_LAT, lon = MELBOURNE_LON) {
     return {
       temp: 20,
       condition: 'Unknown',
+      humidity: null,
+      windSpeed: null,
+      uvIndex: null,
       umbrella: false,
       dayForecast: [],
       source: 'fallback',

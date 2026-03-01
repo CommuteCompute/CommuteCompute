@@ -1506,7 +1506,16 @@ export class CommuteCompute {
       
       const homeTram = homeTrams[0];
       const workTrain = workTrains[0];
-      
+
+      // Resolve work station name using same priority chain as getHardcodedRoutes:
+      // nearbyStops → GTFS lookup → suburb-derived → raw stop name
+      const workDetected = detectStopIdsFromAddress(locations?.work?.address);
+      const workArea = locations?.work?.suburb ||
+                      locations?.work?.address?.split(',')[1]?.trim() || null;
+      const resolvedWorkStation = locations?.work?.nearbyStops?.train?.name ||
+                                 getStopNameById(workDetected?.trainStopId) ||
+                                 (workArea ? `${workArea} Station` : workTrain.name);
+
       const walkToCafe = includeCoffee ? 3 : 0;
       const coffeeTime = includeCoffee ? 4 : 0;
       const walkToTram = includeCoffee ? 2 : Math.ceil(homeTram.distance / 80);
@@ -1543,14 +1552,14 @@ export class CommuteCompute {
         minutes: tramTime 
       });
       legs.push({ type: 'walk', to: 'train platform', minutes: walkToTrain, stationName: trainStation.name });
-      legs.push({ 
-        type: 'train', 
-        routeNumber: workTrain.route_number || '', 
+      legs.push({
+        type: 'train',
+        routeNumber: workTrain.route_number || '',
         lineName: workTrain.line_name || workTrain.route_name || '',
-        origin: { name: trainStation.name }, 
-        destination: { name: workTrain.name },
+        origin: { name: trainStation.name },
+        destination: { name: resolvedWorkStation },
         originStation: trainStation.name,
-        minutes: trainTime 
+        minutes: trainTime
       });
       // v1.19: Include work name for display
       const workName = locations?.work?.name || 

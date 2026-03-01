@@ -7351,6 +7351,59 @@
             if (['home', 'work', 'cafe'].includes(field)) {
                 setTimeout(function() { refreshRouteAlternatives(); }, 500);
             }
+
+            // Auto-detect stop IDs when home address changes
+            if (field === 'home' && value) {
+                try {
+                    var stopResp = await authFetch(BASE_URL + '/api/admin/resolve-stops', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ address: value })
+                    });
+                    var stopData = await stopResp.json();
+                    if (stopData.success && stopData.detected && stopData.stops) {
+                        var stops = stopData.stops;
+                        // Update input fields
+                        var trainInput = document.getElementById('edit-train-stop-id');
+                        var tramInput = document.getElementById('edit-tram-stop-id');
+                        if (trainInput && stops.trainStopId) trainInput.value = stops.trainStopId;
+                        if (tramInput && stops.tramStopId) tramInput.value = stops.tramStopId;
+                        // Update display
+                        var trainDisplay = document.getElementById('train-stop-id-display');
+                        var tramDisplay = document.getElementById('tram-stop-id-display');
+                        if (trainDisplay && stops.trainStopId) {
+                            trainDisplay.textContent = stops.trainStopId;
+                            trainDisplay.style.color = '#4fb28e';
+                        }
+                        if (tramDisplay && stops.tramStopId) {
+                            tramDisplay.textContent = stops.tramStopId;
+                            tramDisplay.style.color = '#4fb28e';
+                        }
+                        // Persist to KV
+                        if (stops.trainStopId) {
+                            localStorage.setItem('cc-train-stop-id', stops.trainStopId);
+                            await authFetch(BASE_URL + '/api/admin/preferences', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ field: 'trainStopId', value: stops.trainStopId })
+                            });
+                        }
+                        if (stops.tramStopId) {
+                            localStorage.setItem('cc-tram-stop-id', stops.tramStopId);
+                            await authFetch(BASE_URL + '/api/admin/preferences', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ field: 'tramStopId', value: stops.tramStopId })
+                            });
+                        }
+                        var stationInfo = stops.stationName ? ' (' + sanitize(stops.stationName) + ')' : '';
+                        showInlineEditMessage('Stop IDs auto-detected' + stationInfo, 'success');
+                    }
+                } catch (stopErr) {
+                    // Non-critical — stop IDs can be set manually
+                    console.warn('[Admin] Auto-detect stops failed:', stopErr.message);
+                }
+            }
         }
 
         // Address autocomplete for admin inline edits
@@ -8266,6 +8319,57 @@
                 msg.style.background = 'rgba(239, 68, 68, 0.2)';
                 msg.textContent = '[Error] Save failed: ' + error.message;
             }
+        }
+
+        // Debounced auto-save for stop ID inputs
+        var _stopIdDebounce = null;
+        function setupStopIdAutoSave() {
+            var trainInput = document.getElementById('edit-train-stop-id');
+            var tramInput = document.getElementById('edit-tram-stop-id');
+            if (trainInput) {
+                trainInput.addEventListener('input', function() {
+                    clearTimeout(_stopIdDebounce);
+                    _stopIdDebounce = setTimeout(function() {
+                        var val = trainInput.value.trim();
+                        if (val) {
+                            localStorage.setItem('cc-train-stop-id', val);
+                            authFetch(BASE_URL + '/api/admin/preferences', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ field: 'trainStopId', value: val })
+                            }).then(function() {
+                                var display = document.getElementById('train-stop-id-display');
+                                if (display) { display.textContent = val; display.style.color = '#4fb28e'; }
+                            }).catch(function() {});
+                        }
+                    }, 1500);
+                });
+            }
+            if (tramInput) {
+                tramInput.addEventListener('input', function() {
+                    clearTimeout(_stopIdDebounce);
+                    _stopIdDebounce = setTimeout(function() {
+                        var val = tramInput.value.trim();
+                        if (val) {
+                            localStorage.setItem('cc-tram-stop-id', val);
+                            authFetch(BASE_URL + '/api/admin/preferences', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ field: 'tramStopId', value: val })
+                            }).then(function() {
+                                var display = document.getElementById('tram-stop-id-display');
+                                if (display) { display.textContent = val; display.style.color = '#4fb28e'; }
+                            }).catch(function() {});
+                        }
+                    }, 1500);
+                });
+            }
+        }
+        // Initialise debounced auto-save after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupStopIdAutoSave);
+        } else {
+            setupStopIdAutoSave();
         }
 
         async function saveTransitConfig() {
