@@ -252,6 +252,10 @@ async function handlePost(req, res) {
       await setUserState(value || 'VIC');
     } else if (field === 'coffeeEnabled') {
       updated.journey.coffeeEnabled = value !== false;
+    } else if (field === 'trainStopId') {
+      updated.trainStopId = value || null;
+    } else if (field === 'tramStopId') {
+      updated.tramStopId = value || null;
     } else {
       return res.status(400).json({ success: false, error: `Unknown field: ${field}` });
     }
