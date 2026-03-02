@@ -4,9 +4,9 @@
 
 # Commute Compute™ Firmware Releases
 
-## [UNLOCKED] Current Production: CCFirm v8.0.0
+## [UNLOCKED] Current Production: CCFirm v8.1.0
 
-**Version:** 8.0.0
+**Version:** 8.1.0
 **Commit:** (pending)
 **Date:** 2026-02-20
 **Status:** [UNLOCKED] UNLOCKED — PRODUCTION RELEASE

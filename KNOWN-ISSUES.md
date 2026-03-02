@@ -125,9 +125,9 @@ If your router broadcasts a combined 2.4/5GHz network (common with modern router
 
 **Date Documented:** 2026-02-20
 **Severity:** Informational
-**Status:** Fully Operational (CCFirm v8.0.0)
+**Status:** Fully Operational (CCFirm v8.1.0)
 
-Battery operation is a core feature of the TRMNL display. With CCFirm™ v8.0.0 hardware deep sleep (60-second refresh interval), the display operates for several days on battery — ideal for flexible placement anywhere in the home, trying different locations, or portable use without cable management. Battery percentage and voltage are monitored via the Admin Panel.
+Battery operation is a core feature of the TRMNL display. With CCFirm™ v8.1.0 hardware deep sleep (60-second refresh interval), the display operates for several days on battery — ideal for flexible placement anywhere in the home, trying different locations, or portable use without cable management. Battery percentage and voltage are monitored via the Admin Panel.
 
 USB-C power is available for continuous wall-mounted use. The display transitions seamlessly between battery and USB-C — connect the cable when preferred, remove it when you want the freedom of cable-free placement. The system also provides power outage resilience: if mains power is interrupted, the display continues operating on battery.
 

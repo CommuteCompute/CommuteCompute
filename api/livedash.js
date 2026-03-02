@@ -541,7 +541,7 @@ function generateHtmlPreview(device, config) {
         <div class="footer-legal">
             © 2025-2026 <a href="https://gitlab.com/angusbergman" target="_blank" rel="noopener">Angus Bergman</a> •
             <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a> •
-            Commute Compute&#8482; System v4.0.0
+            Commute Compute&#8482; System v4.2.0
         </div>
     </footer>
     

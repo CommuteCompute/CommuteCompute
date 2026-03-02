@@ -132,8 +132,152 @@ function buildBusStops() {
   return stops;
 }
 
+// ── Suburb-to-Stop Auto-Detection ──
+// Derives suburb names from metro station names and finds nearest tram/bus stops
+// by coordinates. Replaces all hardcoded suburb-to-stop mappings.
+function buildSuburbStops(metroStations, tramStopsWithCoords, busStopsWithCoords) {
+  const suburbStops = {};
+
+  for (const [code, station] of Object.entries(metroStations)) {
+    // Extract suburb from station name (remove " Station" suffix)
+    const suburb = station.name.replace(/ Station$/i, '').trim().toLowerCase();
+    if (!suburb || suburb.length < 2) continue;
+
+    // Get station coordinates (average of platform coordinates)
+    const stationLat = station.lat || null;
+    const stationLon = station.lon || null;
+
+    const entry = {
+      trainStation: code,
+      stationName: station.name,
+      tram: null,
+      tramName: null,
+      bus: null,
+      busName: null,
+    };
+
+    // Find nearest tram stop within 1km
+    if (stationLat && stationLon) {
+      let nearestTram = null;
+      let nearestTramDist = Infinity;
+      for (const ts of tramStopsWithCoords) {
+        const dist = haversine(stationLat, stationLon, ts.lat, ts.lon);
+        if (dist < nearestTramDist && dist < 1.0) { // 1km radius
+          nearestTramDist = dist;
+          nearestTram = ts;
+        }
+      }
+      if (nearestTram) {
+        entry.tram = nearestTram.id;
+        entry.tramName = nearestTram.name;
+      }
+
+      // Find nearest bus stop within 0.5km
+      let nearestBus = null;
+      let nearestBusDist = Infinity;
+      for (const bs of busStopsWithCoords) {
+        const dist = haversine(stationLat, stationLon, bs.lat, bs.lon);
+        if (dist < nearestBusDist && dist < 0.5) { // 500m radius
+          nearestBusDist = dist;
+          nearestBus = bs;
+        }
+      }
+      if (nearestBus) {
+        entry.bus = nearestBus.id;
+        entry.busName = nearestBus.name;
+      }
+    }
+
+    suburbStops[suburb] = entry;
+  }
+
+  return suburbStops;
+}
+
+// Haversine distance in km
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Build tram stops with coordinates for proximity matching
+function buildTramStopsWithCoords() {
+  const rows = parseCsv(join(GTFS_DIR, 'tram-stops.txt'));
+  const stops = [];
+  for (const row of rows) {
+    if (!/^\d+$/.test(row.stop_id)) continue;
+    if ((row.location_type || '') === '1') continue;
+    const lat = parseFloat(row.stop_lat);
+    const lon = parseFloat(row.stop_lon);
+    if (isNaN(lat) || isNaN(lon)) continue;
+    stops.push({ id: row.stop_id, name: row.stop_name, lat, lon });
+  }
+  return stops;
+}
+
+// Build bus stops with coordinates for proximity matching
+function buildBusStopsWithCoords() {
+  const rows = [
+    ...parseCsv(join(GTFS_DIR, 'bus-metro-stops.txt')),
+    ...parseCsv(join(GTFS_DIR, 'bus-regional-stops.txt'))
+  ];
+  const stops = [];
+  for (const row of rows) {
+    if (!/^\d+$/.test(row.stop_id)) continue;
+    if ((row.location_type || '') === '1') continue;
+    const lat = parseFloat(row.stop_lat);
+    const lon = parseFloat(row.stop_lon);
+    if (isNaN(lat) || isNaN(lon)) continue;
+    stops.push({ id: row.stop_id, name: row.stop_name, lat, lon });
+  }
+  return stops;
+}
+
+// Enhanced metro station builder that includes coordinates
+function buildMetroStationsWithCoords() {
+  const rows = parseCsv(join(GTFS_DIR, 'metro-stops.txt'));
+  const stations = {};
+
+  for (const row of rows) {
+    const stopId = row.stop_id;
+    const stopName = row.stop_name;
+    const parent = row.parent_station || '';
+    const platformCode = (row.platform_code || '').toLowerCase();
+
+    if (!/^\d+$/.test(stopId)) continue;
+    if (!parent.startsWith('vic:rail:')) continue;
+    if (platformCode === 'replacement bus') continue;
+
+    const code = parent.split(':')[2];
+    if (!stations[code]) {
+      const name = stopName.replace(/ Rail Replacement Bus Stop$/, '').trim();
+      stations[code] = { name, platforms: [], lat: null, lon: null };
+    }
+    stations[code].platforms.push(stopId);
+
+    // Use first platform's coordinates as station coordinates
+    if (!stations[code].lat) {
+      const lat = parseFloat(row.stop_lat);
+      const lon = parseFloat(row.stop_lon);
+      if (!isNaN(lat) && !isNaN(lon)) {
+        stations[code].lat = lat;
+        stations[code].lon = lon;
+      }
+    }
+  }
+
+  for (const code of Object.keys(stations)) {
+    stations[code].platforms.sort((a, b) => Number(a) - Number(b));
+  }
+
+  return stations;
+}
+
 // ── Generate JS Module ──
-function generateModule(metroStations, tramStops, busStops) {
+function generateModule(metroStations, tramStops, busStops, suburbStops) {
   const metroCount = Object.keys(metroStations).length;
   const tramCount = Object.keys(tramStops).length;
   const busCount = Object.keys(busStops).length;
@@ -211,6 +355,29 @@ export const VIC_BUS_STOPS = {\n`;
 
   js += `};\n\n`;
 
+  // Suburb-to-stop mapping (auto-generated from GTFS coordinates)
+  const suburbCount = Object.keys(suburbStops).length;
+  js += `/**
+ * VIC Suburb-to-Stop Auto-Detection — ${suburbCount} suburbs
+ * Auto-generated from GTFS station names + nearest tram/bus by coordinates.
+ * Key: suburb name (lowercase, from station name minus "Station" suffix)
+ * Value: { trainStation, stationName, tram, tramName, bus, busName }
+ * tram/bus = nearest stop within 1km/0.5km by haversine distance.
+ */
+export const VIC_SUBURB_STOPS = {\n`;
+
+  for (const suburb of Object.keys(suburbStops).sort()) {
+    const s = suburbStops[suburb];
+    const stationName = (s.stationName || '').replace(/'/g, "\\'");
+    const tramName = s.tramName ? `'${s.tramName.replace(/'/g, "\\'")}'` : 'null';
+    const busName = s.busName ? `'${s.busName.replace(/'/g, "\\'")}'` : 'null';
+    const tramId = s.tram ? `'${s.tram}'` : 'null';
+    const busId = s.bus ? `'${s.bus}'` : 'null';
+    js += `  '${suburb}': { trainStation: '${s.trainStation}', stationName: '${stationName}', tram: ${tramId}, tramName: ${tramName}, bus: ${busId}, busName: ${busName} },\n`;
+  }
+
+  js += `};\n\n`;
+
   // Helper function
   js += `/**
  * Build a Set of all platform IDs for a given list of station codes.
@@ -236,8 +403,8 @@ export function getPlatformIds(...codes) {
 }
 
 // ── Main ──
-console.log('Parsing metro-stops.txt...');
-const metroStations = buildMetroStations();
+console.log('Parsing metro-stops.txt (with coordinates)...');
+const metroStations = buildMetroStationsWithCoords();
 console.log(`  ${Object.keys(metroStations).length} stations, ${Object.values(metroStations).reduce((s, st) => s + st.platforms.length, 0)} platforms`);
 
 console.log('Parsing tram-stops.txt...');
@@ -248,8 +415,20 @@ console.log('Parsing bus-metro-stops.txt + bus-regional-stops.txt...');
 const busStops = buildBusStops();
 console.log(`  ${Object.keys(busStops).length} stops`);
 
+console.log('Building tram stops with coordinates for proximity matching...');
+const tramStopsWithCoords = buildTramStopsWithCoords();
+console.log(`  ${tramStopsWithCoords.length} tram stops with coordinates`);
+
+console.log('Building bus stops with coordinates for proximity matching...');
+const busStopsWithCoords = buildBusStopsWithCoords();
+console.log(`  ${busStopsWithCoords.length} bus stops with coordinates`);
+
+console.log('Auto-generating suburb-to-stop mapping from GTFS...');
+const suburbStops = buildSuburbStops(metroStations, tramStopsWithCoords, busStopsWithCoords);
+console.log(`  ${Object.keys(suburbStops).length} suburbs auto-mapped`);
+
 console.log('Generating gtfs-reference.js...');
-const module = generateModule(metroStations, tramStops, busStops);
+const module = generateModule(metroStations, tramStops, busStops, suburbStops);
 writeFileSync(OUTPUT, module, 'utf-8');
 
 const sizeKB = Math.round(Buffer.byteLength(module, 'utf-8') / 1024);
