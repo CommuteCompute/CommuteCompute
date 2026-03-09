@@ -29,46 +29,10 @@ import { renderZones, clearCache, ZONES } from '../src/services/ccdash-renderer.
 import { getScenario, getScenarioNames } from '../src/services/journey-scenarios.js';
 import { generateRandomJourney } from '../src/services/random-journey.js';
 import PreferencesManager from '../src/data/preferences-manager.js';
+import { getMelbourneTime, formatTime12h, getAmPm, formatDateParts } from '../src/utils/time-format.js';
 
 // Singleton engine instance
 let journeyEngine = null;
-
-/**
- * Get Melbourne local time
- */
-function getMelbourneTime() {
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'Australia/Melbourne' }));
-}
-
-/**
- * Format time in 12-hour format per CCDashDesignV15
- * Returns: "7:24" (no leading zero on hour)
- */
-function formatTime12h(date) {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  const hour12 = hours % 12 || 12;
-  return `${hour12}:${minutes.toString().padStart(2, '0')}`;
-}
-
-/**
- * Get AM/PM indicator per CCDashDesignV15
- */
-function getAmPm(date) {
-  return date.getHours() >= 12 ? 'PM' : 'AM';
-}
-
-/**
- * Format date parts for display
- */
-function formatDateParts(date) {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  return {
-    day: days[date.getDay()],
-    date: `${date.getDate()} ${months[date.getMonth()]}`
-  };
-}
 
 /**
  * Initialize the Smart Journey Engine
@@ -84,6 +48,7 @@ async function getEngine(preferences = {}) {
 
 /**
  * Build leg title with actual location names (v1.18 fix)
+ * Zone-specific: zones.js variant with destinationName, workName, stopName, stationName support
  */
 function buildLegTitle(leg) {
   const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
@@ -145,6 +110,7 @@ function buildLegTitle(leg) {
 
 /**
  * Build leg subtitle with origin/stop names (v1.19 fix)
+ * Zone-specific: zones.js variant with arriveAtLegMins catchable filtering and origin.name display
  * @param {object} leg - Journey leg data
  * @param {object} transitData - Real-time departure data
  * @param {number} arriveAtLegMins - Minutes until user arrives at this leg's start point
@@ -205,6 +171,8 @@ function buildLegSubtitle(leg, transitData, arriveAtLegMins = 0) {
 /**
  * Build journey legs from engine route
  * Now includes cumulative timing and DEPART times (v1.18)
+ * Zone-specific: zones.js variant with cumulative timing, DEPART times, vline/ferry support
+ * // TODO: Consider importing from shared module
  */
 function buildJourneyLegs(route, transitData, coffeeDecision, currentTime) {
   if (!route?.legs) return [];

@@ -17,7 +17,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/Licence-AGPL--3.0_Dual_Licence-blue.svg?style=for-the-badge" alt="Licence: AGPL-3.0 Dual Licence"></a>
   &nbsp;
-  <img src="https://img.shields.io/badge/Spec-CCDash%20V15.0-purple.svg?style=for-the-badge" alt="Spec: CCDash V15.0">
+  <img src="https://img.shields.io/badge/Spec-CCDash%20V16.0-purple.svg?style=for-the-badge" alt="Spec: CCDash V16.0">
   &nbsp;
   <img src="https://img.shields.io/badge/Firmware-CCFirm-v8.1.0-green.svg?style=for-the-badge" alt="Firmware: CCFirm v8.1.0">
 </p>
@@ -135,13 +135,13 @@ The pipeline runs entirely serverless on Vercel. The device fetches a pre-render
 
 All five engines operate under the CommuteCompute&#8482; umbrella. They share data, influence each other, and produce a unified commute intelligence model.
 
-### 1. CommuteCompute&#8482; Engine (v3.1)
+### 1. CommuteCompute&#8482; Engine (v4.0)
 
-Core journey orchestration with real-time multi-modal planning and Melbourne Metro Tunnel compliance.
+Core journey orchestration with GTFS coordinate-based stop detection (226 metro + 1637 tram + 4151 bus stops), runtime line verification for alighting stops, real-time multi-modal planning, and Melbourne Metro Tunnel compliance.
 
 | | |
 |---|---|
-| **Inputs** | Home/work addresses, transit API data, live GTFS-RT departures, stop IDs, cafe location, current time |
+| **Inputs** | Home/work coordinates, transit API data, live GTFS-RT departures, GTFS-derived stop IDs, cafe location, current time |
 | **Outputs** | Optimised journey legs with live departure countdowns, total duration, arrival estimate, coffee decision |
 
 **Example Scenario:**
@@ -660,9 +660,9 @@ See [LEGAL.md](LEGAL.md) for complete trade mark and intellectual property detai
 </p>
 
 <p align="center">
-  <strong>Commute Compute&#8482; System v4.2.0</strong><br>
-  V15.0 Complete Journey Intelligence<br>
-  CommuteCompute&#8482; Engine v3.1 | CCDash&#8482; Renderer v2.1 | CC LiveDash&#8482; v3.0 | Admin Panel v5.0 | CCFirm&#8482; v8.1.0<br>
+  <strong>Commute Compute&#8482; System v5.0.0</strong><br>
+  V16.0 Complete Journey Intelligence<br>
+  CommuteCompute&#8482; Engine v4.0 | CCDash&#8482; Renderer v3.0 | CC LiveDash&#8482; v3.1 | Admin Panel v6.0 | CCFirm&#8482; v8.1.0<br>
   <br>
   Copyright (c) 2026 Angus Bergman. All rights reserved.<br>
   <em>Built in Melbourne, Australia.</em>

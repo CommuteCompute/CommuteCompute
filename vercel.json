@@ -7,7 +7,7 @@
     "api/index.js": {
       "includeFiles": "public/**,src/**,data/**,config/**,fonts/**"
     },
-    "api/screen.js": {
+    "api/commutecompute.js": {
       "includeFiles": "src/**,config/**,fonts/**"
     },
     "api/livedash.js": {
@@ -71,7 +71,7 @@
     },
     {
       "source": "/api/screen",
-      "destination": "/api/screen"
+      "destination": "/api/commutecompute"
     },
     {
       "source": "/api/livedash",

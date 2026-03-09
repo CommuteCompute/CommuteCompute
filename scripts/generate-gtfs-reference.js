@@ -277,7 +277,7 @@ function buildMetroStationsWithCoords() {
 }
 
 // ── Generate JS Module ──
-function generateModule(metroStations, tramStops, busStops, suburbStops) {
+function generateModule(metroStations, tramStops, busStops, suburbStops, tramStopsWithCoords, busStopsWithCoords) {
   const metroCount = Object.keys(metroStations).length;
   const tramCount = Object.keys(tramStops).length;
   const busCount = Object.keys(busStops).length;
@@ -308,8 +308,9 @@ function generateModule(metroStations, tramStops, busStops, suburbStops) {
 /**
  * VIC Metro Stations — ${metroCount} stations
  * Key: 3-letter GTFS station code (from parent_station, e.g. vic:rail:SYR -> SYR)
- * Value: { name: string, platforms: string[] }
+ * Value: { name: string, platforms: string[], lat: number, lon: number }
  * platforms[] contains all numeric platform stop_ids for GTFS-RT matching.
+ * lat/lon are station coordinates (from first platform in GTFS).
  * Replacement bus stops and infrastructure IDs are excluded.
  */
 export const VIC_METRO_STATIONS = {\n`;
@@ -318,7 +319,7 @@ export const VIC_METRO_STATIONS = {\n`;
     const s = metroStations[code];
     const name = s.name.replace(/'/g, "\\'");
     const platforms = s.platforms.map(p => `'${p}'`).join(', ');
-    js += `  ${code}: { name: '${name}', platforms: [${platforms}] },\n`;
+    js += `  ${code}: { name: '${name}', platforms: [${platforms}], lat: ${s.lat}, lon: ${s.lon} },\n`;
   }
 
   js += `};\n\n`;
@@ -399,6 +400,38 @@ export function getPlatformIds(...codes) {
 }
 `;
 
+  // Tram stops with coordinates
+  const tramCoordsCount = tramStopsWithCoords.length;
+  js += `\n/**
+ * VIC Tram Stops with Coordinates — ${tramCoordsCount} stops
+ * Array of { id: string, name: string, lat: number, lon: number }
+ * Used for coordinate-based nearest-stop detection.
+ */
+export const VIC_TRAM_STOPS_WITH_COORDS = [\n`;
+
+  for (const stop of tramStopsWithCoords) {
+    const name = stop.name.replace(/'/g, "\\'").trim();
+    js += `  { id: '${stop.id}', name: '${name}', lat: ${stop.lat}, lon: ${stop.lon} },\n`;
+  }
+
+  js += `];\n`;
+
+  // Bus stops with coordinates
+  const busCoordsCount = busStopsWithCoords.length;
+  js += `\n/**
+ * VIC Bus Stops with Coordinates — ${busCoordsCount} stops
+ * Array of { id: string, name: string, lat: number, lon: number }
+ * Used for coordinate-based nearest-stop detection.
+ */
+export const VIC_BUS_STOPS_WITH_COORDS = [\n`;
+
+  for (const stop of busStopsWithCoords) {
+    const name = stop.name.replace(/'/g, "\\'").trim();
+    js += `  { id: '${stop.id}', name: '${name}', lat: ${stop.lat}, lon: ${stop.lon} },\n`;
+  }
+
+  js += `];\n`;
+
   return js;
 }
 
@@ -428,7 +461,7 @@ const suburbStops = buildSuburbStops(metroStations, tramStopsWithCoords, busStop
 console.log(`  ${Object.keys(suburbStops).length} suburbs auto-mapped`);
 
 console.log('Generating gtfs-reference.js...');
-const module = generateModule(metroStations, tramStops, busStops, suburbStops);
+const module = generateModule(metroStations, tramStops, busStops, suburbStops, tramStopsWithCoords, busStopsWithCoords);
 writeFileSync(OUTPUT, module, 'utf-8');
 
 const sizeKB = Math.round(Buffer.byteLength(module, 'utf-8') / 1024);

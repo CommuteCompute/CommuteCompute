@@ -8,7 +8,7 @@
 
 **Version:** 4.1
 **Last Updated:** 2026-02-16
-**System Version:** v4.2.0 (CCDashDesignV15.0)
+**System Version:** v5.0.0 (CCDashDesignV16.0)
 **Licence:** AGPL-3.0 Dual Licence (see [LICENSE](LICENSE))
 
 > New to Commute Compute™? Start with our [Complete Beginner Guide](docs/guides/COMPLETE-BEGINNER-GUIDE.md) for a friendlier walkthrough with no technical background required.

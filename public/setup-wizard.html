@@ -518,6 +518,34 @@
                 <div class="step-tab" role="tab" aria-selected="false" aria-controls="step-6" id="tab-6" tabindex="-1" aria-label="Step 6: Your Configuration">6</div>
             </nav>
 
+            <!-- Auth Token Banner (shown for re-setup only) -->
+            <div id="auth-token-banner" style="display:none; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.3); border-radius: 8px; padding: 14px; margin-bottom: 20px;">
+                <div id="auth-token-input-section">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                        <svg class="icon-sm" style="color:#fbbf24;"><use href="#icon-warning"/></svg>
+                        <strong style="color:#fbbf24; font-size:14px;">Admin Token Required</strong>
+                    </div>
+                    <p style="color:#cbd5e1; font-size:12px; margin-bottom:10px; line-height:1.5;">
+                        This system has been previously configured. Enter your <code style="background:rgba(255,255,255,0.1); padding:2px 5px; border-radius:3px;">CC_ADMIN_TOKEN</code> to authorise setup changes.
+                    </p>
+                    <div style="display:flex; gap:8px; align-items:stretch;">
+                        <input type="password" id="wizard-admin-token" class="form-input" placeholder="Enter admin token" autocomplete="off"
+                               style="font-size:14px; flex:1;" aria-label="Admin token for re-setup authorisation">
+                        <button type="button" id="wizard-token-submit-btn" class="btn" style="width:auto; padding:0 20px; white-space:nowrap;">Submit</button>
+                    </div>
+                    <div id="wizard-token-status" style="display:none; margin-top:8px; font-size:12px;"></div>
+                </div>
+                <div id="auth-token-saved-section" style="display:none;">
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <svg class="icon-sm" style="color:#22c55e;"><use href="#icon-check-circle"/></svg>
+                            <strong style="color:#22c55e; font-size:14px;">Admin Token: Saved</strong>
+                        </div>
+                        <a href="#" id="wizard-token-change-link" style="color:#cbd5e1; font-size:12px; text-decoration:underline;">Change</a>
+                    </div>
+                </div>
+            </div>
+
             <!-- ========== STEP 1: Connect Your Display (BLE WiFi Only) ========== -->
             <section class="step-content active" id="step-1" role="tabpanel" aria-labelledby="tab-1">
                 <h2 id="step-1-heading" tabindex="-1"><svg class="icon"><use href="#icon-tv"/></svg> Step 1: Connect Your Display</h2>
@@ -946,12 +974,22 @@
         var map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'};
         return str.replace(/[&<>"'`=/]/g, function(c) { return map[c]; });
     }
+    var wizardAuthToken = null;
+
+    function getAuthHeaders() {
+        var headers = { 'Content-Type': 'application/json' };
+        if (wizardAuthToken) {
+            headers['Authorization'] = 'Bearer ' + wizardAuthToken;
+        }
+        return headers;
+    }
+
     function loadFooterVersions() {
         fetch('/api/version').then(function(r){return r.json();}).then(function(v) {
-            document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v3.1';
-            document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v2.1';
+            document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v4.0';
+            document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v3.0';
             document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '4.2.0');
+            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.0.0');
             if (v.repoUrls) checkForUpstreamUpdates(v.system?.version, v.repoUrls);
         }).catch(function(){});
     }
@@ -1423,7 +1461,7 @@
         nextBtn.style.display = 'none';
 
         try {
-            var response = await fetch('/api/save-google-key', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiKey: apiKey }) });
+            var response = await fetch('/api/save-google-key', { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ apiKey: apiKey }) });
             var result = await response.json();
 
             if (result.success && result.saved) {
@@ -1524,7 +1562,7 @@
         if (!address || address.length < 5) return;
         try {
             var response = await fetch(window.location.origin + '/api/admin/resolve-stops', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: getAuthHeaders(),
                 body: JSON.stringify({ address: address })
             });
             var result = await response.json();
@@ -1625,7 +1663,7 @@
             var controller = new AbortController();
             var timeoutId = setTimeout(function(){ controller.abort(); }, 25000);
             var response = await fetch('/api/save-transit-key', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: getAuthHeaders(),
                 body: JSON.stringify({ apiKey: apiKey, state: selectedAuthority || 'VIC' }),
                 signal: controller.signal
             });
@@ -1689,7 +1727,7 @@
     async function progressiveSave(data) {
         try {
             await fetch(window.location.origin + '/api/sync-config', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: getAuthHeaders(),
                 body: JSON.stringify(data)
             });
         } catch (e) { /* progressive save failed - non-critical */ }
@@ -1716,7 +1754,7 @@
 
             var baseUrl = window.location.origin;
             var response = await fetch(baseUrl + '/api/admin/setup-complete', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: getAuthHeaders(),
                 body: JSON.stringify(config)
             });
             var result = await response.json();
@@ -1737,7 +1775,7 @@
             if (includeCoffee && addresses.cafe && result.locations?.cafe) {
                 try {
                     var cafeResponse = await fetch(baseUrl + '/api/cafe-details', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        method: 'POST', headers: getAuthHeaders(),
                         body: JSON.stringify({ lat: result.locations.cafe.lat, lon: result.locations.cafe.lon, cafeName: addresses.cafe, googleKey: googleKey })
                     });
                     var cafeResult = await cafeResponse.json();
@@ -1771,15 +1809,15 @@
                 (async function() {
                     try {
                         await fetch(baseUrl + '/api/sync-config', {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ transitKey: transitKey, googleKey: gKey, state: selectedAuthority, preferences: fullConfig })
+                            method: 'POST', headers: getAuthHeaders(),
+                            body: JSON.stringify({ transitKey: transitKey, googleKey: gKey, state: selectedAuthority, preferences: fullConfig, markSetupComplete: true })
                         });
                     } catch (e) { /* KV sync failed - non-critical */ }
                 })(),
                 (async function() {
                     try {
                         var webhookResponse = await fetch(baseUrl + '/api/admin/generate-webhook', {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            method: 'POST', headers: getAuthHeaders(),
                             body: JSON.stringify({ config: fullConfig })
                         });
                         var webhookResult = await webhookResponse.json();
@@ -1913,7 +1951,7 @@
 
         try {
             var response = await fetch(window.location.origin + '/api/pair/' + code, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: getAuthHeaders(),
                 body: JSON.stringify({ webhookUrl: window._webhookUrl, config: window._fullConfig })
             });
             var result = await response.json();
@@ -2008,9 +2046,10 @@
 
         try {
             localStorage.clear(); sessionStorage.clear();
+            wizardAuthToken = null;
             setStatus('wipe-status', 'Clearing server storage...', 'info');
             try {
-                await fetch('/api/admin/reset?confirm=yes', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                await fetch('/api/admin/reset?confirm=yes', { method: 'POST', headers: getAuthHeaders() });
             } catch (e) { /* KV clear failed - non-critical */ }
             setStatus('wipe-status', 'All data wiped. Reloading in 3 seconds...', 'success');
             setTimeout(function(){ window.location.reload(); }, 3000);
@@ -2048,9 +2087,10 @@
             }
             localKeys.forEach(function(k){ localStorage.removeItem(k); });
             sessionStorage.clear();
+            wizardAuthToken = null;
 
             try {
-                await fetch('/api/admin/reset?confirm=yes', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                await fetch('/api/admin/reset?confirm=yes', { method: 'POST', headers: getAuthHeaders() });
             } catch (e) { /* KV API error - non-critical */ }
 
             setStatus('wipe-status', 'Factory reset complete! Reloading in 3 seconds...', 'success');
@@ -2065,6 +2105,50 @@
     // EVENT BINDINGS
     // ============================================
     document.addEventListener('DOMContentLoaded', function() {
+        // Auth token: detect re-setup, restore from localStorage, bind submit
+        var savedToken = localStorage.getItem('cc-wizard-auth-token');
+        if (savedToken) {
+            wizardAuthToken = savedToken;
+        }
+        fetch('/api/sync-config').then(function(r){ return r.json(); }).then(function(d) {
+            var banner = document.getElementById('auth-token-banner');
+            if (banner && (d.setupComplete || (d.kv && d.kv.configured))) {
+                banner.style.display = 'block';
+                if (wizardAuthToken) {
+                    document.getElementById('auth-token-input-section').style.display = 'none';
+                    document.getElementById('auth-token-saved-section').style.display = 'block';
+                }
+            }
+        }).catch(function(){});
+        var tokenSubmitBtn = document.getElementById('wizard-token-submit-btn');
+        if (tokenSubmitBtn) {
+            tokenSubmitBtn.addEventListener('click', function() {
+                var tokenInput = document.getElementById('wizard-admin-token');
+                var token = tokenInput.value.trim();
+                var statusEl = document.getElementById('wizard-token-status');
+                if (!token) {
+                    statusEl.style.display = 'block';
+                    statusEl.innerHTML = '<span style="color:#ef4444;">Please enter your admin token.</span>';
+                    return;
+                }
+                wizardAuthToken = token;
+                localStorage.setItem('cc-wizard-auth-token', token);
+                document.getElementById('auth-token-input-section').style.display = 'none';
+                document.getElementById('auth-token-saved-section').style.display = 'block';
+            });
+        }
+        var tokenChangeLink = document.getElementById('wizard-token-change-link');
+        if (tokenChangeLink) {
+            tokenChangeLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('auth-token-saved-section').style.display = 'none';
+                document.getElementById('auth-token-input-section').style.display = 'block';
+                var tokenInput = document.getElementById('wizard-admin-token');
+                tokenInput.value = '';
+                tokenInput.focus();
+            });
+        }
+
         // Address autocomplete
         setupAddressAutocomplete('home-address', 'home-suggestions');
         setupAddressAutocomplete('work-address', 'work-suggestions');

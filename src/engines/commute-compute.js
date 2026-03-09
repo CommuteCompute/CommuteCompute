@@ -3,19 +3,22 @@
 // Part of the Commute Compute System™ — https://gitlab.com/angusbergman/commute-compute-system
 
 /**
- * CommuteCompute™ Engine (Consolidated v2.0)
+ * CommuteCompute™ Engine v4.0
  * Part of the Commute Compute System™
  *
- * Unified intelligent commute planning for Australian public transport.
- * Auto-detects state from user's home address and configures appropriate
- * transit APIs and weather services.
+ * GTFS coordinate-based stop detection (226 metro + 1637 tram + 4151 bus stops),
+ * runtime line verification for alighting stops, no hardcoded station fallbacks,
+ * shared haversine utility, real-time multi-modal journey planning with Metro
+ * Tunnel citybound detection, direction-based train filtering, route-aware transit
+ * filtering, transit-to-walk conversion, suburb extraction.
  *
- * Five Interconnected Intelligence Engines:
- *   CommuteCompute™ — Core journey orchestration (trademarked)
- *   DepartureConfidence — Real-time departure reliability scoring
- *   LifestyleContext — User lifestyle pattern analysis and preference learning
- *   SleepOptimiser — Optimal departure time based on sleep patterns
- *   AltTransit — Alternative transport route discovery and recommendation
+ * Six Interconnected Intelligence Engines:
+ *   CommuteCompute™ — Core journey orchestration
+ *   CoffeeDecision™ — Cafe proximity and timing analysis
+ *   DepartureConfidence™ — Real-time departure reliability scoring
+ *   LifestyleContext™ — Weather-aware lifestyle suggestions and Mindset analysis
+ *   SleepOptimiser™ — Optimal departure time based on sleep patterns
+ *   AltTransit™ — Alternative transport route discovery and recommendation
  *
  * Per DEVELOPMENT-RULES.md Section 24: Single source of truth for journey calculations.
  * 
@@ -40,8 +43,9 @@ import CoffeeDecision from '../core/coffee-decision.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { getTransitApiKey, getGoogleApiKey } from '../data/kv-preferences.js';
-import { getStopNameById, detectStopIdsFromAddress } from '../data/gtfs-stop-names.js';
+import { getStopNameById, detectStopIdsFromAddress, findNearestStops } from '../data/gtfs-stop-names.js';
 import { getAllStops } from '../data/fallback-timetables.js';
+import { haversine } from '../utils/haversine.js';
 
 // =============================================================================
 // STATE CONFIGURATION
@@ -1302,42 +1306,63 @@ export class CommuteCompute {
     if (!route || !route.legs) {
       return Infinity;
     }
-    
+
     const legs = route.legs;
-    
-    // 1. Total time (40% weight)
-    const totalTime = route.totalMinutes || 
+    const maxWalkDist = this.routeRecommender?.config?.maxWalkingDistance || 600;
+    const walkingSpeed = this.routeRecommender?.config?.walkingSpeed || 80; // metres per minute
+    // Issue 2: Check if user has explicitly set a walking constraint
+    const hasExplicitWalkConstraint = this.getPrefs()?.maxWalkingDistance != null;
+
+    // 1. Total time weight — reduced when walking constraint is explicit
+    const timeWeight = hasExplicitWalkConstraint ? 0.25 : 0.40;
+    const totalTime = route.totalMinutes ||
       legs.reduce((sum, leg) => sum + (leg.minutes || leg.durationMinutes || 0), 0);
-    
+
     // 2. Number of transfers (25% weight, +5 points per transfer)
-    const transitLegs = legs.filter(l => 
+    const transitLegs = legs.filter(l =>
       ['train', 'tram', 'bus', 'vline', 'ferry', 'transit'].includes(l.type)
     );
     const transfers = Math.max(0, transitLegs.length - 1);
-    
-    // 3. Total walking time (20% weight)
+
+    // 3. Total walking time — increased weight when walking constraint is explicit
+    const walkWeight = hasExplicitWalkConstraint ? 0.35 : 0.20;
     const walkingMinutes = legs
       .filter(l => l.type === 'walk')
       .reduce((sum, leg) => sum + (leg.minutes || leg.durationMinutes || 0), 0);
-    
+
+    // Issue 2: Heavy penalty for walk legs exceeding maxWalkingDistance
+    let walkExceedPenalty = 0;
+    for (const leg of legs.filter(l => l.type === 'walk')) {
+      const legMins = leg.minutes || leg.durationMinutes || 0;
+      const estDistM = legMins * walkingSpeed;
+      if (estDistM > maxWalkDist) {
+        walkExceedPenalty += (estDistM - maxWalkDist) / 100; // penalty per 100m over
+      }
+    }
+
     // 4. Reliability penalty (15% weight) - based on current delays
     let reliabilityPenalty = 0;
     for (const leg of transitLegs) {
-      const legDelay = leg.delayMinutes || leg.delay || 
+      const legDelay = leg.delayMinutes || leg.delay ||
         delays[leg.routeNumber] || delays[leg.lineName] || 0;
       reliabilityPenalty += legDelay * 2; // 2 points per minute of delay
     }
-    
+
     // Calculate weighted score (lower is better)
-    const score = 
-      (totalTime * 0.40) +           // 40% time
-      (transfers * 5 * 0.25) +       // 25% transfers (+5 per transfer)
-      (walkingMinutes * 0.20) +      // 20% walking
-      (reliabilityPenalty * 0.15);   // 15% reliability
-    
+    const score =
+      (totalTime * timeWeight) +               // time
+      (transfers * 5 * 0.25) +                 // transfers
+      (walkingMinutes * walkWeight) +           // walking
+      (reliabilityPenalty * 0.15) +            // reliability
+      (walkExceedPenalty * 5);                 // walking distance exceeded penalty
+
+    // Issue 2: Flag routes that exceed walking constraint
+    const maxWalkLegMins = Math.max(0, ...legs.filter(l => l.type === 'walk').map(l => l.minutes || l.durationMinutes || 0));
+    route.walkingConstraintExceeded = (maxWalkLegMins * walkingSpeed) > maxWalkDist;
+
     // Store score on route for debugging
     route.score = Math.round(score * 100) / 100;
-    
+
     return score;
   }
 
@@ -1494,25 +1519,44 @@ export class CommuteCompute {
     const tramStops = allStops.filter(s => s.route_type === 1);
     const homeTrams = homeStops.filter(s => s.route_type === 1);
     const workTrains = workStops.filter(s => s.route_type === 0);
-    
+
     if (homeTrams.length === 0 || workTrains.length === 0) return routes;
-    
+
     for (const trainStation of trainStations.slice(0, 20)) {
-      const nearbyTrams = tramStops.filter(t => 
-        this.haversineDistance(trainStation.lat, trainStation.lon, t.lat, t.lon) < 300
-      );
-      
+      // Use coordinate-based GTFS lookup for interchange tram stops (PRIMARY),
+      // then fall back to 300m proximity matching
+      let nearbyTrams;
+      if (trainStation.lat && trainStation.lon) {
+        const interchangeStops = findNearestStops(trainStation.lat, trainStation.lon, { radiusMeters: 300 });
+        if (interchangeStops.tram) {
+          // Match the GTFS-resolved tram stop back to the allStops array for full data
+          const matchedTram = tramStops.find(t => t.id === interchangeStops.tram.id) ||
+                             { ...interchangeStops.tram, route_type: 1 };
+          nearbyTrams = [matchedTram];
+        }
+      }
+      // Fallback: 300m proximity matching from allStops data
+      if (!nearbyTrams || nearbyTrams.length === 0) {
+        nearbyTrams = tramStops.filter(t =>
+          this.haversineDistance(trainStation.lat, trainStation.lon, t.lat, t.lon) < 300
+        );
+      }
+
       if (nearbyTrams.length === 0) continue;
-      
+
       const homeTram = homeTrams[0];
       const workTrain = workTrains[0];
 
-      // Resolve work station name using same priority chain as getHardcodedRoutes:
-      // nearbyStops → GTFS lookup → suburb-derived → raw stop name
+      // Resolve work station name: coordinate-based (PRIMARY) → nearbyStops → GTFS lookup → suburb-derived → raw stop name
+      const workCoords = locations?.work;
+      const workStopsByCoord = (workCoords?.lat && workCoords?.lon)
+        ? findNearestStops(workCoords.lat, workCoords.lon)
+        : {};
       const workDetected = detectStopIdsFromAddress(locations?.work?.address);
       const workArea = locations?.work?.suburb ||
                       locations?.work?.address?.split(',')[1]?.trim() || null;
-      const resolvedWorkStation = locations?.work?.nearbyStops?.train?.name ||
+      const resolvedWorkStation = workStopsByCoord.train?.name ||
+                                 locations?.work?.nearbyStops?.train?.name ||
                                  getStopNameById(workDetected?.trainStopId) ||
                                  (workArea ? `${workArea} Station` : workTrain.name);
 
@@ -1615,21 +1659,36 @@ export class CommuteCompute {
                             locations?.work?.address?.split(',')[0]?.trim() ||
                             'Office';
     
-    // Resolve actual stop names via GTFS lookup FIRST (most reliable),
-    // then config nearbyStops, then suburb-derived names
+    // Resolve HOME-side stops from coordinates (PRIMARY) or address detection (FALLBACK)
+    const homeCoords = locations?.home;
+    const homeStopsByCoord = (homeCoords?.lat && homeCoords?.lon)
+      ? findNearestStops(homeCoords.lat, homeCoords.lon)
+      : {};
+
+    // Resolve WORK-side stops from coordinates (PRIMARY) or address detection (FALLBACK)
+    const workCoords = locations?.work;
+    const workStopsByCoord = (workCoords?.lat && workCoords?.lon)
+      ? findNearestStops(workCoords.lat, workCoords.lon)
+      : {};
+
+    // Address-based detection as secondary fallback
     const homeDetected = detectStopIdsFromAddress(locations?.home?.address);
     const workDetected = detectStopIdsFromAddress(locations?.work?.address);
 
-    const nearestTramStop = locations?.cafe?.nearbyStops?.tram?.name ||
+    // Use coordinate-based stops as PRIMARY, then nearbyStops config, then GTFS address lookup, then suburb-derived
+    const nearestTramStop = homeStopsByCoord.tram?.name ||
+                           locations?.cafe?.nearbyStops?.tram?.name ||
                            locations?.home?.nearbyStops?.tram?.name ||
                            getStopNameById(homeDetected.tramStopId) ||
                            (homeArea ? `${homeArea} Tram Stop` : null);
-    const nearestTrainStation = locations?.home?.nearbyStops?.train?.name ||
+    const nearestTrainStation = homeStopsByCoord.train?.name ||
+                               locations?.home?.nearbyStops?.train?.name ||
                                getStopNameById(homeDetected.trainStopId) ||
                                (homeArea ? `${homeArea} Station` : null);
-    const workStation = locations?.work?.nearbyStops?.train?.name ||
+    const workStation = workStopsByCoord.train?.name ||
+                       locations?.work?.nearbyStops?.train?.name ||
                        getStopNameById(workDetected.trainStopId) ||
-                       (workArea ? `${workArea} Station` : 'Flinders Street Station');
+                       (workArea ? `${workArea} Station` : null);
 
     // Resolve tram/bus route numbers from nearby stop data for GTFS-RT matching
     const tramRouteNumber = locations?.cafe?.nearbyStops?.tram?.route_number ||
@@ -1645,7 +1704,7 @@ export class CommuteCompute {
       routes.push({
         id: 'coffee-tram-train',
         name: 'Coffee + Tram + Train',
-        description: 'Home → Coffee → Tram → Train → Office',
+        description: `Walk → Coffee → Tram${tramRouteNumber ? ' ' + tramRouteNumber : ''} (${nearestTramStop || 'Tram'} → ${nearestTrainStation || 'Station'}) → Train (${nearestTrainStation || 'Station'} → ${workStation || 'Work'}) → Walk`,
         type: 'preferred',
         totalMinutes: 35,
         legs: [
@@ -1668,7 +1727,7 @@ export class CommuteCompute {
       routes.push({
         id: 'coffee-train',
         name: 'Coffee + Train',
-        description: 'Home → Coffee → Train → Office',
+        description: `Walk → Coffee → Train (${nearestTrainStation || 'Station'} → ${workStation || 'Work'}) → Walk`,
         type: 'standard',
         totalMinutes: 30,
         legs: [
@@ -1688,7 +1747,7 @@ export class CommuteCompute {
     routes.push({
       id: 'train-direct',
       name: 'Train Direct',
-      description: 'Home → Train → Office',
+      description: `Walk → Train (${nearestTrainStation || 'Station'} → ${workStation || 'Work'}) → Walk`,
       type: 'direct',
       totalMinutes: 22,
       legs: [
@@ -1705,7 +1764,7 @@ export class CommuteCompute {
     routes.push({
       id: 'tram-train',
       name: 'Tram + Train',
-      description: 'Home → Tram → Train → Office',
+      description: `Walk → Tram${tramRouteNumber ? ' ' + tramRouteNumber : ''} (${nearestTramStop || 'Tram'} → ${nearestTrainStation || 'Station'}) → Train (${nearestTrainStation || 'Station'} → ${workStation || 'Work'}) → Walk`,
       type: 'transfer',
       totalMinutes: 28,
       legs: [
@@ -1723,7 +1782,7 @@ export class CommuteCompute {
     routes.push({
       id: 'tram-direct',
       name: 'Tram Direct',
-      description: 'Home → Tram → Office',
+      description: `Walk → Tram${tramRouteNumber ? ' ' + tramRouteNumber : ''} (${nearestTramStop || 'Tram'} → ${workArea || 'CBD'}) → Walk`,
       type: 'express',
       totalMinutes: 20,
       legs: [
@@ -1739,7 +1798,7 @@ export class CommuteCompute {
     routes.push({
       id: 'bus-direct',
       name: 'Bus Alternative',
-      description: 'Home → Bus → Office',
+      description: `Walk → Bus${busRouteNumber ? ' ' + busRouteNumber : ''} (${homeArea || 'Home'} → ${workArea || 'CBD'}) → Walk`,
       type: 'alternative',
       totalMinutes: 30,
       legs: [
@@ -2005,6 +2064,13 @@ export class CommuteCompute {
         leg.isLive = true;
         leg.isDelayed = match.isDelayed || false;
         leg.delayMinutes = match.delayMinutes || match.delay || 0;
+        // Populate line/route name from live departure data if not already set
+        if (!leg.lineName && (match.line_name || match.route_name)) {
+          leg.lineName = match.line_name || match.route_name;
+        }
+        if (!leg.routeNumber && match.routeNumber) {
+          leg.routeNumber = match.routeNumber;
+        }
         
         // v1.42: Calculate departTime in 12-hour format (per Dev Rules Section 12.2)
         if (match.departureTimeMs) {
@@ -2103,19 +2169,10 @@ export class CommuteCompute {
   }
 
   /**
-   * Haversine distance in meters
+   * Haversine distance in metres — delegates to shared utility
    */
   haversineDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371000;
-    const φ1 = lat1 * Math.PI / 180;
-    const φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2 - lat1) * Math.PI / 180;
-    const Δλ = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
+    return haversine(lat1, lon1, lat2, lon2);
   }
 
   /**

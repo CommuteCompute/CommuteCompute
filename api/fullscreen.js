@@ -1,54 +1,31 @@
 /**
  * /api/fullscreen - Returns full screen as 1-bit BMP
- * 
+ *
+ * DEPRECATED: Debug/test endpoint that renders a static placeholder image.
+ * Does not use journey data or the CommuteCompute engine.
+ * For production dashboard rendering use:
+ *   - /api/screen (TRMNL webhook)
+ *   - /api/livedash (multi-device CC LiveDash)
+ *
+ * Consolidation: Duplicate getMelbourneTime/formatTime/formatDateParts
+ * removed (unused). Unused imports (opendata-client, CommuteCompute,
+ * CCDashRenderer, PreferencesManager) removed. Engine singleton removed.
+ *
  * Optimised for ESP32 memory constraints.
  * Returns raw binary BMP data, not base64 encoded JSON.
- * 
+ *
  * Query params:
- * - demo=<scenario>: Use demo scenario
- * 
+ * - demo=<scenario>: Use demo scenario (reserved, not implemented)
+ *
  * Copyright (c) 2026 Angus Bergman
  * SPDX-License-Identifier: AGPL-3.0-or-later
  * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  */
 
 import { createCanvas } from '@napi-rs/canvas';
-import { getDepartures, getDisruptions, getWeather } from '../src/services/opendata-client.js';
-import CommuteCompute from '../src/engines/commute-compute.js';
-import CCDashRenderer from '../src/services/ccdash-renderer.js';
-import PreferencesManager from '../src/data/preferences-manager.js';
 
 const WIDTH = 800;
 const HEIGHT = 480;
-
-let journeyEngine = null;
-
-function getMelbourneTime() {
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'Australia/Melbourne' }));
-}
-
-function formatTime(date) {
-  const h = date.getHours();
-  const m = date.getMinutes();
-  return `${h}:${m.toString().padStart(2, '0')}`;
-}
-
-function formatDateParts(date) {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  return {
-    day: days[date.getDay()],
-    date: `${date.getDate()} ${months[date.getMonth()]}`
-  };
-}
-
-async function getEngine() {
-  if (!journeyEngine) {
-    journeyEngine = new CommuteCompute();
-    await journeyEngine.initialize();
-  }
-  return journeyEngine;
-}
 
 /**
  * Convert canvas to 1-bit BMP

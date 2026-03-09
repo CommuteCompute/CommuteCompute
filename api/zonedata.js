@@ -20,6 +20,7 @@ import { getDepartures, getWeather } from '../src/services/opendata-client.js';
 import CoffeeDecision from '../src/core/coffee-decision.js';
 import { renderZones } from '../src/services/ccdash-renderer.js';
 import { getTransitApiKey } from '../src/data/kv-preferences.js';
+import { getMelbourneTime, formatTime12h, getAmPm, formatDateParts } from '../src/utils/time-format.js';
 
 // Default Config (overridden by token from Setup Wizard)
 // Per Section 3.1: Zero-Config - NO process.env for user config
@@ -41,6 +42,7 @@ const DEFAULT_JOURNEY_CONFIG = {
 /**
  * Decode config token from webhook URL
  * Per Section 3.6 - Zero-Config Token System
+ * Zone-specific: zonedata token format (simple base64url JSON)
  */
 function decodeConfigToken(token) {
   if (!token) return null;
@@ -52,31 +54,10 @@ function decodeConfigToken(token) {
   }
 }
 
-function getMelbourneTime() {
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'Australia/Melbourne' }));
-}
-
-/**
- * Format time in 12-hour format per CCDashDesignV15
- * Returns: "7:24" (no leading zero on hour)
- */
-function formatTime12h(date) {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  const hour12 = hours % 12 || 12;
-  return `${hour12}:${minutes.toString().padStart(2, '0')}`;
-}
-
-/**
- * Get AM/PM indicator per CCDashDesignV15
- */
-function getAmPm(date) {
-  return date.getHours() >= 12 ? 'PM' : 'AM';
-}
-
 /**
  * Format departure time with am/pm suffix per CCDashDesignV15
  * Returns: "7:40am"
+ * Zone-specific: used only by zonedata buildJourneyLegs for transit departTime
  */
 function formatDepartTime(date) {
   const hours = date.getHours();
@@ -84,21 +65,6 @@ function formatDepartTime(date) {
   const hour12 = hours % 12 || 12;
   const ampm = hours >= 12 ? 'pm' : 'am';
   return `${hour12}:${minutes.toString().padStart(2, '0')}${ampm}`;
-}
-
-/**
- * Format date parts per CCDashDesignV15
- * Day: Title case ("Sunday")
- * Date: "DD Month" ("1 February") - no year
- */
-function formatDateParts(date) {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const months = ['January', 'February', 'March', 'April', 'May', 'June',
-                  'July', 'August', 'September', 'October', 'November', 'December'];
-  return {
-    day: days[date.getDay()],
-    date: `${date.getDate()} ${months[date.getMonth()]}`
-  };
 }
 
 /**
@@ -120,6 +86,8 @@ function formatCoffeeSubtitle(coffeeDecision, isFriday, isWeekend) {
 
 /**
  * Build journey legs per CCDashDesignV15
+ * Zone-specific: zonedata.js variant — completely different signature, uses CoffeeDecision engine directly
+ * // TODO: Consider importing from shared module
  */
 function buildJourneyLegs(trains, trams, coffeeDecision, config, now) {
   const legs = [];

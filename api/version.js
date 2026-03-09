@@ -26,41 +26,41 @@ export default async function handler(req, res) {
     : '2026-01-31';
 
   res.json({
-    version: 'v4.2.0',
+    version: 'v5.0.0',
     date: buildDate,
     system: {
-      version: '4.2.0',
+      version: '5.0.0',
       name: 'Commute Compute System',
       copyright: '© 2026 Angus Bergman',
       license: 'AGPL-3.0'
     },
     components: {
-      // CommuteCompute journey calculation engine (V3.1)
+      // CommuteCompute journey calculation engine (V4.0)
       commutecompute: {
-        version: 'v3.1',
+        version: 'v4.0',
         name: 'CommuteCompute Engine',
-        description: 'Real-time multi-modal journey planning with route-aware transit filtering, transit-to-walk conversion, suburb extraction, Metro Tunnel citybound detection, strictly live GTFS-RT, Departure Confidence, Sleep Optimizer, Alt Transit, Lifestyle Context, Mindset analysis',
+        description: 'GTFS coordinate-based stop detection (226 metro + 1637 tram + 4151 bus stops), runtime line verification for alighting stops, no hardcoded station fallbacks, shared haversine utility, real-time multi-modal journey planning with Metro Tunnel citybound detection, direction-based train filtering, route-aware transit filtering, transit-to-walk conversion, suburb extraction, strictly live GTFS-RT, Departure Confidence, Sleep Optimizer, Alt Transit, Lifestyle Context, Mindset analysis',
         metroTunnelCompliant: true,
-        effectiveDate: '2026-02-12',
+        effectiveDate: '2026-03-02',
         locked: false,
         lockedDate: null
       },
-      // CCDash renderer (implements CCDashDesignV15.0 spec)
+      // CCDash renderer (implements CCDashDesignV16.0 spec)
       renderer: {
-        version: 'v2.1',
+        version: 'v3.0',
         name: 'CCDash Renderer',
-        spec: 'CCDashDesignV15.0',
+        spec: 'CCDashDesignV16.0',
         specLocked: false,
         lockedDate: null,
-        modifiedDate: '2026-02-12',
-        description: 'V15.0 spec-compliant rendering with lifestyle obligation styling, transit-to-walk display, suburb locations, confidence labels, sleep mode, mindset status, lifestyle context display'
+        modifiedDate: '2026-03-02',
+        description: 'V16.0 spec-compliant rendering with transit countdown fix (trusts leg.minutes, 180-min sanity cap), cafe closed case-insensitive matching, confidence context line rendering, subtitle overflow protection, lifestyle obligation styling, transit-to-walk display, suburb locations, confidence labels, sleep mode, mindset status, lifestyle context display'
       },
       // Setup wizard
       setupWizard: { version: 'v2.0', locked: false },
       // LiveDash multi-device endpoint
-      livedash: { version: 'v3.0', locked: false },
+      livedash: { version: 'v3.1', locked: false },
       // Admin panel
-      admin: { version: 'v5.0', locked: false },
+      admin: { version: 'v6.0', locked: false },
       // Firmware (UNLOCKED — runtime factory reset + BLE provisioning)
       firmware: {
         version: 'CC-FW-8.1.0',
@@ -71,11 +71,19 @@ export default async function handler(req, res) {
     },
     specs: {
       dashboard: {
-        version: 'CCDashDesignV15.0',
+        version: 'CCDashDesignV16.0',
         status: 'UNLOCKED',
         lockedDate: null,
-        modifiedDate: '2026-02-12',
+        modifiedDate: '2026-03-02',
         changes: [
+          'UNIFIED ENGINE: Single /api/commutecompute endpoint for admin JSON, e-ink PNG/BMP, and debug diagnostics',
+          'GTFS coordinate-based stop detection: findNearestStops() for 226 metro + 1637 tram + 4151 bus stops',
+          'Coordinate-based destination resolution, no hardcoded Flinders Street Station fallback',
+          'Shared haversine utility replacing 3 duplicate implementations',
+          'Transit countdown fix (trusts leg.minutes, 180-min sanity cap)',
+          'Cafe closed case-insensitive matching',
+          'Confidence context line rendering',
+          'Subtitle overflow protection',
           'Strictly live GTFS-RT data — no timetable fallbacks, transit legs removed when no match',
           'Transit-to-walk conversion with speed ratios (train 4x, tram 2.5x, bus 3x)',
           'Route-aware transit filtering (specific route number, not just mode)',
@@ -92,7 +100,10 @@ export default async function handler(req, res) {
           'Mindset indicator (stress, steps, feels-like) in status bar',
           'Admin panel edits persist to KV with geocoding and Places API autocomplete',
           'Security: auth deny-by-default, CORS restriction, KV-first config',
-          'Variable leg heights, coffee busyness, specific stop/station names'
+          'Variable leg heights, coffee busyness, specific stop/station names',
+          'AltTransit gate fix: only activates when ALL transit is cancelled/suspended',
+          'Walk merge name resolution: uses stopName/stationName before generic destination',
+          'Backward-compatible vercel.json rewrite: /api/screen → /api/commutecompute'
         ]
       }
     },

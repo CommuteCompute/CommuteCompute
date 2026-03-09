@@ -51,7 +51,7 @@ export default async function handler(req, res) {
         coffeeEnabled: config.journey?.coffeeEnabled !== false
       },
       cafe: config.cafe || null,
-      apiMode: config.apiMode || 'cached',
+      apiMode: config.apiMode || 'live',
       // GTFS stop IDs for live departure data (Section 23.1.1)
       trainStopId: config.trainStopId || null,
       tramStopId: config.tramStopId || null

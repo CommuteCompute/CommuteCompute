@@ -36,7 +36,7 @@ export default async function handler(req, res) {
   res.status(200).json({
     status: 'ok',
     timestamp: new Date(now).toISOString(),
-    version: '4.2.0',
+    version: '5.0.0',
     node: process.version,
     uptime: process.uptime(),
     memory: {

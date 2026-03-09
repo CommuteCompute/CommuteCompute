@@ -1,5 +1,5 @@
 /**
- * CCDash™ Renderer v2.1
+ * CCDash™ Renderer v3.0
  * Part of the Commute Compute System™
  *
  * Copyright (c) 2026 Angus Bergman
@@ -7,48 +7,55 @@
  * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  *
  * Primary renderer for Commute Compute System dashboards.
- * Implements CCDashDesignV15.0 specification (UNLOCKED 2026-02-06).
+ * Implements CCDashDesignV16.0 specification (UNLOCKED 2026-02-06).
+ * V16.0: Dimension-aware rendering — all layout scales from REF_W×REF_H.
  *
  * ============================================================================
- * FEATURES (v1.54) — V13.4 Walk Legs & Live Timing Update
+ * FEATURES (v3.0) — CCDashDesignV16.0 Dimension-Aware Rendering
  * ============================================================================
  *
- * HEADER (0-94px):
- * - Large clock (82px) positioned at bottom, touching status bar
+ * V16.0: Dimension-aware rendering — all layout scales from REF_W×REF_H.
+ * Transit countdown trusts leg.minutes with 180-min sanity cap.
+ * Cafe closed case-insensitive matching. Confidence context line rendering.
+ * Subtitle overflow protection with maxWidth. Unified cafe closed/skipped path.
+ *
+ * HEADER (0-94px scaled):
+ * - Large clock positioned at bottom, touching status bar
  * - AM/PM aligned with bottom of coffee/weather boxes
  * - Service status indicator ([OK] SERVICES OK / [!] DISRUPTIONS)
- * - Data source indicator (● LIVE DATA / ○ NO LIVE DATA)
- * - Coffee decision box (GET A COFFEE / NO TIME FOR COFFEE with sad face)
- * - Weather box with temp, condition, umbrella indicator
+ * - Data source indicator (LIVE DATA / NO LIVE DATA)
+ * - CoffeeDecision™ box (GET A COFFEE / NO TIME / CAFE STATUS / Sleep mode)
+ * - Weather box with temp, condition, lifestyle/umbrella indicator
  *
- * STATUS BAR (96-124px):
- * - Full black background (no outline)
+ * STATUS BAR (96-124px scaled):
+ * - Full black background
  * - Status message with arrival time
- * - V13.1: Distinguishes Service Alerts vs Late Arrival
- * - V13.1: Badge shows "DISRUPTION" or "LATE +X min"
+ * - DepartureConfidence™ score and context line
+ * - Disruption/Late badge
  * - Total journey time
  *
- * JOURNEY LEGS (132-432px):
- * - V13: Variable height legs (walk=1x, transit/coffee=2x)
+ * JOURNEY LEGS (132-432px scaled):
+ * - Variable height legs (walk=1x, transit/coffee=2x)
  * - Walk legs: individual duration (X MIN)
- * - V13.1: Transit legs show minutes until departure (not cumulative)
- * - V13.1: Coffee legs show busyness (Quiet/Moderate/Busy) and LEAVE time
+ * - Transit legs show minutes until departure (trusts leg.minutes, 180-min cap)
+ * - Coffee legs show busyness (Quiet/Moderate/Busy) and LEAVE time
  * - DEPART/LEAVE column with scheduled times
  * - Next departures in subtitle (Next: X, Y min LIVE)
  * - Arrow connectors between legs
+ * - AltTransit™ notice when all transit cancelled
  *
- * FOOTER (440-480px):
- * - V13: 40px height with centered CC logo
+ * FOOTER (scaled):
  * - Destination with address (WORK — 80 COLLINS ST)
+ * - CC logo (BMP icon or text fallback)
  * - Arrival time (ARRIVE label + time)
  *
  * ============================================================================
  *
- * Layout (800x480):
+ * Reference Layout (REF_W×REF_H, scaled for actual display dimensions):
  * ┌─────────────────────────────────────────────────────────────────────┐
  * │ HEADER: Clock | Day/Date/Status | Coffee Box | Weather             │ 0-94
  * ├─────────────────────────────────────────────────────────────────────┤
- * │ STATUS BAR: Leave status | Disruption/Late badge | Total time      │ 96-124
+ * │ STATUS BAR: Leave status | Confidence | Badge | Total time         │ 96-124
  * ├─────────────────────────────────────────────────────────────────────┤
  * │ LEG 1-7: Variable height legs with mode icons and departure times  │ 132-432
  * ├─────────────────────────────────────────────────────────────────────┤
@@ -196,8 +203,8 @@ export const DEVICE_CONFIGS = {
   },
   'trmnl-mini': {
     name: 'TRMNL Mini',
-    width: 400,
-    height: 300,
+    width: 600,
+    height: 448,
     orientation: 'landscape',
     colorDepth: 1,
     format: 'bmp'
@@ -292,17 +299,17 @@ export function getZonesForTier(tier) {
 // ZONE DEFINITIONS
 // =============================================================================
 
-// Zone definitions for the new layout
+// Zone definitions for the default layout (800x480)
 export const ZONES = {
   // Header row (0-94px)
   'header.location': { id: 'header.location', x: 16, y: 2, w: 200, h: 18 },
   'header.time': { id: 'header.time', x: 12, y: 16, w: 320, h: 80 },  // v1.26: larger, lower, closer to status bar
   'header.dayDate': { id: 'header.dayDate', x: 320, y: 8, w: 260, h: 86 },
   'header.weather': { id: 'header.weather', x: 600, y: 8, w: 192, h: 86 },  // v1.26: slightly wider
-  
+
   // Status bar (96-124px) - Full width
   'status': { id: 'status', x: 0, y: 96, w: 800, h: 32 },
-  
+
   // Journey legs (132-440px) - Dynamic based on leg count
   'leg1': { id: 'leg1', x: 8, y: 132, w: 784, h: 54 },
   'leg2': { id: 'leg2', x: 8, y: 190, w: 784, h: 54 },
@@ -310,10 +317,56 @@ export const ZONES = {
   'leg4': { id: 'leg4', x: 8, y: 306, w: 784, h: 54 },
   'leg5': { id: 'leg5', x: 8, y: 364, w: 784, h: 54 },
   'leg6': { id: 'leg6', x: 8, y: 422, w: 784, h: 54 },
-  
+
   // Footer (448-480px)
   'footer': { id: 'footer', x: 0, y: 440, w: 800, h: 40 }  // V13: Taller footer (40px)
 };
+
+// =============================================================================
+// DISPLAY DIMENSION CONSTANTS
+// =============================================================================
+
+/** Reference dimensions — all proportional calculations are relative to these */
+const REF_W = 800;
+const REF_H = 480;
+
+/**
+ * Supported display dimensions lookup.
+ * Used by the unified endpoint to resolve device model to pixel dimensions.
+ */
+export const DISPLAY_DIMENSIONS = {
+  'trmnl-og':   { width: 800, height: 480 },
+  'trmnl-mini': { width: 600, height: 448 }
+};
+
+/**
+ * Compute zone definitions proportionally for arbitrary display dimensions.
+ * All zone positions and sizes are scaled from the reference 800x480 layout.
+ * Zone IDs and semantic meanings are preserved.
+ *
+ * @param {number} w - Display width in pixels
+ * @param {number} h - Display height in pixels
+ * @returns {Object} Zone map with same keys as ZONES
+ */
+function computeZones(w, h) {
+  const sx = w / REF_W;   // horizontal scale factor
+  const sy = h / REF_H;   // vertical scale factor
+
+  return {
+    'header.location': { id: 'header.location', x: Math.round(16 * sx), y: Math.round(2 * sy), w: Math.round(200 * sx), h: Math.round(18 * sy) },
+    'header.time':     { id: 'header.time',     x: Math.round(12 * sx), y: Math.round(16 * sy), w: Math.round(320 * sx), h: Math.round(80 * sy) },
+    'header.dayDate':  { id: 'header.dayDate',  x: Math.round(320 * sx), y: Math.round(8 * sy), w: Math.round(260 * sx), h: Math.round(86 * sy) },
+    'header.weather':  { id: 'header.weather',  x: Math.round(600 * sx), y: Math.round(8 * sy), w: Math.round(192 * sx), h: Math.round(86 * sy) },
+    'status':          { id: 'status',           x: 0, y: Math.round(96 * sy), w, h: Math.round(32 * sy) },
+    'leg1':            { id: 'leg1', x: Math.round(8 * sx), y: Math.round(132 * sy), w: w - Math.round(16 * sx), h: Math.round(54 * sy) },
+    'leg2':            { id: 'leg2', x: Math.round(8 * sx), y: Math.round(190 * sy), w: w - Math.round(16 * sx), h: Math.round(54 * sy) },
+    'leg3':            { id: 'leg3', x: Math.round(8 * sx), y: Math.round(248 * sy), w: w - Math.round(16 * sx), h: Math.round(54 * sy) },
+    'leg4':            { id: 'leg4', x: Math.round(8 * sx), y: Math.round(306 * sy), w: w - Math.round(16 * sx), h: Math.round(54 * sy) },
+    'leg5':            { id: 'leg5', x: Math.round(8 * sx), y: Math.round(364 * sy), w: w - Math.round(16 * sx), h: Math.round(54 * sy) },
+    'leg6':            { id: 'leg6', x: Math.round(8 * sx), y: Math.round(422 * sy), w: w - Math.round(16 * sx), h: Math.round(54 * sy) },
+    'footer':          { id: 'footer',           x: 0, y: Math.round(440 * sy), w, h: Math.round(40 * sy) }
+  };
+}
 
 // Cache for change detection and BMP data
 let previousDataHash = {};
@@ -951,12 +1004,22 @@ function canvasToBMP(canvas) {
 /**
  * Get dynamic leg zone based on total leg count
  * V13: Variable heights - walk legs are compact (1x), transit/coffee are double (2x)
+ *
+ * @param {number} legIndex - 1-based leg index
+ * @param {number} totalLegs - total number of legs
+ * @param {Array|null} legs - optional legs array for variable height calculation
+ * @param {number} [displayWidth=800] - display width in pixels
+ * @param {number} [displayHeight=480] - display height in pixels
  */
-function getDynamicLegZone(legIndex, totalLegs, legs = null) {
-  const startY = 132;
-  const endY = 432;  // V13: Reduced to 432 for taller footer (40px instead of 32px)
-  const gap = 10;  // V13: Slightly smaller gap for more leg space
-  const availableHeight = endY - startY;  // 300px total
+function getDynamicLegZone(legIndex, totalLegs, legs = null, displayWidth = REF_W, displayHeight = REF_H) {
+  const sy = displayHeight / REF_H;
+  const sx = displayWidth / REF_W;
+  const startY = Math.round(132 * sy);
+  const endY = Math.round(432 * sy);  // V13: Reduced to 432 for taller footer (40px instead of 32px)
+  const gap = Math.round(10 * sy);  // V13: Slightly smaller gap for more leg space
+  const availableHeight = endY - startY;
+  const legX = Math.round(8 * sx);
+  const legW = displayWidth - Math.round(16 * sx);
 
   // V13: If we have the legs array, calculate variable heights
   if (legs && legs.length > 0) {
@@ -981,19 +1044,19 @@ function getDynamicLegZone(legIndex, totalLegs, legs = null) {
 
     const legHeight = baseUnit * legWeights[legIndex - 1];
 
-    // Clamp heights: walk max 40px, transit/coffee max 80px
-    const maxHeight = legWeights[legIndex - 1] === 1 ? 40 : 80;
+    // Clamp heights: walk max 40px (scaled), transit/coffee max 80px (scaled)
+    const maxHeight = legWeights[legIndex - 1] === 1 ? Math.round(40 * sy) : Math.round(80 * sy);
     const finalHeight = Math.min(legHeight, maxHeight);
 
-    return { id: `leg${legIndex}`, x: 8, y, w: 784, h: finalHeight };
+    return { id: `leg${legIndex}`, x: legX, y, w: legW, h: finalHeight };
   }
 
   // Fallback: equal heights (legacy behaviour)
-  const maxLegHeight = 52;
+  const maxLegHeight = Math.round(52 * sy);
   const legHeight = Math.min(maxLegHeight, Math.floor((availableHeight - (totalLegs - 1) * gap) / totalLegs));
   const y = startY + (legIndex - 1) * (legHeight + gap);
 
-  return { id: `leg${legIndex}`, x: 8, y, w: 784, h: legHeight };
+  return { id: `leg${legIndex}`, x: legX, y, w: legW, h: legHeight };
 }
 
 /**
@@ -1011,7 +1074,10 @@ function mergeConsecutiveWalkLegs(legs) {
       current.to = next.to || current.to;
       current.stopName = next.stopName || current.stopName;
       current.stationName = next.stationName || current.stationName;
-      current.title = `Walk to ${next.to || current.to || 'destination'}`;
+      const resolvedDest = next.stopName || next.stationName ||
+        current.stopName || current.stationName ||
+        next.to || current.to || 'destination';
+      current.title = next.title || `Walk to ${resolvedDest}`;
       i++;
     }
     merged.push(current);
@@ -1125,8 +1191,8 @@ function renderLegZone(ctx, leg, zone, legNumber = 1, isHighlighted = false) {
     }
     subtitle = subtitle.trimEnd() + ellipsis;
   }
-  ctx.fillText(subtitle, textX, subtitleY);
-  
+  ctx.fillText(subtitle, textX, subtitleY, subtitleMaxWidth);
+
   // v1.26: DEPART column - scales with leg height
   if (hasDepart) {
     const departColW = Math.max(35, Math.round(45 * scale));
@@ -1692,17 +1758,17 @@ function renderStatus(data, prefs) {
   let statusText = '';
   if (data.status_type === 'disruption' || data.disruption) {
     const delayMin = data.delay_minutes || data.delayMinutes || 0;
-    statusText = delayMin > 0 
-      ? `[!] DISRUPTION → Arrive ${arriveBy} (+${delayMin} min)`
-      : `[!] DISRUPTION → Arrive ${arriveBy}`;
+    statusText = delayMin > 0
+      ? `\u26A0 DISRUPTION \u2192 Arrive ${arriveBy} (+${delayMin} min)`
+      : `\u26A0 DISRUPTION \u2192 Arrive ${arriveBy}`;
   } else if (data.status_type === 'delay' || data.isDelayed) {
     const delayMin = data.delay_minutes || data.delayMinutes || 0;
-    statusText = `[!] DELAY → Arrive ${arriveBy} (+${delayMin} min)`;
+    statusText = `\u26A0 DELAY \u2192 Arrive ${arriveBy} (+${delayMin} min)`;
   } else if (data.status_type === 'diversion' || data.isDiverted) {
     const delayMin = data.delay_minutes || data.delayMinutes || 0;
     statusText = delayMin > 0
-      ? `[!] TRAM DIVERSION → Arrive ${arriveBy} (+${delayMin} min)`
-      : `[!] DIVERSION → Arrive ${arriveBy}`;
+      ? `\u26A0 TRAM DIVERSION \u2192 Arrive ${arriveBy} (+${delayMin} min)`
+      : `\u26A0 DIVERSION \u2192 Arrive ${arriveBy}`;
   } else if (data.isCommuteDay === false) {
     statusText = `NOT TODAY → Next commute: ${data.arrive_by || '9:00am'}`;
   } else {
@@ -1735,9 +1801,8 @@ function renderStatus(data, prefs) {
     // V15.0: Only append mindset when stress is not LOW (action-needed only)
     const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
     const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
-    // C1: Append walk steps when available and stress is low
-    const stepsText = (stressIsLow && data.mindset_steps) ? ` \u2022 ${data.mindset_steps}` : '';
-    ctx.fillText(`${confidenceScore}% ${confLabel}${mindsetText}${stepsText}`, zone.w - 80, zone.h / 2);
+    const contextText = (stressIsLow && data.confidence_context) ? ` \u2022 ${data.confidence_context}` : '';
+    ctx.fillText(`${confLabel} (${confidenceScore}%)${mindsetText}${contextText}`, zone.w - 80, zone.h / 2);
   }
 
   // Right text - Total journey time (V10 Spec Section 4.2)
@@ -1969,18 +2034,30 @@ export function clearCache() {
 /**
  * Internal helper - renders full dashboard to canvas
  * Used by both renderFullScreen (PNG) and renderFullScreenBMP (BMP)
+ *
+ * @param {Object} data - Dashboard data model
+ * @param {Object} [prefs={}] - User preferences
+ * @param {number} [displayWidth=800] - Display width in pixels
+ * @param {number} [displayHeight=480] - Display height in pixels
  */
-function _renderFullScreenCanvas(data, prefs = {}) {
+function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, displayHeight = REF_H) {
   // Ensure fonts are loaded
   loadFonts();
 
-  const canvas = createCanvas(800, 480);
+  // Scale factors relative to reference 800x480 layout
+  const sx = displayWidth / REF_W;
+  const sy = displayHeight / REF_H;
+  // Font scale: use geometric mean of sx/sy so text scales proportionally,
+  // but never below 0.7 (ensures 11px minimum from typical base sizes).
+  const fs = Math.max(0.7, Math.sqrt(sx * sy));
+
+  const canvas = createCanvas(displayWidth, displayHeight);
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
   // White background
   ctx.fillStyle = '#FFF';
-  ctx.fillRect(0, 0, 800, 480);
+  ctx.fillRect(0, 0, displayWidth, displayHeight);
   
   // Render each zone
   const activeZones = getActiveZones(data);
@@ -2015,30 +2092,50 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   ctx.fillStyle = '#000';
   ctx.textBaseline = 'top';
   
-  // Location - small, top left (truncated to prevent overflow)
-  ctx.font = 'bold 10px Inter, sans-serif';
+  // Location — suburb name top left, simplified home address below
+  ctx.font = `bold ${Math.max(11, Math.round(10 * fs))}px Inter, sans-serif`;
   const locationTextRaw = (data.location || 'HOME').toUpperCase();
-  const maxLocationW = 150;
+  const maxLocationW = Math.round(150 * sx);
   let locationText = locationTextRaw;
   while (ctx.measureText(locationText).width > maxLocationW && locationText.length > 3) {
     locationText = locationText.slice(0, -1);
   }
   if (locationText !== locationTextRaw) locationText += '\u2026';
-  ctx.fillText(locationText, 12, 4);
+  ctx.fillText(locationText, Math.round(12 * sx), Math.round(4 * sy));
+
+  // Simplified home address (number + street only) below suburb
+  if (data.home_address) {
+    let homeAddr = data.home_address;
+    // Strip to number + street: find first digit, take up to first comma
+    const addrNumIdx = homeAddr.search(/\d+\s+[A-Za-z]/);
+    if (addrNumIdx >= 0) homeAddr = homeAddr.substring(addrNumIdx);
+    const addrComma = homeAddr.indexOf(',');
+    if (addrComma > 0) homeAddr = homeAddr.substring(0, addrComma);
+    homeAddr = homeAddr.replace(/\bStreet\b/gi, 'St').replace(/\bRoad\b/gi, 'Rd').replace(/\bAvenue\b/gi, 'Ave').toUpperCase();
+    ctx.font = `${Math.max(11, Math.round(8 * fs))}px Inter, sans-serif`;
+    let truncAddr = homeAddr;
+    while (ctx.measureText(truncAddr).width > maxLocationW && truncAddr.length > 3) {
+      truncAddr = truncAddr.slice(0, -1);
+    }
+    if (truncAddr !== homeAddr) truncAddr += '\u2026';
+    ctx.fillStyle = '#555';
+    ctx.fillText(truncAddr, Math.round(12 * sx), Math.round(16 * sy));
+    ctx.fillStyle = '#000';
+  }
 
   // V15.1: Battery indicator next to location (if provided by device)
   const batteryPercent = data.battery_percent;
   if (batteryPercent !== null && batteryPercent !== undefined) {
     const locationWidth = ctx.measureText(locationText).width;
-    const batteryX = 12 + locationWidth + 10;
-    const batteryY = 2;
+    const batteryX = Math.round(12 * sx) + locationWidth + Math.round(10 * sx);
+    const batteryY = Math.round(2 * sy);
 
     // Draw battery icon (larger for device legibility)
-    drawBatteryIcon(ctx, batteryX, batteryY, batteryPercent, 13);
+    drawBatteryIcon(ctx, batteryX, batteryY, batteryPercent, Math.max(11, Math.round(13 * fs)));
 
     // Draw percentage text
-    ctx.font = 'bold 14px Inter, sans-serif';
-    ctx.fillText(`${batteryPercent}%`, batteryX + 26, 4);
+    ctx.font = `bold ${Math.max(11, Math.round(14 * fs))}px Inter, sans-serif`;
+    ctx.fillText(`${batteryPercent}%`, batteryX + Math.round(26 * sx), Math.round(4 * sy));
   }
   
   // Convert to 12-hour format (DEVELOPMENT-RULES.md: 12-hour time MANDATORY)
@@ -2062,25 +2159,26 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   }
   
   // v1.35: Clock LOWER - bottom touching status bar
-  const clockFontSize = 82;
+  const clockFontSize = Math.max(11, Math.round(82 * fs));
   ctx.font = `bold ${clockFontSize}px Inter, sans-serif`;
-  const clockY = 94 - clockFontSize + 12;  // Bottom of clock touching status bar
-  ctx.fillText(displayTime, 8, clockY);
-  
+  const clockY = Math.round(94 * sy) - clockFontSize + Math.round(12 * sy);  // Bottom of clock touching status bar
+  ctx.fillText(displayTime, Math.round(8 * sx), clockY);
+
   // Measure clock width for AM/PM positioning
   const clockWidth = ctx.measureText(displayTime).width;
-  
+
   // v1.37: AM/PM indicator - aligned with BOTTOM of coffee/weather boxes (y=90)
-  ctx.font = 'bold 22px Inter, sans-serif';
-  const amPmX = 12 + clockWidth + 8;
-  ctx.fillText(data.am_pm || (isPM ? 'PM' : 'AM'), amPmX, 90 - 22);  // Bottom aligned at y=90
-  
+  const amPmFontSize = Math.max(11, Math.round(22 * fs));
+  ctx.font = `bold ${amPmFontSize}px Inter, sans-serif`;
+  const amPmX = Math.round(12 * sx) + clockWidth + Math.round(8 * sx);
+  ctx.fillText(data.am_pm || (isPM ? 'pm' : 'am'), amPmX, Math.round(90 * sy) - amPmFontSize);  // Bottom aligned
+
   // v1.36: Day and date - to the right of AM/PM
-  const dayDateX = amPmX + 50;
-  ctx.font = 'bold 20px Inter, sans-serif';
-  ctx.fillText(data.day || '', dayDateX, 6);
-  ctx.font = '14px Inter, sans-serif';
-  ctx.fillText(data.date || '', dayDateX, 28);
+  const dayDateX = amPmX + Math.round(50 * sx);
+  ctx.font = `bold ${Math.max(11, Math.round(20 * fs))}px Inter, sans-serif`;
+  ctx.fillText(data.day || '', dayDateX, Math.round(6 * sy));
+  ctx.font = `${Math.max(11, Math.round(14 * fs))}px Inter, sans-serif`;
+  ctx.fillText(data.date || '', dayDateX, Math.round(28 * sy));
   
   // v1.33: Service status box with live/scheduled data indicator
   const serviceStatus = data.service_status || (data.disruption ? 'DISRUPTIONS' : 'OK');
@@ -2091,64 +2189,87 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   const isLiveData = data.isLive === true || data.dataSource === 'gtfs-rt';
 
   // V15.0 SPEC FIX: Service status and data source indicators per CCDashDesignV15.0 Section 2.6-2.7
-  // Size: 115×16px each, positioned below day/date
+  // Size: 115x16px each (at reference), positioned below day/date
   const statusBoxX = dayDateX;
-  const statusBoxY = 46;      // Per spec Section 2.6: top: 46px
-  const statusBoxW = 115;
-  const statusBoxH = 16;      // Per spec Section 2.6: 115×16px
+  const statusBoxY = Math.round(46 * sy);      // Per spec Section 2.6: top: 46px
+  const statusBoxW = Math.round(115 * sx);
+  const statusBoxH = Math.round(16 * sy);      // Per spec Section 2.6: 115x16px
 
   // Data source indicator (below status box) per spec Section 2.7: top: 64px
-  const dataBoxY = 64;
-  const dataBoxH = 16;        // Per spec Section 2.7: 115×16px
+  const dataBoxY = Math.round(64 * sy);
+  const dataBoxH = Math.round(16 * sy);        // Per spec Section 2.7: 115x16px
 
-  ctx.font = 'bold 8px Inter, sans-serif';
+  ctx.font = `bold ${Math.max(11, Math.round(8 * fs))}px Inter, sans-serif`;
   ctx.textBaseline = 'middle';
 
   // Service status box — per spec Section 2.6
-  // Only show "SERVICES OK" when we have live data confirming it.
-  // Without live data, services cannot be confirmed — show "NO DATA" instead.
+  // Inverted urgency: black filled = disruptions/fallback (attention needed), outlined = live/OK (normal)
+  const statusTextPad = Math.round(6 * sx);
   if (hasDisruption) {
+    // Black filled — disruptions need attention
     ctx.fillStyle = '#000';
     ctx.fillRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
     ctx.fillStyle = '#FFF';
-    ctx.fillText('\u26A0 DISRUPTIONS', statusBoxX + 6, statusBoxY + statusBoxH / 2);
+    ctx.fillText('\u26A0 DISRUPTIONS', statusBoxX + statusTextPad, statusBoxY + statusBoxH / 2);
   } else if (isLiveData) {
+    // Outlined — everything normal, no attention needed
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 1;
     ctx.strokeRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
     ctx.fillStyle = '#000';
-    ctx.fillText('\u2713 SERVICES OK', statusBoxX + 6, statusBoxY + statusBoxH / 2);
+    ctx.fillText('\u2713 SERVICES OK', statusBoxX + statusTextPad, statusBoxY + statusBoxH / 2);
+  } else if (data.dataSource === 'timetable') {
+    // Black filled — timetable fallback needs awareness
+    ctx.fillStyle = '#000';
+    ctx.fillRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
+    ctx.fillStyle = '#FFF';
+    ctx.fillText('\u25CB SCHEDULED', statusBoxX + statusTextPad, statusBoxY + statusBoxH / 2);
   } else {
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
+    // Black filled — no data is important to surface
     ctx.fillStyle = '#000';
-    ctx.fillText('\u25CB NO DATA', statusBoxX + 6, statusBoxY + statusBoxH / 2);
+    ctx.fillRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
+    ctx.fillStyle = '#FFF';
+    ctx.fillText('\u25CB NO DATA', statusBoxX + statusTextPad, statusBoxY + statusBoxH / 2);
   }
 
   // Data source indicator — per spec Section 2.7
-  ctx.font = 'bold 8px Inter, sans-serif';
+  // Inverted: live = outlined (normal), timetable/no-data = black filled (attention)
+  ctx.font = `bold ${Math.max(11, Math.round(8 * fs))}px Inter, sans-serif`;
   if (isLiveData) {
-    ctx.fillStyle = '#000';
-    ctx.fillRect(statusBoxX, dataBoxY, statusBoxW, dataBoxH);
-    ctx.fillStyle = '#FFF';
-    ctx.fillText('\u25CF LIVE DATA', statusBoxX + 6, dataBoxY + dataBoxH / 2);
-  } else {
+    // Outlined — live data is the normal/good state
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 1;
     ctx.strokeRect(statusBoxX, dataBoxY, statusBoxW, dataBoxH);
     ctx.fillStyle = '#000';
-    ctx.fillText('\u25CB SCHEDULED DATA', statusBoxX + 6, dataBoxY + dataBoxH / 2);
+    ctx.fillText('\u25CF LIVE DATA', statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
+  } else if (data.dataSource === 'timetable') {
+    // Black filled — timetable fallback needs awareness
+    ctx.fillStyle = '#000';
+    ctx.fillRect(statusBoxX, dataBoxY, statusBoxW, dataBoxH);
+    ctx.fillStyle = '#FFF';
+    ctx.fillText('\u25CB SCHEDULED DATA', statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
+  } else if (data.dataSource === 'no-data' || data.dataSource === 'no-key') {
+    // Black filled — no data is critical to surface
+    ctx.fillStyle = '#000';
+    ctx.fillRect(statusBoxX, dataBoxY, statusBoxW, dataBoxH);
+    ctx.fillStyle = '#FFF';
+    ctx.fillText('\u25CB NO DATA', statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
+  } else {
+    // Black filled — unknown state defaults to attention-needed
+    ctx.fillStyle = '#000';
+    ctx.fillRect(statusBoxX, dataBoxY, statusBoxW, dataBoxH);
+    ctx.fillStyle = '#FFF';
+    ctx.fillText('\u25CB SCHEDULED DATA', statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
   }
   
   ctx.fillStyle = '#000';
   ctx.textBaseline = 'top';
   
   // v1.32: Weather box position (declared early for coffee box sizing)
-  const weatherBoxX = 620;
-  const weatherBoxY = 4;
-  const weatherBoxW = 172;
-  const weatherBoxH = 86;
+  const weatherBoxX = Math.round(620 * sx);
+  const weatherBoxY = Math.round(4 * sy);
+  const weatherBoxW = Math.round(172 * sx);
+  const weatherBoxH = Math.round(86 * sy);
   
   // v1.32: Check if route includes coffee
   const journeyLegs = data.journey_legs || data.legs || [];
@@ -2198,7 +2319,8 @@ function _renderFullScreenCanvas(data, prefs = {}) {
 
   const coffeeLegCanGet = journeyLegs.find(l => l.type === 'coffee' && l.canGet !== false);
   const coffeeLegSkipped = journeyLegs.find(l => l.type === 'coffee' && l.canGet === false);
-  const coffeeLegClosed = journeyLegs.find(l => l.type === "coffee" && (l.cafeClosed === true || l.skipReason === "closed"));
+  const coffeeLegClosed = journeyLegs.find(l => l.type === "coffee" &&
+    (l.cafeClosed === true || (l.skipReason && l.skipReason.toLowerCase().includes('closed'))));
 
   // V13.6: Check coffee_decision from dashboardData (used when cafe leg is removed entirely)
   // When cafe is closed, the leg is filtered out but we still want to show CAFE CLOSED in header
@@ -2211,7 +2333,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   const hasCoffee = data.isCommuteDay !== false && isWithinArrivalWindow && !!coffeeLegCanGet;
   const cafeClosed = data.isCommuteDay !== false && (!!coffeeLegClosed || isCafeClosedFromData);
   const coffeeSkipped = data.isCommuteDay !== false && isWithinArrivalWindow && !!coffeeLegSkipped && !isCafeClosedFromData;
-  const showCafeBusynessOnly = data.isCommuteDay !== false && !isWithinArrivalWindow && coffeeLeg;
+  const showCafeBusynessOnly = data.isCommuteDay !== false && !isWithinArrivalWindow && coffeeLeg && !cafeClosed;
   
   // v1.40: Calculate arrival time early for coffee header display
   const earlyTotalMinutes = data.total_minutes || data.totalMinutes || data.journeyDuration || 20;
@@ -2247,10 +2369,10 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   const coffeeArrivalTime = `${earlyArrivalH12}:${earlyArrivalM.toString().padStart(2, '0')}${earlyArrivalAmPm}`;
   
   // v1.32: COFFEE INDICATOR - larger box, spread to right edge before weather
-  const coffeeBoxX = statusBoxX + statusBoxW + 10;
-  const coffeeBoxY = 4;
-  const coffeeBoxW = weatherBoxX - coffeeBoxX - 8;  // Spread to weather box
-  const coffeeBoxH = 86;
+  const coffeeBoxX = statusBoxX + statusBoxW + Math.round(10 * sx);
+  const coffeeBoxY = Math.round(4 * sy);
+  const coffeeBoxW = weatherBoxX - coffeeBoxX - Math.round(8 * sx);  // Spread to weather box
+  const coffeeBoxH = Math.round(86 * sy);
   
   if (hasCoffee) {
     // Black filled box for coffee
@@ -2260,35 +2382,35 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     // Draw coffee cup icon (no emoji - pure shapes)
     ctx.fillStyle = '#FFF';
     ctx.strokeStyle = '#FFF';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = Math.max(2, Math.round(3 * fs));
     // Cup body
-    ctx.fillRect(coffeeBoxX + 16, coffeeBoxY + 28, 28, 36);
+    ctx.fillRect(coffeeBoxX + Math.round(16 * sx), coffeeBoxY + Math.round(28 * sy), Math.round(28 * sx), Math.round(36 * sy));
     // Handle
     ctx.beginPath();
-    ctx.arc(coffeeBoxX + 44, coffeeBoxY + 44, 10, -Math.PI/2, Math.PI/2);
+    ctx.arc(coffeeBoxX + Math.round(44 * sx), coffeeBoxY + Math.round(44 * sy), Math.round(10 * fs), -Math.PI/2, Math.PI/2);
     ctx.stroke();
     // Steam lines
-    ctx.lineWidth = 2;
+    ctx.lineWidth = Math.max(1, Math.round(2 * fs));
     for (let i = 0; i < 3; i++) {
       ctx.beginPath();
-      ctx.moveTo(coffeeBoxX + 20 + i * 8, coffeeBoxY + 24);
-      ctx.quadraticCurveTo(coffeeBoxX + 24 + i * 8, coffeeBoxY + 16, coffeeBoxX + 20 + i * 8, coffeeBoxY + 10);
+      ctx.moveTo(coffeeBoxX + Math.round((20 + i * 8) * sx), coffeeBoxY + Math.round(24 * sy));
+      ctx.quadraticCurveTo(coffeeBoxX + Math.round((24 + i * 8) * sx), coffeeBoxY + Math.round(16 * sy), coffeeBoxX + Math.round((20 + i * 8) * sx), coffeeBoxY + Math.round(10 * sy));
       ctx.stroke();
     }
-    
+
     // "GET A COFFEE" text - larger
-    ctx.font = 'bold 18px Inter, sans-serif';
+    ctx.font = `bold ${Math.max(11, Math.round(18 * fs))}px Inter, sans-serif`;
     ctx.textAlign = 'left';
-    ctx.fillText('GET A COFFEE', coffeeBoxX + 62, coffeeBoxY + 20);
-    
+    ctx.fillText('GET A COFFEE', coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(20 * sy));
+
     // "+ ARRIVE BY" + time
-    ctx.font = '12px Inter, sans-serif';
-    ctx.fillText('+ ARRIVE BY', coffeeBoxX + 62, coffeeBoxY + 42);
-    
+    ctx.font = `${Math.max(11, Math.round(12 * fs))}px Inter, sans-serif`;
+    ctx.fillText('+ ARRIVE BY', coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(42 * sy));
+
     // Large arrival time - v1.40: use calculated arrival, not configured arrive_by
-    ctx.font = 'bold 28px Inter, sans-serif';
-    ctx.fillText(coffeeArrivalTime, coffeeBoxX + 62, coffeeBoxY + 58);
-    
+    ctx.font = `bold ${Math.max(11, Math.round(28 * fs))}px Inter, sans-serif`;
+    ctx.fillText(coffeeArrivalTime, coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(58 * sy));
+
     ctx.textAlign = 'left';
     ctx.fillStyle = '#000';
   } else if (!isWithinArrivalWindow && data.sleep_active && data.sleep_display) {
@@ -2300,33 +2422,33 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     // Moon icon (crescent) - drawn with arcs
     ctx.fillStyle = '#000';
     ctx.beginPath();
-    ctx.arc(coffeeBoxX + 30, coffeeBoxY + 43, 20, 0, Math.PI * 2);
+    ctx.arc(coffeeBoxX + Math.round(30 * sx), coffeeBoxY + Math.round(43 * sy), Math.round(20 * fs), 0, Math.PI * 2);
     ctx.fill();
     // Cut out inner circle to make crescent
     ctx.fillStyle = '#FFF';
     ctx.beginPath();
-    ctx.arc(coffeeBoxX + 38, coffeeBoxY + 37, 18, 0, Math.PI * 2);
+    ctx.arc(coffeeBoxX + Math.round(38 * sx), coffeeBoxY + Math.round(37 * sy), Math.round(18 * fs), 0, Math.PI * 2);
     ctx.fill();
 
     // Primary line (BED BY 10:30PM or ALARM 6:15AM)
     ctx.fillStyle = '#000';
-    ctx.font = 'bold 18px Inter, sans-serif';
+    ctx.font = `bold ${Math.max(11, Math.round(18 * fs))}px Inter, sans-serif`;
     ctx.textAlign = 'left';
-    ctx.fillText(data.sleep_display, coffeeBoxX + 62, coffeeBoxY + 28);
+    ctx.fillText(data.sleep_display, coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(28 * sy));
 
-    // Secondary line (ALARM time or sleep adequacy) — 16px for 1-bit e-ink legibility
-    ctx.font = 'bold 16px Inter, sans-serif';
+    // Secondary line (ALARM time or sleep adequacy) — scaled for 1-bit e-ink legibility
+    ctx.font = `bold ${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;
     const sleepSecondary = data.sleep_secondary || '';
-    ctx.fillText(sleepSecondary, coffeeBoxX + 62, coffeeBoxY + 50);
+    ctx.fillText(sleepSecondary, coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(50 * sy));
 
     // Sleep adequacy indicator
     if (data.sleep_adequacy === 'INSUFFICIENT') {
-      ctx.font = 'bold 11px Inter, sans-serif';
+      ctx.font = `bold ${Math.max(11, Math.round(11 * fs))}px Inter, sans-serif`;
       ctx.fillStyle = '#000';
-      ctx.fillRect(coffeeBoxX + 62, coffeeBoxY + 62, 80, 16);
+      ctx.fillRect(coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(62 * sy), Math.round(80 * sx), Math.round(16 * sy));
       ctx.fillStyle = '#FFF';
       ctx.textAlign = 'center';
-      ctx.fillText('LOW SLEEP', coffeeBoxX + 62 + 40, coffeeBoxY + 70);
+      ctx.fillText('LOW SLEEP', coffeeBoxX + Math.round(62 * sx) + Math.round(40 * sx), coffeeBoxY + Math.round(70 * sy));
     }
 
     ctx.textAlign = 'left';
@@ -2342,24 +2464,24 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     // Sad face (simple drawn)
     ctx.fillStyle = '#000';
     ctx.strokeStyle = '#000';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = Math.max(1, Math.round(2 * fs));
     // Face circle
     ctx.beginPath();
-    ctx.arc(coffeeBoxX + 30, coffeeBoxY + 43, 22, 0, Math.PI * 2);
+    ctx.arc(coffeeBoxX + Math.round(30 * sx), coffeeBoxY + Math.round(43 * sy), Math.round(22 * fs), 0, Math.PI * 2);
     ctx.stroke();
     // Eyes
-    ctx.fillRect(coffeeBoxX + 22, coffeeBoxY + 36, 4, 6);
-    ctx.fillRect(coffeeBoxX + 34, coffeeBoxY + 36, 4, 6);
+    ctx.fillRect(coffeeBoxX + Math.round(22 * sx), coffeeBoxY + Math.round(36 * sy), Math.round(4 * sx), Math.round(6 * sy));
+    ctx.fillRect(coffeeBoxX + Math.round(34 * sx), coffeeBoxY + Math.round(36 * sy), Math.round(4 * sx), Math.round(6 * sy));
     // Sad mouth (frown)
     ctx.beginPath();
-    ctx.arc(coffeeBoxX + 30, coffeeBoxY + 58, 10, Math.PI * 1.2, Math.PI * 1.8);
+    ctx.arc(coffeeBoxX + Math.round(30 * sx), coffeeBoxY + Math.round(58 * sy), Math.round(10 * fs), Math.PI * 1.2, Math.PI * 1.8);
     ctx.stroke();
-    
+
     // "NO TIME FOR COFFEE" text
-    ctx.font = 'bold 16px Inter, sans-serif';
+    ctx.font = `bold ${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;
     ctx.textAlign = 'left';
-    ctx.fillText('NO TIME', coffeeBoxX + 62, coffeeBoxY + 28);
-    ctx.fillText('FOR COFFEE', coffeeBoxX + 62, coffeeBoxY + 48);
+    ctx.fillText('NO TIME', coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(28 * sy));
+    ctx.fillText('FOR COFFEE', coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(48 * sy));
 
     ctx.textAlign = 'left';
     ctx.fillStyle = '#000';
@@ -2372,29 +2494,29 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     // Coffee cup icon (outline only)
     ctx.fillStyle = '#000';
     ctx.strokeStyle = '#000';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = Math.max(1, Math.round(2 * fs));
     // Cup body outline
-    ctx.strokeRect(coffeeBoxX + 16, coffeeBoxY + 28, 28, 36);
+    ctx.strokeRect(coffeeBoxX + Math.round(16 * sx), coffeeBoxY + Math.round(28 * sy), Math.round(28 * sx), Math.round(36 * sy));
     // Handle
     ctx.beginPath();
-    ctx.arc(coffeeBoxX + 44, coffeeBoxY + 44, 10, -Math.PI/2, Math.PI/2);
+    ctx.arc(coffeeBoxX + Math.round(44 * sx), coffeeBoxY + Math.round(44 * sy), Math.round(10 * fs), -Math.PI/2, Math.PI/2);
     ctx.stroke();
 
     // "CAFE STATUS" header
-    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.font = `bold ${Math.max(11, Math.round(14 * fs))}px Inter, sans-serif`;
     ctx.textAlign = 'left';
-    ctx.fillText('CAFE STATUS', coffeeBoxX + 62, coffeeBoxY + 24);
+    ctx.fillText('CAFE STATUS', coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(24 * sy));
 
     // Busyness level
-    ctx.font = 'bold 18px Inter, sans-serif';
+    ctx.font = `bold ${Math.max(11, Math.round(18 * fs))}px Inter, sans-serif`;
     const busyLabel = cafeBusyness === 'quiet' ? 'QUIET' :
                       cafeBusyness === 'moderate' ? 'MODERATE' :
                       cafeBusyness === 'busy' ? 'BUSY' : cafeBusyness.toUpperCase();
-    ctx.fillText(busyLabel, coffeeBoxX + 62, coffeeBoxY + 46);
+    ctx.fillText(busyLabel, coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(46 * sy));
 
     // Wait time
-    ctx.font = '12px Inter, sans-serif';
-    ctx.fillText(`~${cafeWaitTime} min wait`, coffeeBoxX + 62, coffeeBoxY + 64);
+    ctx.font = `${Math.max(11, Math.round(12 * fs))}px Inter, sans-serif`;
+    ctx.fillText(`~${cafeWaitTime} min wait`, coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(64 * sy));
 
     ctx.textAlign = 'left';
     ctx.fillStyle = '#000';
@@ -2407,30 +2529,30 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   
   // Temperature - centered in upper portion of box
   // V15.0 SPEC FIX: Per CCDashDesignV15.0 Section 2.9.1 — 36px bold
-  ctx.font = 'bold 36px Inter, sans-serif';
+  ctx.font = `bold ${Math.max(11, Math.round(36 * fs))}px Inter, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(`${data.temp || '--'}°`, weatherBoxX + weatherBoxW / 2, weatherBoxY + 26);
+  ctx.fillText(`${data.temp || '--'}°`, weatherBoxX + weatherBoxW / 2, weatherBoxY + Math.round(26 * sy));
 
   // Condition - below temp
-  ctx.font = '15px Inter, sans-serif';
+  ctx.font = `${Math.max(11, Math.round(15 * fs))}px Inter, sans-serif`;
   let condition = data.condition || '';
-  while (ctx.measureText(condition).width > weatherBoxW - 12 && condition.length > 3) {
+  while (ctx.measureText(condition).width > weatherBoxW - Math.round(12 * sx) && condition.length > 3) {
     condition = condition.slice(0, -1);
   }
-  ctx.fillText(condition, weatherBoxX + weatherBoxW / 2, weatherBoxY + 52);
+  ctx.fillText(condition, weatherBoxX + weatherBoxW / 2, weatherBoxY + Math.round(52 * sy));
 
   // V15.0: Feels-like temperature from mindset engine (wind chill)
   if (data.mindset_feels_like) {
-    ctx.font = '15px Inter, sans-serif';
+    ctx.font = `${Math.max(11, Math.round(15 * fs))}px Inter, sans-serif`;
     ctx.fillStyle = '#000';
-    ctx.fillText(data.mindset_feels_like, weatherBoxX + weatherBoxW / 2, weatherBoxY + 66);
+    ctx.fillText(data.mindset_feels_like, weatherBoxX + weatherBoxW / 2, weatherBoxY + Math.round(66 * sy));
   }
 
   // V14.0: Lifestyle context suggestions (replaces simple umbrella indicator)
   const needsUmbrella = data.rain_expected || data.precipitation > 30 ||
     (data.condition && /rain|shower|storm|drizzle/i.test(data.condition));
-  const umbrellaY = weatherBoxY + weatherBoxH - 22;
+  const umbrellaY = weatherBoxY + weatherBoxH - Math.round(22 * sy);
 
   const lifestyleDisplay = data.lifestyle_display;
   const displayText = lifestyleDisplay || (needsUmbrella ? 'BRING UMBRELLA' : 'NO UMBRELLA');
@@ -2438,11 +2560,11 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   // White/plain text for passive notices (NO UMBRELLA, etc.)
   const isObligation = needsUmbrella || (lifestyleDisplay && !/^NO\s/i.test(lifestyleDisplay) && /UMBRELLA|JACKET|HYDRAT|SUNGLASSES|SUNSCREEN|LAYERS/i.test(lifestyleDisplay));
 
-  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.font = `bold ${Math.max(11, Math.round(14 * fs))}px Inter, sans-serif`;
 
   // B1: Truncate lifestyle display text to weather box width (Section 7.2-7.3 compliance)
   let lifestyleText = displayText;
-  const lifestyleMaxWidth = weatherBoxW - 16;
+  const lifestyleMaxWidth = weatherBoxW - Math.round(16 * sx);
   if (ctx.measureText(lifestyleText).width > lifestyleMaxWidth) {
     const ellipsis = '\u2026';
     const ellipsisW = ctx.measureText(ellipsis).width;
@@ -2454,7 +2576,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
 
   if (isObligation) {
     ctx.fillStyle = '#000';
-    ctx.fillRect(weatherBoxX + 4, umbrellaY, weatherBoxW - 8, 18);
+    ctx.fillRect(weatherBoxX + Math.round(4 * sx), umbrellaY, weatherBoxW - Math.round(8 * sx), Math.round(18 * sy));
     ctx.fillStyle = '#FFF';
   } else {
     ctx.fillStyle = '#000';
@@ -2466,7 +2588,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   ctx.fillStyle = '#000';
 
   // Divider line
-  ctx.fillRect(0, 94, 800, 2);
+  ctx.fillRect(0, Math.round(94 * sy), displayWidth, Math.max(1, Math.round(2 * sy)));
   
   // =========================================================================
   // STATUS BAR (V10 Spec Section 4) - Real-Time Arrival Amendment 2026-01-31
@@ -2526,16 +2648,18 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   // Use explicit flag from screen.js — any user-configured arrival time counts, including 09:00
   const hasArriveByTarget = (data.hasExplicitArrivalTarget || data.arrive_by) && !isObscenelyFarFromDeparture;
   const isCommuteDay = data.isCommuteDay !== false; // default true for backwards compat
-  const isLate = isCommuteDay && hasArriveByTarget && diffMins > 5;
-  const isEarly = isCommuteDay && hasArriveByTarget && diffMins < -5;
-  const isOnTime = isCommuteDay && hasArriveByTarget && !isLate && !isEarly;
+  const isLate = isCommuteDay && hasArriveByTarget && isWithinArrivalWindow && diffMins > 5;
+  const isEarly = isCommuteDay && hasArriveByTarget && isWithinArrivalWindow && diffMins < -5;
+  const isOnTime = isCommuteDay && hasArriveByTarget && isWithinArrivalWindow && !isLate && !isEarly;
 
   // V15.0 SPEC FIX: Status bar per CCDashDesignV15.0 Section 3 — 28px height, 13px bold
+  const statusBarY = Math.round(96 * sy);
+  const statusBarH = Math.round(28 * sy);
   ctx.fillStyle = '#000';
-  ctx.fillRect(0, 96, 800, 28);
+  ctx.fillRect(0, statusBarY, displayWidth, statusBarH);
 
   ctx.fillStyle = '#FFF';
-  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.font = `bold ${Math.max(11, Math.round(13 * fs))}px Inter, sans-serif`;
   ctx.textBaseline = 'middle';
 
   // -----------------------------------------------------------------------
@@ -2576,7 +2700,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
                      disruptedLeg?.serviceAlert || data.disruption_text ||
                      (disruptedLeg?.status === 'suspended' ? 'SERVICE SUSPENDED' :
                       disruptedLeg?.status === 'cancelled' ? 'SERVICE CANCELLED' : 'SERVICE ALERT');
-    statusText = `[!] ${disruptionText} → Arrive ${calculatedArrival}`;
+    statusText = `\u26A0 ${disruptionText} \u2192 Arrive ${calculatedArrival}`;
     if (totalLegDelay > 0) statusText += ` (+${totalLegDelay} min)`;
   } else if (delayedLegCount > 0 || data.status_type === 'delay') {
     // Service delays - V13.6: Show which service is delayed
@@ -2585,17 +2709,23 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     const delayedService = delayedLeg?.routeNumber ? `${delayedLeg.type?.toUpperCase()} ${delayedLeg.routeNumber}` :
                            delayedLeg?.lineName || delayedLeg?.type?.toUpperCase() || 'SERVICE';
     disruptionText = `${delayedService} +${delayedLeg?.delayMinutes || totalLegDelay} MIN`;
-    statusText = `[!] ${delayedService} DELAYED → Arrive ${calculatedArrival}`;
+    statusText = `\u26A0 ${delayedService} DELAYED \u2192 Arrive ${calculatedArrival}`;
     if (totalLegDelay > 0) statusText += ` (+${totalLegDelay} min)`;
+  } else if (data.isTomorrowCommute) {
+    // Issue 4: Past today's target — show tomorrow morning context
+    statusText = `TOMORROW \u2192 Arrive ${targetArrivalDisplay}`;
   } else if (!isCommuteDay) {
     // Non-commute day — don't show LEAVE NOW or LATE
-    statusText = `NOT TODAY → Next commute: ${targetArrivalDisplay}`;
+    statusText = `NOT TODAY \u2192 Next commute: ${targetArrivalDisplay}`;
   } else if (isLate) {
-    // V13.2: Only show LATE if user has arrive-by time set
+    // V13.2: Only show LATE if user has arrive-by time set and within commute window
     disruptionType = 'late';
     const lateMinutes = Math.abs(diffMins);
     disruptionText = `LATE +${lateMinutes} min`;
-    statusText = `LATE → Arrive ${calculatedArrival} (+${lateMinutes} min)`;
+    statusText = `LATE \u2192 Arrive ${calculatedArrival} (+${lateMinutes} min)`;
+  } else if (isCommuteDay && !isWithinArrivalWindow) {
+    // Outside commute window — show journey info without target arrival comparison
+    statusText = `LEAVE NOW \u2192 Arrive ${calculatedArrival}`;
   } else if (hasArriveByTarget && Number.isFinite(leaveIn) && leaveIn > 1) {
     // Respect configured arrival target when user still has buffer time.
     statusText = `LEAVE IN ${formatLeaveIn(leaveIn)} → Arrive ${targetArrivalDisplay}`;
@@ -2604,8 +2734,65 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     statusText = `LEAVE NOW → Arrive ${calculatedArrival}`;
   }
 
-  // B1: Truncate status bar text to prevent overflow (Section 7.2-7.3 compliance)
-  const statusMaxWidth = 600;
+  // -----------------------------------------------------------------------
+  // Right-to-left status bar layout: total time → badge → confidence → status text
+  // Each element reserves space from the right to prevent overlap
+  // -----------------------------------------------------------------------
+
+  // Status bar vertical center
+  const statusBarMidY = statusBarY + statusBarH / 2;
+  const statusBarRight = displayWidth - Math.round(16 * sx);
+
+  // 1. Total journey time (always rightmost)
+  ctx.textAlign = 'right';
+  ctx.font = `bold ${Math.max(11, Math.round(18 * fs))}px Inter, sans-serif`;
+  const statusRight = `${totalMinutes} min`;
+  const totalTimeWidth = ctx.measureText(statusRight).width;
+  ctx.fillText(statusRight, statusBarRight, statusBarMidY);
+  let rightBoundary = statusBarRight - totalTimeWidth - Math.round(10 * sx);
+
+  // 2. Disruption badge (if present) — positioned left of total time
+  if (disruptionType) {
+    ctx.font = `bold ${Math.max(11, Math.round(12 * fs))}px Inter, sans-serif`;
+    const badgeText = disruptionText.substring(0, 20);
+    const textWidth = ctx.measureText(badgeText).width;
+    const delayBoxW = Math.max(Math.round(110 * sx), textWidth + Math.round(16 * sx));
+    const delayBoxH = Math.round(22 * sy);
+    const delayBoxX = rightBoundary - delayBoxW;
+    const delayBoxY = statusBarY + Math.round(5 * sy);
+
+    ctx.fillStyle = '#FFF';
+    ctx.fillRect(delayBoxX, delayBoxY, delayBoxW, delayBoxH);
+    ctx.fillStyle = '#000';
+    ctx.font = `bold ${Math.max(11, Math.round(12 * fs))}px Inter, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(badgeText, delayBoxX + delayBoxW / 2, statusBarMidY);
+    ctx.fillStyle = '#FFF';
+    rightBoundary = delayBoxX - Math.round(8 * sx);
+  }
+
+  // 3. Confidence score + mindset (if present) — positioned left of badge
+  const confidenceScore = data.confidence_score;
+  if (confidenceScore !== undefined && confidenceScore !== null && isCommuteDay) {
+    ctx.textAlign = 'right';
+    const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
+    const needsAttention = confidenceScore < 75;
+    ctx.font = needsAttention ? `bold ${Math.max(11, Math.round(17 * fs))}px Inter, sans-serif` : `${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;
+    const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
+    const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
+    const contextText = (stressIsLow && data.confidence_context) ? ` \u2022 ${data.confidence_context}` : '';
+    const confText = `${confLabel} (${confidenceScore}%)${mindsetText}${contextText}`;
+    const confMaxWidth = Math.max(Math.round(100 * sx), rightBoundary - Math.round(200 * sx));
+    ctx.fillText(confText, rightBoundary, statusBarMidY, confMaxWidth);
+    const confWidth = Math.min(ctx.measureText(confText).width, confMaxWidth);
+    rightBoundary = rightBoundary - confWidth - Math.round(8 * sx);
+  }
+
+  // 4. Status text (leftmost) — maxWidth capped to remaining space
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#FFF';
+  ctx.font = `bold ${Math.max(11, Math.round(13 * fs))}px Inter, sans-serif`;
+  const statusMaxWidth = Math.max(Math.round(200 * sx), rightBoundary - Math.round(24 * sx));
   if (ctx.measureText(statusText).width > statusMaxWidth) {
     const ellipsis = '\u2026';
     const ellipsisW = ctx.measureText(ellipsis).width;
@@ -2614,59 +2801,11 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     }
     statusText = statusText.trimEnd() + ellipsis;
   }
-  ctx.fillText(statusText, 16, 112);
-
-  // -----------------------------------------------------------------------
-  // V13.2: Badge display - LARGER, only for service alerts or late (if target set)
-  // V13.6: Show actual disruption text in badge
-  // -----------------------------------------------------------------------
-  if (disruptionType) {
-    // V13.6: Dynamic width based on text length
-    ctx.font = 'bold 12px Inter, sans-serif';
-    const badgeText = disruptionText.substring(0, 20);  // Limit length
-    const textWidth = ctx.measureText(badgeText).width;
-    const delayBoxW = Math.max(110, textWidth + 16);
-    const delayBoxH = 22;
-    const delayBoxX = 784 - 80 - delayBoxW - 10;
-    const delayBoxY = 101;
-
-    ctx.fillStyle = '#FFF';
-    ctx.fillRect(delayBoxX, delayBoxY, delayBoxW, delayBoxH);
-    ctx.fillStyle = '#000';
-    ctx.font = 'bold 12px Inter, sans-serif';
-    ctx.textAlign = 'center';
-
-    // V13.6: Show actual disruption/delay info instead of generic "DISRUPTION"
-    ctx.fillText(badgeText, delayBoxX + delayBoxW / 2, 112);
-
-    ctx.fillStyle = '#FFF';
-  }
-
-  // -----------------------------------------------------------------------
-  // V15.0: Confidence score + mindset stress indicator
-  // -----------------------------------------------------------------------
-  const confidenceScore = data.confidence_score;
-  if (confidenceScore !== undefined && confidenceScore !== null && isCommuteDay) {
-    ctx.textAlign = 'right';
-    const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
-    const needsAttention = confidenceScore < 75;
-    ctx.font = needsAttention ? 'bold 17px Inter, sans-serif' : '16px Inter, sans-serif';
-    const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
-    const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
-    // C1: Append walk steps when available and stress is low (otherwise mindsetText has priority)
-    const stepsText = (stressIsLow && data.mindset_steps) ? ` \u2022 ${data.mindset_steps}` : '';
-    ctx.fillText(`${confidenceScore}% ${confLabel}${mindsetText}${stepsText}`, 690, 112, 200);
-  }
-
-  // -----------------------------------------------------------------------
-  // Right: Total journey time - LARGER font
-  // -----------------------------------------------------------------------
-  ctx.textAlign = 'right';
-  ctx.font = 'bold 18px Inter, sans-serif';  // V15.1: Increased from 16px for device legibility
-  const statusRight = `${totalMinutes} min`;
-  ctx.fillText(statusRight, 784, 112);
+  ctx.fillText(statusText, Math.round(16 * sx), statusBarMidY);
   ctx.textAlign = 'left';
-  
+
+  // Confidence context now rendered inline in status bar (see confText above)
+
   // Store calculated values for footer
   data._calculatedArrival = data._calculatedArrival || calculatedArrival;
   data._targetArrival = targetArrival;
@@ -2693,19 +2832,20 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   const scale = Math.min(1, Math.max(0.8, baseLegs / Math.max(legCount, 3)));
 
   // V15.1: Significantly increased font sizes for e-ink readability at device scale
-  const titleSize = 26;        // V15.1: Increased from 22px for physical device legibility
-  const subtitleSize = 22;     // V15.1: Increased from 18px for "Next: x,y,z" visibility
-  const subtitleSize2 = 16;    // V15.1: Increased from 14px
+  // All font sizes now apply the display font-scale factor (fs) with 11px minimum floor
+  const titleSize = Math.max(11, Math.round(26 * fs));        // V15.1: Increased from 22px for physical device legibility
+  const subtitleSize = Math.max(11, Math.round(22 * fs));     // V15.1: Increased from 18px for "Next: x,y,z" visibility
+  const subtitleSize2 = Math.max(11, Math.round(16 * fs));    // V15.1: Increased from 14px
   // V13.3: Transit icons double height to match two text lines; walk icons normal
-  const transitIconSize = Math.max(48, Math.round(56 * scale));  // V13.3: Double height for transit
-  const walkIconSize = Math.max(24, Math.round(28 * scale));     // V13.3: Normal size for walk
-  const iconSize = Math.max(28, Math.round(36 * scale));         // Default fallback
-  const numberSize = 32;       // V15.1: Increased from 28px for device legibility
-  const departLabelSize = 14;  // Reduced from 16px — was too large on device
-  const departTimeSize = 24;   // Reduced from 30px — was too large on device
+  const transitIconSize = Math.max(Math.round(48 * fs), Math.round(56 * scale * fs));  // V13.3: Double height for transit
+  const walkIconSize = Math.max(Math.round(24 * fs), Math.round(28 * scale * fs));     // V13.3: Normal size for walk
+  const iconSize = Math.max(Math.round(28 * fs), Math.round(36 * scale * fs));         // Default fallback
+  const numberSize = Math.max(11, Math.round(32 * fs));       // V15.1: Increased from 28px for device legibility
+  const departLabelSize = Math.max(11, Math.round(14 * fs));  // Reduced from 16px — was too large on device
+  const departTimeSize = Math.max(11, Math.round(24 * fs));   // Reduced from 30px — was too large on device
   // V15.1: Larger duration numbers and label for e-ink visibility
-  const durationSize = Math.max(36, Math.round(42 * scale));  // V15.1: Increased from 32→38
-  const durationLabelSize = Math.max(14, Math.round(16 * scale));  // V15.1: Increased from 12→14
+  const durationSize = Math.max(Math.round(36 * fs), Math.round(42 * scale * fs));  // V15.1: Increased from 32->38
+  const durationLabelSize = Math.max(Math.round(14 * fs), Math.round(16 * scale * fs));  // V15.1: Increased from 12->14
   
   // V13.1: Pre-calculate "minutes until departure" for each leg
   // This represents how long from NOW until the user needs to leave for/catch this leg
@@ -2740,9 +2880,16 @@ function _renderFullScreenCanvas(data, prefs = {}) {
         }
       }
 
-      // Fallback: use cumulative time + leg duration
+      // Trust server-computed minutesToDeparture for transit legs
+      if (leg.minutes !== undefined && leg.minutes !== null && !isNaN(leg.minutes)) {
+        const legDuration = leg.journeyContribution || leg.durationMinutes || 0;
+        cumulativeMinutes += legDuration;
+        return Math.max(0, leg.minutes);
+      }
+
+      // Fallback: use cumulative time + leg duration (sanity cap at 180 min)
       cumulativeMinutes += (leg.journeyContribution || leg.minutes || leg.durationMinutes || 0);
-      return cumulativeMinutes;
+      return Math.min(cumulativeMinutes, 180);
     }
 
     // If leg has explicit departTime, calculate minutes from now
@@ -2760,9 +2907,14 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       return minsUntilDepart;
     }
 
-    // Otherwise, use cumulative time (legacy behaviour)
-    cumulativeMinutes += (leg.journeyContribution || leg.minutes || leg.durationMinutes || 0);
-    return cumulativeMinutes;
+    // Walk legs return own duration; other legs return cumulative (capped)
+    const legDuration = leg.journeyContribution || leg.minutes || leg.durationMinutes || 0;
+    cumulativeMinutes += legDuration;
+    if (leg.type === 'walk') {
+      return legDuration;
+    }
+    // Sanity cap to prevent absurd values (e.g. 701+ minutes)
+    return Math.min(cumulativeMinutes, 180);
   });
 
   // v1.29: Identify transit leg types (use departure countdown) vs walk (use duration)
@@ -2774,7 +2926,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   
   legs.forEach((leg, idx) => {
     const legNum = idx + 1;
-    const zone = getDynamicLegZone(legNum, legs.length, legs);  // V13: Pass legs for variable heights
+    const zone = getDynamicLegZone(legNum, legs.length, legs, displayWidth, displayHeight);  // V13: Pass legs for variable heights
     const status = leg.status || leg.state || 'normal';
     const isDelayed = status === 'delayed' || leg.delayMinutes > 0;
     const isSuspended = status === 'suspended' || status === 'cancelled';
@@ -2987,7 +3139,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     if (isWalkLeg) {
       // V13.3: Walk leg - single line with duration in text (no duration box)
       // V13.5: Skipped walk legs show skip indicator
-      ctx.font = `bold 16px Inter, sans-serif`;  // V13.3: Slightly larger for readability
+      ctx.font = `bold ${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;  // V13.3: Slightly larger for readability
       const titleY = zone.y + (zone.h - 16) / 2;
       if (idx === 0) leg.isFirst = true;
       const walkDuration = leg.minutes || leg.durationMinutes || 0;
@@ -3205,7 +3357,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
                       (leg.type === 'coffee' && leg.canGet !== false);
     const timeBoxW = isWalkLeg ? 0 : Math.max(72, Math.round(88 * scale));
     const departColW = hasDepart ? Math.max(40, Math.round(50 * scale)) : 0;
-    const subtitleMaxWidth = zone.w - textX - timeBoxW - departColW - 20;
+    const subtitleMaxWidth = zone.w - textX - timeBoxW - departColW - Math.round(50 * scale);
 
     // If subtitle is too wide, drop "Alight at" first (departure times are more useful)
     ctx.font = `${subtitleSize}px Inter, sans-serif`;
@@ -3251,7 +3403,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       const nextPart = legSubtitle.substring(nextIdx + 3);
 
       ctx.font = `${subtitleSize}px Inter, sans-serif`;
-      ctx.fillText(beforeNext, textX, subtitleY);
+      ctx.fillText(beforeNext, textX, subtitleY, subtitleMaxWidth);
       const beforeWidth = ctx.measureText(beforeNext).width;
 
       // Render "Next:" portion in bold with maxWidth protection
@@ -3276,8 +3428,8 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     // Shows the scheduled departure time for this leg in sequence
     // -----------------------------------------------------------------------
     if (hasDepart) {
-      // V13.6: DEPART column much further left for clear separation from countdown box
-      const departColCenter = zone.x + zone.w - timeBoxW - departColW - 30;
+      // V13.6: DEPART column further left for clear separation from countdown box
+      const departColCenter = zone.x + zone.w - timeBoxW - departColW - 45;
       const departBlockY = zone.y + (zone.h - departLabelSize - departTimeSize - 1) / 2;
 
       // B1: Canvas clipping region for DEPART column (Section 7.2-7.3 compliance)
@@ -3309,7 +3461,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
       }
 
       ctx.font = `bold ${departTimeSize}px Inter, sans-serif`;
-      ctx.fillText(displayDepartTime, departColCenter, departBlockY + departLabelSize + 1);
+      ctx.fillText(displayDepartTime, departColCenter, departBlockY + departLabelSize + 1, departColW * 2);
       ctx.textAlign = 'left';
 
       ctx.restore();
@@ -3341,7 +3493,7 @@ function _renderFullScreenCanvas(data, prefs = {}) {
 
     if (isSuspended) {
       ctx.fillStyle = '#000';
-      ctx.font = `bold ${Math.round(11 * scale)}px Inter, sans-serif`;
+      ctx.font = `bold ${Math.max(11, Math.round(11 * scale * fs))}px Inter, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('CANCELLED', timeBoxX + timeBoxW / 2, zone.y + zone.h / 2);
@@ -3412,19 +3564,21 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     // V13.6: NO arrows after walk legs (cleaner visual hierarchy)
     // -----------------------------------------------------------------------
     if (idx < legs.length - 1 && !isWalkLeg) {
-      const nextZone = getDynamicLegZone(legNum + 1, legs.length, legs);  // V13: Pass legs
+      const nextZone = getDynamicLegZone(legNum + 1, legs.length, legs, displayWidth, displayHeight);  // V13: Pass legs
       const gapTop = zone.y + zone.h;
       const gapBottom = nextZone.y;
       const gapCenter = gapTop + (gapBottom - gapTop) / 2;
-      const arrowX = 400;  // Center of screen
+      const arrowX = Math.round(displayWidth / 2);  // Center of screen
 
       // Draw filled black arrow pointing down
+      const arrowHalf = Math.round(8 * sx);
+      const arrowVert = Math.round(5 * sy);
       ctx.save();
       ctx.fillStyle = '#000';
       ctx.beginPath();
-      ctx.moveTo(arrowX - 8, gapCenter - 5);  // Top left
-      ctx.lineTo(arrowX + 8, gapCenter - 5);  // Top right
-      ctx.lineTo(arrowX, gapCenter + 5);      // Bottom point
+      ctx.moveTo(arrowX - arrowHalf, gapCenter - arrowVert);  // Top left
+      ctx.lineTo(arrowX + arrowHalf, gapCenter - arrowVert);  // Top right
+      ctx.lineTo(arrowX, gapCenter + arrowVert);               // Bottom point
       ctx.closePath();
       ctx.fill();
       ctx.restore();
@@ -3440,10 +3594,10 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   // Renders below the last journey leg, above footer
   // =========================================================================
   if (data.alt_transit_active && data.alt_transit_display) {
-    const altY = 430 - 52;  // Above footer (footerY=430)
-    const altH = 48;
-    const altW = 780;
-    const altX = 10;
+    const altY = Math.round(430 * sy) - Math.round(52 * sy);  // Above footer
+    const altH = Math.round(48 * sy);
+    const altW = displayWidth - Math.round(20 * sx);
+    const altX = Math.round(10 * sx);
 
     // Black background panel
     ctx.fillStyle = '#000';
@@ -3454,12 +3608,12 @@ function _renderFullScreenCanvas(data, prefs = {}) {
     ctx.textBaseline = 'middle';
 
     // "ALTERNATIVES" header
-    ctx.font = 'bold 11px Inter, sans-serif';
-    ctx.fillText('ALTERNATIVES', altX + altW / 2, altY + 12);
+    ctx.font = `bold ${Math.max(11, Math.round(11 * fs))}px Inter, sans-serif`;
+    ctx.fillText('ALTERNATIVES', altX + altW / 2, altY + Math.round(12 * sy));
 
     // Cost estimates line (e.g. "UBER ~$12 | BIKE ~$4")
-    ctx.font = 'bold 20px Inter, sans-serif';
-    ctx.fillText(data.alt_transit_display, altX + altW / 2, altY + 32);
+    ctx.font = `bold ${Math.max(11, Math.round(20 * fs))}px Inter, sans-serif`;
+    ctx.fillText(data.alt_transit_display, altX + altW / 2, altY + Math.round(32 * sy));
 
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
@@ -3471,20 +3625,20 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   // Height: 40px (increased from 32px)
   // V13.6: Moved up 4px to prevent device frame cutoff
   // =========================================================================
-  const footerY = 430;  // V13.6: Moved higher for better visibility on device frames
-  const footerH = 50;   // V13.6: Taller footer for better e-ink visibility
+  const footerY = Math.round(430 * sy);  // V13.6: Moved higher for better visibility on device frames
+  const footerH = Math.round(50 * sy);   // V13.6: Taller footer for better e-ink visibility
 
   ctx.fillStyle = '#000';
-  ctx.fillRect(0, footerY, 800, footerH);
+  ctx.fillRect(0, footerY, displayWidth, footerH);
   ctx.fillStyle = '#FFF';
 
   // V13.2: Destination address (left side, LARGER for visibility)
-  ctx.font = 'bold 18px Inter, sans-serif';  // V13.2: Increased from 16px
+  ctx.font = `bold ${Math.max(11, Math.round(18 * fs))}px Inter, sans-serif`;  // V13.2: Increased from 16px
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
 
-  // V13.6: Footer text raised 6px for better e-ink visibility (within 50px footer)
-  const footerTextY = footerY + footerH / 2 - 6;
+  // V13.6: Footer text raised for better e-ink visibility
+  const footerTextY = footerY + footerH / 2 - Math.round(6 * sy);
 
   // v1.38: Show destination with address (e.g., "SOUTH YARRA — 80 COLLINS ST")
   let footerDest = (data.destination || 'WORK').toUpperCase();
@@ -3494,6 +3648,15 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   if (streetNumIdx > 0) {
     destAddress = destAddress.substring(streetNumIdx);
   }
+  // Trim trailing state/postcode/country components to save space
+  // e.g. "80 Collins Street, Melbourne VIC 3000, Australia" → "80 Collins St"
+  const commaIdx = destAddress.indexOf(',');
+  if (commaIdx > 0) {
+    destAddress = destAddress.substring(0, commaIdx);
+  }
+  // Shorten "Street" → "St", "Road" → "Rd" etc for footer brevity
+  destAddress = destAddress.replace(/\bStreet\b/gi, 'St').replace(/\bRoad\b/gi, 'Rd').replace(/\bAvenue\b/gi, 'Ave');
+
   const isHomeDestination = data.destinationType === 'home' ||
                             data.isReverseCommute ||
                             data.destination?.toLowerCase().includes('home') ||
@@ -3504,14 +3667,14 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   } else if (destAddress && !footerDest.includes(destAddress.toUpperCase())) {
     footerDest = `${footerDest} — ${destAddress}`.toUpperCase();
   }
-  // Truncate to prevent overlap with CC logo (max ~300px)
-  const maxDestW = 300;
+  // Truncate to prevent overlap with CC logo — increased from 300 to 340 for wider addresses
+  const maxDestW = Math.round(340 * sx);
   let truncatedDest = footerDest;
   while (ctx.measureText(truncatedDest).width > maxDestW && truncatedDest.length > 3) {
     truncatedDest = truncatedDest.slice(0, -1);
   }
   if (truncatedDest !== footerDest) truncatedDest += '\u2026';
-  ctx.fillText(truncatedDest, 16, footerTextY);
+  ctx.fillText(truncatedDest, Math.round(16 * sx), footerTextY);
 
   // V13.6: Load and draw exact cc-footer-icon.bmp - NO conversion, NO estimation
   // The icon is drawn exactly as stored in the BMP file
@@ -3519,14 +3682,14 @@ function _renderFullScreenCanvas(data, prefs = {}) {
   if (footerIconImageCache) {
     const iconW = footerIconImageCache.width;
     const iconH = footerIconImageCache.height;
-    const logoX = (800 - iconW) / 2;
-    const logoY = footerY + (footerH - iconH) / 2 - 6;
+    const logoX = (displayWidth - iconW) / 2;
+    const logoY = footerY + (footerH - iconH) / 2 - Math.round(6 * sy);
     ctx.drawImage(footerIconImageCache, logoX, logoY, iconW, iconH);
   } else {
     // Fallback: simple "CC" text if icon not loaded
-    ctx.font = 'bold 16px Inter, sans-serif';
+    ctx.font = `bold ${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText('CC', 400, footerTextY);
+    ctx.fillText('CC', Math.round(displayWidth / 2), footerTextY);
     ctx.textAlign = 'left';
   }
 
@@ -3551,8 +3714,8 @@ function _renderFullScreenCanvas(data, prefs = {}) {
 
   // V13.3: Combined "ARRIVE X:XX" on same line - fits in footer without cutoff
   // V13.6: Uses footerTextY for raised position
-  ctx.font = 'bold 20px Inter, sans-serif';
-  ctx.fillText(`ARRIVE ${footerArrival}`, 784, footerTextY);
+  ctx.font = `bold ${Math.max(11, Math.round(20 * fs))}px Inter, sans-serif`;
+  ctx.fillText(`ARRIVE ${footerArrival}`, displayWidth - Math.round(16 * sx), footerTextY);
 
   return canvas;
 }
@@ -3560,11 +3723,19 @@ function _renderFullScreenCanvas(data, prefs = {}) {
 /**
  * Render full screen image as PNG (for debugging/preview)
  * V13.6: Now async to support footer icon loading
+ *
+ * @param {Object} data - Dashboard data model
+ * @param {Object} [prefs={}] - User preferences
+ * @param {Object} [options={}] - Render options
+ * @param {number} [options.width=800] - Display width in pixels
+ * @param {number} [options.height=480] - Display height in pixels
  */
-export async function renderFullScreen(data, prefs = {}) {
+export async function renderFullScreen(data, prefs = {}, options = {}) {
   // V13.6: Preload footer icon before rendering
   await preloadFooterIcon();
-  const canvas = _renderFullScreenCanvas(data, prefs);
+  const displayWidth = options.width || REF_W;
+  const displayHeight = options.height || REF_H;
+  const canvas = _renderFullScreenCanvas(data, prefs, displayWidth, displayHeight);
   return canvas.toBuffer('image/png');
 }
 
@@ -3572,11 +3743,19 @@ export async function renderFullScreen(data, prefs = {}) {
  * Render full screen as 1-bit BMP for e-ink devices
  * Uses same rendering as renderFullScreen but outputs BMP format
  * V13.6: Now async to support footer icon loading
+ *
+ * @param {Object} data - Dashboard data model
+ * @param {Object} [prefs={}] - User preferences
+ * @param {Object} [options={}] - Render options
+ * @param {number} [options.width=800] - Display width in pixels
+ * @param {number} [options.height=480] - Display height in pixels
  */
-export async function renderFullScreenBMP(data, prefs = {}) {
+export async function renderFullScreenBMP(data, prefs = {}, options = {}) {
   // V13.6: Preload footer icon before rendering
   await preloadFooterIcon();
-  const canvas = _renderFullScreenCanvas(data, prefs);
+  const displayWidth = options.width || REF_W;
+  const displayHeight = options.height || REF_H;
+  const canvas = _renderFullScreenCanvas(data, prefs, displayWidth, displayHeight);
   return canvasToBMP(canvas);
 }
 
@@ -3586,45 +3765,53 @@ export async function renderFullScreenBMP(data, prefs = {}) {
 
 /**
  * Render a test pattern for display calibration
+ *
+ * @param {Object} [options={}] - Render options
+ * @param {number} [options.width=800] - Display width in pixels
+ * @param {number} [options.height=480] - Display height in pixels
  */
-export function renderTestPattern() {
-  const canvas = createCanvas(800, 480);
+export function renderTestPattern(options = {}) {
+  const w = options.width || REF_W;
+  const h = options.height || REF_H;
+  const canvas = createCanvas(w, h);
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
   // White background
   ctx.fillStyle = '#FFF';
-  ctx.fillRect(0, 0, 800, 480);
-  
+  ctx.fillRect(0, 0, w, h);
+
   // Black border
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 2;
-  ctx.strokeRect(1, 1, 798, 478);
-  
+  ctx.strokeRect(1, 1, w - 2, h - 2);
+
   // Grid pattern
   ctx.lineWidth = 1;
-  for (let x = 0; x <= 800; x += 100) {
+  const gridX = Math.round(100 * w / REF_W);
+  const gridY = Math.round(60 * h / REF_H);
+  for (let x = 0; x <= w; x += gridX) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
-    ctx.lineTo(x, 480);
+    ctx.lineTo(x, h);
     ctx.stroke();
   }
-  for (let y = 0; y <= 480; y += 60) {
+  for (let y = 0; y <= h; y += gridY) {
     ctx.beginPath();
     ctx.moveTo(0, y);
-    ctx.lineTo(800, y);
+    ctx.lineTo(w, y);
     ctx.stroke();
   }
-  
+
   // Center text
   ctx.fillStyle = '#000';
   ctx.font = 'bold 24px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('CCDash Test Pattern', 400, 240);
+  ctx.fillText('CCDash Test Pattern', w / 2, h / 2);
   ctx.font = '16px Inter, sans-serif';
-  ctx.fillText('800 × 480', 400, 280);
-  
+  ctx.fillText(`${w} x ${h}`, w / 2, h / 2 + 40);
+
   return canvasToBMP(canvas);
 }
 
@@ -3641,8 +3828,14 @@ export function renderZones(data, forceAll = false) {
   return result;
 }
 
-export async function renderFullDashboard(data) {
-  return await renderFullScreen(data);
+/**
+ * Render full dashboard as PNG (backward-compatible alias)
+ *
+ * @param {Object} data - Dashboard data model
+ * @param {Object} [options={}] - Render options { width, height }
+ */
+export async function renderFullDashboard(data, options = {}) {
+  return await renderFullScreen(data, {}, options);
 }
 
 export { ZONES as ZONES_V10 };

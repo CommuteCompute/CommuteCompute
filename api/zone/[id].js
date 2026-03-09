@@ -22,9 +22,12 @@ import { renderSingleZone, renderFullScreen, ZONES } from '../../src/services/cc
 import { getScenario } from '../../src/services/journey-scenarios.js';
 import { createCanvas } from '@napi-rs/canvas';
 import PreferencesManager from '../../src/data/preferences-manager.js';
+import { getMelbourneTime, formatTime, formatDateParts } from '../../src/utils/time-format.js';
+import { decodeConfigToken } from '../../src/utils/config-token.js';
 
 /**
  * Generate ETag from buffer content
+ * Zone-specific: used for single-zone BMP ETag caching
  */
 function generateETag(buffer) {
   return '"' + createHash('md5').update(buffer).digest('hex').substring(0, 16) + '"';
@@ -32,22 +35,23 @@ function generateETag(buffer) {
 
 /**
  * Render an empty white zone
+ * Zone-specific: BMP rendering for empty zones
  */
 function renderEmptyZone(zone) {
   const { w, h } = zone;
-  
+
   const bytesPerRow = Math.ceil(w / 8);
   const paddedBytesPerRow = Math.ceil(bytesPerRow / 4) * 4;
   const pixelDataSize = paddedBytesPerRow * h;
   const fileSize = 62 + pixelDataSize;
-  
+
   const buffer = Buffer.alloc(fileSize, 0);
-  
+
   // BMP header
   buffer.write('BM', 0);
   buffer.writeUInt32LE(fileSize, 2);
   buffer.writeUInt32LE(62, 10);
-  
+
   // DIB header
   buffer.writeUInt32LE(40, 14);
   buffer.writeInt32LE(w, 18);
@@ -59,37 +63,38 @@ function renderEmptyZone(zone) {
   buffer.writeUInt32LE(2835, 42);
   buffer.writeUInt32LE(2, 46);
   buffer.writeUInt32LE(2, 50);
-  
+
   // Color table: white=0, black=1
   buffer.writeUInt32LE(0x00FFFFFF, 54);
   buffer.writeUInt32LE(0x00000000, 58);
-  
+
   // Pixel data: all white (0x00 = color 0 = white)
   // Buffer already initialized to 0, so it's all white
-  
+
   return buffer;
 }
 
 /**
  * Render a simple divider line zone (2px black line)
+ * Zone-specific: BMP rendering for divider zones
  */
 function renderDividerZone(zone) {
   const { w, h } = zone;
-  
+
   // Calculate BMP sizes
   const bytesPerRow = Math.ceil(w / 8);
   const paddedBytesPerRow = Math.ceil(bytesPerRow / 4) * 4;
   const pixelDataSize = paddedBytesPerRow * h;
   const fileSize = 62 + pixelDataSize;
-  
+
   const buffer = Buffer.alloc(fileSize);
-  
+
   // BMP header
   buffer.write('BM', 0);
   buffer.writeUInt32LE(fileSize, 2);
   buffer.writeUInt32LE(0, 6);
   buffer.writeUInt32LE(62, 10);
-  
+
   // DIB header
   buffer.writeUInt32LE(40, 14);
   buffer.writeInt32LE(w, 18);
@@ -102,11 +107,11 @@ function renderDividerZone(zone) {
   buffer.writeUInt32LE(2835, 42);
   buffer.writeUInt32LE(2, 46);
   buffer.writeUInt32LE(2, 50);
-  
+
   // Color table
   buffer.writeUInt32LE(0x00FFFFFF, 54);  // White
   buffer.writeUInt32LE(0x00000000, 58);  // Black
-  
+
   // Pixel data - all black (0x00 = index 0 = white? No wait, 1-bit: 0=first color, 1=second)
   // For a divider, we want all black pixels, so all bits = 1
   const pixelOffset = 62;
@@ -115,59 +120,12 @@ function renderDividerZone(zone) {
       buffer[pixelOffset + row * paddedBytesPerRow + col] = 0xFF;  // All pixels = color 1 = black
     }
   }
-  
+
   return buffer;
 }
 
 // Singleton engine instance (keyed by token for multi-user support)
 let engineCache = new Map();
-
-/**
- * Decode config token from device URL
- */
-function decodeConfigToken(token) {
-  try {
-    const json = Buffer.from(token, 'base64url').toString('utf8');
-    const minified = JSON.parse(json);
-
-    return {
-      addresses: minified.a || {},
-      journey: {
-        transitRoute: minified.j || {},
-        arrivalTime: minified.t || '09:00',
-        coffeeEnabled: minified.c !== false
-      },
-      locations: minified.l || {},
-      state: minified.s || 'VIC',
-      api: {
-        key: minified.k || ''
-      },
-      cafe: minified.cf || null,
-      apiMode: minified.m || 'cached'
-    };
-  } catch (error) {
-    return null;
-  }
-}
-
-function getMelbourneTime() {
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'Australia/Melbourne' }));
-}
-
-function formatTime(date) {
-  const h = date.getHours();
-  const m = date.getMinutes();
-  return `${h}:${m.toString().padStart(2, '0')}`;
-}
-
-function formatDateParts(date) {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  return {
-    day: days[date.getDay()],
-    date: `${date.getDate()} ${months[date.getMonth()]}`
-  };
-}
 
 async function getEngine(token = null) {
   // Use token-specific engine if token provided
@@ -176,7 +134,7 @@ async function getEngine(token = null) {
   if (!engineCache.has(cacheKey)) {
     const engine = new CommuteCompute();
 
-    // If token provided, decode and use config
+    // If token provided, decode and use config (shared config-token.js module)
     if (token) {
       const config = decodeConfigToken(token);
       if (config) {
@@ -213,6 +171,7 @@ async function getEngine(token = null) {
 
 /**
  * Build leg title from route leg
+ * Zone-specific: [id].js variant with case-insensitive destination matching
  */
 function buildLegTitle(leg) {
   const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
@@ -235,6 +194,7 @@ function buildLegTitle(leg) {
 
 /**
  * Build leg subtitle
+ * Zone-specific: [id].js variant with simplified subtitle format
  */
 function buildLegSubtitle(leg, transitData) {
   switch (leg.type) {
@@ -254,6 +214,8 @@ function buildLegSubtitle(leg, transitData) {
 
 /**
  * Build journey legs from route
+ * Zone-specific: [id].js variant with simple leg building
+ * // TODO: Consider importing from shared module
  */
 function buildJourneyLegs(route, transitData, coffeeDecision) {
   if (!route?.legs) return [];

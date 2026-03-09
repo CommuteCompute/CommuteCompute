@@ -8,7 +8,7 @@
 
 **Version:** 3.1
 **Last Updated:** 2026-02-16
-**System Version:** v4.2.0 (CCDashDesignV15.0)
+**System Version:** v5.0.0 (CCDashDesignV16.0)
 **Licence:** AGPL-3.0 Dual Licence
 
 > For detailed technical setup, see [SETUP_GUIDE.md](../../SETUP_GUIDE.md).

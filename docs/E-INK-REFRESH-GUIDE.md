@@ -5,7 +5,7 @@
 # E-ink Display Refresh Guide
 
 **For Commute Compute(TM) Custom Firmware (CCFirm v8.1.0)**
-**System Version:** v4.2.0 (CCDashDesignV15.0)
+**System Version:** v5.0.0 (CCDashDesignV16.0)
 **Last Updated:** 2026-02-06
 
 ---
@@ -308,7 +308,7 @@ screen /dev/cu.usbmodem* 115200
 ---
 
 **Last Updated:** 2026-02-06
-**Applies To:** Commute Compute(TM) v4.2.0+ (CCDashDesignV15.0)
+**Applies To:** Commute Compute(TM) v5.0.0+ (CCDashDesignV16.0)
 **Firmware Version:** CCFirm v8.1.0
 
 (c) 2026 Commute Compute(TM) System by Angus Bergman -- AGPL-3.0 Dual Licence

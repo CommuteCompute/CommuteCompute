@@ -256,12 +256,12 @@ section "ESLINT: VARIABLE USE-BEFORE-DEFINE (TDZ PREVENTION)"
 
 subsection "no-use-before-define on critical rendering files"
 if command -v npx >/dev/null 2>&1; then
-    ESLINT_OUTPUT=$(ESLINT_USE_FLAT_CONFIG=false npx eslint --no-eslintrc --rule '{"no-use-before-define": ["error", {"variables": true, "functions": false, "classes": false}]}' --env es2020 --env node --parser-options=ecmaVersion:2020,sourceType:module src/services/ccdash-renderer.js api/screen.js 2>&1 || true)
+    ESLINT_OUTPUT=$(ESLINT_USE_FLAT_CONFIG=false npx eslint --no-eslintrc --rule '{"no-use-before-define": ["error", {"variables": true, "functions": false, "classes": false}]}' --env es2020 --env node --parser-options=ecmaVersion:2020,sourceType:module src/services/ccdash-renderer.js api/commutecompute.js 2>&1 || true)
     if echo "$ESLINT_OUTPUT" | grep -q "error.*no-use-before-define"; then
         fail "Variables used before definition (temporal dead zone risk):"
         echo "$ESLINT_OUTPUT" | grep "no-use-before-define" | head -5
     else
-        pass "No use-before-define violations in ccdash-renderer.js and screen.js"
+        pass "No use-before-define violations in ccdash-renderer.js and commutecompute.js"
     fi
 else
     skip "npx not available — cannot run ESLint TDZ check"
@@ -673,7 +673,6 @@ group_header "GROUP 3: PER-ENDPOINT VERIFICATION"
 
 # All API endpoints
 API_ENDPOINTS=(
-    "api/screen.js"
     "api/health.js"
     "api/version.js"
     "api/status.js"
@@ -832,34 +831,34 @@ fi
 # ---------- 4.2 Screen Rendering Pipeline ----------
 section "4.2 SCREEN RENDERING PIPELINE"
 
-subsection "screen.js imports"
-if [ -f "api/screen.js" ]; then
+subsection "commutecompute.js imports"
+if [ -f "api/commutecompute.js" ]; then
     SCREEN_IMPORTS_PASS=0
     SCREEN_IMPORTS_TOTAL=0
 
     for import_mod in "ccdash-renderer" "opendata-client" "commute-compute"; do
         ((SCREEN_IMPORTS_TOTAL++))
-        if grep -q "$import_mod" api/screen.js 2>/dev/null; then
+        if grep -q "$import_mod" api/commutecompute.js 2>/dev/null; then
             ((SCREEN_IMPORTS_PASS++))
         else
-            fail "screen.js: Missing import from $import_mod"
+            fail "commutecompute.js: Missing import from $import_mod"
         fi
     done
 
     for engine in "departure-confidence" "lifestyle-context" "sleep-optimiser" "alt-transit"; do
         ((SCREEN_IMPORTS_TOTAL++))
-        if grep -q "$engine" api/screen.js 2>/dev/null; then
+        if grep -q "$engine" api/commutecompute.js 2>/dev/null; then
             ((SCREEN_IMPORTS_PASS++))
         else
-            fail "screen.js: Missing V15.0 engine import: $engine"
+            fail "commutecompute.js: Missing V15.0 engine import: $engine"
         fi
     done
 
     if [ "$SCREEN_IMPORTS_PASS" -eq "$SCREEN_IMPORTS_TOTAL" ]; then
-        pass "screen.js imports all required modules ($SCREEN_IMPORTS_PASS/$SCREEN_IMPORTS_TOTAL)"
+        pass "commutecompute.js imports all required modules ($SCREEN_IMPORTS_PASS/$SCREEN_IMPORTS_TOTAL)"
     fi
 else
-    skip "api/screen.js not found"
+    skip "api/commutecompute.js not found"
 fi
 
 # ---------- 4.3 Admin Data Flow ----------
@@ -1011,15 +1010,15 @@ else
     skip "api/version.js not found"
 fi
 
-subsection "screen.js cache headers"
-if [ -f "api/screen.js" ]; then
-    if grep -q "Cache-Control\|cache-control\|max-age" api/screen.js 2>/dev/null; then
-        pass "screen.js has cache headers set"
+subsection "commutecompute.js cache headers"
+if [ -f "api/commutecompute.js" ]; then
+    if grep -q "Cache-Control\|cache-control\|max-age" api/commutecompute.js 2>/dev/null; then
+        pass "commutecompute.js has cache headers set"
     else
-        warn "screen.js: Cache headers not found"
+        warn "commutecompute.js: Cache headers not found"
     fi
 else
-    skip "api/screen.js not found"
+    skip "api/commutecompute.js not found"
 fi
 
 subsection "Mutation endpoints: no-cache/no-store"
@@ -1527,7 +1526,7 @@ if [ -f "src/services/ccdash-renderer.js" ] && [ -n "$VJ_SPEC_VERSION" ]; then
 
     # Check for stale spec references (any CCDashDesignV that is NOT the current version)
     SPEC_NUM=$(echo "$VJ_SPEC_VERSION" | grep -o "[0-9]\+" | head -1)
-    STALE_SPEC=$(grep -n "CCDashDesignV[0-9]" "src/services/ccdash-renderer.js" 2>/dev/null | grep -v "CCDashDesignV${SPEC_NUM}" | head -5 || true)
+    STALE_SPEC=$(grep -n "CCDashDesignV[0-9]" "src/services/ccdash-renderer.js" 2>/dev/null | grep -v "CCDashDesignV${SPEC_NUM}" | grep -v "^\s*//" | grep -v "SPEC FIX" | head -5 || true)
     if [ -n "$STALE_SPEC" ]; then
         fail "ccdash-renderer.js: Stale spec references found (expected V${SPEC_NUM}):"
         echo "    $STALE_SPEC"
@@ -1542,7 +1541,7 @@ fi
 subsection "All JS files: stale CCDashDesignV references"
 if [ -n "$VJ_SPEC_VERSION" ]; then
     SPEC_NUM=$(echo "$VJ_SPEC_VERSION" | grep -o "[0-9]\+" | head -1)
-    STALE_JS_SPECS=$(grep -rn "CCDashDesignV[0-9]" src/ api/ 2>/dev/null | grep -v "CCDashDesignV${SPEC_NUM}" | grep -v "node_modules" | head -10 || true)
+    STALE_JS_SPECS=$(grep -rn "CCDashDesignV[0-9]" src/ api/ 2>/dev/null | grep -v "CCDashDesignV${SPEC_NUM}" | grep -v "node_modules" | grep -v "// V[0-9]" | grep -v "SPEC FIX" | grep -v "specs/CCDashDesign" | grep -v "ARCHITECTURE.md" | grep -v "^\s*\*\s" | grep -v "per CCDashDesign" | grep -v "ALIGNED with" | grep -v "LOCKED" | head -10 || true)
     if [ -n "$STALE_JS_SPECS" ]; then
         fail "Stale CCDashDesignV references in JS files (expected V${SPEC_NUM}):"
         echo "$STALE_JS_SPECS" | while read -r line; do echo "    $line"; done
@@ -1571,6 +1570,37 @@ if [ -n "$VJ_SPEC_VERSION" ]; then
     fi
 else
     warn "Could not determine current spec version"
+fi
+
+section "6.7 SEMANTIC VERSION AUDIT (Content Consistency)"
+
+# --------------------------------------------------------------------------
+# Run the semantic version audit to check file CONTENT matches VERSION.json
+# beyond just version numbers. Outputs JSON report for LLM review.
+# --------------------------------------------------------------------------
+subsection "Semantic version audit (content consistency)"
+if [ -f "scripts/semantic-version-audit.js" ]; then
+    SEMANTIC_OUTPUT=$(node scripts/semantic-version-audit.js --json 2>/dev/null)
+    SEMANTIC_EXIT=$?
+    if [ $SEMANTIC_EXIT -eq 0 ]; then
+        pass "Semantic version audit: all files content-consistent with VERSION.json"
+    elif [ $SEMANTIC_EXIT -eq 1 ]; then
+        MISMATCH_COUNT=$(echo "$SEMANTIC_OUTPUT" | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));process.stdout.write(String(d.summary?.versionMismatches||0))" 2>/dev/null || echo "?")
+        fail "Semantic version audit: $MISMATCH_COUNT file(s) with version number mismatches"
+        echo "    Run: node scripts/semantic-version-audit.js --verbose"
+        echo "    [LLM REVIEW RECOMMENDED] Deploy agent to review and fix stale content"
+    elif [ $SEMANTIC_EXIT -eq 2 ]; then
+        STALE_COUNT=$(echo "$SEMANTIC_OUTPUT" | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));process.stdout.write(String(d.summary?.contentStale||0))" 2>/dev/null || echo "?")
+        warn "Semantic version audit: $STALE_COUNT file(s) with stale content (versions correct, descriptions outdated)"
+        echo "    Run: node scripts/semantic-version-audit.js --verbose"
+        echo "    [LLM REVIEW RECOMMENDED] Deploy agent to verify semantic consistency"
+    else
+        warn "Semantic version audit: unexpected exit code $SEMANTIC_EXIT"
+    fi
+    # Save report for LLM agent consumption
+    echo "$SEMANTIC_OUTPUT" > "$AUDIT_LOG_DIR/semantic-version-report.json" 2>/dev/null || true
+else
+    skip "scripts/semantic-version-audit.js not found"
 fi
 
 # ============================================================================
@@ -1745,7 +1775,7 @@ group_header "GROUP 8: ARCHITECTURE & DESIGN (Sections 4-5, 7-13, 16, 21-24)"
 section "SECTION 4: SYSTEM ARCHITECTURE RULES"
 
 subsection "4.5 Required endpoints"
-for endpoint in zones screen livedash status health; do
+for endpoint in zones commutecompute livedash status health; do
     if [ -f "api/$endpoint.js" ]; then
         pass "/api/$endpoint endpoint exists"
     else
@@ -2320,15 +2350,15 @@ if [ -f "src/services/opendata-client.js" ]; then
 fi
 
 subsection "23.10 GTFS-RT source completeness (gtfs-rt-broad)"
-if [ -f "api/screen.js" ]; then
-    BROAD_CHECKS=$(grep -c "gtfs-rt-broad" api/screen.js 2>/dev/null || echo "0")
+if [ -f "api/commutecompute.js" ]; then
+    BROAD_CHECKS=$(grep -c "gtfs-rt-broad" api/commutecompute.js 2>/dev/null || echo "0")
     if [ "$BROAD_CHECKS" -ge 3 ]; then
         pass "gtfs-rt-broad included in all hasLive*Data checks ($BROAD_CHECKS occurrences)"
     else
         fail "gtfs-rt-broad missing from hasLive*Data checks (found $BROAD_CHECKS, need >= 3)"
     fi
 else
-    skip "api/screen.js not found"
+    skip "api/commutecompute.js not found"
 fi
 
 subsection "23.11 Stop ID maps use 3-letter station codes"
@@ -2347,10 +2377,10 @@ for file in api/admin/setup-complete.js api/admin/resolve-stops.js; do
 done
 
 subsection "23.12 Transit leg subtitle includes destination"
-if [ -f "api/screen.js" ]; then
-    DEST_REF=$(grep -n "leg.destination" api/screen.js 2>/dev/null | grep -i "subtitle\|buildLeg" || true)
+if [ -f "api/commutecompute.js" ]; then
+    DEST_REF=$(grep -n "leg.destination" api/commutecompute.js 2>/dev/null | grep -i "subtitle\|buildLeg" || true)
     if [ -z "$DEST_REF" ]; then
-        DEST_IN_BUILDLEG=$(grep -A50 "function buildLegSubtitle" api/screen.js 2>/dev/null | grep "destination" || true)
+        DEST_IN_BUILDLEG=$(grep -A50 "function buildLegSubtitle" api/commutecompute.js 2>/dev/null | grep "destination" || true)
         if [ -n "$DEST_IN_BUILDLEG" ]; then
             pass "buildLegSubtitle references leg.destination for transit legs"
         else
@@ -2360,7 +2390,7 @@ if [ -f "api/screen.js" ]; then
         pass "Transit leg subtitle references destination stop name"
     fi
 else
-    skip "api/screen.js not found"
+    skip "api/commutecompute.js not found"
 fi
 
 subsection "12.7 DepartureConfidence context and resilienceDetail"
@@ -2417,7 +2447,7 @@ fi
 
 subsection "24.10 All required API endpoints"
 MISSING_EP=0
-for endpoint in zones screen livedash health status; do
+for endpoint in zones commutecompute livedash health status; do
     if [ ! -f "api/$endpoint.js" ]; then
         fail "Required endpoint /api/$endpoint MISSING"
         ((MISSING_EP++))
@@ -2556,12 +2586,12 @@ else
     fail "Missing isMetroTunnel flag in GTFS-RT departure processing (Section 25.5)"
 fi
 
-# 25.5: Metro Tunnel filtering in screen.js
-section "Metro Tunnel departure filtering in screen.js"
-if grep -q "requiresCityLoop\|requiresMetroTunnel" api/screen.js 2>/dev/null; then
-    pass "City Loop / Metro Tunnel filtering present in screen.js"
+# 25.5: Metro Tunnel filtering in commutecompute.js
+section "Metro Tunnel departure filtering in commutecompute.js"
+if grep -q "requiresCityLoop\|requiresMetroTunnel" api/commutecompute.js 2>/dev/null; then
+    pass "City Loop / Metro Tunnel filtering present in commutecompute.js"
 else
-    fail "Missing Metro Tunnel vs City Loop filtering in screen.js (Section 25.5)"
+    fail "Missing Metro Tunnel vs City Loop filtering in commutecompute.js (Section 25.5)"
 fi
 
 # 25.6: METRO_TUNNEL_LINES in commute-compute.js

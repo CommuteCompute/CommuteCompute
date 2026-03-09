@@ -4,7 +4,7 @@
 
 # Known Issues & Hardware Quirks
 
-**System Version:** v4.2.0 (CCDashDesignV15.0)
+**System Version:** v5.0.0 (CCDashDesignV16.0)
 **Last Updated:** 2026-02-16
 
 ---

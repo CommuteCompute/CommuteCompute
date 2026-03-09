@@ -1,32 +1,32 @@
 {
   "system": {
-    "version": "4.2.0",
+    "version": "5.0.0",
     "name": "Commute Compute System",
-    "releaseDate": "2026-02-13",
-    "codename": "Intelligence Pipeline"
+    "releaseDate": "2026-03-02",
+    "codename": "Unified Engine"
   },
   "components": {
     "commutecompute": {
-      "version": "3.1",
+      "version": "4.0",
       "name": "CommuteCompute Engine",
-      "description": "Real-time multi-modal journey planning with Metro Tunnel citybound detection, direction-based train filtering, route-aware transit filtering, transit-to-walk conversion, suburb extraction, strictly live GTFS-RT, Departure Confidence, Sleep Optimizer, Alt Transit, Lifestyle Context, Mindset analysis",
+      "description": "GTFS coordinate-based stop detection (226 metro + 1637 tram + 4151 bus stops), runtime line verification for alighting stops, no hardcoded station fallbacks, shared haversine utility, real-time multi-modal journey planning with Metro Tunnel citybound detection, direction-based train filtering, route-aware transit filtering, transit-to-walk conversion, suburb extraction, strictly live GTFS-RT, Departure Confidence, Sleep Optimizer, Alt Transit, Lifestyle Context, Mindset analysis",
       "locked": false,
-      "lastUpdated": "2026-02-13"
+      "lastUpdated": "2026-03-02"
     },
     "renderer": {
-      "version": "2.1",
+      "version": "3.0",
       "name": "CCDash Renderer",
-      "spec": "CCDashDesignV15.0",
-      "description": "V15.0 spec-compliant rendering with lifestyle obligation styling, transit-to-walk display, suburb locations, unified cafe closed/skipped rendering, confidence labels, sleep mode, mindset status, lifestyle context display",
+      "spec": "CCDashDesignV16.0",
+      "description": "V16.0 spec-compliant rendering with transit countdown fix (trusts leg.minutes, 180-min sanity cap), cafe closed case-insensitive matching, confidence context line rendering, subtitle overflow protection, lifestyle obligation styling, transit-to-walk display, suburb locations, unified cafe closed/skipped rendering, confidence labels, sleep mode, mindset status, lifestyle context display",
       "locked": false,
-      "lastUpdated": "2026-02-13"
+      "lastUpdated": "2026-03-02"
     },
     "adminPanel": {
-      "version": "5.0.0",
+      "version": "6.0.0",
       "file": "admin.html",
-      "description": "Admin Panel with KV-persisting address edits, geocoding, Places API autocomplete, dynamic version loading, alt transit data, TRMNL-free branding",
+      "description": "Admin Panel unified with single /api/commutecompute endpoint (no separate screen.js), KV-persisting address edits, geocoding, Places API autocomplete, dynamic version loading, alt transit data, TRMNL-free branding",
       "locked": false,
-      "lastUpdated": "2026-02-13"
+      "lastUpdated": "2026-03-02"
     },
     "setupWizard": {
       "version": "2.0.0",
@@ -43,17 +43,17 @@
       "lastUpdated": "2026-02-12"
     },
     "livedash": {
-      "version": "3.0",
-      "description": "CC LiveDash™ Multi-Device Endpoint",
+      "version": "3.1",
+      "description": "CC LiveDash™ Multi-Device Endpoint — deduplicated, imports shared config-token decoder",
       "locked": false,
-      "lastUpdated": "2026-02-12"
+      "lastUpdated": "2026-03-02"
     }
   },
   "backend": {
     "server": {
-      "version": "2.1.0",
-      "description": "Vercel Serverless API",
-      "lastUpdated": "2026-02-06"
+      "version": "3.0.0",
+      "description": "Unified Vercel Serverless API — single /api/commutecompute endpoint serves JSON, PNG, and BMP. /api/screen backward-compatible via rewrite.",
+      "lastUpdated": "2026-03-02"
     }
   },
   "firmware": {
@@ -71,7 +71,7 @@
   },
   "specs": {
     "dashboard": {
-      "version": "CCDashDesignV15.0",
+      "version": "CCDashDesignV16.0",
       "status": "UNLOCKED",
       "lockedDate": null
     }
@@ -86,6 +86,26 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.0.0",
+      "date": "2026-03-02",
+      "changes": [
+        "UNIFIED ENGINE: Merged api/screen.js into api/commutecompute.js — single endpoint for admin JSON, e-ink PNG/BMP, and debug diagnostics. Zero divergence between admin and device output.",
+        "GTFS coordinate-based stop detection: findNearestStops() searches 226 metro stations, 1637 tram stops, 4151 bus stops by proximity. Replaces suburb name matching as primary detection.",
+        "Engine alighting intelligence: coordinate-based destination resolution, no hardcoded Flinders Street Station fallback. Alighting stops determined by proximity to work coordinates.",
+        "Shared haversine utility (src/utils/haversine.js): single source of truth replacing 3 duplicate implementations",
+        "Shared utility extraction: time-format.js, fetch-retry.js, suburb-extract.js, config-token.js — 10 functions deduplicated across 6+ endpoint files",
+        "Renderer CCDash v3.0: transit countdown fix (trusts leg.minutes, 180-min sanity cap), cafe closed case-insensitive matching, confidence context line rendering, subtitle overflow protection",
+        "AltTransit gate fix: only activates when ALL transit is cancelled/suspended (not on any disruption or low confidence)",
+        "Walk merge name resolution: uses stopName/stationName before generic 'destination'",
+        "Fullscreen/livedash endpoint deduplication: removed unused imports, shared config-token decoder",
+        "Zone endpoint deduplication: 15 duplicate functions eliminated across 4 zone files",
+        "Backward-compatible vercel.json rewrite: /api/screen → /api/commutecompute (firmware devices continue to work)",
+        "Format detection: POST defaults to JSON (admin), GET defaults to PNG (device)",
+        "GTFS reference regenerated with coordinates: VIC_METRO_STATIONS now includes lat/lon, new VIC_TRAM_STOPS_WITH_COORDS and VIC_BUS_STOPS_WITH_COORDS exports",
+        "System v5.0.0, Engine v4.0, Renderer v3.0, Spec CCDashDesignV16.0 UNLOCKED"
+      ]
+    },
     {
       "version": "4.2.0",
       "date": "2026-02-13",

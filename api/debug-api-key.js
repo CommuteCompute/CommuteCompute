@@ -10,15 +10,18 @@
  */
 
 import { getTransitApiKey, getKvEnvStatus, getGoogleApiKey, getUserState } from '../src/data/kv-preferences.js';
+import { requireAuth, setAdminCorsHeaders } from '../src/utils/auth-middleware.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
+  setAdminCorsHeaders(res);
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
+
+  const authError = requireAuth(req);
+  if (authError) return res.status(401).json(authError);
 
   try {
     // Check KV environment status
@@ -52,7 +55,7 @@ export default async function handler(req, res) {
           statusText: response.statusText
         };
       } catch (e) {
-        apiTestResult = { error: e.message };
+        apiTestResult = { error: 'API test request failed' };
       }
     }
 
@@ -81,7 +84,7 @@ export default async function handler(req, res) {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      error: error.message
+      error: 'Internal diagnostic error'
     });
   }
 }

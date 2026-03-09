@@ -5,7 +5,7 @@
 # Victorian Transport - GTFS Realtime API Protocol
 **For Commute Compute Users in Victoria**
 **Date**: 2026-02-06
-**System Version:** v4.2.0 (CCDashDesignV15.0)
+**System Version:** v5.0.0 (CCDashDesignV16.0)
 **Status**: OFFICIAL PROTOCOL FOR VICTORIAN USERS
 
 ---
@@ -592,7 +592,7 @@ app.get('/api/victoria/realtime', async (req, res) => {
 
 **Protocol Version**: 1.1
 **Last Updated**: 2026-02-06
-**Applies To**: Commute Compute(TM) v4.2.0+ (CCDashDesignV15.0)
+**Applies To**: Commute Compute(TM) v5.0.0+ (CCDashDesignV16.0)
 **Region**: Victoria, Australia Only
 
 **Status**: VERIFIED & PRODUCTION READY

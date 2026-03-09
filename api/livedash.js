@@ -1,14 +1,20 @@
 /**
  * CC LiveDash™ API Endpoint
  * Part of the Commute Compute System™
- * 
- * Renders the CommuteCompute™ dashboard for different e-ink devices.
- * 
+ *
+ * Thin wrapper around src/services/livedash.js (CC LiveDash™ core).
+ * Handles config token decoding (via shared src/utils/config-token.js),
+ * KV preferences loading, filesystem fallback, and output format routing
+ * (PNG, JSON, HTML preview).
+ *
+ * Consolidation: Local decodeConfigToken removed — uses shared module.
+ *
  * Query params:
  * - device: Device ID (trmnl-og, trmnl-mini, kindle-pw3, etc.)
  * - format: Output format (png, json, html)
  * - refresh: Force refresh (true/false)
- * 
+ * - token: Config token for serverless mode
+ *
  * Copyright (c) 2026 Angus Bergman
  * SPDX-License-Identifier: AGPL-3.0-or-later
  * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
@@ -16,6 +22,7 @@
 
 import LiveDash, { DEVICE_CONFIGS } from '../src/services/livedash.js';
 import { getPreferences, getTransitApiKey } from '../src/data/kv-preferences.js';
+import { decodeConfigToken } from '../src/utils/config-token.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -23,39 +30,27 @@ import path from 'path';
 let liveDash = null;
 
 /**
- * Decode config token from webhook URL
- */
-function decodeConfigToken(token) {
-  try {
-    const json = Buffer.from(token, 'base64url').toString('utf8');
-    return JSON.parse(json);
-  } catch (error) {
-    return null;
-  }
-}
-
-/**
  * Load journey configuration from config token or filesystem fallback
  */
 async function loadJourneyConfig(configToken = null) {
   // First try config token (for Vercel serverless)
   if (configToken) {
-    const minified = decodeConfigToken(configToken);
-    if (minified) {
+    const decoded = decodeConfigToken(configToken);
+    if (decoded) {
       return {
-        homeAddress: minified.a?.home,
-        homeLocation: minified.l?.home,
-        workAddress: minified.a?.work,
-        workLocation: minified.l?.work,
-        cafeLocation: minified.cf || minified.l?.cafe,
-        targetArrival: minified.t || '09:00',
-        preferCoffee: minified.c !== false,
+        homeAddress: decoded.addresses?.home,
+        homeLocation: decoded.locations?.home,
+        workAddress: decoded.addresses?.work,
+        workLocation: decoded.locations?.work,
+        cafeLocation: decoded.cafe || decoded.locations?.cafe,
+        targetArrival: decoded.journey?.arrivalTime || '09:00',
+        preferCoffee: decoded.journey?.coffeeEnabled !== false,
         walkToWork: 5,
         homeToCafe: 3,
         makeCoffee: 4,
         cafeToTransit: 2,
-        preferredRoute: minified.j || null,
-        apiMode: minified.m || 'cached'
+        preferredRoute: decoded.journey?.transitRoute || null,
+        apiMode: decoded.apiMode || 'live'
       };
     }
   }
@@ -541,7 +536,7 @@ function generateHtmlPreview(device, config) {
         <div class="footer-legal">
             © 2025-2026 <a href="https://gitlab.com/angusbergman" target="_blank" rel="noopener">Angus Bergman</a> •
             <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a> •
-            Commute Compute&#8482; System v4.2.0
+            Commute Compute&#8482; System v5.0.0
         </div>
     </footer>
     
