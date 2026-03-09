@@ -2,6 +2,8 @@
 // Copyright (c) 2026 Angus Bergman
 // Part of the Commute Compute System™ — https://gitlab.com/angusbergman/commute-compute-system
 
+import Redis from 'ioredis';
+
 /**
  * KV-Based Preferences Storage
  *
@@ -30,7 +32,8 @@ const KEYS = {
   PREFERENCES: 'cc:preferences',
   STATE: 'cc:state',
   DEVICE_STATUS: 'cc:device:status',  // V13.6: Device battery and status
-  SETUP_COMPLETE: 'cc:setup_complete'  // Setup wizard completion flag
+  SETUP_COMPLETE: 'cc:setup_complete',  // Setup wizard completion flag
+  STATION_OVERRIDES: 'cc:station_overrides'  // Issue 12: User station preference overrides
 };
 
 // In-memory fallback for local development (no KV configured)
@@ -46,15 +49,14 @@ let upstashClient = null;
 async function getVercelKv() {
   if (vercelKvClient) return vercelKvClient;
 
-  // Only try if env vars are set
-  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
+  // Check standard KV vars, then Vercel Marketplace prefixed vars (store name: CCKV)
+  const restUrl = process.env.KV_REST_API_URL || process.env.CCKV_REST_API_URL;
+  const restToken = process.env.KV_REST_API_TOKEN || process.env.CCKV_REST_API_TOKEN;
+  if (!restUrl || !restToken) {
     return null;
   }
 
-  vercelKvClient = createRestClient(
-    process.env.KV_REST_API_URL,
-    process.env.KV_REST_API_TOKEN
-  );
+  vercelKvClient = createRestClient(restUrl, restToken);
   return vercelKvClient;
 }
 
@@ -107,16 +109,15 @@ function createRestClient(baseUrl, token) {
 async function getUpstashClient() {
   if (upstashClient) return upstashClient;
 
-  // Try Upstash REST env vars
-  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    upstashClient = createRestClient(
-      process.env.UPSTASH_REDIS_REST_URL,
-      process.env.UPSTASH_REDIS_REST_TOKEN
-    );
+  // Try Upstash REST env vars, then Vercel Marketplace prefixed vars (store name: CCKV)
+  const upstashUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.CCKV_REST_API_URL;
+  const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.CCKV_REST_API_TOKEN;
+  if (upstashUrl && upstashToken) {
+    upstashClient = createRestClient(upstashUrl, upstashToken);
     return upstashClient;
   }
 
-  // Try Upstash REST URL first
+  // Try REDIS_URL as REST client (Upstash URLs only — REST API is Upstash-specific)
   if (process.env.REDIS_URL && process.env.REDIS_URL.includes('upstash.io')) {
     try {
       const redisUrl = process.env.REDIS_URL;
@@ -137,10 +138,7 @@ async function getUpstashClient() {
   // Try Redis Cloud (or other native Redis) via ioredis
   if (process.env.REDIS_URL) {
     try {
-      // Intentional Docker/self-host fallback — ioredis is not declared in package.json
-      // for Vercel deployments. Only triggered when REDIS_URL is set (non-Upstash Redis).
-      const Redis = (await import('ioredis')).default;
-
+      // Wire protocol client for REDIS_URL (works with any Redis provider)
       const client = new Redis(process.env.REDIS_URL, {
         maxRetriesPerRequest: 1,
         connectTimeout: 5000,
@@ -188,8 +186,8 @@ async function getUpstashClient() {
  * Supports: Vercel KV (legacy), Upstash Marketplace, Redis Cloud (native)
  */
 function isKvAvailable() {
-  // Check Vercel KV standard vars (auto-set when you link KV in Vercel dashboard)
-  const hasVercelKv = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+  // Check Vercel KV standard vars or Marketplace prefixed vars (store name: CCKV)
+  const hasVercelKv = !!((process.env.KV_REST_API_URL || process.env.CCKV_REST_API_URL) && (process.env.KV_REST_API_TOKEN || process.env.CCKV_REST_API_TOKEN));
   // Check Upstash direct vars
   const hasUpstash = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
   // Check REDIS_URL (works with both Upstash and Redis Cloud)
@@ -207,6 +205,10 @@ export function getKvEnvStatus() {
     KV_REST_API_URL: process.env.KV_REST_API_URL ? 'set' : 'missing',
     KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN ? 'set' : 'missing',
     KV_URL: process.env.KV_URL ? 'set' : 'missing',
+    // Vercel Marketplace prefixed (store name: CCKV)
+    CCKV_REST_API_URL: process.env.CCKV_REST_API_URL ? 'set' : 'missing',
+    CCKV_REST_API_TOKEN: process.env.CCKV_REST_API_TOKEN ? 'set' : 'missing',
+    CCKV_URL: process.env.CCKV_URL ? 'set' : 'missing',
     // Upstash direct
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL ? 'set' : 'missing',
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN ? 'set' : 'missing',
@@ -292,11 +294,13 @@ async function set(key, value) {
     const client = await getClient();
     if (client) {
       // 5 second timeout to prevent hanging
-      await withTimeout(client.set(key, value), 5000, false);
+      const result = await withTimeout(client.set(key, value), 5000, false);
+      console.log('[KV]', { operation: 'set', key, result, storage: 'redis', timestamp: new Date().toISOString() });
       return true;
     }
+    console.warn('[KV]', { operation: 'set', key, storage: 'memory-fallback', warning: 'No Redis client — data will NOT persist', timestamp: new Date().toISOString() });
     memoryStore.set(key, value);
-    return true;
+    return false;
   } catch (error) {
     console.error('[KV]', { operation: 'set', key, error: error.message, timestamp: new Date().toISOString() });
     memoryStore.set(key, value);
@@ -396,11 +400,13 @@ export async function setDeviceStatus(status) {
   try {
     const client = await getClient();
     if (client) {
-      await withTimeout(client.set(KEYS.DEVICE_STATUS, value, { ex: 86400 }), 5000, false);
+      const result = await withTimeout(client.set(KEYS.DEVICE_STATUS, value, { ex: 86400 }), 5000, false);
+      console.log('[KV]', { operation: 'setDeviceStatus', result, storage: 'redis', timestamp: new Date().toISOString() });
       return true;
     }
+    console.warn('[KV]', { operation: 'setDeviceStatus', storage: 'memory-fallback', warning: 'No Redis client — data will NOT persist', timestamp: new Date().toISOString() });
     memoryStore.set(KEYS.DEVICE_STATUS, value);
-    return true;
+    return false;
   } catch (error) {
     console.error('[KV]', { operation: 'setDeviceStatus', error: error.message, timestamp: new Date().toISOString() });
     memoryStore.set(KEYS.DEVICE_STATUS, value);
@@ -438,6 +444,23 @@ export async function setSetupComplete(value) {
   return await set(KEYS.SETUP_COMPLETE, value);
 }
 
+/**
+ * Get station overrides — user-preferred stops for specific leg types
+ * @returns {Promise<Object|null>} e.g. { tram_board: { stopId: '123', name: 'Tivoli Rd' }, train_board: { ... } }
+ */
+export async function getStationOverrides() {
+  return await get(KEYS.STATION_OVERRIDES);
+}
+
+/**
+ * Set station overrides — persist user stop preferences
+ * @param {Object} overrides - e.g. { tram_board: { stopId: '123', name: 'Tivoli Rd' }, train_board: { stopId: '456', name: 'Hawksburn' } }
+ * @returns {Promise<boolean>}
+ */
+export async function setStationOverrides(overrides) {
+  return await set(KEYS.STATION_OVERRIDES, overrides);
+}
+
 export default {
   getClient,
   getTransitApiKey,
@@ -453,5 +476,7 @@ export default {
   getStorageStatus,
   getSetupComplete,
   setSetupComplete,
+  getStationOverrides,
+  setStationOverrides,
   KEYS
 };

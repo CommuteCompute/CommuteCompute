@@ -34,8 +34,9 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Allow unauthenticated access during first-time setup only (Section 26.3)
-  if (!(await isFirstTimeSetup())) {
+  // GET returns non-sensitive status info — allow unauthenticated so wizard can detect re-setup
+  // POST requires auth unless first-time setup (Section 26.3)
+  if (req.method !== 'GET' && !(await isFirstTimeSetup())) {
     const authError = requireAuth(req);
     if (authError) return res.status(401).json(authError);
   }
@@ -59,6 +60,7 @@ export default async function handler(req, res) {
           available: status.kvAvailable,
           configured: status.hasTransitKey
         },
+        setupComplete: !!setupComplete,
         keys: {
           transit: transitKey ? 'configured' : null,
           google: googleKey ? 'configured' : null
@@ -69,7 +71,7 @@ export default async function handler(req, res) {
 
     // POST: Sync config from Setup Wizard to KV
     if (req.method === 'POST') {
-      const { transitKey, googleKey, state, preferences } = req.body;
+      const { transitKey, googleKey, state, preferences, markSetupComplete } = req.body;
       
       const results = {
         transit: false,
@@ -98,8 +100,10 @@ export default async function handler(req, res) {
         results.preferences = await setPreferences(preferences);
       }
       
-      // Mark setup as complete after all preferences saved
-      await setSetupComplete({ timestamp: new Date().toISOString(), source: 'setup-wizard' });
+      // Only mark setup complete when explicitly requested (prevents premature auth lock during wizard)
+      if (markSetupComplete) {
+        await setSetupComplete({ timestamp: new Date().toISOString(), source: 'setup-wizard' });
+      }
 
       const status = await getStorageStatus();
 

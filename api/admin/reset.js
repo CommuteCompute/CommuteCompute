@@ -20,7 +20,8 @@ const ALL_KEYS = [
   'cc:api:google_key',
   'cc:preferences',
   'cc:state',
-  'cc-profiles'
+  'cc-profiles',
+  'cc:setup_complete'
 ];
 
 export default async function handler(req, res) {

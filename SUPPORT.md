@@ -4,7 +4,7 @@
 
 # Supporting Commute Compute™
 
-**System Version:** v4.2.0
+**System Version:** v5.0.0
 
 > **Looking for technical help?** See the [Setup Guide](SETUP_GUIDE.md), [Complete Beginner Guide](docs/guides/COMPLETE-BEGINNER-GUIDE.md#troubleshooting), or open a [GitLab Issue](https://gitlab.com/angusbergman/commute-compute-system/issues).
 

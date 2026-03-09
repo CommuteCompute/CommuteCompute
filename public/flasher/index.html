@@ -272,10 +272,10 @@
     </section>
 
     <footer class="cc-system-footer">
-      <span>CommuteCompute&#8482; <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.1</span></span>
-      <span>CCDash&#8482; Renderer <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.1</span></span>
+      <span>CommuteCompute&#8482; <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v4.0</span></span>
+      <span>CCDash&#8482; Renderer <span class="cc-footer-version-value" id="cc-footer-renderer-version">v3.0</span></span>
       <span>CCFirm&#8482; <span class="cc-footer-version-value" id="cc-footer-firmware-version">CC-FW-8.1.0</span></span>
-      <span>System <span class="cc-footer-version-value" id="cc-footer-system-version">v4.2.0</span></span>
+      <span>System <span class="cc-footer-version-value" id="cc-footer-system-version">v5.0.0</span></span>
       <span>Build <span id="cc-footer-build-date">--</span></span>
       <span id="cc-footer-update-notice"></span>
       <span>&#169; 2026 Angus Bergman | <a href="/attribution.html">Licensing</a> | <a href="/privacy.html">Privacy</a> | <a href="/legal.html">Legal</a></span>
@@ -410,10 +410,10 @@
         const firmware = document.getElementById('cc-footer-firmware-version');
         const sys = document.getElementById('cc-footer-system-version');
         const build = document.getElementById('cc-footer-build-date');
-        if (commutecompute) commutecompute.textContent = v.components?.commutecompute?.version || 'v3.1';
-        if (renderer) renderer.textContent = v.components?.renderer?.version || 'v2.1';
+        if (commutecompute) commutecompute.textContent = v.components?.commutecompute?.version || 'v4.0';
+        if (renderer) renderer.textContent = v.components?.renderer?.version || 'v3.0';
         if (firmware) firmware.textContent = v.components?.firmware?.version || 'CC-FW-8.1.0';
-        if (sys) sys.textContent = 'v' + (v.system?.version || '4.2.0');
+        if (sys) sys.textContent = 'v' + (v.system?.version || '5.0.0');
         if (build) build.textContent = v.date || new Date().toISOString().split('T')[0];
 
         // Upstream update check (once per session)

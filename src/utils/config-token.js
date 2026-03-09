@@ -45,18 +45,23 @@ export function decodeConfigToken(token) {
     const minified = JSON.parse(json);
 
     // Expand back to full config structure
+    // Supports all minified fields from encodeConfigToken plus
+    // extended fields (t=arrivalTime, c=coffeeEnabled, cf=cafe, m=apiMode)
+    // used by api/livedash.js and api/device/[token].js
     return {
       addresses: minified.a || {},
       journey: {
         transitRoute: minified.j || {},
-        coffeeEnabled: true,
-        arrivalTime: '09:00'
+        coffeeEnabled: minified.c !== false,
+        arrivalTime: minified.t || '09:00'
       },
       locations: minified.l || {},
       state: minified.s || 'VIC',
       api: {
         key: minified.k || ''
       },
+      cafe: minified.cf || null,
+      apiMode: minified.m || 'cached',
       additionalAPIs: {
         google_places: minified.g || ''
       },

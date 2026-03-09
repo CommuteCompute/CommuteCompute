@@ -31,7 +31,7 @@ function decodeConfigToken(token) {
         key: minified.k || ''
       },
       cafe: minified.cf || null,
-      apiMode: minified.m || 'cached',
+      apiMode: minified.m || 'live',
       _fromToken: true,
       _configured: true
     };
@@ -171,7 +171,7 @@ export default async function handler(req, res) {
             hasKey: !!googleKey
           },
           cafe: kvPrefs?.cafe || null,
-          apiMode: kvPrefs?.apiMode || 'cached',
+          apiMode: kvPrefs?.apiMode || 'live',
           // GTFS stop IDs for live departure data (Section 23.1.1)
           trainStopId: kvPrefs?.trainStopId || null,
           tramStopId: kvPrefs?.tramStopId || null,
@@ -196,7 +196,7 @@ export default async function handler(req, res) {
         api: { key: '', hasKey: false },
         google: { key: '', hasKey: false },
         cafe: null,
-        apiMode: 'cached',
+        apiMode: 'live',
         // GTFS stop IDs for live departure data (Section 23.1.1)
         trainStopId: null,
         tramStopId: null,
@@ -257,7 +257,7 @@ async function handlePost(req, res) {
     } else if (field === 'tramStopId') {
       updated.tramStopId = value || null;
     } else if (field === 'apiMode') {
-      updated.apiMode = (value === 'live' || value === 'cached') ? value : 'cached';
+      updated.apiMode = (value === 'live' || value === 'cached') ? value : 'live';
     } else {
       return res.status(400).json({ success: false, error: `Unknown field: ${field}` });
     }

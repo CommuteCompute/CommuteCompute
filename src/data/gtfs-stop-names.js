@@ -15,7 +15,8 @@
  * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  */
 
-import { VIC_METRO_STATIONS, VIC_TRAM_STOPS, VIC_BUS_STOPS, VIC_SUBURB_STOPS } from './vic/gtfs-reference.js';
+import { VIC_METRO_STATIONS, VIC_TRAM_STOPS, VIC_BUS_STOPS, VIC_SUBURB_STOPS, VIC_TRAM_STOPS_WITH_COORDS, VIC_BUS_STOPS_WITH_COORDS } from './vic/gtfs-reference.js';
+import { haversine } from '../utils/haversine.js';
 
 /**
  * GTFS Stop ID to actual stop NAME mapping
@@ -72,18 +73,134 @@ export function getStopNameById(stopId) {
 export const MELBOURNE_STOP_IDS = VIC_SUBURB_STOPS;
 
 /**
- * Auto-detect stop IDs from home address
+ * Find nearest stops by coordinates from GTFS reference data
+ * Searches VIC_METRO_STATIONS (with coords), VIC_TRAM_STOPS_WITH_COORDS,
+ * and VIC_BUS_STOPS_WITH_COORDS for the closest stop of each mode.
+ *
+ * @param {number} lat - Latitude
+ * @param {number} lon - Longitude
+ * @param {Object} options - { radiusMeters: 1500 }
+ * @returns {Object} { train: { id, name, distance, platforms }, tram: { id, name, distance }, bus: { id, name, distance } }
+ */
+export function findNearestStops(lat, lon, options = {}) {
+  const radius = options.radiusMeters || 1500;
+  const result = {};
+
+  // Train: search VIC_METRO_STATIONS (now with coords)
+  for (const [code, station] of Object.entries(VIC_METRO_STATIONS)) {
+    if (!station.lat || !station.lon) continue;
+    const dist = haversine(lat, lon, station.lat, station.lon);
+    if (dist <= radius && (!result.train || dist < result.train.distance)) {
+      result.train = { id: code, name: station.name, distance: dist, platforms: station.platforms };
+    }
+  }
+
+  // Tram: search VIC_TRAM_STOPS_WITH_COORDS
+  for (const stop of VIC_TRAM_STOPS_WITH_COORDS) {
+    const dist = haversine(lat, lon, stop.lat, stop.lon);
+    if (dist <= radius && (!result.tram || dist < result.tram.distance)) {
+      result.tram = { id: stop.id, name: stop.name, distance: dist };
+    }
+  }
+
+  // Bus: search VIC_BUS_STOPS_WITH_COORDS
+  for (const stop of VIC_BUS_STOPS_WITH_COORDS) {
+    const dist = haversine(lat, lon, stop.lat, stop.lon);
+    if (dist <= radius && (!result.bus || dist < result.bus.distance)) {
+      result.bus = { id: stop.id, name: stop.name, distance: dist };
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Find multiple nearest stops by coordinates from GTFS reference data
+ * Returns top N stops per mode sorted by distance — used for station
+ * preference dropdowns so users can select from nearby alternatives.
+ *
+ * @param {number} lat - Latitude
+ * @param {number} lon - Longitude
+ * @param {Object} options - { radiusMeters: 1500, count: 3 }
+ * @returns {Object} { train: [{ id, name, distance, platforms }], tram: [{ id, name, distance }], bus: [{ id, name, distance }] }
+ */
+export function findNearestStopsMultiple(lat, lon, options = {}) {
+  const radius = options.radiusMeters || 1500;
+  const count = options.count || 3;
+  const trains = [];
+  const trams = [];
+  const buses = [];
+
+  // Train: search VIC_METRO_STATIONS
+  for (const [code, station] of Object.entries(VIC_METRO_STATIONS)) {
+    if (!station.lat || !station.lon) continue;
+    const dist = haversine(lat, lon, station.lat, station.lon);
+    if (dist <= radius) {
+      trains.push({ id: code, name: station.name, distance: Math.round(dist), platforms: station.platforms });
+    }
+  }
+
+  // Tram: search VIC_TRAM_STOPS_WITH_COORDS
+  for (const stop of VIC_TRAM_STOPS_WITH_COORDS) {
+    const dist = haversine(lat, lon, stop.lat, stop.lon);
+    if (dist <= radius) {
+      trams.push({ id: stop.id, name: stop.name, distance: Math.round(dist) });
+    }
+  }
+
+  // Bus: search VIC_BUS_STOPS_WITH_COORDS
+  for (const stop of VIC_BUS_STOPS_WITH_COORDS) {
+    const dist = haversine(lat, lon, stop.lat, stop.lon);
+    if (dist <= radius) {
+      buses.push({ id: stop.id, name: stop.name, distance: Math.round(dist) });
+    }
+  }
+
+  // Sort by distance and take top N
+  trains.sort((a, b) => a.distance - b.distance);
+  trams.sort((a, b) => a.distance - b.distance);
+  buses.sort((a, b) => a.distance - b.distance);
+
+  return {
+    train: trains.slice(0, count),
+    tram: trams.slice(0, count),
+    bus: buses.slice(0, count)
+  };
+}
+
+/**
+ * Auto-detect stop IDs from home address (or coordinates)
  * Per DEVELOPMENT-RULES Section 23.1.1 - detectTrainStopId() fallback
  *
- * Searches ALL 226 GTFS-derived suburb entries (auto-generated from .txt stop files).
+ * PRIMARY: If coords are provided, uses coordinate-based nearest-stop detection
+ * from GTFS reference data (all 226 stations + 1637 tram + 4151 bus stops).
+ *
+ * FALLBACK: Searches ALL 226 GTFS-derived suburb entries (auto-generated from .txt stop files).
  * Returns station codes for trains (resolved to platform IDs by opendata-client.js)
  * and direct stop IDs for trams/buses.
  *
  * @param {string} address - Home address string
+ * @param {Object|null} coords - Optional { lat, lon } for coordinate-based detection
  * @returns {Object} Stop IDs and detected suburb info
  */
-export function detectStopIdsFromAddress(address) {
-  if (!address) return { trainStopId: null, tramStopId: null, busStopId: null };
+export function detectStopIdsFromAddress(address, coords = null) {
+  // PRIMARY: coordinate-based detection
+  if (coords?.lat && coords?.lon) {
+    const nearest = findNearestStops(coords.lat, coords.lon);
+    return {
+      trainStopId: nearest.train?.id || null,
+      tramStopId: nearest.tram?.id || null,
+      tramRouteNumber: null,
+      busStopId: nearest.bus?.id || null,
+      detectedSuburb: null,
+      stationName: nearest.train?.name || null,
+      line: null,
+      source: 'coordinates'
+    };
+  }
+
+  // FALLBACK: existing suburb name matching
+  if (!address) return { trainStopId: null, tramStopId: null, tramRouteNumber: null, busStopId: null, detectedSuburb: null, stationName: null, line: null, source: null };
 
   const addressLower = address.toLowerCase();
 
@@ -101,7 +218,8 @@ export function detectStopIdsFromAddress(address) {
         busStopId: ids.bus || null,
         detectedSuburb: suburb,
         stationName: ids.stationName || null,
-        line: null
+        line: null,
+        source: 'suburb'
       };
     }
   }
@@ -114,6 +232,7 @@ export function detectStopIdsFromAddress(address) {
     busStopId: null,
     detectedSuburb: null,
     stationName: null,
-    line: null
+    line: null,
+    source: null
   };
 }

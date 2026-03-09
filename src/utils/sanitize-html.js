@@ -23,13 +23,10 @@ export function sanitizeHTML(str) {
         '<': '&lt;',
         '>': '&gt;',
         '"': '&quot;',
-        "'": '&#x27;',
-        '/': '&#x2F;',
-        '`': '&#x60;',
-        '=': '&#x3D;'
+        "'": '&#x27;'
     };
-    
-    return str.replace(/[&<>"'`=/]/g, char => escapeMap[char]);
+
+    return str.replace(/[&<>"']/g, char => escapeMap[char]);
 }
 
 /**
@@ -58,8 +55,8 @@ export const clientSanitizer = `
 function sanitize(str) {
     if (str === null || str === undefined) return '';
     if (typeof str !== 'string') str = String(str);
-    const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;','/':'&#x2F;','\`':'&#x60;','=':'&#x3D;'};
-    return str.replace(/[&<>"'\`=/]/g, c => map[c]);
+    const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;'};
+    return str.replace(/[&<>"']/g, c => map[c]);
 }
 `;
 

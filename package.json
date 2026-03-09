@@ -1,6 +1,6 @@
 {
   "name": "commute-compute",
-  "version": "4.2.0",
+  "version": "5.0.0",
   "description": "Commute Compute System - Smart Transit Dashboard for e-ink displays",
   "type": "module",
   "main": "src/server.js",
@@ -30,6 +30,7 @@
     "dayjs": "1.11.10",
     "express": "4.22.1",
     "gtfs-realtime-bindings": "1.1.1",
+    "ioredis": "5.4.0",
     "node-fetch": "3.3.2",
     "nodemailer": "7.0.12"
   },

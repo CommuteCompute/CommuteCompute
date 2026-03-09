@@ -24,37 +24,10 @@ import CommuteCompute from '../src/engines/commute-compute.js';
 import { getTransitApiKey } from '../src/data/kv-preferences.js';
 import ccdashRenderer, { ZONES, TIER_CONFIG } from '../src/services/ccdash-renderer.js';
 import PreferencesManager from '../src/data/preferences-manager.js';
+import { getMelbourneTime, formatTime, formatDateParts } from '../src/utils/time-format.js';
 
 // Singleton engine instance
 let journeyEngine = null;
-
-/**
- * Get Melbourne local time
- */
-function getMelbourneTime() {
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'Australia/Melbourne' }));
-}
-
-/**
- * Format time as HH:MM
- */
-function formatTime(date) {
-  const h = date.getHours();
-  const m = date.getMinutes();
-  return `${h}:${m.toString().padStart(2, '0')}`;
-}
-
-/**
- * Format date parts
- */
-function formatDateParts(date) {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  return {
-    day: days[date.getDay()],
-    date: `${date.getDate()} ${months[date.getMonth()]}`
-  };
-}
 
 /**
  * Initialize engine
@@ -69,6 +42,7 @@ async function getEngine() {
 
 /**
  * Build leg title
+ * Zone-specific: zones-tiered.js simplified variant
  */
 function buildLegTitle(leg) {
   const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
@@ -98,6 +72,7 @@ function buildLegTitle(leg) {
 
 /**
  * Build leg subtitle with live data
+ * Zone-specific: zones-tiered.js variant without arriveAtLegMins param
  */
 function buildLegSubtitle(leg, transitData) {
   switch (leg.type) {
@@ -126,6 +101,8 @@ function buildLegSubtitle(leg, transitData) {
 
 /**
  * Build journey legs
+ * Zone-specific: zones-tiered.js simplified variant without cumulative timing
+ * // TODO: Consider importing from shared module
  */
 function buildJourneyLegs(route, transitData, coffeeDecision) {
   if (!route?.legs) return [];

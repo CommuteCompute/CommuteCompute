@@ -2376,6 +2376,28 @@
                     <div id="routes-message" aria-live="polite" role="status" style="display: none; margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 13px;"></div>
                 </div>
 
+                <!-- Station Preferences Card -->
+                <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(79, 178, 142, 0.08) 100%); border-radius: 12px; border: 1px solid rgba(102, 126, 234, 0.2);">
+                    <div class="card-header" style="margin-bottom: 16px;">
+                        <span class="card-icon">
+                            <svg width="20" height="20" style="color: #667eea;"><use href="#icon-map-pin"/></svg>
+                        </span>
+                        <h2>Station Preferences</h2>
+                        <button onclick="saveStationOverrides()" class="btn btn-secondary" style="margin-left: auto; padding: 6px 14px; font-size: 12px;">
+                            Save
+                        </button>
+                    </div>
+                    <p style="margin-bottom: 16px; font-size: 13px; opacity: 0.8; line-height: 1.6;">
+                        Override auto-detected stops for your journey. Select nearby alternative stops for each transit leg.
+                    </p>
+                    <div id="station-overrides-container" style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="padding: 20px; text-align: center; opacity: 0.6; font-size: 13px;">
+                            Load route alternatives first to configure station preferences.
+                        </div>
+                    </div>
+                    <div id="station-overrides-message" style="display: none; margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 13px;"></div>
+                </div>
+
                 <!-- Quick Actions Card -->
                 <div class="card" style="background: rgba(255,255,255,0.03);">
                     <div class="card-header" style="margin-bottom: 15px;">
@@ -2823,7 +2845,7 @@
                             <svg width="20" height="20" style="color: #667eea;"><use href="#icon-chart"/></svg>
                             <h3 style="margin: 0; font-size: 16px;">Commute Analytics</h3>
                         </div>
-                        <span class="cc-badge cc-badge-info">V15.0</span>
+                        <span class="cc-badge cc-badge-info">V16.0</span>
                     </div>
                     <div class="cc-card-body" style="padding: 16px;">
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px;">
@@ -2871,11 +2893,11 @@
                     <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
                         <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #cbd5e1;">
                             <svg width="14" height="14" style="color: #4fb28e;"><use href="#icon-check"/></svg>
-                            <span id="cc-header-engine-version">CommuteCompute Engine v3.1</span>
+                            <span id="cc-header-engine-version">CommuteCompute Engine v4.0</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #cbd5e1;">
                             <svg width="14" height="14" style="color: #4fb28e;"><use href="#icon-check"/></svg>
-                            <span id="cc-header-renderer-version">CCDash&#8482; Renderer v2.1</span>
+                            <span id="cc-header-renderer-version">CCDash&#8482; Renderer v3.0</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #cbd5e1;">
                             <svg width="14" height="14" style="color: #667eea;"><use href="#icon-settings"/></svg>
@@ -3245,8 +3267,8 @@
                     A fully self-hosted smart transit display system for Australian public transport. Each user deploys their own complete stack with zero external dependencies. Features device pairing via Redis for persistent configuration across serverless invocations.
                 </p>
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    <span id="cc-badge-system-version" style="padding: 6px 14px; background: rgba(79, 178, 142, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #4fb28e;">v4.2.0</span>
-                    <span id="cc-badge-renderer-version" style="padding: 6px 14px; background: rgba(102, 126, 234, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #667eea;">CCDash&#8482; v2.1</span>
+                    <span id="cc-badge-system-version" style="padding: 6px 14px; background: rgba(79, 178, 142, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #4fb28e;">v5.0.0</span>
+                    <span id="cc-badge-renderer-version" style="padding: 6px 14px; background: rgba(102, 126, 234, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #667eea;">CCDash&#8482; v3.0</span>
                     <span id="cc-badge-firmware-version" style="padding: 6px 14px; background: rgba(251, 191, 36, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #fbbf24;">CCFirm&#8482; CC-FW-8.1.0</span>
                     <span style="padding: 6px 14px; background: rgba(168, 85, 247, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #a855f7;">Redis</span>
                 </div>
@@ -3266,7 +3288,7 @@
                 <div style="margin-bottom: 16px; padding: 16px; background: linear-gradient(135deg, rgba(79, 178, 142, 0.15) 0%, rgba(79, 178, 142, 0.05) 100%); border-radius: 10px; border: 1px solid rgba(79, 178, 142, 0.3);">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
                         <svg width="24" height="24" style="color: #4fb28e;"><use href="#icon-route"/></svg>
-                        <h3 id="cc-detail-engine-version" style="margin: 0; font-size: 16px; font-weight: 700; color: #4fb28e;">CommuteCompute&#8482; Engine v3.1</h3>
+                        <h3 id="cc-detail-engine-version" style="margin: 0; font-size: 16px; font-weight: 700; color: #4fb28e;">CommuteCompute&#8482; Engine v4.0</h3>
                     </div>
                     <p style="font-size: 13px; color: #e2e8f0; line-height: 1.7; margin-bottom: 12px;">
                         The intelligent journey planning core that optimises multi-modal routes across Australian public transport networks. CommuteCompute analyses real-time GTFS data, user preferences, and contextual factors to recommend the optimal departure time and route.
@@ -3295,7 +3317,7 @@
                 <div style="margin-bottom: 16px; padding: 16px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(102, 126, 234, 0.05) 100%); border-radius: 10px; border: 1px solid rgba(102, 126, 234, 0.3);">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
                         <svg width="24" height="24" style="color: #667eea;"><use href="#icon-sliders"/></svg>
-                        <h3 id="cc-detail-renderer-version" style="margin: 0; font-size: 16px; font-weight: 700; color: #667eea;">CCDash&#8482; Renderer v2.1</h3>
+                        <h3 id="cc-detail-renderer-version" style="margin: 0; font-size: 16px; font-weight: 700; color: #667eea;">CCDash&#8482; Renderer v3.0</h3>
                         <span id="renderer-lock-badge" style="padding: 3px 8px; background: rgba(34, 197, 94, 0.2); border-radius: 8px; font-size: 10px; font-weight: 600; color: #22c55e;">UNLOCKED</span>
                     </div>
                     <p style="font-size: 13px; color: #e2e8f0; line-height: 1.7; margin-bottom: 12px;">
@@ -3565,7 +3587,7 @@
                     <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
                         <div style="width: 32px; height: 32px; background: #fbbf24; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;">4</div>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 14px;">CCDash&#8482; Renderer v2.1</div>
+                            <div style="font-weight: 600; font-size: 14px;">CCDash&#8482; Renderer v3.0</div>
                             <div style="font-size: 12px; color: #cbd5e1;">1-bit BMP generation, zone diffing, partial refresh optimisation</div>
                         </div>
                     </div>
@@ -3584,7 +3606,7 @@
             <div class="card" style="margin-bottom: 20px; background: rgba(30, 41, 59, 0.8); border-radius: 12px;">
                 <div class="card-header" style="display: flex; align-items: center; gap: 12px;">
                     <svg width="22" height="22" style="color: #fbbf24;"><use href="#icon-sliders"/></svg>
-                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Zone Layout (CCDash&#8482; V15.0)</h2>
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Zone Layout (CCDash&#8482; V16.0)</h2>
                     <span style="padding: 4px 10px; background: rgba(34, 197, 94, 0.2); border-radius: 12px; font-size: 11px; font-weight: 600; color: #22c55e;">UNLOCKED</span>
                 </div>
                 <p style="margin: 15px 0; font-size: 14px; color: #cbd5e1;">
@@ -3768,7 +3790,7 @@
                     </h3>
                     <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; background: rgba(0,0,0,0.3); padding: 16px; border-radius: 6px; overflow-x: auto;">
                         <pre style="margin: 0; color: #cbd5e1; line-height: 1.5;">
-                               <span style="color: #4fb28e;">COMMUTE COMPUTE SYSTEM ARCHITECTURE v4.2.0</span>
+                               <span style="color: #4fb28e;">COMMUTE COMPUTE SYSTEM ARCHITECTURE v5.0.0</span>
 
     <span style="color: #fbbf24;">USER SETUP</span>                        <span style="color: #a855f7;">PERSISTENT STORAGE</span>                    <span style="color: #667eea;">DEVICE</span>
         |                                      |                                   |
@@ -3794,7 +3816,7 @@
                                |       <span style="color: #667eea;">VERCEL SERVERLESS</span>        |                   |
                                |                               |                   |
                                |  +-------------------------+  |                   |
-                               |  |   <span style="color: #4fb28e;">CommuteCompute&#8482; v3.1</span>   |  |                   |
+                               |  |   <span style="color: #4fb28e;">CommuteCompute&#8482; v4.0</span>   |  |                   |
                                |  |   - Route optimisation  |  |                   |
                                |  |   - CoffeeDecision     |  |                   |
                                |  |   - Mode preferences    |  |                   |
@@ -3802,7 +3824,7 @@
                                |              |                |                   |
                                |              v                |                   |
                                |  +-------------------------+  |                   |
-                               |  |    <span style="color: #667eea;">CCDash&#8482; V12</span>         |  |                   |
+                               |  |    <span style="color: #667eea;">CCDash&#8482; V16</span>         |  |                   |
                                |  |   - 1-bit BMP render    |  |                   |
                                |  |   - Zone-based output   |  |                   |
                                |  +-------------------------+  |                   |
@@ -3835,7 +3857,7 @@
                     </h3>
                     <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; background: rgba(0,0,0,0.3); padding: 16px; border-radius: 6px; overflow-x: auto;">
                         <pre style="margin: 0; color: #cbd5e1; line-height: 1.5;">
-                        <span style="color: #4fb28e;">COMMUTECOMPUTE ENGINE v3.1</span>
+                        <span style="color: #4fb28e;">COMMUTECOMPUTE ENGINE v4.0</span>
 
    +------------------+     +------------------+     +------------------+
    |   <span style="color: #fbbf24;">USER PREFS</span>     |     |   <span style="color: #667eea;">LIVE DATA</span>      |     |   <span style="color: #a855f7;">CONTEXT</span>        |
@@ -3922,7 +3944,7 @@
                 </div>
                 <div style="display: grid; gap: 10px; font-size: 13px; color: #cbd5e1; line-height: 1.6;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="padding: 3px 8px; background: rgba(79, 178, 142, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #4fb28e;">v4.2.0</span>
+                        <span style="padding: 3px 8px; background: rgba(79, 178, 142, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #4fb28e;">v5.0.0</span>
                         <strong>docs/ARCHITECTURE.md</strong> — Complete system architecture (20+ sections)
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -3931,7 +3953,7 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="padding: 3px 8px; background: rgba(79, 178, 142, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #4fb28e;">UNLOCKED</span>
-                        <strong>docs/CCDashDesignV15.0.md</strong> — Dashboard specification (UNLOCKED 2026-02-06)
+                        <strong>docs/CCDashDesignV16.0.md</strong> — Dashboard specification (UNLOCKED 2026-03-02)
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="padding: 3px 8px; background: rgba(168, 85, 247, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #a855f7;">CC-FW-8.1.0</span>
@@ -3961,11 +3983,11 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
                     <div style="padding: 15px; background: rgba(79, 178, 142, 0.15); border-radius: 8px; text-align: center;">
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">CommuteCompute Engine</div>
-                        <div id="cc-grid-engine-version" style="font-size: 20px; font-weight: 700; color: #4fb28e;">v3.1</div>
+                        <div id="cc-grid-engine-version" style="font-size: 20px; font-weight: 700; color: #4fb28e;">v4.0</div>
                     </div>
                     <div style="padding: 15px; background: rgba(102, 126, 234, 0.15); border-radius: 8px; text-align: center;">
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">CCDash&#8482; Renderer</div>
-                        <div id="cc-grid-renderer-version" style="font-size: 20px; font-weight: 700; color: #667eea;">v2.1</div>
+                        <div id="cc-grid-renderer-version" style="font-size: 20px; font-weight: 700; color: #667eea;">v3.0</div>
                     </div>
                     <div style="padding: 15px; background: rgba(251, 191, 36, 0.15); border-radius: 8px; text-align: center;">
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">CCFirm&#8482; Firmware</div>
@@ -3973,7 +3995,7 @@
                     </div>
                     <div style="padding: 15px; background: rgba(236, 72, 153, 0.15); border-radius: 8px; text-align: center;">
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">System Version</div>
-                        <div id="cc-grid-system-version" style="font-size: 20px; font-weight: 700; color: #ec4899;">v4.2.0</div>
+                        <div id="cc-grid-system-version" style="font-size: 20px; font-weight: 700; color: #ec4899;">v5.0.0</div>
                     </div>
                 </div>
 
@@ -3994,7 +4016,7 @@
 │          └─────────────────┼─────────────────┘                          │
 │                            ▼                                            │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                   CommuteCompute Engine v3.1                       │   │
+│   │                   CommuteCompute Engine v4.0                       │   │
 │   │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │   │
 │   │  │ Route       │  │ Coffee      │  │ Cafe Busy   │              │   │
 │   │  │ Recommender │  │ Decision    │  │ Detector    │              │   │
@@ -4003,9 +4025,9 @@
 │                                │                                        │
 │                                ▼                                        │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                   CCDash&#8482; Renderer v2.1                          │   │
+│   │                   CCDash&#8482; Renderer v3.0                          │   │
 │   │  • 800×480 1-bit BMP      • Zone-based partial refresh          │   │
-│   │  • V15.0 Dashboard Spec   • 60-second cycle                     │   │
+│   │  • V16.0 Dashboard Spec   • 60-second cycle                     │   │
 │   └────────────────────────────┬────────────────────────────────────┘   │
 │                                │                                        │
 │          ┌─────────────────────┼─────────────────────┐                  │
@@ -5462,27 +5484,28 @@
                 let transitValidated = localStorage.getItem('cc-transit-api-validated') === 'true';
                 
                 // Per Section 3.6.4: If localStorage empty, fetch from KV via server
-                if (!config.addresses?.home) {
-                    try {
-                        const prefsResponse = await authFetch(BASE_URL + '/api/admin/preferences');
-                        if (prefsResponse.ok) {
-                            const prefsData = await prefsResponse.json();
-                            if (prefsData.success && prefsData.preferences?._configured) {
-                                // Sync server config to localStorage for future use
+                // Also always check server for API key status (key lives in Redis, not localStorage)
+                try {
+                    const prefsResponse = await authFetch(BASE_URL + '/api/admin/preferences');
+                    if (prefsResponse.ok) {
+                        const prefsData = await prefsResponse.json();
+                        if (prefsData.success && prefsData.preferences?._configured) {
+                            // Sync full config from server if localStorage is empty
+                            if (!config.addresses?.home) {
                                 config = prefsData.preferences;
                                 localStorage.setItem('cc-config', JSON.stringify(config));
-                                // Mark transit key as configured (actual key stored in KV)
-                                if (prefsData.preferences.api?.hasKey) {
-                                    localStorage.setItem('cc-transit-api-validated', 'true');
-                                    hasTransitKey = true;
-                                    transitValidated = true;
-                                }
                                 console.log('[Admin] Synced config from KV to localStorage');
                             }
+                            // Always sync API key status from server (key persisted in Redis)
+                            if (prefsData.preferences.api?.hasKey) {
+                                localStorage.setItem('cc-transit-api-validated', 'true');
+                                hasTransitKey = true;
+                                transitValidated = true;
+                            }
                         }
-                    } catch (syncError) {
-                        console.warn('[Admin] Could not fetch preferences from server:', syncError);
                     }
+                } catch (syncError) {
+                    console.warn('[Admin] Could not fetch preferences from server:', syncError);
                 }
                 
                 // Check if configured (after potential server sync)
@@ -5654,10 +5677,11 @@
 
             } catch (error) {
                 // Show error state in widgets
-                document.getElementById('train-departures').innerHTML = `<div class="no-data">Error: ${sanitize(error.message)}</div>`;
-                document.getElementById('tram-departures').innerHTML = '<div class="no-data">See tram departures</div>';
-                document.getElementById('weather-display').innerHTML = '<div class="no-data">Unable to load</div>';
-                document.getElementById('coffee-decision').innerHTML = '<div class="no-data">Unable to calculate</div>';
+                const errMsg = `<div class="no-data">Error: ${sanitize(error.message)}</div>`;
+                document.getElementById('train-departures').innerHTML = errMsg;
+                document.getElementById('tram-departures').innerHTML = errMsg;
+                document.getElementById('weather-display').innerHTML = errMsg;
+                document.getElementById('coffee-decision').innerHTML = errMsg;
                 // Always update timestamp even on error
                 const lastUpdated = document.getElementById('data-last-updated');
                 if (lastUpdated) {
@@ -6182,12 +6206,36 @@
                     if (diag.trainError) reasons.push('Train: ' + diag.trainError.substring(0, 40));
                     if (diag.tramError) reasons.push('Tram: ' + diag.tramError.substring(0, 40));
                     if (diag.busError) reasons.push('Bus: ' + diag.busError.substring(0, 40));
+                    let mainText = '';
                     if (reasons.length > 0) {
-                        subtitle.textContent = reasons.join(' | ');
+                        mainText = reasons.join(' | ');
                     } else if (diag.trainFeedEntities === 0 && diag.tramFeedEntities === 0) {
-                        subtitle.textContent = 'API connected but no departures at this time. Likely late night or reduced services.';
+                        mainText = 'API connected but no departures at this time. Likely late night or reduced services.';
                     } else {
-                        subtitle.textContent = 'Feed received (' + diag.trainFeedEntities + ' train, ' + diag.tramFeedEntities + ' tram entities) but no matches for your stops.';
+                        mainText = 'Feed received (' + diag.trainFeedEntities + ' train, ' + diag.tramFeedEntities + ' tram entities) but no matches for your stops.';
+                    }
+                    // Stop detection diagnostics
+                    const stopParts = [];
+                    if (diag.stopDetectionSource) {
+                        stopParts.push('Detection: ' + diag.stopDetectionSource);
+                    }
+                    if (diag.trainStopName) {
+                        stopParts.push('Train: ' + diag.trainStopName);
+                    } else if (diag.trainStopId) {
+                        stopParts.push('Train ID: ' + diag.trainStopId);
+                    }
+                    if (diag.tramStopName) {
+                        stopParts.push('Tram: ' + diag.tramStopName);
+                    } else if (diag.tramStopId) {
+                        stopParts.push('Tram ID: ' + diag.tramStopId);
+                    }
+                    if (!diag.trainStopId && !diag.tramStopId && !diag.busStopId) {
+                        stopParts.push('No stops detected \u2014 verify address has geocoded coordinates');
+                    }
+                    if (stopParts.length > 0) {
+                        subtitle.innerHTML = mainText + '<br><span style="font-size: 11px; opacity: 0.7;">' + stopParts.join(' | ') + '</span>';
+                    } else {
+                        subtitle.textContent = mainText;
                     }
                 } else {
                     subtitle.textContent = 'API key valid but no live departures available. Try refreshing.';
@@ -7611,6 +7659,9 @@
                 // Render the routes
                 renderRoutesList(result.alternatives || [], result.selectedIndex || 0);
 
+                // Render station override dropdowns from nearby stops data
+                renderStationOverrides(result.alternatives || [], result.nearbyStops || {}, result.stationOverrides || {});
+
                 // Save the routes to localStorage for reference
                 localStorage.setItem('cc-discovered-routes', JSON.stringify(result.alternatives || []));
                 localStorage.setItem('cc-selected-route-index', result.selectedIndex || 0);
@@ -7681,6 +7732,12 @@
                         <div style="display: flex; align-items: center; gap: 4px; font-size: 13px; opacity: 0.85;">
                             ${safeSummary}
                         </div>
+                        ${route.legs ? `
+                        <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; font-size: 11px;">
+                            ${route.legs.filter(l => l.originName || l.destinationName).map(l =>
+                                `<span style="background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 4px;">${sanitize(l.type.toUpperCase())}${l.routeNumber ? ' ' + sanitize(String(l.routeNumber)) : ''}: ${sanitize(l.originName || '?')} → ${sanitize(l.destinationName || '?')}</span>`
+                            ).join('')}
+                        </div>` : ''}
                         ${isSelected ? `
                             <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 11px; color: ${colors.border}; font-weight: 600;">
                                 <svg class="icon-sm"><use href="#icon-check-circle"/></svg> Currently Selected
@@ -7765,6 +7822,117 @@
             infoEl.style.display = 'block';
             if (nameEl) nameEl.textContent = route.name || 'Selected Route';
             if (descEl) descEl.textContent = route.description || route.legSummary || '';
+        }
+
+        // Station override functions
+        let _nearbyStopsData = null;
+        let _stationOverrides = {};
+
+        function renderStationOverrides(alternatives, nearbyStops, overrides) {
+            _nearbyStopsData = nearbyStops || {};
+            _stationOverrides = overrides || {};
+            const container = document.getElementById('station-overrides-container');
+            if (!container) return;
+
+            // Find transit legs from the selected route
+            const selected = alternatives[0];
+            if (!selected || !selected.legs) {
+                container.innerHTML = '<div style="padding: 16px; text-align: center; opacity: 0.6; font-size: 13px;">No transit legs to configure.</div>';
+                return;
+            }
+
+            const transitLegs = selected.legs.filter(l => ['train', 'tram', 'bus', 'ferry', 'vline'].includes(l.type));
+            if (transitLegs.length === 0) {
+                container.innerHTML = '<div style="padding: 16px; text-align: center; opacity: 0.6; font-size: 13px;">No transit legs in this route.</div>';
+                return;
+            }
+
+            container.innerHTML = transitLegs.map((leg, idx) => {
+                const legKey = leg.type + '_' + idx;
+                const stopType = leg.type === 'train' || leg.type === 'vline' ? 'train' : leg.type;
+                // Gather nearby alternatives — API now returns arrays sorted by distance
+                const homeStops = Array.isArray(nearbyStops?.home?.[stopType]) ? nearbyStops.home[stopType] : [];
+                const workStops = Array.isArray(nearbyStops?.work?.[stopType]) ? nearbyStops.work[stopType] : [];
+                // Build deduplicated options list
+                const seen = new Set();
+                const options = [];
+                // Current auto-detected stop first
+                if (leg.originName) { options.push({ name: leg.originName, id: leg.stopId, distance: null, label: 'current' }); seen.add(leg.originName); }
+                // Home-area nearby stops (sorted by distance)
+                for (const s of homeStops) {
+                    if (!seen.has(s.name)) { options.push({ name: s.name, id: s.id, distance: s.distance, label: s.distance + 'm' }); seen.add(s.name); }
+                }
+                // Work-area nearby stops
+                for (const s of workStops) {
+                    if (!seen.has(s.name)) { options.push({ name: s.name, id: s.id, distance: s.distance, label: s.distance + 'm (work)' }); seen.add(s.name); }
+                }
+                const selectedName = overrides[legKey]?.name || leg.originName;
+
+                return `
+                    <div style="padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <span style="font-weight: 600; font-size: 13px; text-transform: uppercase;">${sanitize(leg.type)}${leg.routeNumber ? ' ' + sanitize(String(leg.routeNumber)) : ''}</span>
+                            <span style="font-size: 11px; opacity: 0.6;">Board at</span>
+                        </div>
+                        <select id="station-override-${legKey}" onchange="markStationOverrideDirty()"
+                                style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #f1f5f9; font-size: 13px;">
+                            ${options.map(o => `<option value="${sanitize(o.name)}" data-id="${sanitize(o.id || '')}" ${selectedName === o.name ? 'selected' : ''}>${sanitize(o.name)}${o.label === 'current' ? ' (current)' : ' — ' + sanitize(o.label)}</option>`).join('')}
+                        </select>
+                        <div style="font-size: 11px; opacity: 0.5; margin-top: 4px;">Destination: ${sanitize(leg.destinationName || 'auto')}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function markStationOverrideDirty() {
+            const msgEl = document.getElementById('station-overrides-message');
+            if (msgEl) {
+                msgEl.style.display = 'block';
+                msgEl.style.background = 'rgba(251, 191, 36, 0.2)';
+                msgEl.textContent = 'Unsaved changes — click Save to apply.';
+            }
+        }
+
+        async function saveStationOverrides() {
+            const msgEl = document.getElementById('station-overrides-message');
+            const routes = JSON.parse(localStorage.getItem('cc-discovered-routes') || '[]');
+            const selected = routes[0];
+            if (!selected) return;
+
+            const overrides = {};
+            const transitLegs = (selected.legs || []).filter(l => ['train', 'tram', 'bus', 'ferry', 'vline'].includes(l.type));
+            transitLegs.forEach((leg, idx) => {
+                const legKey = leg.type + '_' + idx;
+                const selectEl = document.getElementById('station-override-' + legKey);
+                if (selectEl && selectEl.value !== leg.originName) {
+                    const selectedOption = selectEl.options[selectEl.selectedIndex];
+                    overrides[legKey] = { name: selectEl.value, id: selectedOption?.dataset?.id || null, type: leg.type };
+                }
+            });
+
+            try {
+                const response = await authFetch(BASE_URL + '/api/routes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ stationOverrides: overrides })
+                });
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error);
+
+                _stationOverrides = overrides;
+                if (msgEl) {
+                    msgEl.style.display = 'block';
+                    msgEl.style.background = 'rgba(34, 197, 94, 0.2)';
+                    msgEl.innerHTML = '<svg class="icon-sm"><use href="#icon-check-circle"/></svg> Station preferences saved.';
+                    setTimeout(() => msgEl.style.display = 'none', 3000);
+                }
+            } catch (error) {
+                if (msgEl) {
+                    msgEl.style.display = 'block';
+                    msgEl.style.background = 'rgba(239, 68, 68, 0.2)';
+                    msgEl.textContent = '[Error] ' + error.message;
+                }
+            }
         }
 
         // ============================================
@@ -8091,7 +8259,7 @@
             }
         }
         
-        // Update Transit API key
+        // Update Transit API key — validates AND persists to Redis via /api/save-transit-key
         async function updateTransitKey() {
             const input = document.getElementById('edit-transit-key');
             const msg = document.getElementById('transit-edit-message');
@@ -8106,18 +8274,26 @@
 
             msg.style.display = 'block';
             msg.style.background = 'rgba(102, 126, 234, 0.2)';
-            msg.innerHTML = '<svg class="icon-sm"><use href="#icon-refresh"/></svg> Validating API key...';
+            msg.innerHTML = '<svg class="icon-sm"><use href="#icon-refresh"/></svg> Validating and saving API key...';
 
             try {
-                // Validate the key
-                const response = await fetch(BASE_URL + '/api/validate-transit-key', {
+                // Get current state from server preferences
+                let state = 'VIC';
+                try {
+                    const prefsResp = await authFetch(BASE_URL + '/api/admin/preferences');
+                    const prefs = await prefsResp.json();
+                    state = prefs.preferences?.location?.state || prefs.preferences?.api?.state || 'VIC';
+                } catch (e) { /* Use default VIC */ }
+
+                // Save to Redis AND validate via /api/save-transit-key
+                const response = await authFetch(BASE_URL + '/api/save-transit-key', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ apiKey: key, state: 'VIC' })
+                    body: JSON.stringify({ apiKey: key, state: state })
                 });
                 const result = await response.json();
 
-                if (result.valid) {
+                if (result.success) {
                     localStorage.setItem('cc-transit-api-key', key);
                     localStorage.setItem('cc-transit-api-validated', 'true');
 
@@ -8127,19 +8303,25 @@
                     config.api.key = key;
                     localStorage.setItem('cc-config', JSON.stringify(config));
 
-                    msg.style.background = 'rgba(34, 197, 94, 0.2)';
-                    msg.innerHTML = '<svg class="icon-sm"><use href="#icon-check-circle"/></svg> API key validated and saved!';
+                    if (result.testResult && result.testResult.success) {
+                        msg.style.background = 'rgba(34, 197, 94, 0.2)';
+                        msg.innerHTML = '<svg class="icon-sm"><use href="#icon-check-circle"/></svg> API key validated and saved to server!';
+                    } else {
+                        msg.style.background = 'rgba(251, 191, 36, 0.2)';
+                        msg.innerHTML = '<svg class="icon-sm" style="color: #fbbf24;"><use href="#icon-warning"/></svg> Key saved but validation returned: ' + (result.testResult?.message || 'Could not verify');
+                    }
                     input.value = '';
 
-                    // Refresh the tab
+                    // Refresh the tab and reload live data
                     updateApiSettingsTab(config);
+                    loadAllData();
                 } else {
                     msg.style.background = 'rgba(239, 68, 68, 0.2)';
-                    msg.textContent = '[Error] API key validation failed: ' + (result.error || 'Invalid key');
+                    msg.textContent = '[Error] ' + (result.message || 'Failed to save API key');
                 }
             } catch (error) {
                 msg.style.background = 'rgba(239, 68, 68, 0.2)';
-                msg.textContent = '[Error] Error validating key: ' + error.message;
+                msg.textContent = '[Error] Error saving key: ' + error.message;
             }
         }
 
@@ -10231,11 +10413,11 @@
             fetch('/api/version')
                 .then(r => r.json())
                 .then(v => {
-                    const scVersion = v.components?.commutecompute?.version || 'v3.1';
-                    const rendererVersion = v.components?.renderer?.version || 'v2.1';
+                    const scVersion = v.components?.commutecompute?.version || 'v4.0';
+                    const rendererVersion = v.components?.renderer?.version || 'v3.0';
                     const firmwareVersion = v.components?.firmware?.version || 'CC-FW-8.1.0';
                     const buildDate = v.date || new Date().toISOString().split('T')[0];
-                    const systemVersion = v.system?.version || '4.2.0';
+                    const systemVersion = v.system?.version || '5.0.0';
 
                     // Global footer
                     document.getElementById('cc-footer-commutecompute-version').textContent = scVersion;
@@ -10277,10 +10459,10 @@
                     if (v.repoUrls) checkForUpstreamUpdates(systemVersion, v.repoUrls);
                 })
                 .catch(() => {
-                    document.getElementById('cc-footer-commutecompute-version').textContent = 'v3.1';
-                    document.getElementById('cc-footer-renderer-version').textContent = 'v2.1';
+                    document.getElementById('cc-footer-commutecompute-version').textContent = 'v4.0';
+                    document.getElementById('cc-footer-renderer-version').textContent = 'v3.0';
                     document.getElementById('cc-footer-build-date').textContent = new Date().toISOString().split('T')[0];
-                    document.getElementById('cc-footer-system-version').textContent = 'v4.2.0';
+                    document.getElementById('cc-footer-system-version').textContent = 'v5.0.0';
                 });
         }
 
@@ -10373,15 +10555,15 @@
                 <div class="cc-footer-version-item">
                     <div class="cc-footer-live-dot"></div>
                     <span class="cc-footer-version-label">CommuteCompute</span>
-                    <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.1</span>
+                    <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v4.0</span>
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">CCDash&#8482; Renderer</span>
-                    <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.1</span>
+                    <span class="cc-footer-version-value" id="cc-footer-renderer-version">v3.0</span>
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">System</span>
-                    <span class="cc-footer-version-value" id="cc-footer-system-version">v4.2.0</span>
+                    <span class="cc-footer-version-value" id="cc-footer-system-version">v5.0.0</span>
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">Build</span>
