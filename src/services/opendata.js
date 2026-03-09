@@ -4,8 +4,13 @@
 // Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
 
 /**
+ * @deprecated 2026-03-02 — LEGACY FILE. Superseded by opendata-client.js.
+ * Only importer: data-scraper.js (non-production, used by src/server.js standalone mode).
+ * All production API endpoints use opendata-client.js via api/commutecompute.js.
+ * Pending founder approval for deletion.
+ *
  * opendata.js
- * Minimal Open Data GTFS‑Realtime client for Metro Trains, Trams & Buses (VIC)
+ * Minimal Open Data GTFS-Realtime client for Metro Trains, Trams & Buses (VIC)
  * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  * Uses Transport Victoria OpenData API with KeyId header authentication (UUID format API key)
  * Format: Protobuf (decoded via gtfs-realtime-bindings)

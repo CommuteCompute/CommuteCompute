@@ -21,8 +21,8 @@ These rules govern all development on Commute Compute. Compliance is mandatory.
 |-----------|-----------|------------|-------|
 | **System** | Commute Compute System | Commute Compute / CC | General references |
 | **Repository** | CommuteCompute | — | GitLab repo |
-| **Dashboard Design** | CCDashDesignV15.0 | CCDash | Dashboard specification (UNLOCKED) |
-| **Dashboard Renderer** | CCDash Renderer v2.1 | CCDash | Renders CCDashDesignV15.0 to PNG/BMP |
+| **Dashboard Design** | CCDashDesignV16.0 | CCDash | Dashboard specification (UNLOCKED) |
+| **Dashboard Renderer** | CCDash Renderer v3.0 | CCDash | Renders CCDashDesignV16.0 to PNG/BMP |
 | **Multi-Device Renderer** | CC LiveDash | LiveDash | LiveDash endpoint/service |
 | **Journey Engine** | CommuteCompute | CommuteCompute | Journey + coffee calculations |
 
@@ -45,9 +45,9 @@ The system was previously known as "Commute Compute". Update any remaining refer
 | commute-compute | commute-compute |
 | commutecompute | commutecompute |
 | commute-compute-config | cc-config |
-| V10 Dashboard | CCDashDesignV15.0 |
-| V10 spec | CCDashDesignV15.0 spec |
-| v13 renderer | CCDash Renderer v2.1 |
+| V10 Dashboard | CCDashDesignV16.0 |
+| V10 spec | CCDashDesignV16.0 spec |
+| v13 renderer | CCDash Renderer v3.0 |
 | zone-renderer-v13.js | ccdash-renderer.js |
 | LiveDash (standalone) | CC LiveDash |
 
@@ -3911,7 +3911,7 @@ The footer MUST display attributions based on what the user has configured in `l
 #### 22.9.4 Version Display Format
 
 ```
-[●] CommuteCompute v3.1  |  CCDash Renderer v2.1  |  System v4.2.0  |  Build 2026-02-07
+[●] CommuteCompute v4.0  |  CCDash Renderer v3.0  |  System v5.0.0  |  Build 2026-03-02
 ```
 
 - Green pulsing dot indicates live/connected status

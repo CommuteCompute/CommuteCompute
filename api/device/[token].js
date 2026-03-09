@@ -5,6 +5,9 @@
  * Also reads CommuteCompute settings from KV if available to apply
  * user's walking times, coffee position, and mode preferences.
  *
+ * Consolidation: Local decodeConfigToken removed — uses shared
+ * src/utils/config-token.js module.
+ *
  * Copyright (c) 2026 Angus Bergman
  * SPDX-License-Identifier: AGPL-3.0-or-later
  * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
@@ -13,34 +16,7 @@
 import LiveDash from '../../src/services/livedash.js';
 import { getPreferences } from '../../src/data/kv-preferences.js';
 import { renderFullScreenBMP } from '../../src/services/ccdash-renderer.js';
-
-/**
- * Decode config token back to config object
- */
-function decodeConfigToken(token) {
-  try {
-    const json = Buffer.from(token, 'base64url').toString('utf8');
-    const minified = JSON.parse(json);
-    
-    return {
-      addresses: minified.a || {},
-      journey: {
-        transitRoute: minified.j || {},
-        arrivalTime: minified.t || '09:00',
-        coffeeEnabled: minified.c !== false
-      },
-      locations: minified.l || {},
-      state: minified.s || 'VIC',
-      api: {
-        key: minified.k || ''
-      },
-      cafe: minified.cf || null,
-      apiMode: minified.m || 'cached'
-    };
-  } catch (error) {
-    return null;
-  }
-}
+import { decodeConfigToken } from '../../src/utils/config-token.js';
 
 export default async function handler(req, res) {
   // Set CORS headers

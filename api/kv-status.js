@@ -10,8 +10,18 @@
  */
 
 import { getStorageStatus, getTransitApiKey, getKvEnvStatus } from '../src/data/kv-preferences.js';
+import { requireAuth, setAdminCorsHeaders } from '../src/utils/auth-middleware.js';
 
 export default async function handler(req, res) {
+  setAdminCorsHeaders(res);
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  const authError = requireAuth(req);
+  if (authError) return res.status(401).json(authError);
   try {
     const status = await getStorageStatus();
     const transitKey = await getTransitApiKey();
@@ -32,16 +42,8 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     res.status(500).json({
-      error: error.message,
-      kv: {
-        available: false,
-        envVars: {
-          KV_REST_API_URL: process.env.KV_REST_API_URL ? 'set' : 'missing',
-          KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN ? 'set' : 'missing',
-          UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL ? 'set' : 'missing',
-          UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN ? 'set' : 'missing'
-        }
-      }
+      error: 'Internal storage error',
+      kv: { available: false }
     });
   }
 }

@@ -15,7 +15,7 @@
 
 import fetch from 'node-fetch';
 import PreferencesManager from '../src/data/preferences-manager.js';
-import { setTransitApiKey, setUserState } from '../src/data/kv-preferences.js';
+import { setTransitApiKey, setUserState, getPreferences, setPreferences } from '../src/data/kv-preferences.js';
 import { requireAuth, isFirstTimeSetup, setAdminCorsHeaders } from '../src/utils/auth-middleware.js';
 
 // Transit authority validation endpoints
@@ -234,6 +234,13 @@ export default async function handler(req, res) {
     // Per Section 11.8: Save to KV storage (Zero-Config compliant)
     const kvSaved = await setTransitApiKey(apiKey.trim());
     await setUserState(state);
+
+    // When user saves a valid API key, ensure apiMode is 'live'
+    // generate-webhook.js previously defaulted apiMode to 'cached', blocking all GTFS-RT
+    const kvPrefsForMode = await getPreferences();
+    if (!kvPrefsForMode?.apiMode || kvPrefsForMode.apiMode === 'cached') {
+      await setPreferences({ ...kvPrefsForMode, apiMode: 'live' });
+    }
     
     // Also save to local preferences (for development/local use)
     const prefs = new PreferencesManager();

@@ -1603,10 +1603,10 @@
         fetch('/api/version')
             .then(r => r.json())
             .then(v => {
-                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v3.1';
-                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v2.1';
+                document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v4.0';
+                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v3.0';
                 document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '4.2.0');
+                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.0.0');
                 if (v.repoUrls) checkForUpstreamUpdates(v.system?.version, v.repoUrls);
             })
             .catch(() => {});
@@ -1670,15 +1670,15 @@
             <div class="cc-footer-version-item">
                 <div class="cc-footer-live-dot"></div>
                 <span class="cc-footer-version-label">CommuteCompute</span>
-                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v3.1</span>
+                <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v4.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">CCDash&#8482; Renderer</span>
-                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v2.1</span>
+                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v3.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">System</span>
-                <span class="cc-footer-version-value" id="cc-footer-system-version">v4.2.0</span>
+                <span class="cc-footer-version-value" id="cc-footer-system-version">v5.0.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">Build</span>

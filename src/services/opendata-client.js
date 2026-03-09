@@ -240,7 +240,8 @@ async function fetchGtfsRt(mode, feed, options = {}) {
     const timeoutId = setTimeout(() => controller.abort(), 10000);
     const response = await fetch(url, {
       headers: {
-        'KeyId': keyStr,  // Case-sensitive as per dev rules Section 11.1
+        'Ocp-Apim-Subscription-Key': keyStr,  // OpenAPI spec header (Azure APIM standard)
+        'KeyId': keyStr,  // Portal-documented header — sending both for robustness
         'Accept': 'application/x-protobuf'
       },
       signal: controller.signal
@@ -292,7 +293,8 @@ async function fetchGtfsRt(mode, feed, options = {}) {
 export async function getDepartures(stopId, routeType, options = {}) {
   // V13.6 FIX: Per Section 23.6 - return empty array if no valid stop ID (not mock data)
   if (!stopId || stopId === 'null' || stopId === 'undefined') {
-    console.warn(`[OpenData] getDepartures called with invalid stopId: ${stopId}`);
+    const modeNames = { 0: 'metro', 1: 'tram', 2: 'bus', 3: 'vline' };
+    console.warn(`[OpenData] getDepartures skipped for ${modeNames[routeType] || 'unknown'}: no stop ID detected. Verify address has geocoded coordinates.`);
     return [];
   }
 

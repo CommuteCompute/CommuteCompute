@@ -4,12 +4,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-// Validate the screen endpoint handler can be imported
-import handler from '../api/screen.js';
+// Validate the commutecompute endpoint handler can be imported
+import handler from '../api/commutecompute.js';
 
-describe('/api/screen smoke test', () => {
+describe('/api/commutecompute smoke test', () => {
   it('handler should be a default-exported function', () => {
     assert.equal(typeof handler, 'function',
-      'api/screen.js must export a default handler function');
+      'api/commutecompute.js must export a default handler function');
   });
 });

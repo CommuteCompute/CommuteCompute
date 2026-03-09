@@ -12,7 +12,7 @@ Licensed under AGPL-3.0
 
 **Effective Date:** 16 February 2026
 **Last Updated:** 16 February 2026
-**System Version:** v4.2.0
+**System Version:** v5.0.0
 
 ---
 

@@ -13,7 +13,8 @@
  */
 
 import { CommuteCompute } from '../src/engines/commute-compute.js';
-import { getTransitApiKey, getPreferences, setPreferences } from '../src/data/kv-preferences.js';
+import { getTransitApiKey, getPreferences, setPreferences, getStationOverrides, setStationOverrides } from '../src/data/kv-preferences.js';
+import { findNearestStops, findNearestStopsMultiple } from '../src/data/gtfs-stop-names.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -99,6 +100,22 @@ export default async function handler(req, res) {
       });
     }
 
+    // POST — save station overrides (user selects alternative stops for legs)
+    if (req.method === 'POST' && params.stationOverrides !== undefined) {
+      await setStationOverrides(params.stationOverrides);
+      return res.status(200).json({
+        success: true,
+        message: 'Station overrides saved',
+        overrides: params.stationOverrides
+      });
+    }
+
+    // GET — return station overrides if requested
+    if (req.query?.getOverrides === 'true') {
+      const overrides = await getStationOverrides() || {};
+      return res.status(200).json({ success: true, overrides });
+    }
+
     // GET - discover and return all route alternatives
     const allRoutes = await engine.discoverRoutes();
     const primaryRoute = allRoutes[0] || null;
@@ -111,6 +128,18 @@ export default async function handler(req, res) {
       alt.isSelected = idx === 0;
     });
 
+    // Include station overrides and nearby alternatives for admin panel dropdowns
+    const stationOverrides = await getStationOverrides() || {};
+    // Provide nearby stops for home/work locations so admin can offer alternatives
+    // Returns top 3 per mode sorted by distance for station preference dropdowns
+    const locations = engine.getLocations();
+    const nearbyStopsHome = (locations.home?.lat && locations.home?.lon)
+      ? findNearestStopsMultiple(locations.home.lat, locations.home.lon, { count: 3 })
+      : {};
+    const nearbyStopsWork = (locations.work?.lat && locations.work?.lon)
+      ? findNearestStopsMultiple(locations.work.lat, locations.work.lon, { count: 3 })
+      : {};
+
     return res.status(200).json({
       success: true,
       count: alternatives.length,
@@ -118,6 +147,11 @@ export default async function handler(req, res) {
       selectedIndex: 0,
       selectedId: primaryRoute?.id,
       alternatives,
+      stationOverrides,
+      nearbyStops: {
+        home: nearbyStopsHome,
+        work: nearbyStopsWork
+      },
       state: engine.state,
       fallbackMode: engine.fallbackMode,
       timestamp: new Date().toISOString()
@@ -174,12 +208,22 @@ function formatRouteForDisplay(route, index = 0) {
     primaryMode,
     via: route.via,
     hasCoffee: (route.legs || []).some(l => l.type === 'coffee'),
-    legs: (route.legs || []).map(leg => ({
-      type: leg.type,
-      icon: modeIcons[leg.type] || '•',
-      title: leg.to || leg.location || leg.destination?.name || leg.origin?.name || '',
-      minutes: leg.minutes || leg.durationMinutes || 0,
-      routeNumber: leg.routeNumber
-    }))
+    legs: (route.legs || []).map(leg => {
+      const legData = {
+        type: leg.type,
+        icon: modeIcons[leg.type] || '•',
+        title: leg.to || leg.location || leg.destination?.name || leg.origin?.name || '',
+        minutes: leg.minutes || leg.durationMinutes || 0,
+        routeNumber: leg.routeNumber
+      };
+      // Include stop/station names for transit legs
+      if (['train', 'tram', 'bus', 'ferry', 'vline'].includes(leg.type)) {
+        legData.originName = leg.origin?.name || leg.originStop || leg.originStation || '';
+        legData.destinationName = leg.destination?.name || leg.destinationName || '';
+        legData.stopId = leg.stopId || leg.originStopId || null;
+        legData.lineName = leg.lineName || null;
+      }
+      return legData;
+    })
   };
 }
