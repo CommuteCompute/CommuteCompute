@@ -185,13 +185,29 @@ class LifestyleContext {
    * @param {number} params.totalWalkMins - Total walk time in minutes
    * @param {number} params.disruptionCount - Number of disrupted legs
    * @param {number} params.transferCount - Number of transfers
+   * @param {number} [params.confidenceScore] - DepartureConfidence score (0-100)
+   * @param {number} [params.maxDelayMinutes] - Worst delay from GTFS-RT data
+   * @param {boolean} [params.hasLiveData] - Whether live GTFS-RT data is available
    * @returns {Object} Extended lifestyle metrics
    */
   calculateMindset(params) {
-    const { legs = [], weather = {}, totalWalkMins = 0, disruptionCount = 0, transferCount = 0 } = params || {};
+    const {
+      legs = [], weather = {}, totalWalkMins = 0,
+      disruptionCount = 0, transferCount = 0,
+      confidenceScore, maxDelayMinutes, hasLiveData
+    } = params || {};
 
-    // Commute stress assessment
-    const stressFactors = disruptionCount + (transferCount > 2 ? 1 : 0);
+    // Commute stress assessment — integrates live delay and confidence data
+    let stressFactors = disruptionCount + (transferCount > 2 ? 1 : 0);
+    // Factor in actual delays from GTFS-RT when available
+    if (typeof maxDelayMinutes === 'number' && maxDelayMinutes > 5) {
+      stressFactors += maxDelayMinutes > 15 ? 2 : 1;
+    }
+    // Low confidence score indicates unreliable journey
+    if (typeof confidenceScore === 'number' && confidenceScore < 50) {
+      stressFactors += 1;
+    }
+
     let stressLevel, stressDisplay;
     if (stressFactors >= STRESS_HIGH_DISRUPTIONS) {
       stressLevel = 'HIGH';
@@ -207,6 +223,29 @@ class LifestyleContext {
     // Walk step estimate
     const walkSteps = Math.round(totalWalkMins * STEPS_PER_MINUTE);
     const stepsDisplay = walkSteps > 0 ? '~' + walkSteps + ' STEPS' : null;
+
+    // Resilience indicator — based on confidence and live data availability
+    let resilienceLevel = 'UNKNOWN';
+    let resilienceDisplay = null;
+    if (hasLiveData === true) {
+      if (typeof confidenceScore === 'number') {
+        if (confidenceScore >= 80) {
+          resilienceLevel = 'HIGH';
+          resilienceDisplay = 'RELIABLE';
+        } else if (confidenceScore >= 50) {
+          resilienceLevel = 'MODERATE';
+          resilienceDisplay = 'ALLOW BUFFER';
+        } else {
+          resilienceLevel = 'LOW';
+          resilienceDisplay = 'AT RISK';
+        }
+      } else {
+        resilienceLevel = 'LIVE';
+        resilienceDisplay = 'LIVE DATA';
+      }
+    } else if (hasLiveData === false) {
+      resilienceDisplay = 'NO LIVE DATA';
+    }
 
     // Apparent temperature (wind chill effect)
     const temp = typeof weather.temp === 'number' ? weather.temp : null;
@@ -225,6 +264,8 @@ class LifestyleContext {
       stressDisplay,
       walkSteps,
       stepsDisplay,
+      resilienceLevel,
+      resilienceDisplay,
       apparentTemp,
       feelsLikeDisplay,
       mindsetLine: stressDisplay

@@ -7923,9 +7923,14 @@
                 if (msgEl) {
                     msgEl.style.display = 'block';
                     msgEl.style.background = 'rgba(34, 197, 94, 0.2)';
-                    msgEl.innerHTML = '<svg class="icon-sm"><use href="#icon-check-circle"/></svg> Station preferences saved.';
-                    setTimeout(() => msgEl.style.display = 'none', 3000);
+                    msgEl.innerHTML = '<svg class="icon-sm"><use href="#icon-check-circle"/></svg> Station preferences saved. Refreshing journey...';
                 }
+                // Auto-refresh journey and preview after saving overrides
+                setTimeout(() => {
+                    loadJourneySummary();
+                    refreshEinkPreview();
+                    if (msgEl) msgEl.style.display = 'none';
+                }, 1500);
             } catch (error) {
                 if (msgEl) {
                     msgEl.style.display = 'block';
@@ -8123,7 +8128,7 @@
             const transitValidated = localStorage.getItem('cc-transit-api-validated') === 'true';
             const googleKey = localStorage.getItem('cc-google-places-key') || '';
             const googleValidated = localStorage.getItem('cc-google-places-validated') === 'true';
-            const apiMode = prefs?.apiMode || localStorage.getItem('cc-api-mode') || 'cached';
+            const apiMode = prefs?.apiMode || localStorage.getItem('cc-api-mode') || 'live';
             
             const hasAnyConfig = transitKey || googleKey || localStorage.getItem('cc-configured') === 'true';
             

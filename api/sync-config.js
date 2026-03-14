@@ -107,8 +107,14 @@ export default async function handler(req, res) {
 
       const status = await getStorageStatus();
 
+      // Only fail if a requested write actually failed
+      const allSucceeded = (!transitKey || results.transit) &&
+                           (!googleKey || results.google) &&
+                           (!state || results.state) &&
+                           (!preferences || results.preferences);
+
       return res.json({
-        success: true,
+        success: allSucceeded,
         saved: results,
         kv: {
           available: status.kvAvailable,
