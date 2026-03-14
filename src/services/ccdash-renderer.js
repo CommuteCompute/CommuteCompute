@@ -1023,11 +1023,11 @@ function getDynamicLegZone(legIndex, totalLegs, legs = null, displayWidth = REF_
 
   // V13: If we have the legs array, calculate variable heights
   if (legs && legs.length > 0) {
-    // Calculate total "weight" - walk=1, transit/coffee=2
+    // Calculate total "weight" - walk/coffee=1, transit=2
     let totalWeight = 0;
     const legWeights = legs.map(leg => {
-      const isWalk = leg.type === 'walk';
-      const weight = isWalk ? 1 : 2;  // Walk legs are half height
+      const isCompact = leg.type === 'walk' || leg.type === 'coffee';
+      const weight = isCompact ? 1 : 2;
       totalWeight += weight;
       return weight;
     });
@@ -1113,11 +1113,12 @@ function renderLegZone(ctx, leg, zone, legNumber = 1, isHighlighted = false) {
     borderWidth = 3;
   } else if (leg.type === 'coffee' && !leg.canGet) {
     borderWidth = 2;
-    borderDash = [4, 4];
+    borderDash = [];  // Solid border for skipped coffee
   }
   
   // Background
-  if (isHighlighted) {
+  const isCoffeeInverted = leg.type === 'coffee' && leg.canGet;
+  if (isHighlighted || isCoffeeInverted) {
     ctx.fillStyle = '#000';
     ctx.fillRect(x, y, w, h);
     ctx.fillStyle = '#FFF';
@@ -1125,7 +1126,7 @@ function renderLegZone(ctx, leg, zone, legNumber = 1, isHighlighted = false) {
     ctx.fillStyle = '#FFF';
     ctx.fillRect(x, y, w, h);
     ctx.fillStyle = '#000';
-    
+
     // Border
     ctx.strokeStyle = '#000';
     ctx.lineWidth = borderWidth;
@@ -1151,7 +1152,7 @@ function renderLegZone(ctx, leg, zone, legNumber = 1, isHighlighted = false) {
   
   // Main text area (1-bit: ALL text must be #000 or #FFF, no gray)
   const textX = iconX + iconSize + 8;
-  const textColor = isHighlighted ? '#FFF' : '#000';  // E-ink 1-bit: NO GRAY
+  const textColor = (isHighlighted || isCoffeeInverted) ? '#FFF' : '#000';  // E-ink 1-bit: NO GRAY
   ctx.fillStyle = textColor;
   
   // v1.20: Calculate vertical positions based on height
@@ -1221,7 +1222,7 @@ function renderLegZone(ctx, leg, zone, legNumber = 1, isHighlighted = false) {
   let timeBoxTextColor = '#FFF';
   let showDuration = true;
   
-  if (isHighlighted) {
+  if (isHighlighted || isCoffeeInverted) {
     timeBoxBg = '#FFF';
     timeBoxTextColor = '#000';
   } else if (status === 'delayed') {
@@ -1233,10 +1234,10 @@ function renderLegZone(ctx, leg, zone, legNumber = 1, isHighlighted = false) {
     ctx.strokeRect(timeBoxX + 2, timeBoxY + 2, timeBoxW - 4, timeBoxH - 4);
     ctx.setLineDash([]);
   } else if (leg.type === 'coffee' && !leg.canGet) {
-    // Skip coffee - dashed border, no fill (1-bit: use #000, not gray)
+    // Skip coffee - solid border, no fill (1-bit: use #000, not gray)
     ctx.strokeStyle = '#000';  // E-ink 1-bit: NO GRAY
     ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
+    ctx.setLineDash([]);
     ctx.strokeRect(timeBoxX + 2, timeBoxY + 2, timeBoxW - 4, timeBoxH - 4);
     ctx.setLineDash([]);
     showDuration = false;
@@ -1791,18 +1792,19 @@ function renderStatus(data, prefs) {
   ctx.fillText(statusText, 16, zone.h / 2);
 
   // V14.0: Confidence score (before total minutes)
+  // V16.0: Suppress confidence in TOMORROW mode — future conditions are unknowable
   const confidenceScore = data.confidence_score;
-  if (confidenceScore !== undefined && confidenceScore !== null) {
+  if (confidenceScore !== undefined && confidenceScore !== null && !data.isTomorrowCommute) {
     ctx.textAlign = 'right';
     const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
     const needsAttention = confidenceScore < 75;
     // V15.1: Bold only when action needed (AT RISK / UNLIKELY). Subtle for ON TIME.
     ctx.font = needsAttention ? 'bold 17px Inter, sans-serif' : '16px Inter, sans-serif';
-    // V15.0: Only append mindset when stress is not LOW (action-needed only)
+    // V16.0: Show both confidence context and mindset when both are actionable
     const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
+    const contextText = data.confidence_context ? ` \u2022 ${data.confidence_context}` : '';
     const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
-    const contextText = (stressIsLow && data.confidence_context) ? ` \u2022 ${data.confidence_context}` : '';
-    ctx.fillText(`${confLabel} (${confidenceScore}%)${mindsetText}${contextText}`, zone.w - 80, zone.h / 2);
+    ctx.fillText(`${confLabel} (${confidenceScore}%)${contextText}${mindsetText}`, zone.w - 80, zone.h / 2);
   }
 
   // Right text - Total journey time (V10 Spec Section 4.2)
@@ -2217,7 +2219,16 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     ctx.lineWidth = 1;
     ctx.strokeRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
     ctx.fillStyle = '#000';
-    ctx.fillText('\u2713 SERVICES OK', statusBoxX + statusTextPad, statusBoxY + statusBoxH / 2);
+    // V16.0: Differentiate partial live (some modes timetable) from full live
+    const serviceLabel = data.isPartialLive ? '\u2713 PARTIAL LIVE' : '\u2713 SERVICES OK';
+    ctx.fillText(serviceLabel, statusBoxX + statusTextPad, statusBoxY + statusBoxH / 2);
+  } else if (data.dataSource === 'tomorrow') {
+    // Outlined — tomorrow mode is expected, not an error
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
+    ctx.fillStyle = '#000';
+    ctx.fillText('\u25CB TOMORROW', statusBoxX + statusTextPad, statusBoxY + statusBoxH / 2);
   } else if (data.dataSource === 'timetable') {
     // Black filled — timetable fallback needs awareness
     ctx.fillStyle = '#000';
@@ -2241,7 +2252,16 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     ctx.lineWidth = 1;
     ctx.strokeRect(statusBoxX, dataBoxY, statusBoxW, dataBoxH);
     ctx.fillStyle = '#000';
-    ctx.fillText('\u25CF LIVE DATA', statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
+    // V16.0: Show PARTIAL LIVE when some transit modes lack GTFS-RT data
+    const dataLabel = data.isPartialLive ? '\u25CF PARTIAL LIVE' : '\u25CF LIVE DATA';
+    ctx.fillText(dataLabel, statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
+  } else if (data.dataSource === 'tomorrow') {
+    // Outlined — tomorrow mode, no data source indicator needed
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(statusBoxX, dataBoxY, statusBoxW, dataBoxH);
+    ctx.fillStyle = '#000';
+    ctx.fillText('\u25CB SCHEDULED', statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
   } else if (data.dataSource === 'timetable') {
     // Black filled — timetable fallback needs awareness
     ctx.fillStyle = '#000';
@@ -2294,8 +2314,8 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
       // Without this, "8:53" at PM is interpreted as 8:53 AM (533 min) — falls within
       // ±2hr of 9:00 AM target, blocking sleep mode display at night
       if (!data.current_time.toLowerCase().includes('am') && !data.current_time.toLowerCase().includes('pm')) {
-        if (data.am_pm === 'PM' && h < 12) h += 12;
-        if (data.am_pm === 'AM' && h === 12) h = 0;
+        if (data.am_pm?.toUpperCase() === 'PM' && h < 12) h += 12;
+        if (data.am_pm?.toUpperCase() === 'AM' && h === 12) h = 0;
       }
       currentMins = h * 60 + m;
     }
@@ -2610,8 +2630,8 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
       if (data.current_time.toLowerCase().includes('am') && hours === 12) hours = 0;
       // Use data.am_pm when current_time has no am/pm suffix (e.g. "5:45")
       if (!data.current_time.toLowerCase().includes('am') && !data.current_time.toLowerCase().includes('pm')) {
-        if (data.am_pm === 'PM' && hours < 12) hours += 12;
-        if (data.am_pm === 'AM' && hours === 12) hours = 0;
+        if (data.am_pm?.toUpperCase() === 'PM' && hours < 12) hours += 12;
+        if (data.am_pm?.toUpperCase() === 'AM' && hours === 12) hours = 0;
       }
       nowMins = hours * 60 + mins;
     }
@@ -2712,8 +2732,20 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     statusText = `\u26A0 ${delayedService} DELAYED \u2192 Arrive ${calculatedArrival}`;
     if (totalLegDelay > 0) statusText += ` (+${totalLegDelay} min)`;
   } else if (data.isTomorrowCommute) {
-    // Issue 4: Past today's target — show tomorrow morning context
-    statusText = `TOMORROW \u2192 Arrive ${targetArrivalDisplay}`;
+    // V16.0: Show LEAVE BY time for tomorrow's commute (more actionable than just target)
+    // Calculate tomorrow morning's departure clock time from target minus journey duration
+    const totalMins = data.total_minutes || 0;
+    const targetMinsFromMidnight = (() => {
+      const [h, m] = (data.arrive_by || '9:00').split(':').map(Number);
+      return h * 60 + (m || 0);
+    })();
+    const leaveByMins = Math.max(0, targetMinsFromMidnight - totalMins);
+    const leaveByH = Math.floor(leaveByMins / 60) % 24;
+    const leaveByM = leaveByMins % 60;
+    const leaveByH12 = leaveByH % 12 || 12;
+    const leaveByAmPm = leaveByH >= 12 ? 'pm' : 'am';
+    const leaveByTime = `${leaveByH12}:${String(leaveByM).padStart(2, '0')}${leaveByAmPm}`;
+    statusText = `TOMORROW \u2192 Leave by ${leaveByTime} \u2192 Arrive ${targetArrivalDisplay}`;
   } else if (!isCommuteDay) {
     // Non-commute day — don't show LEAVE NOW or LATE
     statusText = `NOT TODAY \u2192 Next commute: ${targetArrivalDisplay}`;
@@ -2754,7 +2786,17 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   // 2. Disruption badge (if present) — positioned left of total time
   if (disruptionType) {
     ctx.font = `bold ${Math.max(11, Math.round(12 * fs))}px Inter, sans-serif`;
-    const badgeText = disruptionText.substring(0, 20);
+    // V16.0: Extract key info from disruption text instead of blind truncation.
+    // "Planned work: Buses replace trains between Parliament and Caulfield" → "Parliament–Caulfield"
+    // "TRAM 58 +5 MIN" → "TRAM 58 +5 MIN" (already concise)
+    let badgeText = disruptionText;
+    const betweenMatch = disruptionText.match(/between\s+(.+?)\s+and\s+(.+?)(?:\s*[→\-.]|$)/i);
+    if (betweenMatch) {
+      badgeText = `${betweenMatch[1]}\u2013${betweenMatch[2]}`;
+    } else if (disruptionText.startsWith('Planned work:')) {
+      badgeText = disruptionText.replace('Planned work: ', '');
+    }
+    badgeText = badgeText.substring(0, 24);
     const textWidth = ctx.measureText(badgeText).width;
     const delayBoxW = Math.max(Math.round(110 * sx), textWidth + Math.round(16 * sx));
     const delayBoxH = Math.round(22 * sy);
@@ -2773,15 +2815,16 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
 
   // 3. Confidence score + mindset (if present) — positioned left of badge
   const confidenceScore = data.confidence_score;
-  if (confidenceScore !== undefined && confidenceScore !== null && isCommuteDay) {
+  if (confidenceScore !== undefined && confidenceScore !== null && isCommuteDay && !data.isTomorrowCommute) {
     ctx.textAlign = 'right';
     const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
     const needsAttention = confidenceScore < 75;
     ctx.font = needsAttention ? `bold ${Math.max(11, Math.round(17 * fs))}px Inter, sans-serif` : `${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;
+    // V16.0: Show both confidence context and mindset when both are actionable
     const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
+    const contextText = data.confidence_context ? ` \u2022 ${data.confidence_context}` : '';
     const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
-    const contextText = (stressIsLow && data.confidence_context) ? ` \u2022 ${data.confidence_context}` : '';
-    const confText = `${confLabel} (${confidenceScore}%)${mindsetText}${contextText}`;
+    const confText = `${confLabel} (${confidenceScore}%)${contextText}${mindsetText}`;
     const confMaxWidth = Math.max(Math.round(100 * sx), rightBoundary - Math.round(200 * sx));
     ctx.fillText(confText, rightBoundary, statusBarMidY, confMaxWidth);
     const confWidth = Math.min(ctx.measureText(confText).width, confMaxWidth);
@@ -3316,7 +3359,8 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
         const catchableDepartures = leg.nextDepartureTimesMs
           .filter(depMs => depMs >= arrivalAtStopMs + 60000)
           .slice(0, 3)
-          .map(depMs => Math.max(0, Math.round((depMs - nowMs) / 60000)));
+          .map(depMs => Math.max(0, Math.round((depMs - nowMs) / 60000)))
+          .filter(mins => mins <= 60);
 
         if (catchableDepartures.length >= 3) {
           nextStr = `${tilde}Next: ${catchableDepartures[0]}, ${catchableDepartures[1]}, ${catchableDepartures[2]} min${liveIndicator}`;

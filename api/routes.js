@@ -13,7 +13,7 @@
  */
 
 import { CommuteCompute } from '../src/engines/commute-compute.js';
-import { getTransitApiKey, getPreferences, setPreferences, getStationOverrides, setStationOverrides } from '../src/data/kv-preferences.js';
+import { getTransitApiKey, getPreferences, setPreferences, getStationOverrides, setStationOverrides, getPreferredTramRoute, setPreferredTramRoute } from '../src/data/kv-preferences.js';
 import { findNearestStops, findNearestStopsMultiple } from '../src/data/gtfs-stop-names.js';
 
 export default async function handler(req, res) {
@@ -110,6 +110,17 @@ export default async function handler(req, res) {
       });
     }
 
+    // POST — save preferred tram route (pinned for consistency)
+    if (req.method === 'POST' && params.preferredTramRoute !== undefined) {
+      const route = params.preferredTramRoute || null;
+      await setPreferredTramRoute(route);
+      return res.status(200).json({
+        success: true,
+        message: route ? `Tram route ${route} pinned` : 'Tram route preference cleared',
+        preferredTramRoute: route
+      });
+    }
+
     // GET — return station overrides if requested
     if (req.query?.getOverrides === 'true') {
       const overrides = await getStationOverrides() || {};
@@ -130,14 +141,20 @@ export default async function handler(req, res) {
 
     // Include station overrides and nearby alternatives for admin panel dropdowns
     const stationOverrides = await getStationOverrides() || {};
+    const preferredTramRoute = await getPreferredTramRoute();
     // Provide nearby stops for home/work locations so admin can offer alternatives
     // Returns top 3 per mode sorted by distance for station preference dropdowns
+    // Use Redis-stored coordinates directly — engine.getLocations() may lack lat/lon
     const locations = engine.getLocations();
-    const nearbyStopsHome = (locations.home?.lat && locations.home?.lon)
-      ? findNearestStopsMultiple(locations.home.lat, locations.home.lon, { count: 3 })
+    const homeLat = locations.home?.lat || prefs.homeLocation?.lat;
+    const homeLon = locations.home?.lon || prefs.homeLocation?.lon;
+    const workLat = locations.work?.lat || prefs.workLocation?.lat;
+    const workLon = locations.work?.lon || prefs.workLocation?.lon;
+    const nearbyStopsHome = (homeLat && homeLon)
+      ? findNearestStopsMultiple(homeLat, homeLon, { count: 5 })
       : {};
-    const nearbyStopsWork = (locations.work?.lat && locations.work?.lon)
-      ? findNearestStopsMultiple(locations.work.lat, locations.work.lon, { count: 3 })
+    const nearbyStopsWork = (workLat && workLon)
+      ? findNearestStopsMultiple(workLat, workLon, { count: 5 })
       : {};
 
     return res.status(200).json({
@@ -148,6 +165,7 @@ export default async function handler(req, res) {
       selectedId: primaryRoute?.id,
       alternatives,
       stationOverrides,
+      preferredTramRoute: preferredTramRoute || null,
       nearbyStops: {
         home: nearbyStopsHome,
         work: nearbyStopsWork

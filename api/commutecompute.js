@@ -17,8 +17,8 @@
 
 import { getDepartures, getDisruptions, getWeather, METRO_LINE_NAMES } from '../src/services/opendata-client.js';
 import CommuteCompute from '../src/engines/commute-compute.js';
-import { GTFS_STOP_NAMES, getStopNameById, MELBOURNE_STOP_IDS, detectStopIdsFromAddress, findNearestStops } from '../src/data/gtfs-stop-names.js';
-import { getTransitApiKey, getPreferences, getUserState, setDeviceStatus, getClient, getStationOverrides, setStationOverrides } from '../src/data/kv-preferences.js';
+import { GTFS_STOP_NAMES, getStopNameById, cleanStopName, MELBOURNE_STOP_IDS, detectStopIdsFromAddress, findNearestStops } from '../src/data/gtfs-stop-names.js';
+import { getTransitApiKey, getPreferences, getUserState, setDeviceStatus, getClient, getStationOverrides, setStationOverrides, getPreferredTramRoute, setPreferredTramRoute } from '../src/data/kv-preferences.js';
 import { renderFullDashboard, renderFullScreenBMP, DISPLAY_DIMENSIONS } from '../src/services/ccdash-renderer.js';
 import { getScenario, getScenarioNames } from '../src/services/journey-scenarios.js';
 import DepartureConfidence from '../src/engines/departure-confidence.js';
@@ -276,7 +276,7 @@ function mergeConsecutiveWalkLegs(legs) {
  * Now includes cumulative timing and DEPART times (v1.18)
  * V13.6: Added stopIds for actual stop name lookup
  */
-function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locations = {}, stopIds = {}, state) {
+function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locations = {}, stopIds = {}, state, preferredTramRoute = null, options = {}) {
   if (!route?.legs) return [];
 
   const legs = [];
@@ -305,9 +305,10 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     const prevLeg = i > 0 ? route.legs[i - 1] : null;
 
     // V13.6: Add 2 minute buffer to walking legs for realistic timing
+    // Cap walk legs at 30 min — engine can return inflated values at certain times
     const isWalkLeg = leg.type === 'walk';
     const rawDuration = leg.minutes || leg.durationMinutes || 0;
-    const legDuration = isWalkLeg ? rawDuration + 2 : rawDuration;
+    const legDuration = isWalkLeg ? Math.min(rawDuration + 2, 30) : rawDuration;
 
     // V13.6: Track origin transitions based on walk leg destinations
     // Walk TO cafe means we're now at cafe; walk FROM cafe to transit means use cafe suburb
@@ -329,10 +330,10 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
 
     // V13.6: Walk leg destinations - show where we're walking TO
     // Priority: 1) GTFS lookup by stopId, 2) suburb-derived fallback
-    if (leg.to === 'tram stop') {
+    if (leg.to?.toLowerCase() === 'tram stop') {
       leg.stopName = getStopNameById(stopIds.tramStopId) || derivedTramStop;
     }
-    if (leg.to === 'train platform' || leg.to === 'station') {
+    if (leg.to?.toLowerCase() === 'train platform' || leg.to?.toLowerCase() === 'station') {
       leg.stationName = getStopNameById(stopIds.trainStopId) || derivedStation;
     }
 
@@ -461,6 +462,7 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     let nextDepartureTimesMs = null;
     const isTransitLeg = ['train', 'tram', 'bus', 'vline'].includes(leg.type);
     const nowMs = now.getTime();
+
     const liveData = isTransitLeg ? findMatchingDeparture(leg, transitData, nowMs) : null;
     const arrivalAtStopMs = nowMs + (cumulativeMinutes * 60000);
 
@@ -488,6 +490,9 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         // Valid departures up to 120+ min away are kept — supports low-frequency services
         if (rawMinutes < 0 || rawMinutes > 180) {
           rawMinutes = cumulativeMinutes + (legDuration || 5);
+          // Clamped sentinel — not real live data
+          if (liveData) liveData.isLive = false;
+          leg.isTimetableEstimate = true;
         }
         minutesToDeparture = rawMinutes;
 
@@ -517,23 +522,26 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     // estimate departure as arrival + 2 min average wait. Per Section 23.6: No mock
     // data. Live GTFS-RT or timetable estimate with "Scheduled ~Xmin" display.
     if (isTransitLeg && !actualDepartureMs) {
-      const estWaitMins = 2;
-      const estDepartMins = nowMins + cumulativeMinutes + estWaitMins;
-      const estH = Math.floor(estDepartMins / 60) % 24;
-      const estM = estDepartMins % 60;
-      const estH12 = estH % 12 || 12;
-      const estAmPm = estH >= 12 ? 'pm' : 'am';
-      departTime = `~${estH12}:${estM.toString().padStart(2, '0')}${estAmPm}`;
-      minutesToDeparture = Math.min(cumulativeMinutes + estWaitMins, 180);
-      // Provide estimated departure timestamps so renderer can show 3 departures
-      const estDepartMs = nowMs + (minutesToDeparture * 60000);
-      const headway = leg.type === 'tram' ? 8 : (leg.type === 'train' ? 10 : 15);
-      nextDepartureTimesMs = [
-        estDepartMs,
-        estDepartMs + (headway * 60000),
-        estDepartMs + (headway * 2 * 60000)
-      ];
       leg.isTimetableEstimate = true;
+      if (!options.isTomorrowCommute) {
+        // Only calculate departure times for today — tomorrow's times would be tonight's, not morning's
+        const estWaitMins = 2;
+        const estDepartMins = nowMins + cumulativeMinutes + estWaitMins;
+        const estH = Math.floor(estDepartMins / 60) % 24;
+        const estM = estDepartMins % 60;
+        const estH12 = estH % 12 || 12;
+        const estAmPm = estH >= 12 ? 'pm' : 'am';
+        departTime = `~${estH12}:${estM.toString().padStart(2, '0')}${estAmPm}`;
+        minutesToDeparture = Math.min(cumulativeMinutes + estWaitMins, 180);
+        // Provide estimated departure timestamps so renderer can show 3 departures
+        const estDepartMs = nowMs + (minutesToDeparture * 60000);
+        const headway = leg.type === 'tram' ? 8 : (leg.type === 'train' ? 10 : 15);
+        nextDepartureTimesMs = [
+          estDepartMs,
+          estDepartMs + (headway * 60000),
+          estDepartMs + (headway * 2 * 60000)
+        ];
+      }
     }
 
     // V13.6: Calculate the actual journey contribution for this leg
@@ -554,6 +562,7 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
 
     // V15.0: Populate route/line info from live data BEFORE title/subtitle generation
     // Engine templates may have empty routeNumber (e.g. tram) — fill from GTFS-RT match
+    // Preferred tram route already pinned above (before findMatchingDeparture)
     if (isTransitLeg && liveData) {
       if (!leg.routeNumber && liveData.routeNumber) leg.routeNumber = liveData.routeNumber;
       if (!leg.lineName && liveData.lineName) leg.lineName = liveData.lineName;
@@ -563,6 +572,18 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     // so subtitle shows the same duration as the minutes time box
     if (isWalkLeg) {
       leg.minutes = legDuration;
+      leg.durationMinutes = legDuration; // Ensure fallback field also uses capped value
+    }
+
+    // V16.0: TOMORROW mode — suppress departure data for ALL legs.
+    // Today's departure times are meaningless for tomorrow's commute and create
+    // impossible arithmetic (e.g. 5:21pm departure → 9:00am arrival).
+    // Walk legs show walk duration; transit legs show transit duration (ride time).
+    if (options.isTomorrowCommute) {
+      departTime = null;
+      minutesToDeparture = legDuration; // Show leg duration (walk or transit) instead of "minutes from NOW"
+      nextDepartureTimesMs = null;
+      actualDepartureMs = null;
     }
 
     const baseLeg = {
@@ -716,22 +737,36 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       }
     }
 
-    // V15.0: Append "Next:" to subtitle using CATCHABLE live departures only.
-    // buildLegSubtitle() now returns stop/station name only (no "Next:").
-    // nextDepartureTimesMs is filtered to departures AFTER user arrives at stop,
-    // ensuring the subtitle matches the DEPART time box.
-    if (isTransitLeg && baseLeg.nextDepartures?.length > 0) {
-      const stopName = baseLeg.subtitle || '';
+    // Convert timetable nextDepartureTimesMs to nextDepartures (minutes from now)
+    // when live data matching didn't run (timetable fallback path)
+    if (isTransitLeg && !baseLeg.nextDepartures && baseLeg.nextDepartureTimesMs?.length > 0) {
+      baseLeg.nextDepartures = baseLeg.nextDepartureTimesMs.map(depMs =>
+        Math.round((depMs - nowMs) / 60000)
+      );
+    }
+
+    // Subtitle for transit legs: timetable estimate OR "Next:" catchable departures
+    // V16.0: TOMORROW mode — always show "Scheduled ~Xmin" (no live data applies tomorrow)
+    if (isTransitLeg && options.isTomorrowCommute) {
+      const estMins = Math.max(1, leg.minutes || leg.durationMinutes || 0);
+      baseLeg.subtitle = `Scheduled ~${estMins}min`;
+      baseLeg.isTimetableEstimate = true;
+      baseLeg.nextDepartures = [];
+      baseLeg.nextDepartureTimesMs = [];
+    } else if (isTransitLeg && baseLeg.isTimetableEstimate) {
+      const estMins = Math.max(1, baseLeg.minutes || 0);
+      baseLeg.subtitle = `Scheduled ~${estMins}min`;
+      baseLeg.nextDepartures = [];  // Prevent renderer from appending timetable departures
+      baseLeg.nextDepartureTimesMs = [];  // Renderer checks this FIRST — must also clear
+    } else if (isTransitLeg && baseLeg.nextDepartures?.length > 0) {
       const times = baseLeg.nextDepartures
-        .filter(m => m >= 0)
+        .filter(m => m >= 0 && m <= 120)
         .slice(0, 3)
         .join(', ');
       const liveSuffix = baseLeg.isLive ? ' LIVE' : '';
 
       if (times) {
-        baseLeg.subtitle = stopName
-          ? `${stopName} • Next: ${times} min${liveSuffix}`
-          : `Next: ${times} min${liveSuffix}`;
+        baseLeg.subtitle = `Next: ${times} min${liveSuffix}`;
       }
     }
 
@@ -779,13 +814,13 @@ function buildLegTitle(leg) {
       if (dest === 'cafe' && leg.cafeName) return `Walk to ${leg.cafeName}`;
       if (dest === 'cafe') return 'Walk to Cafe';
       if (dest === 'work') return `Walk to ${leg.workName || 'Office'}`;
-      if (dest === 'tram stop' && leg.stopName) return `Walk to ${leg.stopName}`;
-      if ((dest === 'train platform' || dest === 'station') && leg.stationName) return `Walk to ${leg.stationName}`;
-      if (dest === 'tram stop') return 'Walk to Tram Stop';
-      if (dest === 'train platform' || dest === 'station') return `Walk to ${leg.stationName || 'Station'}`;
+      if (dest?.toLowerCase() === 'tram stop' && leg.stopName) return `Walk to ${leg.stopName}`;
+      if ((dest?.toLowerCase() === 'train platform' || dest?.toLowerCase() === 'station') && leg.stationName) return `Walk to ${leg.stationName}`;
+      if (dest?.toLowerCase() === 'tram stop') return 'Walk to Tram Stop';
+      if (dest?.toLowerCase() === 'train platform' || dest?.toLowerCase() === 'station') return `Walk to ${leg.stationName || 'Station'}`;
       // Use stationName/stopName if available before falling back to generic dest
       if (leg.stationName) return `Walk to ${leg.stationName}`;
-      if (leg.stopName) return `Walk to ${leg.stopName}`;
+      if (leg.stopName) return `Walk to ${cleanStopName(leg.stopName)}`;
       return `Walk to ${cap(dest) || 'Station'}`;
     }
     case 'coffee': {
@@ -797,12 +832,7 @@ function buildLegTitle(leg) {
       return `Coffee at ${cafeName}`;
     }
     case 'train': {
-      // Include line name if available (e.g., "Sandringham Line to Parliament")
-      const lineName = leg.lineName || leg.routeNumber || '';
       const destName = leg.destination?.name || 'City';
-      if (lineName) {
-        return `${lineName} to ${destName}`;
-      }
       return `Train to ${destName}`;
     }
     case 'tram': {
@@ -1776,7 +1806,11 @@ export default async function handler(req, res) {
       busStopId = stationOverrides.bus_0.id;
     }
 
-    console.log(`[CommuteCompute] Stop detection: train=${trainStopId}, tram=${tramStopId}, bus=${busStopId}, source=${stopDetectionSource}`);
+    // Load preferred tram route for consistent display (pinned by user)
+    let preferredTramRoute = null;
+    try { preferredTramRoute = await getPreferredTramRoute(); } catch (e) {}
+
+    console.log(`[CommuteCompute] Stop detection: train=${trainStopId}, tram=${tramStopId}, bus=${busStopId}, source=${stopDetectionSource}, preferredTram=${preferredTramRoute}`);
 
     // Auto-detect work-side stop IDs for train destination resolution
     let workTrainStopId = null;
@@ -1798,10 +1832,26 @@ export default async function handler(req, res) {
 
     // Respect Free Mode: skip GTFS-RT when user explicitly selected cached mode
     const apiMode = kvPrefs?.apiMode || 'live';
+
+    // Early isTomorrowCommute detection — skip live data when past target arrival
+    // Prevents showing tonight's departures when user should see tomorrow's commute
+    const earlyTimezone = STATE_TIMEZONES[userState] || 'Australia/Melbourne';
+    const earlyLocalDateStr = now.toLocaleDateString('en-AU', { timeZone: earlyTimezone, weekday: 'short' });
+    const earlyDayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    const earlyDayOfWeek = earlyDayMap[earlyLocalDateStr.slice(0, 3)] ?? now.getDay();
+    const earlyCommuteDays = config?.journey?.commuteDays || [1, 2, 3, 4, 5];
+    const earlyIsCommuteDay = earlyCommuteDays.includes(earlyDayOfWeek);
+    const earlyMelbTime = getMelbourneDisplayTime(now, userState);
+    const earlyNowMins = earlyMelbTime.hour * 60 + earlyMelbTime.minute;
+    const earlyArrival = config?.journey?.arrivalTime || '09:00';
+    const [eArrH, eArrM] = earlyArrival.split(':').map(Number);
+    const earlyTargetMins = eArrH * 60 + eArrM;
+    const earlyIsTomorrowCommute = earlyIsCommuteDay && earlyNowMins > earlyTargetMins + 180;
+
     // Valid API key = user wants live data, regardless of stored apiMode
     // Root cause of 21 failed live data attempts: generate-webhook.js stored apiMode='cached',
     // causing skipLiveData=true even with valid API key — API was NEVER called
-    const skipLiveData = (apiMode === 'cached') && !apiKeyStr;
+    const skipLiveData = ((apiMode === 'cached') && !apiKeyStr) || earlyIsTomorrowCommute;
 
     if (apiKeyStr) {
       console.log(`[CommuteCompute] API key present (${apiKeyStr.substring(0, 8)}...), apiMode=${apiMode}, skipLiveData=${skipLiveData}`);
@@ -1821,6 +1871,8 @@ export default async function handler(req, res) {
     const tramLeg = route?.legs?.find(l => l.type === 'tram');
     const busLeg = route?.legs?.find(l => l.type === 'bus');
     const tramApiOptions = { ...apiOptions };
+    // Don't filter tram API by route number — multiple lines serve the same stop
+    // and user wants to see whichever line is coming next
     const tramRouteNum = tramLeg?.routeNumber || detectedTramRoute;
     if (tramRouteNum) tramApiOptions.routeNumber = tramRouteNum;
     const busApiOptions = { ...apiOptions };
@@ -1975,7 +2027,7 @@ export default async function handler(req, res) {
     // Build journey legs with cumulative timing (Data Model v1.18)
     // V13.6: Pass locations for deriving proper stop/station names
     // V13.6: Pass stopIds for actual stop name lookup via GTFS_STOP_NAMES
-    const rawJourneyLegs = buildJourneyLegs(effectiveRoute, transitData, coffeeDecision, now, locations, { trainStopId, tramStopId, busStopId, workTrainStopId }, userState);
+    const rawJourneyLegs = buildJourneyLegs(effectiveRoute, transitData, coffeeDecision, now, locations, { trainStopId, tramStopId, busStopId, workTrainStopId }, userState, preferredTramRoute, { isTomorrowCommute: earlyIsTomorrowCommute });
     // Section 7.5.1: Merge consecutive walk legs after ALL filtering
     const journeyLegs = mergeConsecutiveWalkLegs(rawJourneyLegs);
     const totalMinutes = calculateTotalMinutes(journeyLegs);
@@ -2077,6 +2129,12 @@ export default async function handler(req, res) {
       isCommuteDay,
       hasLiveData: hasAnyLiveData
     });
+    // Confidence is not meaningful for tomorrow's commute — suppress
+    if (isTomorrowCommute) {
+      confidence.score = null;
+      confidence.label = null;
+      confidence.context = null;
+    }
     // V14.0: Calculate Lifestyle Context Suggestions
     const lifestyleEngine = new LifestyleContext();
     const lifestyle = lifestyleEngine.calculate({
@@ -2113,12 +2171,20 @@ export default async function handler(req, res) {
       localHour: melbourneTime.hour
     });
     // V15.0: Lifestyle Mindset - stress, steps, apparent temperature
+    // Max delay from any transit leg for stress assessment
+    const transitLegsWithDelay = journeyLegs.filter(l => typeof l.delayMinutes === 'number' && l.delayMinutes > 0);
+    const maxDelayMinutes = transitLegsWithDelay.length > 0
+      ? Math.max(...transitLegsWithDelay.map(l => l.delayMinutes))
+      : 0;
     const mindset = lifestyleEngine.calculateMindset({
       legs: journeyLegs,
       weather: weatherData,
       totalWalkMins: journeyLegs.filter(l => l.type === 'walk').reduce((sum, l) => sum + (l.minutes || 0), 0),
       disruptionCount: journeyLegs.filter(l => l.state === 'suspended' || l.state === 'cancelled' || l.hasAlert).length,
-      transferCount: journeyLegs.filter(l => ['train', 'tram', 'bus', 'vline'].includes(l.type)).length
+      transferCount: journeyLegs.filter(l => ['train', 'tram', 'bus', 'vline'].includes(l.type)).length,
+      confidenceScore: confidence.score,
+      maxDelayMinutes,
+      hasLiveData: hasAnyLiveData
     });
     const dashboardData = {
       location: displayHome,
@@ -2142,8 +2208,8 @@ export default async function handler(req, res) {
       hasExplicitArrivalTarget: !!(config?.journey?.arrivalTime),
       journey_legs: journeyLegs,
       destination: displayWork,
-      destination_address: locations.work?.address || kvPrefs?.addresses?.work || '',
-      home_address: locations.home?.address || kvPrefs?.addresses?.home || '',
+      destination_address: kvPrefs?.addresses?.work || locations.work?.address || '',
+      home_address: kvPrefs?.addresses?.home || locations.home?.address || '',
       // V13.6: Coffee decision for header box - shows CAFE CLOSED when applicable
       // Non-commute days: suppress coffee messaging entirely
       coffee_decision: isCommuteDay ? (
@@ -2164,11 +2230,14 @@ export default async function handler(req, res) {
       total_walk_minutes: journeyLegs.filter(l => l.type === 'walk').reduce((sum, l) => sum + (l.minutes || 0), 0),
       // Data source accuracy: only mark as live when GTFS-RT data was actually received
       // Per Section 23.6: LIVE badge must reflect actual data source, not API key existence
+      // V16.0: Distinguish partial live (some legs live, some timetable) from full live
       isTomorrowCommute,
       isLive: hasAnyLiveData,
-      dataSource: hasAnyLiveData ? 'gtfs-rt' :
-        (journeyLegs.some(l => l.isTimetableEstimate === true) ? 'timetable' :
-          (transitApiKey ? 'no-data' : 'no-key')),
+      isPartialLive: hasAnyLiveData && journeyLegs.some(l => l.isTimetableEstimate === true),
+      dataSource: isTomorrowCommute ? 'tomorrow' :
+        (hasAnyLiveData ? (journeyLegs.some(l => l.isTimetableEstimate === true) ? 'partial-live' : 'gtfs-rt') :
+          (journeyLegs.some(l => l.isTimetableEstimate === true) ? 'timetable' :
+            (transitApiKey ? 'no-data' : 'no-key'))),
       // Diagnostic: surface feed info for admin panel troubleshooting
       _liveDataDiag: {
         hasApiKey: !!transitApiKey,
@@ -2226,6 +2295,8 @@ export default async function handler(req, res) {
       mindset_display: mindset.stressDisplay,
       mindset_steps: mindset.stepsDisplay,
       mindset_feels_like: mindset.feelsLikeDisplay,
+      mindset_resilience: mindset.resilienceDisplay,
+      mindset_resilience_level: mindset.resilienceLevel,
     };
 
     console.log('[CommuteCompute] _liveDataDiag:', JSON.stringify(dashboardData._liveDataDiag));
@@ -2236,7 +2307,7 @@ export default async function handler(req, res) {
     // Unified JSON response — serves admin panel (backward-compat) AND debug data
     if (format === 'json') {
       // Calculate arrival time for summary
-      const arrivalMinsJson = nowMinsForLeave + totalMinutes;
+      const arrivalMinsJson = isTomorrowCommute ? targetMins : (nowMinsForLeave + totalMinutes);
       const arrivalHJson = Math.floor(arrivalMinsJson / 60) % 24;
       const arrivalMJson = arrivalMinsJson % 60;
       const arrivalH12Json = arrivalHJson % 12 || 12;

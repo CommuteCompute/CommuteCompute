@@ -233,6 +233,16 @@ export default async function handler(req, res) {
     
     // Per Section 11.8: Save to KV storage (Zero-Config compliant)
     const kvSaved = await setTransitApiKey(apiKey.trim());
+    if (!kvSaved) {
+      return res.status(500).json({
+        success: false,
+        message: 'API key validated but failed to save to storage',
+        testResult,
+        saved: false,
+        state,
+        keyConfigured: false
+      });
+    }
     await setUserState(state);
 
     // When user saves a valid API key, ensure apiMode is 'live'

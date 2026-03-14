@@ -43,7 +43,7 @@ import CoffeeDecision from '../core/coffee-decision.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { getTransitApiKey, getGoogleApiKey } from '../data/kv-preferences.js';
-import { getStopNameById, detectStopIdsFromAddress, findNearestStops } from '../data/gtfs-stop-names.js';
+import { getStopNameById, detectStopIdsFromAddress, findNearestStops, cleanStopName } from '../data/gtfs-stop-names.js';
 import { getAllStops } from '../data/fallback-timetables.js';
 import { haversine } from '../utils/haversine.js';
 
@@ -1522,6 +1522,16 @@ export class CommuteCompute {
 
     if (homeTrams.length === 0 || workTrains.length === 0) return routes;
 
+    // Sort train stations by distance from home for intelligent interchange selection
+    const homeCoords = locations?.home;
+    if (homeCoords?.lat && homeCoords?.lon) {
+      trainStations.sort((a, b) => {
+        const distA = this.haversineDistance(homeCoords.lat, homeCoords.lon, a.lat, a.lon);
+        const distB = this.haversineDistance(homeCoords.lat, homeCoords.lon, b.lat, b.lon);
+        return distA - distB;
+      });
+    }
+
     for (const trainStation of trainStations.slice(0, 20)) {
       // Use coordinate-based GTFS lookup for interchange tram stops (PRIMARY),
       // then fall back to 300m proximity matching
@@ -2242,7 +2252,7 @@ export class CommuteCompute {
         current.destination = next.destination || current.destination;
         // Update title to reflect merged walk
         if (next.to) {
-          current.title = `Walk to ${next.workName || next.stationName || next.stopName || next.to}`;
+          current.title = `Walk to ${cleanStopName(next.workName || next.stationName || next.stopName || next.to)}`;
         }
         // Skip the next leg since we merged it
         i += 2;

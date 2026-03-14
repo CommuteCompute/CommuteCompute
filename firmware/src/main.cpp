@@ -240,7 +240,7 @@ char webhookUrl[1024] = "";  // Large buffer for config tokens with full address
 char pairingCode[8] = "";
 bool wifiConnected = false;
 bool devicePaired = false;
-bool initialDrawDone = false;
+RTC_DATA_ATTR bool initialDrawDone = false;
 
 // BLE
 BLEServer* pServer = nullptr;
@@ -252,10 +252,10 @@ String wifiNetworkList = "";
 
 // Timing
 unsigned long lastRefresh = 0;
-unsigned long lastFullRefresh = 0;
+RTC_DATA_ATTR unsigned long lastFullRefresh = 0;
 unsigned long pairingStartTime = 0;
 unsigned long lastPollTime = 0;
-int partialRefreshCount = 0;
+RTC_DATA_ATTR int partialRefreshCount = 0;
 int consecutiveErrors = 0;
 
 // Buffers

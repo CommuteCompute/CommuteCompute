@@ -33,7 +33,8 @@ const KEYS = {
   STATE: 'cc:state',
   DEVICE_STATUS: 'cc:device:status',  // V13.6: Device battery and status
   SETUP_COMPLETE: 'cc:setup_complete',  // Setup wizard completion flag
-  STATION_OVERRIDES: 'cc:station_overrides'  // Issue 12: User station preference overrides
+  STATION_OVERRIDES: 'cc:station_overrides',  // User station preference overrides
+  PREFERRED_TRAM_ROUTE: 'cc:preferred_tram_route'  // Pinned tram route number for consistency
 };
 
 // In-memory fallback for local development (no KV configured)
@@ -296,7 +297,7 @@ async function set(key, value) {
       // 5 second timeout to prevent hanging
       const result = await withTimeout(client.set(key, value), 5000, false);
       console.log('[KV]', { operation: 'set', key, result, storage: 'redis', timestamp: new Date().toISOString() });
-      return true;
+      return result !== false;
     }
     console.warn('[KV]', { operation: 'set', key, storage: 'memory-fallback', warning: 'No Redis client — data will NOT persist', timestamp: new Date().toISOString() });
     memoryStore.set(key, value);
@@ -461,6 +462,23 @@ export async function setStationOverrides(overrides) {
   return await set(KEYS.STATION_OVERRIDES, overrides);
 }
 
+/**
+ * Get preferred tram route number (pinned for consistency across refreshes)
+ * @returns {Promise<string|null>} e.g. '58' or null
+ */
+export async function getPreferredTramRoute() {
+  return await get(KEYS.PREFERRED_TRAM_ROUTE);
+}
+
+/**
+ * Set preferred tram route number
+ * @param {string|null} routeNumber - e.g. '58' or null to clear
+ * @returns {Promise<boolean>}
+ */
+export async function setPreferredTramRoute(routeNumber) {
+  return await set(KEYS.PREFERRED_TRAM_ROUTE, routeNumber);
+}
+
 export default {
   getClient,
   getTransitApiKey,
@@ -478,5 +496,7 @@ export default {
   setSetupComplete,
   getStationOverrides,
   setStationOverrides,
+  getPreferredTramRoute,
+  setPreferredTramRoute,
   KEYS
 };
