@@ -346,10 +346,11 @@ export async function getDepartures(stopId, routeType, options = {}) {
       }
     }
 
-    // V15.0: Broad fallback — when stop-level AND route-level both fail and no
-    // route number/line code is configured, collect approximate timing from all
-    // routes in the feed. Ensures transit legs are preserved with live timing.
-    if (departures.length === 0 && feedEntityCount > 0 && !options.routeNumber && !options.lineCode) {
+    // V15.0: Broad fallback — only for trains when stop-level AND route-level both fail.
+    // Disabled for tram/bus: broad fallback produces departures from routes that don't
+    // serve the user's stop, showing incorrect route numbers. Trains are safe because
+    // direction-based matching (isCitybound) still applies in findMatchingDeparture.
+    if (departures.length === 0 && feedEntityCount > 0 && !options.routeNumber && !options.lineCode && mode === 'metro') {
       const broadDepartures = processAnyRouteDepartures(feed);
       if (broadDepartures.length > 0) {
         console.log(`[OpenData] Broad fallback: ${broadDepartures.length} departures from mixed routes in ${mode} feed (stopId=${stopId})`);

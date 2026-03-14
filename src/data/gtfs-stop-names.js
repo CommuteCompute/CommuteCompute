@@ -45,6 +45,15 @@ export const GTFS_STOP_NAMES = (() => {
 })();
 
 /**
+ * Strip route number suffix from GTFS stop names (e.g. "Tivoli Rd/Toorak Rd #129" → "Tivoli Rd/Toorak Rd")
+ * Route numbers are GTFS metadata, not part of the official stop name.
+ */
+export function cleanStopName(name) {
+  if (!name) return name;
+  return name.replace(/\s+#\d+$/, '');
+}
+
+/**
  * Look up actual stop name by GTFS stop ID
  * @param {string} stopId - GTFS stop ID
  * @returns {string|null} Official stop name or null
@@ -52,9 +61,9 @@ export const GTFS_STOP_NAMES = (() => {
 export function getStopNameById(stopId) {
   if (!stopId) return null;
   const id = String(stopId);
-  if (GTFS_STOP_NAMES[id]) return GTFS_STOP_NAMES[id];
+  if (GTFS_STOP_NAMES[id]) return cleanStopName(GTFS_STOP_NAMES[id]);
   // Station code lookup (3-letter codes like 'SYR' → 'South Yarra Station')
-  if (VIC_METRO_STATIONS[id]) return VIC_METRO_STATIONS[id].name;
+  if (VIC_METRO_STATIONS[id]) return cleanStopName(VIC_METRO_STATIONS[id].name);
   return null;
 }
 
@@ -91,7 +100,7 @@ export function findNearestStops(lat, lon, options = {}) {
     if (!station.lat || !station.lon) continue;
     const dist = haversine(lat, lon, station.lat, station.lon);
     if (dist <= radius && (!result.train || dist < result.train.distance)) {
-      result.train = { id: code, name: station.name, distance: dist, platforms: station.platforms };
+      result.train = { id: code, name: cleanStopName(station.name), distance: dist, platforms: station.platforms };
     }
   }
 
@@ -99,7 +108,7 @@ export function findNearestStops(lat, lon, options = {}) {
   for (const stop of VIC_TRAM_STOPS_WITH_COORDS) {
     const dist = haversine(lat, lon, stop.lat, stop.lon);
     if (dist <= radius && (!result.tram || dist < result.tram.distance)) {
-      result.tram = { id: stop.id, name: stop.name, distance: dist };
+      result.tram = { id: stop.id, name: cleanStopName(stop.name), distance: dist };
     }
   }
 
@@ -107,7 +116,7 @@ export function findNearestStops(lat, lon, options = {}) {
   for (const stop of VIC_BUS_STOPS_WITH_COORDS) {
     const dist = haversine(lat, lon, stop.lat, stop.lon);
     if (dist <= radius && (!result.bus || dist < result.bus.distance)) {
-      result.bus = { id: stop.id, name: stop.name, distance: dist };
+      result.bus = { id: stop.id, name: cleanStopName(stop.name), distance: dist };
     }
   }
 
@@ -136,7 +145,7 @@ export function findNearestStopsMultiple(lat, lon, options = {}) {
     if (!station.lat || !station.lon) continue;
     const dist = haversine(lat, lon, station.lat, station.lon);
     if (dist <= radius) {
-      trains.push({ id: code, name: station.name, distance: Math.round(dist), platforms: station.platforms });
+      trains.push({ id: code, name: cleanStopName(station.name), distance: Math.round(dist), platforms: station.platforms });
     }
   }
 
@@ -144,7 +153,7 @@ export function findNearestStopsMultiple(lat, lon, options = {}) {
   for (const stop of VIC_TRAM_STOPS_WITH_COORDS) {
     const dist = haversine(lat, lon, stop.lat, stop.lon);
     if (dist <= radius) {
-      trams.push({ id: stop.id, name: stop.name, distance: Math.round(dist) });
+      trams.push({ id: stop.id, name: cleanStopName(stop.name), distance: Math.round(dist) });
     }
   }
 
@@ -152,7 +161,7 @@ export function findNearestStopsMultiple(lat, lon, options = {}) {
   for (const stop of VIC_BUS_STOPS_WITH_COORDS) {
     const dist = haversine(lat, lon, stop.lat, stop.lon);
     if (dist <= radius) {
-      buses.push({ id: stop.id, name: stop.name, distance: Math.round(dist) });
+      buses.push({ id: stop.id, name: cleanStopName(stop.name), distance: Math.round(dist) });
     }
   }
 
