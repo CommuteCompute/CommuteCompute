@@ -877,17 +877,18 @@
                 </div>
 
                 <div class="form-group" style="padding: 15px; background: rgba(79,178,142,0.1); border-radius: 8px;">
-                    <label class="form-label"><svg class="icon-sm"><use href="#icon-cloud"/></svg> API Usage Mode</label>
+                    <label class="form-label"><svg class="icon-sm"><use href="#icon-cloud"/></svg> Cafe Busyness Mode</label>
                     <div style="margin-top: 8px;">
                         <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 8px;">
                             <input type="radio" name="api-mode" value="cached" checked style="margin-right: 8px;">
-                            <span><strong>Free Mode</strong> -- Use cached data (no runtime API calls)</span>
+                            <span><strong>Free Mode</strong> -- Uses historical cafe busyness averages (no Google API cost)</span>
                         </label>
                         <label style="display: flex; align-items: center; cursor: pointer;">
                             <input type="radio" name="api-mode" value="live" style="margin-right: 8px;">
-                            <span><strong>Live Mode</strong> -- Real-time cafe busy-ness (uses Google API)</span>
+                            <span><strong>Live Mode</strong> -- Real-time cafe busyness from Google Places (API costs apply)</span>
                         </label>
                     </div>
+                    <div style="margin-top: 6px; font-size: 11px; opacity: 0.7;">Transit data (trains, trams, buses) is always live and free.</div>
                 </div>
 
                 <div id="setup-status" class="status-region" aria-live="polite"></div>

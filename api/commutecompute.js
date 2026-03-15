@@ -1830,8 +1830,9 @@ export default async function handler(req, res) {
     const apiKeyStr = typeof transitApiKey === 'string' ? transitApiKey : (transitApiKey?.apiKey || null);
     const apiOptions = apiKeyStr ? { apiKey: apiKeyStr } : {};
 
-    // Respect Free Mode: skip GTFS-RT when user explicitly selected cached mode
-    const apiMode = kvPrefs?.apiMode || 'live';
+    // Cafe busyness mode: 'cached' (free — historical averages) or 'live' (Google Places API)
+    // This controls ONLY cafe busyness data, NOT transit GTFS-RT fetching
+    const cafeMode = kvPrefs?.apiMode || 'live';
 
     // Early isTomorrowCommute detection — skip live data when past target arrival
     // Prevents showing tonight's departures when user should see tomorrow's commute
@@ -1848,21 +1849,21 @@ export default async function handler(req, res) {
     const earlyTargetMins = eArrH * 60 + eArrM;
     const earlyIsTomorrowCommute = earlyIsCommuteDay && earlyNowMins > earlyTargetMins + 180;
 
-    // Valid API key = user wants live data, regardless of stored apiMode
-    // Root cause of 21 failed live data attempts: generate-webhook.js stored apiMode='cached',
-    // causing skipLiveData=true even with valid API key — API was NEVER called
-    const skipLiveData = ((apiMode === 'cached') && !apiKeyStr) || earlyIsTomorrowCommute;
+    const isNonCommuteDayPreview = !earlyIsCommuteDay;
+    // Transit GTFS-RT always fetched when API key present — cafeMode is irrelevant to transit.
+    // Skip only when no API key or past target arrival (showing tomorrow's commute).
+    const skipLiveData = !apiKeyStr || earlyIsTomorrowCommute;
 
     if (apiKeyStr) {
-      console.log(`[CommuteCompute] API key present (${apiKeyStr.substring(0, 8)}...), apiMode=${apiMode}, skipLiveData=${skipLiveData}`);
+      console.log(`[CommuteCompute] API key present (${apiKeyStr.substring(0, 8)}...), cafeMode=${cafeMode}, skipLiveData=${skipLiveData}`);
     }
 
-    if (skipLiveData) {
-      console.warn('[CommuteCompute] Live data skipped — no API key and apiMode is cached');
+    if (skipLiveData && !apiKeyStr) {
+      console.warn('[CommuteCompute] Live data skipped — no transit API key in Redis');
     }
 
-    if (!apiKeyStr && !skipLiveData) {
-      console.warn('[CommuteCompute] No transit API key in Redis — GTFS-RT requests will use fallback getApiKey()');
+    if (skipLiveData && earlyIsTomorrowCommute) {
+      console.log('[CommuteCompute] Live data skipped — past target arrival, showing tomorrow commute');
     }
 
     // V15.0: Extract tram/bus route numbers from journey legs for GTFS-RT route-level matching
@@ -2241,7 +2242,7 @@ export default async function handler(req, res) {
       // Diagnostic: surface feed info for admin panel troubleshooting
       _liveDataDiag: {
         hasApiKey: !!transitApiKey,
-        apiMode: kvPrefs?.apiMode || 'live',
+        cafeMode: kvPrefs?.apiMode || 'live',
         trainFeedEntities: trains?._feedInfo?.entityCount ?? (trains?.length > 0 ? trains.length : 0),
         tramFeedEntities: trams?._feedInfo?.entityCount ?? (trams?.length > 0 ? trams.length : 0),
         busFeedEntities: buses?._feedInfo?.entityCount ?? (buses?.length > 0 ? buses.length : 0),
