@@ -245,13 +245,9 @@ export default async function handler(req, res) {
     }
     await setUserState(state);
 
-    // When user saves a valid API key, ensure apiMode is 'live'
-    // generate-webhook.js previously defaulted apiMode to 'cached', blocking all GTFS-RT
-    const kvPrefsForMode = await getPreferences();
-    if (!kvPrefsForMode?.apiMode || kvPrefsForMode.apiMode === 'cached') {
-      await setPreferences({ ...kvPrefsForMode, apiMode: 'live' });
-    }
-    
+    // apiMode controls cafe busyness only (Free/Live) — transit key is independent.
+    // User's cafe mode selection preserved regardless of transit key changes.
+
     // Also save to local preferences (for development/local use)
     const prefs = new PreferencesManager();
     await prefs.load();
