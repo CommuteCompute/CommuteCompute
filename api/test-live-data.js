@@ -164,11 +164,11 @@ export default async function handler(req, res) {
     results.steps.tramApi = { called: true, error: String(e.message || 'Unknown error').substring(0, 120) };
   }
 
-  // Summary
-  const skipLiveData = (kvPrefs?.apiMode === 'cached') && !apiKeyStr;
+  // Summary — transit always live when key present (cafeMode is independent)
+  const skipLiveData = !apiKeyStr;
   results.summary = {
     apiKeyPresent: !!apiKeyStr,
-    apiMode: kvPrefs?.apiMode || 'live (default)',
+    cafeMode: kvPrefs?.apiMode || 'live (default)',
     skipLiveData,
     trainStopId,
     tramStopId,
@@ -185,7 +185,6 @@ export default async function handler(req, res) {
       : !results.steps.redisConnectivity?.writeReadTest?.readBackMatch
         ? 'REDIS CONNECTED BUT WRITE/READ FAILED'
       : !apiKeyStr ? 'NO API KEY IN REDIS (Redis works — key never saved or was cleared)'
-      : skipLiveData ? 'SKIPPED — apiMode cached and no key'
       : (results.steps.metroApi?.feedEntities === 0 && results.steps.tramApi?.feedEntities === 0) ? 'API RETURNED EMPTY FEEDS — check key validity or API status'
       : (results.steps.metroApi?.error || results.steps.tramApi?.error) ? 'API ERRORS — see step details'
       : (results.steps.metroApi?.resultCount > 0 || results.steps.tramApi?.resultCount > 0) ? 'LIVE DATA AVAILABLE'

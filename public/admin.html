@@ -2099,8 +2099,8 @@
                             <!-- Mode - Read Only -->
                             <div style="padding: 15px; background: rgba(251, 191, 36, 0.15); border-radius: 10px; text-align: center;">
                                 <div style="margin-bottom: 5px;"><svg class="icon-lg"><use href="#icon-cloud"/></svg></div>
-                                <div style="font-size: 11px; opacity: 0.6; margin-bottom: 3px;">MODE</div>
-                                <div id="summary-mode" style="font-size: 14px; font-weight: 700;">Free</div>
+                                <div style="font-size: 11px; opacity: 0.6; margin-bottom: 3px;">CAFE MODE</div>
+                                <div id="summary-mode" style="font-size: 14px; font-weight: 700;">Cafe: Free</div>
                             </div>
                         </div>
                     </div>
@@ -3087,23 +3087,23 @@
                 <div class="card" style="margin-bottom: 20px;">
                     <div class="card-header" style="margin-bottom: 15px;">
                         <span class="card-icon"><svg class="icon-lg"><use href="#icon-cloud"/></svg></span>
-                        <h2>Data Mode</h2>
+                        <h2>Cafe Busyness Mode</h2>
                     </div>
 
                     <div style="display: grid; gap: 12px;">
                         <label id="mode-free-option" style="display: flex; align-items: center; padding: 15px; background: rgba(34, 197, 94, 0.1); border: 2px solid rgba(34, 197, 94, 0.3); border-radius: 10px; cursor: pointer;">
                             <input type="radio" name="api-mode-select" value="cached" style="margin-right: 12px; width: 18px; height: 18px;" onchange="updateApiMode('cached')">
                             <div style="flex: 1;">
-                                <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">[Free] Free Mode</div>
-                                <div style="font-size: 12px; opacity: 0.8;">Uses cached timetable data. No runtime API calls. Best for most users.</div>
+                                <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">Free Mode</div>
+                                <div style="font-size: 12px; opacity: 0.8;">Uses historical averages for cafe busyness. No Google Places API calls. No cost. Transit data is always live.</div>
                             </div>
                         </label>
 
                         <label id="mode-live-option" style="display: flex; align-items: center; padding: 15px; background: rgba(102, 126, 234, 0.1); border: 2px solid rgba(102, 126, 234, 0.3); border-radius: 10px; cursor: pointer;">
                             <input type="radio" name="api-mode-select" value="live" style="margin-right: 12px; width: 18px; height: 18px;" onchange="updateApiMode('live')">
                             <div style="flex: 1;">
-                                <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;"><svg class="icon-sm"><use href="#icon-zap"/></svg> Live Mode</div>
-                                <div style="font-size: 12px; opacity: 0.8;">Real-time transit data + cafe busy-ness. Requires valid API keys.</div>
+                                <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;"><svg class="icon-sm"><use href="#icon-zap"/></svg> Live Cafe Mode</div>
+                                <div style="font-size: 12px; opacity: 0.8;">Real-time cafe busyness from Google Places. Requires Google API key. Transit data is always live.</div>
                             </div>
                         </label>
                     </div>
@@ -5499,8 +5499,14 @@
                             // Always sync API key status from server (key persisted in Redis)
                             if (prefsData.preferences.api?.hasKey) {
                                 localStorage.setItem('cc-transit-api-validated', 'true');
+                                localStorage.setItem('cc-transit-api-configured', 'true');
                                 hasTransitKey = true;
                                 transitValidated = true;
+                            }
+                            // Sync Google Places key status from server
+                            if (prefsData.preferences.google?.hasKey) {
+                                localStorage.setItem('cc-google-places-validated', 'true');
+                                localStorage.setItem('cc-google-places-configured', 'true');
                             }
                         }
                     }
@@ -6137,7 +6143,7 @@
             // Check configuration state (not data accuracy - that comes from updateLiveDataBanner)
             // This is the initial state shown before CommuteCompute data loads
             const transitValidated = localStorage.getItem('cc-transit-api-validated') === 'true';
-            const hasTransitKey = !!localStorage.getItem('cc-transit-api-key');
+            const hasTransitKey = !!localStorage.getItem('cc-transit-api-key') || localStorage.getItem('cc-transit-api-configured') === 'true';
             const serverHasLive = apis && apis.transitAuthority && apis.transitAuthority.configured;
             const hasApiConfig = serverHasLive || (hasTransitKey && transitValidated);
 
@@ -6172,18 +6178,8 @@
 
             if (!indicator) return;
 
-            // Check if user explicitly selected Free Mode
-            const currentApiMode = localStorage.getItem('cc-api-mode') || 'live';
-            if (currentApiMode === 'cached') {
-                indicator.style.background = 'linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)';
-                indicator.style.borderLeft = '4px solid #667eea';
-                icon.innerHTML = '<svg class="icon" style="color: #667eea;"><use href="#icon-clock"/></svg>';
-                title.textContent = 'Free Mode Active';
-                subtitle.textContent = 'Using timetable data. Switch to Live Mode in API Settings for real-time updates.';
-                actionBtn.textContent = '→ API Settings';
-                actionBtn.onclick = () => showTab('api');
-                return;
-            }
+            // Cafe mode indicator (does not affect transit — transit is always live when key present)
+            const currentCafeMode = localStorage.getItem('cc-api-mode') || 'live';
 
             if (isLive) {
                 indicator.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)';
@@ -6747,8 +6743,8 @@
         async function loadSavedPreferences() {
             let prefs = null;
             let source = 'none';
-            
-            // First try localStorage (for Vercel serverless mode)
+
+            // First try localStorage
             const localConfig = localStorage.getItem('cc-config');
             if (localConfig) {
                 try {
@@ -6757,18 +6753,37 @@
                 } catch (e) {
                 }
             }
-            
-            // If no localStorage, try server (for self-hosted mode)
-            if (!prefs) {
-                try {
-                    const response = await authFetch(BASE_URL + '/api/admin/preferences');
-                    if (response.ok) {
-                        const data = await response.json();
-                        prefs = data.preferences || data;
+
+            // Always fetch server state and merge (server/Redis is authoritative for API keys)
+            try {
+                const response = await authFetch(BASE_URL + '/api/admin/preferences');
+                if (response.ok) {
+                    const data = await response.json();
+                    const serverPrefs = data.preferences || data;
+                    if (!prefs) {
+                        prefs = serverPrefs;
                         source = 'server';
+                    } else {
+                        // Merge server API key status into local prefs
+                        if (serverPrefs.api) {
+                            prefs.api = { ...prefs.api, ...serverPrefs.api };
+                        }
+                        if (serverPrefs.google) {
+                            prefs.google = { ...prefs.google, ...serverPrefs.google };
+                        }
+                        source = 'merged';
                     }
-                } catch (error) {
+                    // Sync configured flags to localStorage
+                    if (serverPrefs.api?.hasKey) {
+                        localStorage.setItem('cc-transit-api-configured', 'true');
+                        localStorage.setItem('cc-transit-api-validated', 'true');
+                    }
+                    if (serverPrefs.google?.hasKey) {
+                        localStorage.setItem('cc-google-places-configured', 'true');
+                        localStorage.setItem('cc-google-places-validated', 'true');
+                    }
                 }
+            } catch (error) {
             }
             
             // Apply preferences to form fields
@@ -6844,7 +6859,7 @@
                 if (prefs.addresses?.cafe) parts.push(`Cafe: ${sanitize(prefs.addresses.cafe)}`);
                 if (prefs.journey?.arrivalTime) parts.push(`Arrive by ${formatTime12h(prefs.journey.arrivalTime)}`);
                 if (prefs.state) parts.push(prefs.state);
-                if (prefs.apiMode) parts.push(prefs.apiMode === 'cached' ? 'Free Mode' : 'Live Mode');
+                if (prefs.apiMode) parts.push(prefs.apiMode === 'cached' ? 'Cafe: Free' : 'Cafe: Live');
                 
                 if (parts.length > 0) {
                     summaryEl.innerHTML = parts.join(' • ');
@@ -7976,7 +7991,7 @@
                 }
                 if (arrivalEl) arrivalEl.textContent = formatTime12h(prefs.journey?.arrivalTime || '09:00');
                 if (stateEl) stateEl.textContent = prefs.state || 'VIC';
-                if (modeEl) modeEl.textContent = prefs.apiMode === 'live' ? 'Live' : 'Free';
+                if (modeEl) modeEl.textContent = prefs.apiMode === 'live' ? 'Cafe: Live' : 'Cafe: Free';
                 
                 // Device info
                 const deviceName = document.getElementById('device-name');
@@ -8123,14 +8138,18 @@
             
             if (!notConfigured || !configured) return;
             
-            // Get API keys from localStorage
-            const transitKey = localStorage.getItem('cc-transit-api-key') || prefs?.api?.key || '';
-            const transitValidated = localStorage.getItem('cc-transit-api-validated') === 'true';
-            const googleKey = localStorage.getItem('cc-google-places-key') || '';
-            const googleValidated = localStorage.getItem('cc-google-places-validated') === 'true';
+            // Get API keys — check server hasKey flag first, then localStorage
+            const transitKeyLocal = localStorage.getItem('cc-transit-api-key') || '';
+            const transitConfigured = prefs?.api?.hasKey || localStorage.getItem('cc-transit-api-configured') === 'true' || !!transitKeyLocal;
+            const transitValidated = transitConfigured || localStorage.getItem('cc-transit-api-validated') === 'true';
+            const transitKey = transitKeyLocal || (transitConfigured ? '***configured***' : '');
+            const googleKeyLocal = localStorage.getItem('cc-google-places-key') || '';
+            const googleConfigured = prefs?.google?.hasKey || localStorage.getItem('cc-google-places-configured') === 'true' || !!googleKeyLocal;
+            const googleValidated = googleConfigured || localStorage.getItem('cc-google-places-validated') === 'true';
+            const googleKey = googleKeyLocal || (googleConfigured ? '***configured***' : '');
             const apiMode = prefs?.apiMode || localStorage.getItem('cc-api-mode') || 'live';
-            
-            const hasAnyConfig = transitKey || googleKey || localStorage.getItem('cc-configured') === 'true';
+
+            const hasAnyConfig = transitConfigured || googleConfigured || localStorage.getItem('cc-configured') === 'true';
             
             if (hasAnyConfig) {
                 notConfigured.style.display = 'none';
@@ -8142,10 +8161,17 @@
                 const transitKeyPreview = document.getElementById('transit-key-preview');
                 const transitStatusBadge = document.getElementById('transit-status-badge');
                 
-                if (transitKey) {
+                if (transitConfigured && !transitKeyLocal) {
+                    // Key is in Redis but not in localStorage (e.g. after deployment)
+                    transitStatusIcon.innerHTML = '<svg class="icon-lg" style="color: #22c55e;"><use href="#icon-check-circle"/></svg>';
+                    transitStatusText.textContent = 'Configured & Validated';
+                    transitKeyPreview.textContent = 'Configured (saved on server)';
+                    transitStatusBadge.innerHTML = '<svg class="icon-sm"><use href="#icon-check-circle"/></svg> Active';
+                    transitStatusBadge.style.background = 'rgba(34, 197, 94, 0.9)';
+                } else if (transitKeyLocal) {
                     transitStatusIcon.innerHTML = transitValidated ? '<svg class="icon-lg" style="color: #22c55e;"><use href="#icon-check-circle"/></svg>' : '<svg class="icon-lg" style="color: #fbbf24;"><use href="#icon-warning"/></svg>';
                     transitStatusText.textContent = transitValidated ? 'Configured & Validated' : 'Configured (Not Validated)';
-                    transitKeyPreview.textContent = maskApiKey(transitKey);
+                    transitKeyPreview.textContent = maskApiKey(transitKeyLocal);
                     transitStatusBadge.innerHTML = transitValidated ? '<svg class="icon-sm"><use href="#icon-check-circle"/></svg> Active' : '<svg class="icon-sm"><use href="#icon-warning"/></svg> Pending';
                     transitStatusBadge.style.background = transitValidated ? 'rgba(34, 197, 94, 0.9)' : 'rgba(251, 191, 36, 0.9)';
                 } else {
@@ -8162,10 +8188,17 @@
                 const googleKeyPreview = document.getElementById('google-key-preview');
                 const googleStatusBadge = document.getElementById('google-status-badge');
                 
-                if (googleKey) {
+                if (googleConfigured && !googleKeyLocal) {
+                    // Key is in Redis but not in localStorage
+                    googleStatusIcon.innerHTML = '<svg class="icon-lg" style="color: #22c55e;"><use href="#icon-check-circle"/></svg>';
+                    googleStatusText.textContent = 'Configured & Validated';
+                    googleKeyPreview.textContent = 'Configured (saved on server)';
+                    googleStatusBadge.innerHTML = '<svg class="icon-sm"><use href="#icon-check-circle"/></svg> Active';
+                    googleStatusBadge.style.background = 'rgba(34, 197, 94, 0.9)';
+                } else if (googleKeyLocal) {
                     googleStatusIcon.innerHTML = googleValidated ? '<svg class="icon-lg" style="color: #22c55e;"><use href="#icon-check-circle"/></svg>' : '<svg class="icon-lg" style="color: #fbbf24;"><use href="#icon-warning"/></svg>';
                     googleStatusText.textContent = googleValidated ? 'Configured & Validated' : 'Configured (Not Validated)';
-                    googleKeyPreview.textContent = maskGoogleKey(googleKey);
+                    googleKeyPreview.textContent = maskGoogleKey(googleKeyLocal);
                     googleStatusBadge.innerHTML = googleValidated ? '<svg class="icon-sm"><use href="#icon-check-circle"/></svg> Active' : '<svg class="icon-sm"><use href="#icon-warning"/></svg> Pending';
                     googleStatusBadge.style.background = googleValidated ? 'rgba(34, 197, 94, 0.9)' : 'rgba(251, 191, 36, 0.9)';
                 } else {
@@ -8182,22 +8215,22 @@
                 const apiModeSubtitle = document.getElementById('api-mode-subtitle');
                 const apiModeBanner = document.getElementById('api-data-mode-banner');
                 
-                if (transitKey && transitValidated) {
+                if (transitConfigured && transitValidated) {
                     apiModeIcon.innerHTML = '<svg class="icon-xl" style="color: #22c55e;"><use href="#icon-check-circle"/></svg>';
-                    apiModeTitle.textContent = 'Real-Time Data Enabled';
-                    apiModeSubtitle.textContent = 'Transit API validated and active';
+                    apiModeTitle.textContent = 'Live Transit Data Active';
+                    apiModeSubtitle.textContent = 'Transit API validated. Cafe busyness: ' + (apiMode === 'live' ? 'Live (Google Places)' : 'Free (historical averages)');
                     apiModeBanner.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(22, 163, 74, 0.15) 100%)';
                     apiModeBanner.style.borderLeft = '4px solid #22c55e';
-                } else if (transitKey) {
+                } else if (transitConfigured) {
                     apiModeIcon.innerHTML = '<svg class="icon-xl" style="color: #fbbf24;"><use href="#icon-warning"/></svg>';
-                    apiModeTitle.textContent = 'API Key Pending Validation';
-                    apiModeSubtitle.textContent = 'Test your API key to enable real-time data';
+                    apiModeTitle.textContent = 'Transit API Key Pending Validation';
+                    apiModeSubtitle.textContent = 'Test your API key to enable real-time transit data';
                     apiModeBanner.style.background = 'linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%)';
                     apiModeBanner.style.borderLeft = '4px solid #fbbf24';
                 } else {
                     apiModeIcon.innerHTML = '<svg class="icon-xl" style="color: #f87171;"><use href="#icon-x-circle"/></svg>';
                     apiModeTitle.textContent = 'Using Fallback Timetable Data';
-                    apiModeSubtitle.textContent = 'Add a Transit API key for real-time updates';
+                    apiModeSubtitle.textContent = 'Add a Transit API key for real-time updates. Transit data is always free.';
                     apiModeBanner.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%)';
                     apiModeBanner.style.borderLeft = '4px solid #ef4444';
                 }
@@ -8379,10 +8412,11 @@
         // Test all APIs
         async function testAllApis() {
             const transitKey = localStorage.getItem('cc-transit-api-key');
+            const transitConfiguredOnServer = localStorage.getItem('cc-transit-api-configured') === 'true';
             const googleKey = localStorage.getItem('cc-google-places-key');
-            
+
             let results = [];
-            
+
             if (transitKey) {
                 try {
                     const resp = await fetch(BASE_URL + '/api/validate-transit-key', {
@@ -8395,6 +8429,16 @@
                     if (result.valid) localStorage.setItem('cc-transit-api-validated', 'true');
                 } catch (e) {
                     results.push('Transit API: Error');
+                }
+            } else if (transitConfiguredOnServer) {
+                // Key is in Redis but not localStorage — use server-side test endpoint
+                try {
+                    const resp = await authFetch(BASE_URL + '/api/test-live-data');
+                    const result = await resp.json();
+                    const verdict = result.summary?.verdict || 'Unknown';
+                    results.push('Transit API: ' + verdict);
+                } catch (e) {
+                    results.push('Transit API: Error (server test)');
                 }
             } else {
                 results.push('Transit API: Not configured');

@@ -57,7 +57,7 @@ class CafeBusyDetector {
    * Get cafe busy-ness level and adjusted coffee time
    * Returns: { level: 'low'|'medium'|'high', coffeeTime: number, source: string, details: {...} }
    */
-  async getCafeBusyness(address, lat, lon) {
+  async getCafeBusyness(address, lat, lon, options = {}) {
     const cacheKey = `${lat},${lon}`;
 
     // Check cache first
@@ -69,8 +69,9 @@ class CafeBusyDetector {
     // Try data sources in order of preference
     let result = null;
 
-    // 1. Try Google Places API (most accurate)
-    if (this.googleApiKey) {
+    // 1. Try Google Places API (most accurate) — only in live cafe mode
+    // Free mode (cafeMode='cached') uses historical averages to avoid API cost
+    if (this.googleApiKey && options.cafeMode !== 'cached') {
       result = await this.getGooglePlacesBusyness(address, lat, lon);
       if (result) {
         this.busyCache.set(cacheKey, { data: result, timestamp: Date.now() });
@@ -78,7 +79,7 @@ class CafeBusyDetector {
       }
     }
 
-    // 2. Fall back to time-based detection
+    // 2. Fall back to time-based detection (always free, no API cost)
     result = this.getTimeBasedBusyness();
 
     this.busyCache.set(cacheKey, { data: result, timestamp: Date.now() });
@@ -381,7 +382,7 @@ class CafeBusyDetector {
    * @param {Object} cafeHours - Optional cached cafe hours { open: 'HH:MM', close: 'HH:MM', days: [0-6] }
    * @returns {Promise<{isOpen: boolean, reason?: string, opensAt?: string, closesAt?: string}>}
    */
-  async isCafeOpen(lat, lon, cafeHours = null) {
+  async isCafeOpen(lat, lon, cafeHours = null, options = {}) {
     // Get user's timezone from preferences
     const prefs = this.preferences 
       ? (typeof this.preferences.get === 'function' ? this.preferences.get() : this.preferences)
@@ -417,9 +418,9 @@ class CafeBusyDetector {
       return { isOpen: true, closesAt: cafeHours.close };
     }
 
-    // Try Google Places API (New) for live opening hours
-    // COMPLIANCE: DEVELOPMENT-RULES.md Section 11.3 - Use Places API (New)
-    if (this.googleApiKey && lat && lon) {
+    // Try Google Places API (New) for live opening hours — only in live cafe mode
+    // Free mode (cafeMode='cached') skips API calls to avoid cost
+    if (this.googleApiKey && lat && lon && options.cafeMode !== 'cached') {
       try {
         const searchUrl = 'https://places.googleapis.com/v1/places:searchNearby';
         const searchBody = {
