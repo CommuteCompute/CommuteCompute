@@ -1802,33 +1802,58 @@
             localStorage.setItem('cc-configured', 'true');
             if (selectedDevice) localStorage.setItem('cc-device', selectedDevice);
 
-            // Sync to KV + Generate webhook in parallel (both non-critical)
+            // Sync config to Redis — CRITICAL: must succeed for setup to persist across deploys
             var webhookUrl = '';
             var transitKey = document.getElementById('api-key')?.value || localStorage.getItem('cc-transit-api-key') || '';
             var gKey = document.getElementById('google-places-api-key')?.value || localStorage.getItem('cc-google-api-key') || '';
-            await Promise.all([
-                (async function() {
-                    try {
-                        await fetch(baseUrl + '/api/sync-config', {
-                            method: 'POST', headers: getAuthHeaders(),
-                            body: JSON.stringify({ transitKey: transitKey, googleKey: gKey, state: selectedAuthority, preferences: fullConfig, markSetupComplete: true })
-                        });
-                    } catch (e) { /* KV sync failed - non-critical */ }
-                })(),
-                (async function() {
-                    try {
-                        var webhookResponse = await fetch(baseUrl + '/api/admin/generate-webhook', {
-                            method: 'POST', headers: getAuthHeaders(),
-                            body: JSON.stringify({ config: fullConfig })
-                        });
-                        var webhookResult = await webhookResponse.json();
-                        if (webhookResult.success) {
-                            webhookUrl = webhookResult.webhookUrl;
-                            localStorage.setItem('cc-webhook-url', webhookUrl);
-                        }
-                    } catch (e) { /* webhook generation failed - non-critical */ }
-                })()
-            ]);
+
+            var syncSuccess = false;
+            var syncError = '';
+            try {
+                var syncResponse = await fetch(baseUrl + '/api/sync-config', {
+                    method: 'POST', headers: getAuthHeaders(),
+                    body: JSON.stringify({ transitKey: transitKey, googleKey: gKey, state: selectedAuthority, preferences: fullConfig, markSetupComplete: true })
+                });
+                var syncResult = await syncResponse.json();
+                if (syncResult.success) {
+                    syncSuccess = true;
+                } else {
+                    syncError = syncResult.error || 'Server returned failure';
+                    if (syncResult.saved?.transitVerifyFailed) {
+                        syncError = 'API key could not be verified in Redis storage. Redis may be unavailable.';
+                    }
+                }
+            } catch (e) {
+                syncError = 'Could not reach server: ' + (e.message || 'network error');
+            }
+
+            if (!syncSuccess) {
+                statusEl.innerHTML = '<div style="text-align:center;padding:20px;">' +
+                    '<p style="color:#ef4444;font-size:16px;margin-bottom:8px;"><svg class="icon-sm"><use href="#icon-x-circle"/></svg> Configuration could not be saved to the server.</p>' +
+                    '<p style="color:#cbd5e1;font-size:13px;margin-bottom:16px;">' + sanitize(syncError) + '</p>' +
+                    '<p style="color:#94a3b8;font-size:12px;margin-bottom:16px;">Your settings are saved locally but will not persist across server updates until Redis storage is confirmed.</p>' +
+                    '<button type="button" class="btn" id="retry-sync-btn" style="margin:0 auto;"><svg class="icon-sm"><use href="#icon-refresh"/></svg> Retry Save</button></div>';
+                if (setupButtons) setupButtons.style.display = 'flex';
+                // Attach retry handler
+                var retryBtn = document.getElementById('retry-sync-btn');
+                if (retryBtn) {
+                    retryBtn.addEventListener('click', function() { completeSetup(); });
+                }
+                return;
+            }
+
+            // Webhook generation — non-critical (doesn't affect data persistence)
+            try {
+                var webhookResponse = await fetch(baseUrl + '/api/admin/generate-webhook', {
+                    method: 'POST', headers: getAuthHeaders(),
+                    body: JSON.stringify({ config: fullConfig })
+                });
+                var webhookResult = await webhookResponse.json();
+                if (webhookResult.success) {
+                    webhookUrl = webhookResult.webhookUrl;
+                    localStorage.setItem('cc-webhook-url', webhookUrl);
+                }
+            } catch (e) { /* webhook generation failed - non-critical */ }
 
             // Store for Step 6
             window._webhookUrl = webhookUrl;

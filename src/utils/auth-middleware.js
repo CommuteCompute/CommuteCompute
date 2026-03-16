@@ -88,8 +88,14 @@ export async function isFirstTimeSetup() {
 
     // Neither flag nor transit key — genuine first-time setup
     return true;
-  } catch {
-    return true;
+  } catch (err) {
+    // Redis error — assume setup IS complete (safer default).
+    // Defaulting to true would bypass auth on setup endpoints, allowing
+    // unauthenticated writes. Defaulting to false blocks unauthenticated
+    // access, which is the secure choice. A genuine first-time user with
+    // Redis down will get a clear error from sync-config instead.
+    console.error('[Auth] Redis error in isFirstTimeSetup — defaulting to setup complete (safe mode):', err?.message);
+    return false;
   }
 }
 
