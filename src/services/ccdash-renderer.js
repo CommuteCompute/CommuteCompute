@@ -2186,9 +2186,9 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   const serviceStatus = data.service_status || (data.disruption ? 'DISRUPTIONS' : 'OK');
   const hasDisruption = data.disruption || data.status_type === 'disruption' ||
     serviceStatus.toUpperCase().includes('DISRUPTION') || serviceStatus.toUpperCase().includes('DELAY');
-  // Per Section 23.6: Only show LIVE DATA badge when data actually comes from GTFS-RT,
-  // never for fallback/timetable data. Default to false (timetable) unless explicitly marked live.
-  const isLiveData = data.isLive === true || data.dataSource === 'gtfs-rt';
+  // Per Section 23.6: LIVE DATA badge reflects actual GTFS-RT feed availability.
+  // When API key is set and GTFS-RT returns data, badges show LIVE regardless of time of day.
+  const isLiveData = data.isLive === true || data.dataSource === 'gtfs-rt' || data.dataSource === 'partial-live';
 
   // V15.0 SPEC FIX: Service status and data source indicators per CCDashDesignV15.0 Section 2.6-2.7
   // Size: 115x16px each (at reference), positioned below day/date
@@ -2205,7 +2205,8 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   ctx.textBaseline = 'middle';
 
   // Service status box — per spec Section 2.6
-  // Inverted urgency: black filled = disruptions/fallback (attention needed), outlined = live/OK (normal)
+  // Shows ONLY service disruption state (not data source — that's the second badge)
+  // Inverted urgency: black filled = disruptions (attention needed), outlined = OK (normal)
   const statusTextPad = Math.round(6 * sx);
   if (hasDisruption) {
     // Black filled — disruptions need attention
@@ -2213,34 +2214,13 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     ctx.fillRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
     ctx.fillStyle = '#FFF';
     ctx.fillText('\u26A0 DISRUPTIONS', statusBoxX + statusTextPad, statusBoxY + statusBoxH / 2);
-  } else if (isLiveData) {
-    // Outlined — everything normal, no attention needed
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
-    ctx.fillStyle = '#000';
-    // V16.0: Differentiate partial live (some modes timetable) from full live
-    const serviceLabel = data.isPartialLive ? '\u2713 PARTIAL LIVE' : '\u2713 SERVICES OK';
-    ctx.fillText(serviceLabel, statusBoxX + statusTextPad, statusBoxY + statusBoxH / 2);
-  } else if (data.dataSource === 'tomorrow') {
-    // Outlined — tomorrow mode is expected, not an error
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
-    ctx.fillStyle = '#000';
-    ctx.fillText('\u25CB TOMORROW', statusBoxX + statusTextPad, statusBoxY + statusBoxH / 2);
-  } else if (data.dataSource === 'timetable') {
-    // Black filled — timetable fallback needs awareness
-    ctx.fillStyle = '#000';
-    ctx.fillRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
-    ctx.fillStyle = '#FFF';
-    ctx.fillText('\u25CB SCHEDULED', statusBoxX + statusTextPad, statusBoxY + statusBoxH / 2);
   } else {
-    // Black filled — no data is important to surface
+    // Outlined — no disruptions, services running normally
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
     ctx.fillStyle = '#000';
-    ctx.fillRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
-    ctx.fillStyle = '#FFF';
-    ctx.fillText('\u25CB NO DATA', statusBoxX + statusTextPad, statusBoxY + statusBoxH / 2);
+    ctx.fillText('\u2713 SERVICES OK', statusBoxX + statusTextPad, statusBoxY + statusBoxH / 2);
   }
 
   // Data source indicator — per spec Section 2.7
@@ -2255,31 +2235,18 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     // V16.0: Show PARTIAL LIVE when some transit modes lack GTFS-RT data
     const dataLabel = data.isPartialLive ? '\u25CF PARTIAL LIVE' : '\u25CF LIVE DATA';
     ctx.fillText(dataLabel, statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
-  } else if (data.dataSource === 'tomorrow') {
-    // Outlined — tomorrow mode, no data source indicator needed
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(statusBoxX, dataBoxY, statusBoxW, dataBoxH);
-    ctx.fillStyle = '#000';
-    ctx.fillText('\u25CB SCHEDULED', statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
-  } else if (data.dataSource === 'timetable') {
-    // Black filled — timetable fallback needs awareness
+  } else if (data.dataSource === 'no-key') {
+    // Black filled — no API key configured
     ctx.fillStyle = '#000';
     ctx.fillRect(statusBoxX, dataBoxY, statusBoxW, dataBoxH);
     ctx.fillStyle = '#FFF';
-    ctx.fillText('\u25CB SCHEDULED DATA', statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
-  } else if (data.dataSource === 'no-data' || data.dataSource === 'no-key') {
-    // Black filled — no data is critical to surface
-    ctx.fillStyle = '#000';
-    ctx.fillRect(statusBoxX, dataBoxY, statusBoxW, dataBoxH);
-    ctx.fillStyle = '#FFF';
-    ctx.fillText('\u25CB NO DATA', statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
+    ctx.fillText('\u25CB NO API KEY', statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
   } else {
-    // Black filled — unknown state defaults to attention-needed
+    // Black filled — timetable fallback, tomorrow mode without data, or no data
     ctx.fillStyle = '#000';
     ctx.fillRect(statusBoxX, dataBoxY, statusBoxW, dataBoxH);
     ctx.fillStyle = '#FFF';
-    ctx.fillText('\u25CB SCHEDULED DATA', statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
+    ctx.fillText('\u25CB SCHEDULED', statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
   }
   
   ctx.fillStyle = '#000';

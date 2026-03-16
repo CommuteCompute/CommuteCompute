@@ -60,7 +60,7 @@ export default async function handler(req, res) {
           available: status.kvAvailable,
           configured: status.hasTransitKey
         },
-        setupComplete: !!setupComplete,
+        setupComplete: !!(setupComplete || transitKey),
         keys: {
           transit: transitKey ? 'configured' : null,
           google: googleKey ? 'configured' : null
@@ -80,14 +80,26 @@ export default async function handler(req, res) {
         preferences: false
       };
       
-      // Save Transit API key if provided
+      // Save Transit API key if provided — verify read-back to catch memory-only fallback
       if (transitKey) {
         results.transit = await setTransitApiKey(transitKey);
+        const verified = await getTransitApiKey();
+        if (verified !== transitKey) {
+          results.transit = false;
+          results.transitVerifyFailed = true;
+          console.error('[sync-config] Transit API key save failed read-back verification — Redis may be unavailable');
+        }
       }
-      
-      // Save Google API key if provided
+
+      // Save Google API key if provided — verify read-back
       if (googleKey) {
         results.google = await setGoogleApiKey(googleKey);
+        const verified = await getGoogleApiKey();
+        if (verified !== googleKey) {
+          results.google = false;
+          results.googleVerifyFailed = true;
+          console.error('[sync-config] Google API key save failed read-back verification — Redis may be unavailable');
+        }
       }
       
       // Save user state if provided

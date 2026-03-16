@@ -766,10 +766,12 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
 
     // Subtitle for transit legs: timetable estimate OR "Next:" catchable departures
     // V16.0: TOMORROW mode — always show "Scheduled ~Xmin" (no live data applies tomorrow)
+    // Live GTFS-RT is still fetched (for admin diagnostics) but display uses timetable estimates.
     if (isTransitLeg && options.isTomorrowCommute) {
       const estMins = Math.max(1, leg.minutes || leg.durationMinutes || 0);
       baseLeg.subtitle = `Scheduled ~${estMins}min`;
       baseLeg.isTimetableEstimate = true;
+      baseLeg.isLive = false;  // Display is timetable, even though GTFS-RT was fetched
       baseLeg.nextDepartures = [];
       baseLeg.nextDepartureTimesMs = [];
     } else if (isTransitLeg && baseLeg.isTimetableEstimate) {
@@ -2296,12 +2298,23 @@ export default async function handler(req, res) {
       // Per Section 23.6: LIVE badge must reflect actual data source, not API key existence
       // V16.0: Distinguish partial live (some legs live, some timetable) from full live
       isTomorrowCommute,
+      // Live data flags: reflect actual GTFS-RT data availability at ALL times when API key is set.
+      // Badges show data source truth regardless of time of day or tomorrow mode.
+      // Journey leg display may use timetable estimates (tomorrow mode), but badges reflect the feed.
       isLive: hasAnyLiveData,
-      isPartialLive: hasAnyLiveData && journeyLegs.some(l => l.isTimetableEstimate === true),
-      dataSource: isTomorrowCommute ? 'tomorrow' :
-        (hasAnyLiveData ? (journeyLegs.some(l => l.isTimetableEstimate === true) ? 'partial-live' : 'gtfs-rt') :
-          (journeyLegs.some(l => l.isTimetableEstimate === true) ? 'timetable' :
-            (transitApiKey ? 'no-data' : 'no-key'))),
+      isPartialLive: hasAnyLiveData && !(
+        (!journeyLegs.some(l => l.type === 'train') || hasLiveTrainData) &&
+        (!journeyLegs.some(l => l.type === 'tram') || hasLiveTramData) &&
+        (!journeyLegs.some(l => l.type === 'bus') || hasLiveBusData)
+      ),
+      // dataSource: reflects actual GTFS-RT feed state, not gated by time of day.
+      // isTomorrowCommute is a separate flag for journey display context.
+      dataSource: hasAnyLiveData
+        ? ((!journeyLegs.some(l => l.type === 'train') || hasLiveTrainData) &&
+           (!journeyLegs.some(l => l.type === 'tram') || hasLiveTramData) &&
+           (!journeyLegs.some(l => l.type === 'bus') || hasLiveBusData)
+            ? 'gtfs-rt' : 'partial-live')
+        : (transitApiKey ? (isTomorrowCommute ? 'tomorrow' : 'no-data') : 'no-key'),
       // Diagnostic: surface feed info for admin panel troubleshooting
       _liveDataDiag: {
         hasApiKey: !!transitApiKey,
