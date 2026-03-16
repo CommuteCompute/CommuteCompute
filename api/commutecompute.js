@@ -235,6 +235,7 @@ function mergeConsecutiveWalkLegs(legs) {
     const current = { ...legs[i] };
     // V15.0: Merge chains of consecutive walk legs (not just pairs).
     // When transit legs are removed (no live data), multiple walks may be adjacent.
+    let mergeCount = 0;
     while (current.type === 'walk' && i + 1 < legs.length && legs[i + 1].type === 'walk') {
       const next = legs[i + 1];
       current.minutes = (current.minutes || 0) + (next.minutes || 0);
@@ -247,9 +248,19 @@ function mergeConsecutiveWalkLegs(legs) {
       // Use the last walk's formatted title (from buildLegTitle) when available
       const resolvedDest = next.stopName || next.stationName || current.stopName || current.stationName || next.to || current.to || 'destination';
       current.title = next.title || current.title || `Walk to ${resolvedDest}`;
-      // Keep subtitle consistent with merged minutes
-      current.subtitle = `${current.minutes} min walk`;
+      mergeCount++;
       i++;
+    }
+    // Deduct extra walk buffers: each component walk had +2 min buffer applied
+    // independently in buildJourneyLegs. Merged walk should have only ONE buffer.
+    if (mergeCount > 0) {
+      const bufferDeduction = mergeCount * 2;
+      current.minutes = Math.max((current.minutes || 0) - bufferDeduction, 1);
+      current.durationMinutes = Math.max((current.durationMinutes || 0) - bufferDeduction, 1);
+      current.journeyContribution = Math.max((current.journeyContribution || 0) - bufferDeduction, 1);
+    }
+    if (current.type === 'walk' && mergeCount > 0) {
+      current.subtitle = `${current.minutes} min walk`;
     }
     // Sync durationMinutes with accumulated minutes
     if (current.durationMinutes === 0 && current.minutes > 0) {
@@ -301,7 +312,11 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
   const nowMins = melbTime.hour * 60 + melbTime.minute;
 
   for (let i = 0; i < route.legs.length; i++) {
-    const leg = route.legs[i];
+    // Deep-copy each leg to avoid mutating engine's cached route objects.
+    // Without this, walk buffer (+2 min) accumulates on each request until capped at 30.
+    const leg = { ...route.legs[i] };
+    if (leg.origin) leg.origin = { ...leg.origin };
+    if (leg.destination) leg.destination = { ...leg.destination };
     const prevLeg = i > 0 ? route.legs[i - 1] : null;
 
     // V13.6: Add 2 minute buffer to walking legs for realistic timing
@@ -418,13 +433,17 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     }
 
     // Resolve destination names via GTFS when engine provides generic ones
+    // For tram destinations in multi-modal routes: show transfer AREA, not train station name.
+    // "Alight at South Yarra" is correct; "Alight at South Yarra Station" is misleading.
     if (leg.type === 'tram' && leg.destination) {
       const genericDestNames = ['station', 'tram stop', 'bus stop', 'platform', 'stop', 'city'];
       const isDestGeneric = (name) => !name || genericDestNames.includes(name.toLowerCase().trim());
       if (isDestGeneric(leg.destination.name)) {
         const gtfsDest = getStopNameById(stopIds.trainStopId);
         const workSuburb = extractSuburb(locations.work?.address);
-        leg.destination.name = gtfsDest || (workSuburb ? `${workSuburb} Station` : leg.destination.name);
+        // Strip "Station" suffix — tram alights at a tram stop near the station, not the station itself
+        const areaName = gtfsDest ? gtfsDest.replace(/\s+Station$/i, '') : null;
+        leg.destination.name = areaName || workSuburb || leg.destination.name;
       }
     }
     if (leg.type === 'train' && leg.destination) {
@@ -1635,7 +1654,7 @@ export default async function handler(req, res) {
   // Configurable origin restriction — defaults to '*' for backwards compatibility
   const allowedOrigin = process.env.CC_ALLOWED_ORIGIN || '*';
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Device-Token');
 
   if (req.method === 'OPTIONS') {
@@ -1793,17 +1812,59 @@ export default async function handler(req, res) {
     if (!stopDetectionSource && (trainStopId || tramStopId)) stopDetectionSource = 'stored';
 
     // Apply user station overrides from admin panel (persistent Redis preferences)
+    // Admin saves overrides keyed by transit-leg index (e.g. train_1, tram_0),
+    // so we search all entries by type rather than assuming a fixed key.
     let stationOverrides = {};
     try { stationOverrides = await getStationOverrides() || {}; } catch (e) {}
-    if (stationOverrides.train_0?.id) {
-      trainStopId = stationOverrides.train_0.id;
+    const findOverride = (type) => Object.values(stationOverrides).find(o => o?.type === type);
+    const trainOverride = findOverride('train');
+    const tramOverride = findOverride('tram');
+    const busOverride = findOverride('bus');
+    if (trainOverride?.id) {
+      trainStopId = trainOverride.id;
       stopDetectionSource = 'user-override';
     }
-    if (stationOverrides.tram_0?.id) {
-      tramStopId = stationOverrides.tram_0.id;
+    if (tramOverride?.id) {
+      tramStopId = tramOverride.id;
     }
-    if (stationOverrides.bus_0?.id) {
-      busStopId = stationOverrides.bus_0.id;
+    if (busOverride?.id) {
+      busStopId = busOverride.id;
+    }
+
+    // Apply station override names to route template legs for correct display
+    // Route templates use coordinate-based nearest stations, but user may have
+    // explicitly selected a different station via Station Preferences
+    if (route?.legs && (trainOverride?.id || tramOverride?.id)) {
+      const overrideTrainName = trainOverride?.name || getStopNameById(trainStopId);
+      const overrideTramName = tramOverride?.name || getStopNameById(tramStopId);
+
+      // Deep-copy legs to avoid mutating engine's cached route objects
+      route = { ...route, legs: route.legs.map(leg => {
+        const l = { ...leg };
+        if (l.origin) l.origin = { ...l.origin };
+        if (l.destination) l.destination = { ...l.destination };
+
+        if (l.type === 'train' && overrideTrainName) {
+          if (l.origin) l.origin.name = overrideTrainName;
+          l.originStation = overrideTrainName;
+        }
+        if (l.type === 'tram') {
+          if (overrideTramName && l.origin) l.origin.name = overrideTramName;
+          // Tram destination in multi-modal routes: show transfer AREA, not train station name.
+          // "Tram to South Yarra" (area) is correct; "Tram to South Yarra Station" is misleading
+          // because the tram doesn't go to the train station — user alights at a tram stop nearby.
+          if (overrideTrainName && l.destination) {
+            l.destination.name = overrideTrainName.replace(/\s+Station$/i, '');
+          }
+        }
+        if (l.type === 'walk') {
+          if (l.to === 'tram stop' && overrideTramName) l.stopName = overrideTramName;
+          if ((l.to === 'train platform' || l.to === 'station') && overrideTrainName) {
+            l.stationName = overrideTrainName;
+          }
+        }
+        return l;
+      })};
     }
 
     // Load preferred tram route for consistent display (pinned by user)
@@ -1850,20 +1911,22 @@ export default async function handler(req, res) {
     const earlyIsTomorrowCommute = earlyIsCommuteDay && earlyNowMins > earlyTargetMins + 180;
 
     const isNonCommuteDayPreview = !earlyIsCommuteDay;
-    // Transit GTFS-RT always fetched when API key present — cafeMode is irrelevant to transit.
-    // Skip only when no API key or past target arrival (showing tomorrow's commute).
-    const skipLiveData = !apiKeyStr || earlyIsTomorrowCommute;
+    // Always fetch live GTFS-RT data when API key present.
+    // Tomorrow mode controls journey DISPLAY (departure times, leave-by calculation)
+    // but live departures must still be fetched for admin panel departure cards
+    // and to verify the API connection is working.
+    const skipLiveData = !apiKeyStr;
 
     if (apiKeyStr) {
-      console.log(`[CommuteCompute] API key present (${apiKeyStr.substring(0, 8)}...), cafeMode=${cafeMode}, skipLiveData=${skipLiveData}`);
+      console.log(`[CommuteCompute] API key present (${apiKeyStr.substring(0, 8)}...), cafeMode=${cafeMode}, isTomorrow=${earlyIsTomorrowCommute}`);
     }
 
-    if (skipLiveData && !apiKeyStr) {
+    if (skipLiveData) {
       console.warn('[CommuteCompute] Live data skipped — no transit API key in Redis');
     }
 
-    if (skipLiveData && earlyIsTomorrowCommute) {
-      console.log('[CommuteCompute] Live data skipped — past target arrival, showing tomorrow commute');
+    if (earlyIsTomorrowCommute) {
+      console.log('[CommuteCompute] Tomorrow commute mode — journey display uses timetable estimates');
     }
 
     // V15.0: Extract tram/bus route numbers from journey legs for GTFS-RT route-level matching
