@@ -6577,12 +6577,33 @@
 
         async function loadCoffeeDecision() {
             try {
-                const route = await fetch(BASE_URL + '/admin/route').then(r => r.json());
-                if (route?.coffee_decision) {
+                const config = JSON.parse(localStorage.getItem('cc-config') || '{}');
+                if (!config.addresses?.home) {
                     document.getElementById('coffee-decision').innerHTML = `
-                        <div class="coffee-icon"><svg class="icon-xxl">${route.coffee_decision.can_get_coffee ? '<use href="#icon-coffee"/>' : '<use href="#icon-clock"/>'}</svg></div>
-                        <div class="coffee-text">${route.coffee_decision.can_get_coffee ? 'Time for Coffee!' : 'Skip Coffee'}</div>
-                        <div class="coffee-subtext">${sanitize(route.coffee_decision.message || '')}</div>
+                        <div class="coffee-icon"><svg class="icon-xxl"><use href="#icon-coffee"/></svg></div>
+                        <div class="coffee-text">Plan a Journey</div>
+                        <div class="coffee-subtext">Configure your route first</div>
+                    `;
+                    return;
+                }
+                const resp = await fetch(BASE_URL + '/api/commutecompute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        home: config.addresses?.home,
+                        work: config.addresses?.work,
+                        cafe: config.addresses?.cafe,
+                        arrivalTime: config.journey?.arrivalTime || '09:00',
+                        state: config.state || 'VIC',
+                        coffeeEnabled: config.journey?.coffeeEnabled !== false
+                    })
+                });
+                const data = await resp.json();
+                if (data.coffee) {
+                    document.getElementById('coffee-decision').innerHTML = `
+                        <div class="coffee-icon"><svg class="icon-xxl">${data.coffee.canGet ? '<use href="#icon-coffee"/>' : '<use href="#icon-clock"/>'}</svg></div>
+                        <div class="coffee-text">${data.coffee.canGet ? 'Time for Coffee!' : 'Skip Coffee'}</div>
+                        <div class="coffee-subtext">${sanitize(data.coffee.subtext || data.coffee.decision || '')}</div>
                     `;
                 } else {
                     document.getElementById('coffee-decision').innerHTML = `
@@ -6600,7 +6621,7 @@
 
         async function loadJourneySummary() {
             try {
-                const journey = await fetch(BASE_URL + '/admin/route/auto').then(r => r.json());
+                const journey = await authFetch(BASE_URL + '/api/routes').then(r => r.json());
                 if (journey?.success && journey?.route) {
                     document.getElementById('journey-summary-card').style.display = 'block';
 
@@ -6715,7 +6736,7 @@
             };
 
             try {
-                const result = await fetch(BASE_URL + '/admin/route/auto-plan', {
+                const result = await fetch(BASE_URL + '/api/commutecompute', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
                 }).then(r => r.json());
 
@@ -9053,12 +9074,16 @@
             const lifeEl = document.getElementById('analytics-lifestyle');
             const lifeDetailEl = document.getElementById('analytics-lifestyle-detail');
 
-            if (confEl && dashboard.confidence_score !== undefined) {
+            if (confEl && dashboard.confidence_score !== undefined && dashboard.confidence_score !== null) {
                 confEl.textContent = sanitize(String(dashboard.confidence_score)) + '%';
                 // Unified labels matching e-ink display: ON TIME / AT RISK / UNLIKELY
                 const label = dashboard.confidence_label || (dashboard.confidence_score >= 75 ? 'ON TIME' : dashboard.confidence_score >= 50 ? 'AT RISK' : 'UNLIKELY');
                 confLabelEl.textContent = sanitize(String(label));
                 confEl.style.color = dashboard.confidence_score >= 75 ? '#22c55e' : dashboard.confidence_score >= 50 ? '#fbbf24' : '#f87171';
+            } else if (confEl) {
+                confEl.textContent = '--';
+                if (confLabelEl) confLabelEl.textContent = dashboard.isTomorrowCommute ? 'TOMORROW' : '--';
+                confEl.style.color = '#94a3b8';
             }
 
             // Confidence status text from engine (e.g. "ON TIME", "AT RISK", "UNLIKELY")
@@ -9321,7 +9346,7 @@
                 }));
 
                 // Call simplified route planning endpoint
-                const response = await fetch(BASE_URL + '/admin/route/quick-plan', {
+                const response = await fetch(BASE_URL + '/api/commutecompute', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

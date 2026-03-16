@@ -14,7 +14,7 @@
 
 import { CommuteCompute } from '../src/engines/commute-compute.js';
 import { getTransitApiKey, getPreferences, setPreferences, getStationOverrides, setStationOverrides, getPreferredTramRoute, setPreferredTramRoute } from '../src/data/kv-preferences.js';
-import { findNearestStops, findNearestStopsMultiple } from '../src/data/gtfs-stop-names.js';
+import { findNearestStops, findNearestStopsMultiple, getStopNameById } from '../src/data/gtfs-stop-names.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -43,12 +43,12 @@ export default async function handler(req, res) {
     const params = req.method === 'POST' ? req.body : req.query;
     
     const preferences = {
-      homeAddress: params.home || prefs.homeAddress || prefs.home,
-      workAddress: params.work || prefs.workAddress || prefs.work,
-      coffeeAddress: params.cafe || prefs.coffeeAddress || prefs.cafe,
-      homeLocation: prefs.homeLocation,
-      workLocation: prefs.workLocation,
-      cafeLocation: prefs.cafeLocation,
+      homeAddress: params.home || prefs.homeAddress || prefs.addresses?.home || prefs.locations?.home?.address || prefs.home,
+      workAddress: params.work || prefs.workAddress || prefs.addresses?.work || prefs.locations?.work?.address || prefs.work,
+      coffeeAddress: params.cafe || prefs.coffeeAddress || prefs.addresses?.cafe || prefs.locations?.cafe?.address || prefs.cafe,
+      homeLocation: prefs.homeLocation || prefs.locations?.home,
+      workLocation: prefs.workLocation || prefs.locations?.work,
+      cafeLocation: prefs.cafeLocation || prefs.locations?.cafe,
       arrivalTime: params.arrivalTime || prefs.arrivalTime || '09:00',
       state: params.state || prefs.state || 'VIC',
       coffeeEnabled: (params.coffeeEnabled ?? prefs.coffeeEnabled) !== false,
@@ -142,14 +142,40 @@ export default async function handler(req, res) {
     // Include station overrides and nearby alternatives for admin panel dropdowns
     const stationOverrides = await getStationOverrides() || {};
     const preferredTramRoute = await getPreferredTramRoute();
+
+    // Apply station override names to formatted alternatives for consistent display
+    // Without this, route legs show coordinate-based nearest stations instead of user-selected ones
+    // Admin saves overrides keyed by transit-leg index (e.g. train_1, tram_0),
+    // so we search all entries by type rather than assuming a fixed key.
+    const findOverride = (type) => Object.values(stationOverrides).find(o => o?.type === type);
+    const trainOverride = findOverride('train');
+    const tramOverride = findOverride('tram');
+    if (trainOverride?.id || tramOverride?.id) {
+      const overrideTrainName = trainOverride?.name || getStopNameById(trainOverride?.id);
+      const overrideTramName = tramOverride?.name || getStopNameById(tramOverride?.id);
+
+      for (const alt of alternatives) {
+        if (!alt.legs) continue;
+        for (const leg of alt.legs) {
+          if (leg.type === 'train' && overrideTrainName) {
+            leg.originName = overrideTrainName;
+          }
+          if (leg.type === 'tram') {
+            if (overrideTramName) leg.originName = overrideTramName;
+            // Show transfer area, not train station name — tram alights at a tram stop
+            if (overrideTrainName) leg.destinationName = overrideTrainName.replace(/\s+Station$/i, '');
+          }
+        }
+      }
+    }
     // Provide nearby stops for home/work locations so admin can offer alternatives
     // Returns top 3 per mode sorted by distance for station preference dropdowns
     // Use Redis-stored coordinates directly — engine.getLocations() may lack lat/lon
     const locations = engine.getLocations();
-    const homeLat = locations.home?.lat || prefs.homeLocation?.lat;
-    const homeLon = locations.home?.lon || prefs.homeLocation?.lon;
-    const workLat = locations.work?.lat || prefs.workLocation?.lat;
-    const workLon = locations.work?.lon || prefs.workLocation?.lon;
+    const homeLat = locations.home?.lat || prefs.homeLocation?.lat || prefs.locations?.home?.lat;
+    const homeLon = locations.home?.lon || prefs.homeLocation?.lon || prefs.locations?.home?.lon;
+    const workLat = locations.work?.lat || prefs.workLocation?.lat || prefs.locations?.work?.lat;
+    const workLon = locations.work?.lon || prefs.workLocation?.lon || prefs.locations?.work?.lon;
     const nearbyStopsHome = (homeLat && homeLon)
       ? findNearestStopsMultiple(homeLat, homeLon, { count: 5 })
       : {};
