@@ -5701,33 +5701,38 @@
             const trainEl = document.getElementById('train-departures');
             const tramEl = document.getElementById('tram-departures');
 
-            // Update status badges and subtitles based on actual live data status
-            const isLive = scData.isLive === true || scData.dataSource === 'gtfs-rt';
+            // Update status badges based on PER-MODE raw transit data (not journey leg flags,
+            // which are forced to timetable in tomorrow mode even when GTFS-RT feed is active)
+            const rawTransitData = scData.raw?.transit || {};
+            const trainLegData = scData.journey_legs?.find(function(l) { return l.type === 'train'; });
+            const tramLegData = scData.journey_legs?.find(function(l) { return l.type === 'tram'; });
+            const trainIsLive = (rawTransitData.trains || []).some(function(t) { return t.isLive === true; });
+            const tramIsLive = (rawTransitData.trams || []).some(function(t) { return t.isLive === true; });
             const trainBadge = document.getElementById('train-status-badge');
             const tramBadge = document.getElementById('tram-status-badge');
             const trainSub = document.getElementById('train-station-subtitle');
             const tramSub = document.getElementById('tram-station-subtitle');
             if (trainBadge) {
-                trainBadge.textContent = isLive ? 'Live' : 'Scheduled';
-                trainBadge.style.background = isLive ? 'rgba(34, 197, 94, 0.2)' : 'rgba(251, 191, 36, 0.2)';
-                trainBadge.style.color = isLive ? '#22c55e' : '#fbbf24';
+                trainBadge.textContent = trainIsLive ? 'Live' : 'Scheduled';
+                trainBadge.style.background = trainIsLive ? 'rgba(34, 197, 94, 0.2)' : 'rgba(251, 191, 36, 0.2)';
+                trainBadge.style.color = trainIsLive ? '#22c55e' : '#fbbf24';
             }
             if (tramBadge) {
-                tramBadge.textContent = isLive ? 'Live' : 'Scheduled';
-                tramBadge.style.background = isLive ? 'rgba(102, 126, 234, 0.2)' : 'rgba(251, 191, 36, 0.2)';
-                tramBadge.style.color = isLive ? '#667eea' : '#fbbf24';
+                tramBadge.textContent = tramIsLive ? 'Live' : 'Scheduled';
+                tramBadge.style.background = tramIsLive ? 'rgba(102, 126, 234, 0.2)' : 'rgba(251, 191, 36, 0.2)';
+                tramBadge.style.color = tramIsLive ? '#667eea' : '#fbbf24';
             }
 
-            // Extract departure info from journey legs
-            const trainLeg = scData.journey_legs?.find(l => l.type === 'train');
-            const tramLeg = scData.journey_legs?.find(l => l.type === 'tram');
+            // Use per-leg data already extracted above for badge logic
+            const trainLeg = trainLegData;
+            const tramLeg = tramLegData;
 
             // Update subtitles with route info (replaces "Loading...")
             if (trainSub) {
-                trainSub.textContent = trainLeg ? sanitize(trainLeg.subtitle || '') : (isLive ? '' : 'Scheduled departures');
+                trainSub.textContent = trainLeg ? sanitize(trainLeg.subtitle || '') : (trainIsLive ? '' : 'Scheduled departures');
             }
             if (tramSub) {
-                tramSub.textContent = tramLeg ? sanitize(tramLeg.subtitle || '') : (isLive ? '' : 'Scheduled departures');
+                tramSub.textContent = tramLeg ? sanitize(tramLeg.subtitle || '') : (tramIsLive ? '' : 'Scheduled departures');
             }
             
             if (trainLeg) {
