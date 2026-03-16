@@ -31,8 +31,7 @@
     "express": "4.22.1",
     "gtfs-realtime-bindings": "1.1.1",
     "ioredis": "5.4.0",
-    "node-fetch": "3.3.2",
-    "nodemailer": "7.0.12"
+    "node-fetch": "3.3.2"
   },
   "keywords": [
     "commute-compute",
@@ -46,6 +45,7 @@
   "licenseNote": "Dual-licensed: AGPL-3.0 for open source, commercial licence available — see LICENSE",
   "devDependencies": {
     "eslint": "^9.0.0",
+    "nodemailer": "7.0.12",
     "md-to-pdf": "5.2.5",
     "puppeteer": "24.36.1"
   }

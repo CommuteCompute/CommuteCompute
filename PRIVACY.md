@@ -176,7 +176,7 @@ Commute Compute™ is architected so that each user deploys and controls their o
 - There is no central Commute Compute™ server collecting or aggregating data
 - There is no user profiling, behavioural analytics, or telemetry
 - The full source code is available and auditable under AGPL-3.0
-- Compliance is verified by 240+ automated audit checks (see [DEVELOPMENT-RULES.md](DEVELOPMENT-RULES.md))
+- Compliance is verified by 360+ automated audit checks (see [DEVELOPMENT-RULES.md](DEVELOPMENT-RULES.md))
 
 ---
 
@@ -198,7 +198,7 @@ Google Places API is optional. If not configured, the system uses free OpenStree
 - Licensed under AGPL-3.0 (an open-source software licence that allows free use but requires sharing modifications) — dual licence available, see [LEGAL.md](LEGAL.md)
 - All data flows are visible and auditable in the source code
 - No hidden telemetry, phone-home, or data exfiltration code
-- Repository includes automated compliance auditing with 240+ checks across 25 rule sections
+- Repository includes automated compliance auditing with 360+ checks across 25 rule sections
 - All third-party data source attributions listed in [ATTRIBUTION.md](ATTRIBUTION.md)
 
 ---
