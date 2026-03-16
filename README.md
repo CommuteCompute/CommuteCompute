@@ -358,7 +358,7 @@ This makes Commute Compute&#8482; one of the first commuter tools to fully suppo
 |  Setup Wizard | Admin Panel | Simulator | Preview | Help                  |
 +--------------------------------------------------------------------------+
 |                            API LAYER                                      |
-|  /api/screen | /api/zones | /api/livedash | /api/admin/* | /api/health   |
+|  /api/commutecompute | /api/zones | /api/livedash | /api/admin/* | /api/health   |
 +--------------------------------------------------------------------------+
 |                          SERVICE LAYER                                    |
 |  CommuteCompute(TM) | CCDash(TM) | CC LiveDash(TM) | Weather (BOM)      |
@@ -454,13 +454,13 @@ See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed step-by-step instructions 
 
 ### Keeping Your Dashboard Warm (Free Tier)
 
-Vercel free-tier deployments can experience cold starts — a 5–10 second delay on the first request after a period of inactivity. Because the TRMNL Display fetches your dashboard every 60 seconds, functions may go cold during periods when no other traffic reaches your deployment. This is entirely optional, but a simple cron job keeps your serverless function warm by periodically hitting the `/api/screen` endpoint.
+Vercel free-tier deployments can experience cold starts — a 5–10 second delay on the first request after a period of inactivity. Because the TRMNL Display fetches your dashboard every 60 seconds, functions may go cold during periods when no other traffic reaches your deployment. This is entirely optional, but a simple cron job keeps your serverless function warm by periodically hitting the `/api/commutecompute` endpoint.
 
 **crontab (Linux/macOS):**
 
 ```bash
 # Ping your dashboard every 5 minutes to prevent cold starts
-*/5 * * * * curl -s https://your-deployment.vercel.app/api/screen > /dev/null 2>&1
+*/5 * * * * curl -s https://your-deployment.vercel.app/api/commutecompute > /dev/null 2>&1
 ```
 
 **GitHub Actions scheduled workflow (free):**
@@ -474,12 +474,12 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - run: curl -s https://your-deployment.vercel.app/api/screen > /dev/null
+      - run: curl -s https://your-deployment.vercel.app/api/commutecompute > /dev/null
 ```
 
 **Hosted cron services:**
 
-- [cron-job.org](https://cron-job.org) — free hosted cron, set to ping your `/api/screen` URL every 5 minutes
+- [cron-job.org](https://cron-job.org) — free hosted cron, set to ping your `/api/commutecompute` URL every 5 minutes
 - [UptimeRobot](https://uptimerobot.com) — free monitoring service that doubles as a keepalive by checking your endpoint at regular intervals
 
 > **Note:** This is entirely optional. Your dashboard works without it — the display simply shows slightly stale data during the cold start window, then resumes normal operation on the next fetch cycle.
@@ -522,7 +522,7 @@ jobs:
 | Kindle Basic 10/11 | 600 x 800 | Supported -- requires jailbreak |
 | Inkplate 6 | 800 x 600 | Supported |
 | Inkplate 10 | 1200 x 825 | Supported |
-| Web Browser | Any | Full dashboard via `/api/screen` endpoint |
+| Web Browser | Any | Full dashboard via `/api/commutecompute` endpoint |
 
 ### Battery Operation
 
@@ -556,7 +556,7 @@ The TRMNL Display (OG) is the primary supported device and provides the best exp
 | Lines of Code | 112,000+ |
 | Intelligence Engines | 5 |
 | Development Rules Sections | 24 |
-| Automated Compliance Checks | 214 |
+| Automated Compliance Checks | 360+ |
 | Australian Coverage | VIC (Live GTFS-RT) | National (Static Timetable Fallback) |
 
 <br>

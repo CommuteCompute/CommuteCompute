@@ -20,12 +20,12 @@ All intellectual property rights in the Commute Compute System, including but no
 
 ### Filed Trade Mark Applications (IP Australia)
 
-The following trade mark applications have been filed with IP Australia and are at **filed: Published** status as of 20 February 2026. These are **not yet registered trade marks** — registration is pending completion of the examination and opposition process.
+The following trade mark applications have been filed with IP Australia and are at **Accepted — Awaiting Publication (accepted 6 March 2026)** status. These are **not yet registered trade marks** — registration is pending completion of the examination and opposition process.
 
 | Application No. | Mark | Type | Classes | Status | Filed |
 |-----------------|------|------|---------|--------|-------|
-| TM 2627709 | COMMUTE COMPUTE | Word Mark | 9, 39, 42 | filed: Published | 20 February 2026 |
-| TM 2627710 | CC Logo | Figurative Mark | 9, 39, 42 | filed: Published | 20 February 2026 |
+| TM 2627709 | COMMUTE COMPUTE | Word Mark | 9, 39, 42 | Accepted — Awaiting Publication | 20 February 2026 |
+| TM 2627710 | CC Logo | Figurative Mark | 9, 39, 42 | Accepted — Awaiting Publication | 20 February 2026 |
 
 Filing references: AMCZ-2615437674, AMCZ-2615438195
 ABN: 59 402 869 395
@@ -265,7 +265,7 @@ Commute Compute™ is operated by **Angus Bergman** as an individual sole trader
 ### Supply Chain Integrity
 
 - **Dependency verification:** All npm dependencies include cryptographic integrity hashes (`package-lock.json`) to prevent supply chain attacks.
-- **Automated compliance:** 240+ automated audit checks enforce security, licensing, and data handling rules across the entire codebase.
+- **Automated compliance:** 360+ automated audit checks enforce security, licensing, and data handling rules across the entire codebase.
 - **AGPL-3.0 source transparency:** The full source code is publicly auditable, providing users with complete visibility into data handling practices.
 
 ### Additional Protections for Commercial Deployments

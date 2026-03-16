@@ -11,7 +11,7 @@ Thank you for your interest in contributing! This project welcomes community con
 **MANDATORY:** Read [DEVELOPMENT-RULES.md](DEVELOPMENT-RULES.md) before making any changes.
 
 Key requirements:
-- CCDashDesignV15.0 spec is **LOCKED** — no UI changes without approval
+- CCDashDesignV16.0 spec is **LOCKED** — no UI changes without approval
 - Never use "PTV API" — use "Transport Victoria OpenData API"
 - Custom firmware only — NO usetrmnl.com dependencies
 - 1-bit BMP rendering — no greyscale
@@ -28,7 +28,7 @@ Key requirements:
 ### Feature Requests
 1. Open an issue describing the feature
 2. Explain the use case and benefit
-3. Check if it conflicts with the CCDashDesignV15.0 spec (locked)
+3. Check if it conflicts with the CCDashDesignV16.0 spec (locked)
 4. Be patient — this is a hobby project
 
 ### Code Contributions
