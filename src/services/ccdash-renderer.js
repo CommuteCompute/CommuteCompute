@@ -1127,12 +1127,14 @@ function renderLegZone(ctx, leg, zone, legNumber = 1, isHighlighted = false) {
     ctx.fillRect(x, y, w, h);
     ctx.fillStyle = '#000';
 
-    // Border
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = borderWidth;
-    ctx.setLineDash(borderDash);
-    ctx.strokeRect(x + borderWidth/2, y + borderWidth/2, w - borderWidth, h - borderWidth);
-    ctx.setLineDash([]);
+    // Border — V16.0: No border for walk legs (borderless, distinguished by compact height + icon)
+    if (leg.type !== 'walk') {
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = borderWidth;
+      ctx.setLineDash(borderDash);
+      ctx.strokeRect(x + borderWidth/2, y + borderWidth/2, w - borderWidth, h - borderWidth);
+      ctx.setLineDash([]);
+    }
   }
   
   // Leg number circle (V10 Spec Section 5.2) - scaled
@@ -1835,7 +1837,17 @@ function renderLeg(legIndex, data, prefs) {
   if (legIndex === 1) {
     leg.isFirst = true;
   }
-  
+
+  // V16.0: Inject total walk steps into first walk leg subtitle for LifestyleContext engine visibility
+  if (leg.type === 'walk' && data.mindset_steps && !leg._stepsInjected) {
+    const isFirstWalkLeg = !legs.slice(0, legIndex - 1).some(l => l.type === 'walk' && l._stepsInjected);
+    if (isFirstWalkLeg) {
+      const existingSub = leg.subtitle || '';
+      leg.subtitle = existingSub ? `${existingSub} \u2022 ${data.mindset_steps}` : data.mindset_steps;
+      leg._stepsInjected = true;
+    }
+  }
+
   const zone = getDynamicLegZone(legIndex, totalLegs, legs);
   const canvas = createCanvas(zone.w, zone.h);
   const ctx = canvas.getContext('2d');
@@ -2235,6 +2247,42 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     // V16.0: Show PARTIAL LIVE when some transit modes lack GTFS-RT data
     const dataLabel = data.isPartialLive ? '\u25CF PARTIAL LIVE' : '\u25CF LIVE DATA';
     ctx.fillText(dataLabel, statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
+
+    // V16.0: When partial live, show diagnostic detail — which modes lack GTFS-RT
+    if (data.isPartialLive && data._liveDataDiag) {
+      const diag = data._liveDataDiag;
+      const diagParts = [];
+      const journeyLegs = data.journey_legs || data.legs || [];
+      if (journeyLegs.some(l => l.type === 'train') && diag.trainMatches === 0) diagParts.push('TRAIN');
+      if (journeyLegs.some(l => l.type === 'tram') && diag.tramMatches === 0) diagParts.push('TRAM');
+      if (journeyLegs.some(l => l.type === 'bus') && diag.busMatches === 0) diagParts.push('BUS');
+      if (diagParts.length > 0) {
+        const diagY = dataBoxY + dataBoxH + Math.round(2 * sy);
+        ctx.font = `${Math.max(9, Math.round(7 * fs))}px Inter, sans-serif`;
+        ctx.fillStyle = '#000';
+        const diagText = diagParts.join(', ') + ': NO LIVE';
+        // Show error detail if available
+        const errorParts = [];
+        if (diagParts.includes('TRAIN') && diag.trainError) errorParts.push(`Train: ${diag.trainError}`);
+        if (diagParts.includes('TRAM') && diag.tramError) errorParts.push(`Tram: ${diag.tramError}`);
+        if (diagParts.includes('BUS') && diag.busError) errorParts.push(`Bus: ${diag.busError}`);
+        ctx.fillText(diagText, statusBoxX + statusTextPad, diagY + Math.round(6 * sy));
+        if (errorParts.length > 0) {
+          const errorY = diagY + Math.round(10 * sy);
+          const errorText = errorParts.join(' | ');
+          // Truncate to badge width
+          let truncError = errorText;
+          const maxW = statusBoxW - Math.round(8 * sx);
+          if (ctx.measureText(truncError).width > maxW) {
+            while (ctx.measureText(truncError + '\u2026').width > maxW && truncError.length > 5) {
+              truncError = truncError.slice(0, -1);
+            }
+            truncError = truncError.trimEnd() + '\u2026';
+          }
+          ctx.fillText(truncError, statusBoxX + statusTextPad, errorY + Math.round(6 * sy));
+        }
+      }
+    }
   } else if (data.dataSource === 'no-key') {
     // Black filled — no API key configured
     ctx.fillStyle = '#000';
@@ -2787,11 +2835,13 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
     const needsAttention = confidenceScore < 75;
     ctx.font = needsAttention ? `bold ${Math.max(11, Math.round(17 * fs))}px Inter, sans-serif` : `${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;
-    // V16.0: Show both confidence context and mindset when both are actionable
+    // V16.0: Show confidence context, mindset, and resilience when actionable
     const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
     const contextText = data.confidence_context ? ` \u2022 ${data.confidence_context}` : '';
     const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
-    const confText = `${confLabel} (${confidenceScore}%)${contextText}${mindsetText}`;
+    // V16.0: Surface journey resilience from mindset engine (e.g., "RELIABLE", "AT RISK")
+    const resilienceText = data.mindset_resilience ? ` \u2022 ${data.mindset_resilience}` : '';
+    const confText = `${confLabel} (${confidenceScore}%)${contextText}${mindsetText}${resilienceText}`;
     const confMaxWidth = Math.max(Math.round(100 * sx), rightBoundary - Math.round(200 * sx));
     ctx.fillText(confText, rightBoundary, statusBarMidY, confMaxWidth);
     const confWidth = Math.min(ctx.measureText(confText).width, confMaxWidth);
@@ -2948,7 +2998,17 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     const isSkippedLeg = leg.skippedForTiming || (status === 'skipped' || status === 'skip');
     // V13.5: Move isWalkLeg declaration before border logic that uses it
     const isWalkLeg = leg.type === 'walk';
-    
+
+    // V16.0: Inject total walk steps into first walk leg for LifestyleContext engine visibility
+    if (isWalkLeg && data.mindset_steps && !leg._stepsInjected) {
+      const isFirstWalkLeg = !legs.slice(0, idx).some(l => l.type === 'walk' && l._stepsInjected);
+      if (isFirstWalkLeg) {
+        const existingSub = leg.subtitle || getLegSubtitle(leg);
+        leg.subtitle = existingSub ? `${existingSub} \u2022 ${data.mindset_steps}` : data.mindset_steps;
+        leg._stepsInjected = true;
+      }
+    }
+
     // -----------------------------------------------------------------------
     // BACKGROUND (varies by state per reference images 6, 8)
     // - Suspended: Diagonal stripes pattern (//////)
@@ -3098,17 +3158,20 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
       ctx.lineWidth = 2;
       ctx.setLineDash([]);
     } else if (isWalkLeg) {
-      // V16.0 FIX: Walk borders normalised to 1px (was 0.5px) for consistency
-      ctx.lineWidth = 1;
-      ctx.setLineDash([2, 2]);
+      // V16.0: No border for walk legs — distinguished by compact height, walk icon, and "MIN WALK" label
+      ctx.lineWidth = 0;
+      ctx.setLineDash([]);
     } else {
       ctx.lineWidth = 1;  // v1.32: Thinner normal borders
       ctx.setLineDash([]);
     }
 
-    ctx.strokeRect(zone.x + 1, zone.y + 1, zone.w - 2, zone.h - 2);
+    // V16.0: Skip stroke for walk legs (borderless)
+    if (!isWalkLeg) {
+      ctx.strokeRect(zone.x + 1, zone.y + 1, zone.w - 2, zone.h - 2);
+    }
     ctx.setLineDash([]);
-    
+
     // -----------------------------------------------------------------------
     // LEG NUMBER CIRCLE (V10 Spec Section 5.2)
     // - Normal: Filled black circle with white number

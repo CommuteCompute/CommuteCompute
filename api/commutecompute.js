@@ -2203,13 +2203,16 @@ export default async function handler(req, res) {
       localHour: melbourneTime.hour,
       localMinute: melbourneTime.minute
     });
-    // V15.0: Alternative Transit - cost estimates when public transit is disrupted
-    // Activate when: no transit legs exist, or all transit legs are cancelled/suspended
+    // V16.0: Alternative Transit - cost estimates when transit is disrupted or will make user late
+    // Activate when: no transit legs exist, all transit legs cancelled/suspended, or user will arrive late
     const hasActiveTransit = journeyLegs.some(l => ['train', 'tram', 'bus', 'vline'].includes(l.type));
     const allTransitCancelled = journeyLegs
       .filter(l => ['train', 'tram', 'bus', 'vline'].includes(l.type))
       .every(l => ['cancelled', 'suspended'].includes(l.state));
-    const showAltTransit = !hasActiveTransit || (hasActiveTransit && allTransitCancelled);
+    // V16.0: Also show alternatives when transit will make user late in commute window
+    const willBeLate = isCommuteDay && !isTomorrowCommute && delayMinutes > 0 &&
+      leaveInMinutes !== null && leaveInMinutes < 0;
+    const showAltTransit = !hasActiveTransit || (hasActiveTransit && allTransitCancelled) || willBeLate;
     const altTransitEngine = new AltTransit();
     const altTransit = altTransitEngine.calculate({
       totalWalkMins: totalMinutes,
