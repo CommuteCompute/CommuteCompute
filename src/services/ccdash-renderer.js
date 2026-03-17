@@ -3074,11 +3074,10 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     }
     
     // -----------------------------------------------------------------------
-    // BORDER - v1.32: Thinner borders for easier glancing
-    // V13.3: Walk legs have thinner borders than transit
-    // - Walk: 0.5px dotted (subtle)
+    // BORDER - V16.0: Normalised 1px borders for all standard leg types
+    // - Walk: 1px dotted
     // - Normal transit: 1px solid
-    // - Coffee can-get: 2px solid
+    // - Coffee can-get: 1px solid
     // - Coffee skip: 1px dashed
     // - Delayed: 2px dashed
     // - Suspended/Diverted: 2px solid
@@ -3086,7 +3085,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     ctx.strokeStyle = '#000';
 
     if (isCoffeeCanGet) {
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1;
       ctx.setLineDash([]);
     } else if (isSkippedCoffee || isSkippedLeg) {
       // V13.5: All skipped legs (coffee or walk detour) get dashed borders
@@ -3099,9 +3098,9 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
       ctx.lineWidth = 2;
       ctx.setLineDash([]);
     } else if (isWalkLeg) {
-      // V13.3: Walk legs have thinner, subtler borders
-      ctx.lineWidth = 0.5;
-      ctx.setLineDash([2, 2]);  // Subtle dotted line
+      // V16.0 FIX: Walk borders normalised to 1px (was 0.5px) for consistency
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 2]);
     } else {
       ctx.lineWidth = 1;  // v1.32: Thinner normal borders
       ctx.setLineDash([]);
@@ -3145,35 +3144,62 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     ctx.textBaseline = 'top';
     const textX = iconX + currentIconSize + 8;
 
-    // V13: Walk legs are compact (single line), Transit/Coffee are multi-line
-    if (isWalkLeg) {
-      // V13.3: Walk leg - single line with duration in text (no duration box)
-      // V13.5: Skipped walk legs show skip indicator
-      ctx.font = `bold ${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;  // V13.3: Slightly larger for readability
-      const titleY = zone.y + (zone.h - 16) / 2;
-      if (idx === 0) leg.isFirst = true;
-      const walkDuration = leg.minutes || leg.durationMinutes || 0;
-      // V13.3: Format as "Walk to [destination] (X min)" - no separate duration box
-      let legTitle = leg.title || getLegTitle(leg);
-
-      // V13.5: If this walk leg is skipped (cafe detour), show skip indicator
-      if (isSkippedLeg) {
-        legTitle = `[X] ${legTitle} -- SKIPPED`;
-      } else if (walkDuration > 0 && !legTitle.includes('min')) {
-        legTitle = `${legTitle} (${walkDuration} min)`;
-      }
-
-      // B3: Truncate walk title to available width (Section 7.2-7.3 compliance)
-      const walkTitleMaxWidth = zone.w - textX - 20;
-      if (ctx.measureText(legTitle).width > walkTitleMaxWidth) {
-        const ellipsis = '\u2026';
-        const ellipsisW = ctx.measureText(ellipsis).width;
-        while (ctx.measureText(legTitle).width + ellipsisW > walkTitleMaxWidth && legTitle.length > 5) {
-          legTitle = legTitle.slice(0, -1);
+    // V16.0: Walk and coffee legs are compact (single line). Transit is multi-line.
+    if (isWalkLeg || leg.type === 'coffee') {
+      if (leg.type === 'coffee') {
+        // V16.0: Coffee leg redesign — walk-sized, black bar if time, white+strikethrough if no time
+        const isCoffeeGet = leg.canGet !== false;
+        if (isCoffeeGet) {
+          ctx.fillStyle = '#000';
+          ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
         }
-        legTitle = legTitle.trimEnd() + ellipsis;
+        ctx.font = `bold ${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;
+        const coffTitleY = zone.y + (zone.h + Math.round(16 * fs) * 0.35) / 2;
+        if (isCoffeeGet) {
+          ctx.fillStyle = '#FFF';
+          const busy = leg.busyness || 'quiet';
+          const busyLabel = busy === 'busy' ? 'Busy' : busy === 'moderate' ? 'Moderate' : 'Quiet';
+          ctx.fillText(`Time for coffee - ${busyLabel}`, textX, coffTitleY);
+        } else {
+          ctx.fillStyle = '#000';
+          ctx.fillText('No time', textX, coffTitleY);
+          // Strikethrough across the full bar
+          const strikeY = zone.y + zone.h / 2;
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.moveTo(zone.x, strikeY);
+          ctx.lineTo(zone.x + zone.w, strikeY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      } else {
+        // Walk leg - single line with duration in text (no duration box)
+        ctx.font = `bold ${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;
+        const titleY = zone.y + (zone.h - 16) / 2;
+        if (idx === 0) leg.isFirst = true;
+        const walkDuration = leg.minutes || leg.durationMinutes || 0;
+        let legTitle = leg.title || getLegTitle(leg);
+
+        if (isSkippedLeg) {
+          legTitle = `[X] ${legTitle} -- SKIPPED`;
+        } else if (walkDuration > 0 && !legTitle.includes('min')) {
+          legTitle = `${legTitle} (${walkDuration} min)`;
+        }
+
+        // Truncate walk title to available width
+        const walkTitleMaxWidth = zone.w - textX - 20;
+        if (ctx.measureText(legTitle).width > walkTitleMaxWidth) {
+          const ellipsis = '\u2026';
+          const ellipsisW = ctx.measureText(ellipsis).width;
+          while (ctx.measureText(legTitle).width + ellipsisW > walkTitleMaxWidth && legTitle.length > 5) {
+            legTitle = legTitle.slice(0, -1);
+          }
+          legTitle = legTitle.trimEnd() + ellipsis;
+        }
+        ctx.fillText(legTitle, textX, titleY);
       }
-      ctx.fillText(legTitle, textX, titleY);
     } else {
       // V13: Transit/Coffee - multi-line layout
       ctx.font = `bold ${titleSize}px Inter, sans-serif`;
