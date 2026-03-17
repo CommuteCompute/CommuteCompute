@@ -542,25 +542,26 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     // data. Live GTFS-RT or timetable estimate with "Scheduled ~Xmin" display.
     if (isTransitLeg && !actualDepartureMs) {
       leg.isTimetableEstimate = true;
-      if (!options.isTomorrowCommute) {
-        // Only calculate departure times for today — tomorrow's times would be tonight's, not morning's
-        const estWaitMins = 2;
-        const estDepartMins = nowMins + cumulativeMinutes + estWaitMins;
-        const estH = Math.floor(estDepartMins / 60) % 24;
-        const estM = estDepartMins % 60;
-        const estH12 = estH % 12 || 12;
-        const estAmPm = estH >= 12 ? 'pm' : 'am';
-        departTime = `~${estH12}:${estM.toString().padStart(2, '0')}${estAmPm}`;
-        minutesToDeparture = Math.min(cumulativeMinutes + estWaitMins, 180);
-        // Provide estimated departure timestamps so renderer can show 3 departures
-        const estDepartMs = nowMs + (minutesToDeparture * 60000);
-        const headway = leg.type === 'tram' ? 8 : (leg.type === 'train' ? 10 : 15);
-        nextDepartureTimesMs = [
-          estDepartMs,
-          estDepartMs + (headway * 60000),
-          estDepartMs + (headway * 2 * 60000)
-        ];
-      }
+      // V16.0 FIX: Always calculate timetable departure estimates when no live
+      // GTFS-RT match exists. Previously gated by !isTomorrowCommute which blocked
+      // all departure data after 10:01am. Timetable estimates use current time +
+      // cumulative journey time, which is valid regardless of tomorrow mode.
+      const estWaitMins = 2;
+      const estDepartMins = nowMins + cumulativeMinutes + estWaitMins;
+      const estH = Math.floor(estDepartMins / 60) % 24;
+      const estM = estDepartMins % 60;
+      const estH12 = estH % 12 || 12;
+      const estAmPm = estH >= 12 ? 'pm' : 'am';
+      departTime = `~${estH12}:${estM.toString().padStart(2, '0')}${estAmPm}`;
+      minutesToDeparture = Math.min(cumulativeMinutes + estWaitMins, 180);
+      // Provide estimated departure timestamps so renderer can show 3 departures
+      const estDepartMs = nowMs + (minutesToDeparture * 60000);
+      const headway = leg.type === 'tram' ? 8 : (leg.type === 'train' ? 10 : 15);
+      nextDepartureTimesMs = [
+        estDepartMs,
+        estDepartMs + (headway * 60000),
+        estDepartMs + (headway * 2 * 60000)
+      ];
     }
 
     // V13.6: Calculate the actual journey contribution for this leg
@@ -594,16 +595,10 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       leg.durationMinutes = legDuration; // Ensure fallback field also uses capped value
     }
 
-    // V16.0: TOMORROW mode — suppress departure data for ALL legs.
-    // Today's departure times are meaningless for tomorrow's commute and create
-    // impossible arithmetic (e.g. 5:21pm departure → 9:00am arrival).
-    // Walk legs show walk duration; transit legs show transit duration (ride time).
-    if (options.isTomorrowCommute) {
-      departTime = null;
-      minutesToDeparture = legDuration; // Show leg duration (walk or transit) instead of "minutes from NOW"
-      nextDepartureTimesMs = null;
-      actualDepartureMs = null;
-    }
+    // V16.0 FIX: Live GTFS-RT departure data is always displayed regardless of
+    // tomorrow mode. The isTomorrowCommute flag controls journey bar header and
+    // leave-by timing, but does NOT suppress departure data — users at a stop
+    // at 6:30pm still need to see when the next tram/train departs.
 
     const baseLeg = {
       number: legNumber++,
@@ -765,16 +760,10 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     }
 
     // Subtitle for transit legs: timetable estimate OR "Next:" catchable departures
-    // V16.0: TOMORROW mode — always show "Scheduled ~Xmin" (no live data applies tomorrow)
-    // Live GTFS-RT is still fetched (for admin diagnostics) but display uses timetable estimates.
-    if (isTransitLeg && options.isTomorrowCommute) {
-      const estMins = Math.max(1, leg.minutes || leg.durationMinutes || 0);
-      baseLeg.subtitle = `Scheduled ~${estMins}min`;
-      baseLeg.isTimetableEstimate = true;
-      baseLeg.isLive = false;  // Display is timetable, even though GTFS-RT was fetched
-      baseLeg.nextDepartures = [];
-      baseLeg.nextDepartureTimesMs = [];
-    } else if (isTransitLeg && baseLeg.isTimetableEstimate) {
+    // V16.0 FIX: Subtitle reflects actual data source — no tomorrow-mode override.
+    // Live GTFS-RT data flows through to display. Timetable fallback only when
+    // no live match exists (isTimetableEstimate path).
+    if (isTransitLeg && baseLeg.isTimetableEstimate) {
       const estMins = Math.max(1, baseLeg.minutes || 0);
       baseLeg.subtitle = `Scheduled ~${estMins}min`;
       baseLeg.nextDepartures = [];  // Prevent renderer from appending timetable departures
@@ -2148,22 +2137,15 @@ export default async function handler(req, res) {
       leaveInMinutes = Math.max(0, targetMins - totalMinutes - nowMinsForLeave);
     }
 
-    // V13.6: Calculate actual arrival time
-    // Issue 4: When past today's target, calculate tomorrow's arrival instead
-    let arrivalMins;
-    if (isTomorrowCommute) {
-      // Tomorrow's arrival = target arrival time (the whole point is arriving on time)
-      arrivalMins = targetMins;
-    } else {
-      arrivalMins = nowMinsForLeave + totalMinutes;
-    }
+    // V16.0 FIX: Always compute arrival from current time + journey duration.
+    // The journey bar header indicates TOMORROW context separately. Footer arrival
+    // should match the computed "if you leave now" scenario (e.g. 7:06pm at 6:30pm).
+    const arrivalMins = nowMinsForLeave + totalMinutes;
     const arrivalH = Math.floor(arrivalMins / 60) % 24;
     const arrivalM = arrivalMins % 60;
     const arrivalH12 = arrivalH % 12 || 12;
     const arrivalAmPm = arrivalH >= 12 ? 'pm' : 'am';
-    const calculatedArrival = isTomorrowCommute
-      ? `${arrivalH12}:${arrivalM.toString().padStart(2, '0')}${arrivalAmPm}`
-      : `${arrivalH12}:${arrivalM.toString().padStart(2, '0')}${arrivalAmPm}`;
+    const calculatedArrival = `${arrivalH12}:${arrivalM.toString().padStart(2, '0')}${arrivalAmPm}`;
 
     // Calculate delay if applicable
     let delayMinutes = null;
