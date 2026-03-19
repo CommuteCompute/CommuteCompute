@@ -1938,11 +1938,11 @@ export default async function handler(req, res) {
     const earlyLocalDateStr = now.toLocaleDateString('en-AU', { timeZone: earlyTimezone, weekday: 'short' });
     const earlyDayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
     const earlyDayOfWeek = earlyDayMap[earlyLocalDateStr.slice(0, 3)] ?? now.getDay();
-    const earlyCommuteDays = config?.journey?.commuteDays || [1, 2, 3, 4, 5];
+    const earlyCommuteDays = kvPrefs?.journey?.commuteDays || [1, 2, 3, 4, 5];
     const earlyIsCommuteDay = earlyCommuteDays.includes(earlyDayOfWeek);
     const earlyMelbTime = getMelbourneDisplayTime(now, userState);
     const earlyNowMins = earlyMelbTime.hour * 60 + earlyMelbTime.minute;
-    const earlyArrival = config?.journey?.arrivalTime || '09:00';
+    const earlyArrival = kvPrefs?.journey?.arrivalTime || '09:00';
     const [eArrH, eArrM] = earlyArrival.split(':').map(Number);
     const earlyTargetMins = eArrH * 60 + eArrM;
     const earlyIsTomorrowCommute = earlyIsCommuteDay && earlyNowMins > earlyTargetMins + 180;
@@ -2054,36 +2054,39 @@ export default async function handler(req, res) {
 
     // Parse cafe hours from Google Places data stored during setup.
     // kvPrefs.cafe.hours contains strings like "Thursday: 6:30 AM – 4:00 PM"
-    // Parse the current day's hours to extract open/close times.
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const todayName = dayNames[dayOfWeek];
-    let cafeOpenHour = 6;  // Fallback defaults
+    let cafeOpenHour = 6;  // Fallback defaults (only used when no Google Places data)
     let cafeCloseHour = 17;
     let cafeOpenToday = true;
-    const cafeHoursStrings = kvPrefs?.cafe?.hours;
-    if (cafeHoursStrings && Array.isArray(cafeHoursStrings)) {
-      const todayHours = cafeHoursStrings.find(h => h.startsWith(todayName));
-      if (todayHours) {
-        if (todayHours.toLowerCase().includes('closed')) {
-          cafeOpenToday = false;
-        } else {
-          // Parse "Thursday: 6:30 AM – 4:00 PM" format
-          const timeMatch = todayHours.match(/(\d{1,2}):?(\d{2})?\s*(AM|PM)\s*[–\-]\s*(\d{1,2}):?(\d{2})?\s*(AM|PM)/i);
-          if (timeMatch) {
-            let openH = parseInt(timeMatch[1], 10);
-            const openAmPm = timeMatch[3].toUpperCase();
-            if (openAmPm === 'PM' && openH !== 12) openH += 12;
-            if (openAmPm === 'AM' && openH === 12) openH = 0;
-            cafeOpenHour = openH;
+    try {
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const todayName = dayNames[dayOfWeek];
+      const cafeHoursStrings = kvPrefs?.cafe?.hours;
+      if (cafeHoursStrings && Array.isArray(cafeHoursStrings)) {
+        const todayHours = cafeHoursStrings.find(h => typeof h === 'string' && h.startsWith(todayName));
+        if (todayHours) {
+          if (todayHours.toLowerCase().includes('closed')) {
+            cafeOpenToday = false;
+          } else {
+            // Parse "Thursday: 6:30 AM – 4:00 PM" format (handles en-dash and hyphen)
+            const timeMatch = todayHours.match(/(\d{1,2}):?(\d{2})?\s*(AM|PM)\s*[\u2013\-]\s*(\d{1,2}):?(\d{2})?\s*(AM|PM)/i);
+            if (timeMatch && timeMatch[3] && timeMatch[6]) {
+              let openH = parseInt(timeMatch[1], 10);
+              const openAmPm = timeMatch[3].toUpperCase();
+              if (openAmPm === 'PM' && openH !== 12) openH += 12;
+              if (openAmPm === 'AM' && openH === 12) openH = 0;
+              if (!isNaN(openH)) cafeOpenHour = openH;
 
-            let closeH = parseInt(timeMatch[4], 10);
-            const closeAmPm = timeMatch[6].toUpperCase();
-            if (closeAmPm === 'PM' && closeH !== 12) closeH += 12;
-            if (closeAmPm === 'AM' && closeH === 12) closeH = 0;
-            cafeCloseHour = closeH;
+              let closeH = parseInt(timeMatch[4], 10);
+              const closeAmPm = timeMatch[6].toUpperCase();
+              if (closeAmPm === 'PM' && closeH !== 12) closeH += 12;
+              if (closeAmPm === 'AM' && closeH === 12) closeH = 0;
+              if (!isNaN(closeH)) cafeCloseHour = closeH;
+            }
           }
         }
       }
+    } catch (e) {
+      console.warn('[CommuteCompute] Cafe hours parsing failed, using defaults:', e.message);
     }
     const cafeIsOpen = cafeOpenToday && hour >= cafeOpenHour && hour < cafeCloseHour;
 
@@ -2097,6 +2100,20 @@ export default async function handler(req, res) {
         decision: 'CLOSED',
         subtext: 'Cafe not open'
       };
+    }
+
+    // Adjust coffee duration based on estimated busyness at current day/hour.
+    // Busyness data is generated during setup from cafe hours patterns and stored
+    // in kvPrefs.cafe.busyness as { dayIndex: { hour: { level, waitMinutes } } }.
+    if (coffeeDecision.canGet && kvPrefs?.cafe?.busyness) {
+      const busyData = kvPrefs.cafe.busyness[dayOfWeek]?.[hour];
+      if (busyData && busyData.waitMinutes > 0) {
+        coffeeDecision.busyLevel = busyData.level;
+        coffeeDecision.busyWaitMinutes = busyData.waitMinutes;
+        if (busyData.level === 'busy' || busyData.level === 'very_busy') {
+          coffeeDecision.subtext = (coffeeDecision.subtext || '') + (coffeeDecision.subtext ? ' | ' : '') + 'Cafe ' + busyData.level.replace('_', ' ') + ' (~' + busyData.waitMinutes + 'min wait)';
+        }
+      }
     }
 
     // Issue 3: When cafe is closed/skipped, REMOVE the coffee leg entirely from journey
@@ -2187,7 +2204,7 @@ export default async function handler(req, res) {
     const workSuburb = isUsefulSuburb(rawWorkSuburb) ? rawWorkSuburb : null;
     const displayHome = simOverrides.home || homeSuburb || 'Home';
     const displayWork = simOverrides.work || workSuburb || 'Work';
-    const displayArrival = simOverrides.arrivalTime || config?.journey?.arrivalTime || '09:00';
+    const displayArrival = simOverrides.arrivalTime || kvPrefs?.journey?.arrivalTime || '09:00';
 
     // Calculate timing using display arrival (respects simulator override)
     // V13.6 FIX: Use local time for display calculations (state-aware)
@@ -2333,7 +2350,7 @@ export default async function handler(req, res) {
       total_minutes: totalMinutes,
       leave_in_minutes: leaveInMinutes != null && leaveInMinutes > 0 ? leaveInMinutes : null,
       isCommuteDay,
-      hasExplicitArrivalTarget: !!(config?.journey?.arrivalTime),
+      hasExplicitArrivalTarget: !!(kvPrefs?.journey?.arrivalTime),
       journey_legs: journeyLegs,
       destination: displayWork,
       destination_address: kvPrefs?.addresses?.work || locations.work?.address || '',
