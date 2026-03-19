@@ -2248,41 +2248,9 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     const dataLabel = data.isPartialLive ? '\u25CF PARTIAL LIVE' : '\u25CF LIVE DATA';
     ctx.fillText(dataLabel, statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
 
-    // V16.0: When partial live, show diagnostic detail — which modes lack GTFS-RT
-    if (data.isPartialLive && data._liveDataDiag) {
-      const diag = data._liveDataDiag;
-      const diagParts = [];
-      const journeyLegs = data.journey_legs || data.legs || [];
-      if (journeyLegs.some(l => l.type === 'train') && diag.trainMatches === 0) diagParts.push('TRAIN');
-      if (journeyLegs.some(l => l.type === 'tram') && diag.tramMatches === 0) diagParts.push('TRAM');
-      if (journeyLegs.some(l => l.type === 'bus') && diag.busMatches === 0) diagParts.push('BUS');
-      if (diagParts.length > 0) {
-        const diagY = dataBoxY + dataBoxH + Math.round(2 * sy);
-        ctx.font = `${Math.max(9, Math.round(7 * fs))}px Inter, sans-serif`;
-        ctx.fillStyle = '#000';
-        const diagText = diagParts.join(', ') + ': NO LIVE';
-        // Show error detail if available
-        const errorParts = [];
-        if (diagParts.includes('TRAIN') && diag.trainError) errorParts.push(`Train: ${diag.trainError}`);
-        if (diagParts.includes('TRAM') && diag.tramError) errorParts.push(`Tram: ${diag.tramError}`);
-        if (diagParts.includes('BUS') && diag.busError) errorParts.push(`Bus: ${diag.busError}`);
-        ctx.fillText(diagText, statusBoxX + statusTextPad, diagY + Math.round(6 * sy));
-        if (errorParts.length > 0) {
-          const errorY = diagY + Math.round(10 * sy);
-          const errorText = errorParts.join(' | ');
-          // Truncate to badge width
-          let truncError = errorText;
-          const maxW = statusBoxW - Math.round(8 * sx);
-          if (ctx.measureText(truncError).width > maxW) {
-            while (ctx.measureText(truncError + '\u2026').width > maxW && truncError.length > 5) {
-              truncError = truncError.slice(0, -1);
-            }
-            truncError = truncError.trimEnd() + '\u2026';
-          }
-          ctx.fillText(truncError, statusBoxX + statusTextPad, errorY + Math.round(6 * sy));
-        }
-      }
-    }
+    // V16.0: Diagnostic detail removed from render — 7px text unreadable on e-ink display,
+    // overlaps disruption banner. PARTIAL LIVE badge is sufficient indicator.
+    // Diagnostic data still available in JSON response for admin panel debugging.
   } else if (data.dataSource === 'no-key') {
     // Black filled — no API key configured
     ctx.fillStyle = '#000';
@@ -2811,9 +2779,18 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     } else if (disruptionText.startsWith('Planned work:')) {
       badgeText = disruptionText.replace('Planned work: ', '');
     }
-    badgeText = badgeText.substring(0, 24);
+    // Cap badge width to prevent it consuming too much bar space
+    const maxBadgeW = Math.round(200 * sx);
+    if (ctx.measureText(badgeText).width > maxBadgeW - Math.round(16 * sx)) {
+      const ellipsis = '\u2026';
+      const ellipsisW = ctx.measureText(ellipsis).width;
+      while (ctx.measureText(badgeText).width + ellipsisW > maxBadgeW - Math.round(16 * sx) && badgeText.length > 5) {
+        badgeText = badgeText.slice(0, -1);
+      }
+      badgeText = badgeText.trimEnd() + ellipsis;
+    }
     const textWidth = ctx.measureText(badgeText).width;
-    const delayBoxW = Math.max(Math.round(110 * sx), textWidth + Math.round(16 * sx));
+    const delayBoxW = Math.min(maxBadgeW, Math.max(Math.round(110 * sx), textWidth + Math.round(16 * sx)));
     const delayBoxH = Math.round(22 * sy);
     const delayBoxX = rightBoundary - delayBoxW;
     const delayBoxY = statusBarY + Math.round(5 * sy);
@@ -2841,10 +2818,19 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
     // V16.0: Surface journey resilience from mindset engine (e.g., "RELIABLE", "AT RISK")
     const resilienceText = data.mindset_resilience ? ` \u2022 ${data.mindset_resilience}` : '';
-    const confText = `${confLabel} (${confidenceScore}%)${contextText}${mindsetText}${resilienceText}`;
+    let confText = `${confLabel} (${confidenceScore}%)${contextText}${mindsetText}${resilienceText}`;
     const confMaxWidth = Math.max(Math.round(100 * sx), rightBoundary - Math.round(200 * sx));
-    ctx.fillText(confText, rightBoundary, statusBarMidY, confMaxWidth);
-    const confWidth = Math.min(ctx.measureText(confText).width, confMaxWidth);
+    // Truncate with ellipsis instead of Canvas maxWidth compression (unreadable on e-ink)
+    if (ctx.measureText(confText).width > confMaxWidth) {
+      const ellipsis = '\u2026';
+      const ellipsisW = ctx.measureText(ellipsis).width;
+      while (ctx.measureText(confText).width + ellipsisW > confMaxWidth && confText.length > 10) {
+        confText = confText.slice(0, -1);
+      }
+      confText = confText.trimEnd() + ellipsis;
+    }
+    ctx.fillText(confText, rightBoundary, statusBarMidY);
+    const confWidth = ctx.measureText(confText).width;
     rightBoundary = rightBoundary - confWidth - Math.round(8 * sx);
   }
 
@@ -2852,7 +2838,8 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   ctx.textAlign = 'left';
   ctx.fillStyle = '#FFF';
   ctx.font = `bold ${Math.max(11, Math.round(13 * fs))}px Inter, sans-serif`;
-  const statusMaxWidth = Math.max(Math.round(200 * sx), rightBoundary - Math.round(24 * sx));
+  const statusTextX = Math.round(16 * sx);
+  const statusMaxWidth = Math.max(Math.round(80 * sx), rightBoundary - statusTextX - Math.round(8 * sx));
   if (ctx.measureText(statusText).width > statusMaxWidth) {
     const ellipsis = '\u2026';
     const ellipsisW = ctx.measureText(ellipsis).width;
@@ -2861,7 +2848,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     }
     statusText = statusText.trimEnd() + ellipsis;
   }
-  ctx.fillText(statusText, Math.round(16 * sx), statusBarMidY);
+  ctx.fillText(statusText, statusTextX, statusBarMidY);
   ctx.textAlign = 'left';
 
   // Confidence context now rendered inline in status bar (see confText above)
@@ -3281,7 +3268,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
       // Compute inline to avoid referencing timeBoxW/departColW before declaration
       const titleTimeBoxW = isWalkLeg ? 0 : Math.max(72, Math.round(88 * scale));
       const titleDepartColW = (['train', 'tram', 'bus', 'vline', 'ferry', 'coffee'].includes(leg.type) && leg.departTime) ? Math.max(40, Math.round(50 * scale)) : 0;
-      const titleMaxWidth = zone.w - textX - titleTimeBoxW - titleDepartColW - 20;
+      const titleMaxWidth = zone.w - textX - titleTimeBoxW - titleDepartColW - Math.round(30 * scale);
       if (ctx.measureText(legTitle).width > titleMaxWidth) {
         const ellipsis = '\u2026';
         const ellipsisW = ctx.measureText(ellipsis).width;
@@ -3457,7 +3444,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
                       (leg.type === 'coffee' && leg.canGet !== false);
     const timeBoxW = isWalkLeg ? 0 : Math.max(72, Math.round(88 * scale));
     const departColW = hasDepart ? Math.max(40, Math.round(50 * scale)) : 0;
-    const subtitleMaxWidth = zone.w - textX - timeBoxW - departColW - Math.round(50 * scale);
+    const subtitleMaxWidth = zone.w - textX - timeBoxW - departColW - Math.round(60 * scale);
 
     // If subtitle is too wide, drop "Alight at" first (departure times are more useful)
     ctx.font = `${subtitleSize}px Inter, sans-serif`;
@@ -3529,7 +3516,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     // -----------------------------------------------------------------------
     if (hasDepart) {
       // V13.6: DEPART column further left for clear separation from countdown box
-      const departColCenter = zone.x + zone.w - timeBoxW - departColW - 45;
+      const departColCenter = zone.x + zone.w - timeBoxW - departColW - Math.round(35 * scale);
       const departBlockY = zone.y + (zone.h - departLabelSize - departTimeSize - 1) / 2;
 
       // B1: Canvas clipping region for DEPART column (Section 7.2-7.3 compliance)
@@ -3574,7 +3561,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     // Transit/Coffee legs show minutes until departure in black box
     // V13.6: Larger time boxes with bigger numbers and more spacing
     // -----------------------------------------------------------------------
-    if (!isWalkLeg) {
+    if (!isWalkLeg && leg.type !== 'coffee') {
     // V13.6: Increased time box size for better visibility
     const timeBoxW = Math.max(72, Math.round(88 * scale));
     const timeBoxX = zone.x + zone.w - timeBoxW;
