@@ -927,10 +927,8 @@ function buildLegSubtitle(leg, transitData) {
       // V13.6: Show walk destination details with explicit names
       if (leg.to === 'work') return `${mins} min walk`;
       if (leg.to === 'cafe') return 'From home';
-      // V13.6: Show specific origin/destination if available
-      const originName = getStopName();
-      if (originName) return `From ${originName}`;
-      if (leg.fromStation) return `From ${leg.fromStation}`;
+      // Inter-transit walks: show duration (station name is on the adjacent transit leg)
+      // Per Pattern 5: buildLegSubtitle() = stop name ONLY — no "From" prefix
       return `${mins} min walk`;
     }
     case 'coffee':
@@ -1888,20 +1886,33 @@ export default async function handler(req, res) {
         }
         return l;
       })};
+    }
 
-      // Rebuild route description to reflect station overrides.
-      // The engine-generated description uses auto-detected stations (e.g. Hawksburn Station)
-      // which may differ from user-overridden stations (e.g. South Yarra Station).
-      if (route.description) {
-        route.description = route.legs.map(l => {
-          if (l.type === 'walk') return 'Walk';
-          if (l.type === 'coffee') return 'Coffee';
-          const rn = l.routeNumber ? ' ' + l.routeNumber : '';
-          const origin = l.origin?.name || l.originStation || l.originStop || '';
-          const dest = l.destination?.name || '';
-          return `${l.type.charAt(0).toUpperCase() + l.type.slice(1)}${rn} (${origin} → ${dest})`;
-        }).join(' → ');
-      }
+    // Always rebuild route description using detected stop IDs.
+    // The engine-generated description uses coordinate-nearest stations (e.g. Hawksburn)
+    // which may differ from the stop detection result (e.g. South Yarra). Detected stop
+    // IDs reflect overrides when present, and coordinate-first detection otherwise.
+    if (route?.legs && route.description) {
+      const resolvedTrainName = getStopNameById(trainStopId);
+      const resolvedTramName = getStopNameById(tramStopId);
+      const resolvedTrainArea = resolvedTrainName ? resolvedTrainName.replace(/\s+Station$/i, '') : null;
+      route.description = route.legs.map(l => {
+        if (l.type === 'walk') return 'Walk';
+        if (l.type === 'coffee') return 'Coffee';
+        const rn = l.routeNumber ? ' ' + l.routeNumber : '';
+        let origin, dest;
+        if (l.type === 'train') {
+          origin = resolvedTrainName || l.origin?.name || l.originStation || l.originStop || '';
+          dest = l.destination?.name || '';
+        } else if (l.type === 'tram') {
+          origin = resolvedTramName || l.origin?.name || l.originStop || '';
+          dest = resolvedTrainArea || l.destination?.name || '';
+        } else {
+          origin = l.origin?.name || l.originStation || l.originStop || '';
+          dest = l.destination?.name || '';
+        }
+        return `${l.type.charAt(0).toUpperCase() + l.type.slice(1)}${rn} (${origin} → ${dest})`;
+      }).join(' → ');
     }
 
     // Load preferred tram route for consistent display (pinned by user)
@@ -2276,6 +2287,7 @@ export default async function handler(req, res) {
       confidence.score = null;
       confidence.label = null;
       confidence.context = null;
+      confidence.statusText = null;
     }
     // V14.0: Calculate Lifestyle Context Suggestions
     const lifestyleEngine = new LifestyleContext();
@@ -2509,7 +2521,7 @@ export default async function handler(req, res) {
 
         // Journey summary (admin panel expects this shape)
         summary: {
-          leaveNow: currentTime,
+          leaveNow: currentTime + amPm,
           arriveAt: arriveAtJson,
           totalMinutes,
           onTime: arrivalDiff <= 5,
