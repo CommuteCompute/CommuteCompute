@@ -240,7 +240,7 @@ class SleepOptimiser {
     const normalizedMins = ((mins % 1440) + 1440) % 1440;
     const hours24 = Math.floor(normalizedMins / 60);
     const minutes = normalizedMins % 60;
-    const period = hours24 >= 12 ? 'PM' : 'AM';
+    const period = hours24 >= 12 ? 'pm' : 'am';
     const hours12 = hours24 === 0 ? 12 : hours24 > 12 ? hours24 - 12 : hours24;
     return hours12 + ':' + String(minutes).padStart(2, '0') + period;
   }

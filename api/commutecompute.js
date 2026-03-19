@@ -615,8 +615,10 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       departTime,                  // V13.6: Actual departure clock time
       nextDepartureTimesMs,        // V13.6: Catchable departures in ms (for Next: x,y,z)
       actualDepartureMs,           // V13.6: Actual departure timestamp for stable arrival calc
-      // V15.0: Live data flags — transit legs only exist here when GTFS-RT matched
-      isLive: isTransitLeg && liveData?.isLive === true,
+      // V15.0: Live data flags — isLive and isTimetableEstimate are mutually exclusive.
+      // Per Pattern 7: isLive: true = GTFS-RT match ONLY. If timetable estimate is used,
+      // the leg is not live even if the GTFS-RT feed responded (no catchable departure matched).
+      isLive: isTransitLeg && liveData?.isLive === true && !leg.isTimetableEstimate,
       isTimetableEstimate: leg.isTimetableEstimate || false,
       // V13.6: Stop/station names for renderer display
       originStop: leg.originStop,
@@ -2288,6 +2290,8 @@ export default async function handler(req, res) {
       confidence.label = null;
       confidence.context = null;
       confidence.statusText = null;
+      confidence.resilience = null;
+      confidence.resilienceDetail = null;
     }
     // V14.0: Calculate Lifestyle Context Suggestions
     const lifestyleEngine = new LifestyleContext();
@@ -2464,13 +2468,13 @@ export default async function handler(req, res) {
       alt_transit_bike: altTransit.bike,
       alt_transit_distance_km: altTransit.distanceKm,
       alt_transit_is_peak: altTransit.isPeak,
-      // V15.0: Lifestyle Mindset
-      mindset_stress: mindset.stressLevel,
-      mindset_display: mindset.stressDisplay,
-      mindset_steps: mindset.stepsDisplay,
-      mindset_feels_like: mindset.feelsLikeDisplay,
-      mindset_resilience: mindset.resilienceDisplay,
-      mindset_resilience_level: mindset.resilienceLevel,
+      // V15.0: Lifestyle Mindset — suppress in tomorrow mode (today's assessment is not meaningful)
+      mindset_stress: isTomorrowCommute ? null : mindset.stressLevel,
+      mindset_display: isTomorrowCommute ? null : mindset.stressDisplay,
+      mindset_steps: isTomorrowCommute ? null : mindset.stepsDisplay,
+      mindset_feels_like: isTomorrowCommute ? null : mindset.feelsLikeDisplay,
+      mindset_resilience: isTomorrowCommute ? null : mindset.resilienceDisplay,
+      mindset_resilience_level: isTomorrowCommute ? null : mindset.resilienceLevel,
     };
 
     console.log('[CommuteCompute] _liveDataDiag:', JSON.stringify(dashboardData._liveDataDiag));
