@@ -2117,25 +2117,8 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   if (locationText !== locationTextRaw) locationText += '\u2026';
   ctx.fillText(locationText, Math.round(12 * sx), Math.round(4 * sy));
 
-  // Simplified home address (number + street only) below suburb
-  if (data.home_address) {
-    let homeAddr = data.home_address;
-    // Strip to number + street: find first digit, take up to first comma
-    const addrNumIdx = homeAddr.search(/\d+\s+[A-Za-z]/);
-    if (addrNumIdx >= 0) homeAddr = homeAddr.substring(addrNumIdx);
-    const addrComma = homeAddr.indexOf(',');
-    if (addrComma > 0) homeAddr = homeAddr.substring(0, addrComma);
-    homeAddr = homeAddr.replace(/\bStreet\b/gi, 'St').replace(/\bRoad\b/gi, 'Rd').replace(/\bAvenue\b/gi, 'Ave').toUpperCase();
-    ctx.font = `${Math.max(11, Math.round(8 * fs))}px Inter, sans-serif`;
-    let truncAddr = homeAddr;
-    while (ctx.measureText(truncAddr).width > maxLocationW && truncAddr.length > 3) {
-      truncAddr = truncAddr.slice(0, -1);
-    }
-    if (truncAddr !== homeAddr) truncAddr += '\u2026';
-    ctx.fillStyle = '#555';
-    ctx.fillText(truncAddr, Math.round(12 * sx), Math.round(16 * sy));
-    ctx.fillStyle = '#000';
-  }
+  // Home address removed from e-ink header — suburb name is sufficient context.
+  // Full address visible in admin panel Journey Configuration section.
 
   // V15.1: Battery indicator next to location (if provided by device)
   const batteryPercent = data.battery_percent;
@@ -2517,9 +2500,11 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
                       cafeBusyness === 'busy' ? 'BUSY' : cafeBusyness.toUpperCase();
     ctx.fillText(busyLabel, coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(46 * sy));
 
-    // Wait time
-    ctx.font = `${Math.max(11, Math.round(12 * fs))}px Inter, sans-serif`;
-    ctx.fillText(`~${cafeWaitTime} min wait`, coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(64 * sy));
+    // Wait time — only show when a real value exists (not '--' placeholder)
+    if (cafeWaitTime !== '--' && cafeWaitTime !== null && cafeWaitTime !== undefined) {
+      ctx.font = `${Math.max(11, Math.round(12 * fs))}px Inter, sans-serif`;
+      ctx.fillText(`~${cafeWaitTime} min wait`, coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(64 * sy));
+    }
 
     ctx.textAlign = 'left';
     ctx.fillStyle = '#000';
