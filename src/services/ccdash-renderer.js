@@ -3281,7 +3281,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
       // Compute inline to avoid referencing timeBoxW/departColW before declaration
       const titleTimeBoxW = isWalkLeg ? 0 : Math.max(72, Math.round(88 * scale));
       const titleDepartColW = (['train', 'tram', 'bus', 'vline', 'ferry', 'coffee'].includes(leg.type) && leg.departTime) ? Math.max(40, Math.round(50 * scale)) : 0;
-      const titleMaxWidth = zone.w - textX - titleTimeBoxW - titleDepartColW - 20;
+      const titleMaxWidth = zone.w - textX - titleTimeBoxW - titleDepartColW - Math.round(30 * scale);
       if (ctx.measureText(legTitle).width > titleMaxWidth) {
         const ellipsis = '\u2026';
         const ellipsisW = ctx.measureText(ellipsis).width;
@@ -3457,7 +3457,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
                       (leg.type === 'coffee' && leg.canGet !== false);
     const timeBoxW = isWalkLeg ? 0 : Math.max(72, Math.round(88 * scale));
     const departColW = hasDepart ? Math.max(40, Math.round(50 * scale)) : 0;
-    const subtitleMaxWidth = zone.w - textX - timeBoxW - departColW - Math.round(50 * scale);
+    const subtitleMaxWidth = zone.w - textX - timeBoxW - departColW - Math.round(60 * scale);
 
     // If subtitle is too wide, drop "Alight at" first (departure times are more useful)
     ctx.font = `${subtitleSize}px Inter, sans-serif`;
@@ -3529,7 +3529,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     // -----------------------------------------------------------------------
     if (hasDepart) {
       // V13.6: DEPART column further left for clear separation from countdown box
-      const departColCenter = zone.x + zone.w - timeBoxW - departColW - 45;
+      const departColCenter = zone.x + zone.w - timeBoxW - departColW - Math.round(35 * scale);
       const departBlockY = zone.y + (zone.h - departLabelSize - departTimeSize - 1) / 2;
 
       // B1: Canvas clipping region for DEPART column (Section 7.2-7.3 compliance)
@@ -3574,7 +3574,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     // Transit/Coffee legs show minutes until departure in black box
     // V13.6: Larger time boxes with bigger numbers and more spacing
     // -----------------------------------------------------------------------
-    if (!isWalkLeg) {
+    if (!isWalkLeg && leg.type !== 'coffee') {
     // V13.6: Increased time box size for better visibility
     const timeBoxW = Math.max(72, Math.round(88 * scale));
     const timeBoxX = zone.x + zone.w - timeBoxW;
