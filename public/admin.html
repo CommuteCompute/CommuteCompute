@@ -2663,6 +2663,10 @@
                             <div style="font-family: 'Courier New', monospace; font-size: 11px; overflow-x: auto; max-height: 300px; overflow-y: auto;">
                                 <pre id="sc-raw-output" style="margin: 0; color: #cbd5e1; white-space: pre-wrap; word-break: break-word;">Loading...</pre>
                             </div>
+                            <button id="download-raw-json" onclick="(function(){var el=document.getElementById('sc-raw-output');if(!el||!el.textContent||el.textContent==='Loading...')return;var blob=new Blob([el.textContent],{type:'application/json'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='commutecompute-raw-'+new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')+'.json';a.click();URL.revokeObjectURL(url);})()" style="margin-top: 10px; padding: 6px 14px; font-size: 12px; background: rgba(102,126,234,0.2); color: #667eea; border: 1px solid rgba(102,126,234,0.3); border-radius: 6px; cursor: pointer; font-weight: 500;">
+                                <svg width="12" height="12" style="vertical-align: middle; margin-right: 4px;"><use href="#icon-database"/></svg>
+                                Download Raw JSON
+                            </button>
                         </div>
                     </details>
 

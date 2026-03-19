@@ -2049,14 +2049,45 @@ export default async function handler(req, res) {
     const dayOfWeek = dayMap[localDateStr.slice(0, 3)] ?? now.getDay();
 
     // Weekend / non-commute day detection
-    const commuteDays = config?.journey?.commuteDays || [1, 2, 3, 4, 5]; // Mon-Fri default
+    const commuteDays = kvPrefs?.journey?.commuteDays || [1, 2, 3, 4, 5]; // Mon-Fri default
     const isCommuteDay = commuteDays.includes(dayOfWeek);
-    const cafeOpenHour = config?.coffee?.openHour || 6;
-    const cafeCloseHour = config?.coffee?.closeHour || 17;
-    const cafeOpenDays = config?.coffee?.openDays || [1, 2, 3, 4, 5, 6]; // Mon-Sat
-    const cafeIsOpen = cafeOpenDays.includes(dayOfWeek) && hour >= cafeOpenHour && hour < cafeCloseHour;
-    
-    if (!cafeIsOpen && config?.addresses?.cafe) {
+
+    // Parse cafe hours from Google Places data stored during setup.
+    // kvPrefs.cafe.hours contains strings like "Thursday: 6:30 AM – 4:00 PM"
+    // Parse the current day's hours to extract open/close times.
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const todayName = dayNames[dayOfWeek];
+    let cafeOpenHour = 6;  // Fallback defaults
+    let cafeCloseHour = 17;
+    let cafeOpenToday = true;
+    const cafeHoursStrings = kvPrefs?.cafe?.hours;
+    if (cafeHoursStrings && Array.isArray(cafeHoursStrings)) {
+      const todayHours = cafeHoursStrings.find(h => h.startsWith(todayName));
+      if (todayHours) {
+        if (todayHours.toLowerCase().includes('closed')) {
+          cafeOpenToday = false;
+        } else {
+          // Parse "Thursday: 6:30 AM – 4:00 PM" format
+          const timeMatch = todayHours.match(/(\d{1,2}):?(\d{2})?\s*(AM|PM)\s*[–\-]\s*(\d{1,2}):?(\d{2})?\s*(AM|PM)/i);
+          if (timeMatch) {
+            let openH = parseInt(timeMatch[1], 10);
+            const openAmPm = timeMatch[3].toUpperCase();
+            if (openAmPm === 'PM' && openH !== 12) openH += 12;
+            if (openAmPm === 'AM' && openH === 12) openH = 0;
+            cafeOpenHour = openH;
+
+            let closeH = parseInt(timeMatch[4], 10);
+            const closeAmPm = timeMatch[6].toUpperCase();
+            if (closeAmPm === 'PM' && closeH !== 12) closeH += 12;
+            if (closeAmPm === 'AM' && closeH === 12) closeH = 0;
+            cafeCloseHour = closeH;
+          }
+        }
+      }
+    }
+    const cafeIsOpen = cafeOpenToday && hour >= cafeOpenHour && hour < cafeCloseHour;
+
+    if (!cafeIsOpen && kvPrefs?.addresses?.cafe) {
       // Cafe is closed - override coffee decision
       coffeeDecision = {
         ...coffeeDecision,
@@ -2479,7 +2510,14 @@ export default async function handler(req, res) {
 
         // Raw transit data (admin panel accesses raw.transit.trains etc.)
         raw: {
-          transit: transitData
+          transit: transitData,
+          // Feed diagnostics — shows entity counts, queried stop IDs, match methods
+          // for each mode. Helps diagnose why a mode has no live data.
+          _feedDiag: {
+            train: trains?._feedInfo || null,
+            tram: trams?._feedInfo || null,
+            bus: buses?._feedInfo || null
+          }
         },
 
         // Live data diagnostics (admin panel reads this directly)

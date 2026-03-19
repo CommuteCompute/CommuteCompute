@@ -294,8 +294,11 @@ export async function getDepartures(stopId, routeType, options = {}) {
   // V13.6 FIX: Per Section 23.6 - return empty array if no valid stop ID (not mock data)
   if (!stopId || stopId === 'null' || stopId === 'undefined') {
     const modeNames = { 0: 'metro', 1: 'tram', 2: 'bus', 3: 'vline' };
-    console.warn(`[OpenData] getDepartures skipped for ${modeNames[routeType] || 'unknown'}: no stop ID detected. Verify address has geocoded coordinates.`);
-    return [];
+    const mode = modeNames[routeType] || 'unknown';
+    console.warn(`[OpenData] getDepartures skipped for ${mode}: no stop ID detected. Verify address has geocoded coordinates.`);
+    const result = [];
+    result._feedInfo = { entityCount: 0, mode, matchMethod: 'skipped-no-stop-id', queriedStopId: null };
+    return result;
   }
 
   // Map route type to GTFS-RT mode
