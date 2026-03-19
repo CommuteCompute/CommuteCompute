@@ -615,8 +615,10 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       departTime,                  // V13.6: Actual departure clock time
       nextDepartureTimesMs,        // V13.6: Catchable departures in ms (for Next: x,y,z)
       actualDepartureMs,           // V13.6: Actual departure timestamp for stable arrival calc
-      // V15.0: Live data flags — transit legs only exist here when GTFS-RT matched
-      isLive: isTransitLeg && liveData?.isLive === true,
+      // V15.0: Live data flags — isLive and isTimetableEstimate are mutually exclusive.
+      // Per Pattern 7: isLive: true = GTFS-RT match ONLY. If timetable estimate is used,
+      // the leg is not live even if the GTFS-RT feed responded (no catchable departure matched).
+      isLive: isTransitLeg && liveData?.isLive === true && !leg.isTimetableEstimate,
       isTimetableEstimate: leg.isTimetableEstimate || false,
       // V13.6: Stop/station names for renderer display
       originStop: leg.originStop,
@@ -927,10 +929,8 @@ function buildLegSubtitle(leg, transitData) {
       // V13.6: Show walk destination details with explicit names
       if (leg.to === 'work') return `${mins} min walk`;
       if (leg.to === 'cafe') return 'From home';
-      // V13.6: Show specific origin/destination if available
-      const originName = getStopName();
-      if (originName) return `From ${originName}`;
-      if (leg.fromStation) return `From ${leg.fromStation}`;
+      // Inter-transit walks: show duration (station name is on the adjacent transit leg)
+      // Per Pattern 5: buildLegSubtitle() = stop name ONLY — no "From" prefix
       return `${mins} min walk`;
     }
     case 'coffee':
@@ -1888,20 +1888,33 @@ export default async function handler(req, res) {
         }
         return l;
       })};
+    }
 
-      // Rebuild route description to reflect station overrides.
-      // The engine-generated description uses auto-detected stations (e.g. Hawksburn Station)
-      // which may differ from user-overridden stations (e.g. South Yarra Station).
-      if (route.description) {
-        route.description = route.legs.map(l => {
-          if (l.type === 'walk') return 'Walk';
-          if (l.type === 'coffee') return 'Coffee';
-          const rn = l.routeNumber ? ' ' + l.routeNumber : '';
-          const origin = l.origin?.name || l.originStation || l.originStop || '';
-          const dest = l.destination?.name || '';
-          return `${l.type.charAt(0).toUpperCase() + l.type.slice(1)}${rn} (${origin} → ${dest})`;
-        }).join(' → ');
-      }
+    // Always rebuild route description using detected stop IDs.
+    // The engine-generated description uses coordinate-nearest stations (e.g. Hawksburn)
+    // which may differ from the stop detection result (e.g. South Yarra). Detected stop
+    // IDs reflect overrides when present, and coordinate-first detection otherwise.
+    if (route?.legs && route.description) {
+      const resolvedTrainName = getStopNameById(trainStopId);
+      const resolvedTramName = getStopNameById(tramStopId);
+      const resolvedTrainArea = resolvedTrainName ? resolvedTrainName.replace(/\s+Station$/i, '') : null;
+      route.description = route.legs.map(l => {
+        if (l.type === 'walk') return 'Walk';
+        if (l.type === 'coffee') return 'Coffee';
+        const rn = l.routeNumber ? ' ' + l.routeNumber : '';
+        let origin, dest;
+        if (l.type === 'train') {
+          origin = resolvedTrainName || l.origin?.name || l.originStation || l.originStop || '';
+          dest = l.destination?.name || '';
+        } else if (l.type === 'tram') {
+          origin = resolvedTramName || l.origin?.name || l.originStop || '';
+          dest = resolvedTrainArea || l.destination?.name || '';
+        } else {
+          origin = l.origin?.name || l.originStation || l.originStop || '';
+          dest = l.destination?.name || '';
+        }
+        return `${l.type.charAt(0).toUpperCase() + l.type.slice(1)}${rn} (${origin} → ${dest})`;
+      }).join(' → ');
     }
 
     // Load preferred tram route for consistent display (pinned by user)
@@ -2276,6 +2289,9 @@ export default async function handler(req, res) {
       confidence.score = null;
       confidence.label = null;
       confidence.context = null;
+      confidence.statusText = null;
+      confidence.resilience = null;
+      confidence.resilienceDetail = null;
     }
     // V14.0: Calculate Lifestyle Context Suggestions
     const lifestyleEngine = new LifestyleContext();
@@ -2452,13 +2468,13 @@ export default async function handler(req, res) {
       alt_transit_bike: altTransit.bike,
       alt_transit_distance_km: altTransit.distanceKm,
       alt_transit_is_peak: altTransit.isPeak,
-      // V15.0: Lifestyle Mindset
-      mindset_stress: mindset.stressLevel,
-      mindset_display: mindset.stressDisplay,
-      mindset_steps: mindset.stepsDisplay,
-      mindset_feels_like: mindset.feelsLikeDisplay,
-      mindset_resilience: mindset.resilienceDisplay,
-      mindset_resilience_level: mindset.resilienceLevel,
+      // V15.0: Lifestyle Mindset — suppress in tomorrow mode (today's assessment is not meaningful)
+      mindset_stress: isTomorrowCommute ? null : mindset.stressLevel,
+      mindset_display: isTomorrowCommute ? null : mindset.stressDisplay,
+      mindset_steps: isTomorrowCommute ? null : mindset.stepsDisplay,
+      mindset_feels_like: isTomorrowCommute ? null : mindset.feelsLikeDisplay,
+      mindset_resilience: isTomorrowCommute ? null : mindset.resilienceDisplay,
+      mindset_resilience_level: isTomorrowCommute ? null : mindset.resilienceLevel,
     };
 
     console.log('[CommuteCompute] _liveDataDiag:', JSON.stringify(dashboardData._liveDataDiag));
@@ -2509,7 +2525,7 @@ export default async function handler(req, res) {
 
         // Journey summary (admin panel expects this shape)
         summary: {
-          leaveNow: currentTime,
+          leaveNow: currentTime + amPm,
           arriveAt: arriveAtJson,
           totalMinutes,
           onTime: arrivalDiff <= 5,
