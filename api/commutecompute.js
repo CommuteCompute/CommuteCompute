@@ -1888,6 +1888,20 @@ export default async function handler(req, res) {
         }
         return l;
       })};
+
+      // Rebuild route description to reflect station overrides.
+      // The engine-generated description uses auto-detected stations (e.g. Hawksburn Station)
+      // which may differ from user-overridden stations (e.g. South Yarra Station).
+      if (route.description) {
+        route.description = route.legs.map(l => {
+          if (l.type === 'walk') return 'Walk';
+          if (l.type === 'coffee') return 'Coffee';
+          const rn = l.routeNumber ? ' ' + l.routeNumber : '';
+          const origin = l.origin?.name || l.originStation || l.originStop || '';
+          const dest = l.destination?.name || '';
+          return `${l.type.charAt(0).toUpperCase() + l.type.slice(1)}${rn} (${origin} → ${dest})`;
+        }).join(' → ');
+      }
     }
 
     // Load preferred tram route for consistent display (pinned by user)
@@ -1990,9 +2004,9 @@ export default async function handler(req, res) {
 
     // Determine if we actually have live transit data (from GTFS-RT, not fallback)
     // Per Section 23.6: "LIVE" indicators must reflect actual data source
-    const hasLiveTrainData = trains.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad') && t.isLive === true);
-    const hasLiveTramData = trams.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad') && t.isLive === true);
-    const hasLiveBusData = buses.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad') && t.isLive === true);
+    const hasLiveTrainData = trains.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad' || t.source === 'gtfs-rt-scan') && t.isLive === true);
+    const hasLiveTramData = trams.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad' || t.source === 'gtfs-rt-scan') && t.isLive === true);
+    const hasLiveBusData = buses.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad' || t.source === 'gtfs-rt-scan') && t.isLive === true);
     const hasAnyLiveData = hasLiveTrainData || hasLiveTramData || hasLiveBusData;
 
     // =========================================================================

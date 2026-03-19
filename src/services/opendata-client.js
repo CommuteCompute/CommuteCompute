@@ -346,6 +346,19 @@ export async function getDepartures(stopId, routeType, options = {}) {
       }
     }
 
+    // V16.0: All-trips stop search for tram/bus when stop-level AND route-level both fail.
+    // When no route number is available, scan ALL trips in the feed for stop-level matches.
+    // This catches GTFS-RT feeds where stop IDs differ from static GTFS (known tram issue).
+    // Uses Strategy 1 only (exact stop match within trips) — no median estimation —
+    // to avoid showing departures from routes that don't serve the user's stop.
+    if (departures.length === 0 && feedEntityCount > 0 && !options.routeNumber && !options.lineCode && mode !== 'metro') {
+      const scanDepartures = processAllTripsStopSearch(feed, stopId, routeType);
+      if (scanDepartures.length > 0) {
+        console.log(`[OpenData] All-trips stop search found ${scanDepartures.length} departures for stopId=${stopId} in ${mode} feed`);
+        scanDepartures.forEach(d => departures.push(d));
+      }
+    }
+
     // V15.0: Broad fallback — only for trains when stop-level AND route-level both fail.
     // Disabled for tram/bus: broad fallback produces departures from routes that don't
     // serve the user's stop, showing incorrect route numbers. Trains are safe because
@@ -366,7 +379,8 @@ export async function getDepartures(stopId, routeType, options = {}) {
       queriedRouteNumber: options.routeNumber || null,
       queriedLineCode: options.lineCode || null,
       mode,
-      matchMethod: departures.length > 0 && departures[0]?.source === 'gtfs-rt-route'
+      matchMethod: departures.length > 0 && departures[0]?.source === 'gtfs-rt-scan'
+        ? 'all-trips-scan' : departures.length > 0 && departures[0]?.source === 'gtfs-rt-route'
         ? 'route-level' : departures.length > 0 && departures[0]?.source === 'gtfs-rt-broad'
         ? 'broad-fallback' : departures.length > 0 ? 'stop-level' : 'none'
     };
@@ -546,6 +560,100 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType, lineC
   // duplicates when multiple GTFS-RT trip entities estimate similar departure times
   // (median-stop heuristic for two trips on the same route can produce times within
   // seconds of each other). Use 60s window to collapse near-identical departures.
+  departures.sort((a, b) => a.departureTimeMs - b.departureTimeMs);
+  const deduped = [];
+  for (const d of departures) {
+    if (deduped.length === 0 || d.departureTimeMs - deduped[deduped.length - 1].departureTimeMs > 60000) {
+      deduped.push(d);
+    }
+  }
+  return deduped.slice(0, 5);
+}
+
+/**
+ * V16.0: All-trips stop search — scan every trip in the feed for stop-level matches.
+ * Used for tram/bus when stop-level matching fails and no route number is available.
+ * GTFS-RT tram feeds often use different stop ID formats than static GTFS, but
+ * matchesStopId() handles multiple formats (bare, prefixed, delimited, trailing numeric).
+ * This function iterates ALL entities and all their stopTimeUpdates to find matches
+ * that processGtfsRtDepartures may have missed due to ID format differences.
+ *
+ * Additionally uses lenient numeric matching: extracts the trailing 3-5 digits from
+ * both the queried stop ID and feed stop IDs for comparison when exact matching fails.
+ *
+ * @param {Object} feed - Decoded GTFS-RT FeedMessage
+ * @param {string|number} stopId - Stop ID to search for
+ * @param {number} routeType - 0=metro, 1=tram, 2=bus
+ * @returns {Array} - Departure objects from matching trips
+ */
+function processAllTripsStopSearch(feed, stopId, routeType) {
+  const nowMs = getNowMs();
+  const departures = [];
+  const stopIdStr = String(stopId);
+  if (!feed?.entity) return departures;
+
+  // Extract trailing numeric portion for lenient matching
+  const stopNumeric = stopIdStr.match(/(\d+)$/)?.[1] || '';
+
+  for (const entity of feed.entity) {
+    const tripUpdate = entity.tripUpdate;
+    if (!tripUpdate?.stopTimeUpdate?.length) continue;
+
+    const stus = tripUpdate.stopTimeUpdate;
+
+    // Search all stop time updates for a match (Strategy 1: exact stop in trip)
+    for (const stu of stus) {
+      // Standard matching first
+      let matched = matchesStopId(stu.stopId, stopIdStr);
+
+      // Lenient matching: compare trailing numeric portions (3+ digits)
+      // Handles cases where GTFS-RT uses e.g. "2505" and static uses "18705"
+      // by matching the last 4 digits when both IDs are numeric-tailed
+      if (!matched && stopNumeric.length >= 3) {
+        const feedNumeric = String(stu.stopId).match(/(\d+)$/)?.[1] || '';
+        if (feedNumeric.length >= 3) {
+          // Match trailing 3-4 digits (tram stops often share trailing digits)
+          const matchLen = Math.min(4, stopNumeric.length, feedNumeric.length);
+          if (stopNumeric.slice(-matchLen) === feedNumeric.slice(-matchLen)) {
+            matched = true;
+          }
+        }
+      }
+
+      if (!matched) continue;
+
+      const depTime = stu.departure?.time || stu.arrival?.time;
+      if (!depTime) continue;
+
+      const depMs = (depTime.low || depTime) * 1000;
+      const minutes = Math.round((depMs - nowMs) / 60000);
+
+      if (minutes >= -2 && minutes <= 120) {
+        const delay = stu.departure?.delay || stu.arrival?.delay || 0;
+        const isDelayed = delay > 60;
+        const routeId = tripUpdate.trip?.routeId;
+        const lineName = getLineName(routeId);
+
+        departures.push({
+          minutes: Math.max(0, minutes),
+          departureTimeMs: depMs,
+          destination: lineName,
+          lineName,
+          routeNumber: getRouteNumber(routeId) || null,
+          routeId,
+          tripId: tripUpdate.trip?.tripId,
+          isCitybound: false,
+          delay: Math.round(delay / 60),
+          isDelayed,
+          isLive: true,
+          source: 'gtfs-rt-scan'
+        });
+        break; // One match per trip is sufficient
+      }
+    }
+  }
+
+  // Deduplicate and sort
   departures.sort((a, b) => a.departureTimeMs - b.departureTimeMs);
   const deduped = [];
   for (const d of departures) {
