@@ -2248,41 +2248,9 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     const dataLabel = data.isPartialLive ? '\u25CF PARTIAL LIVE' : '\u25CF LIVE DATA';
     ctx.fillText(dataLabel, statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
 
-    // V16.0: When partial live, show diagnostic detail — which modes lack GTFS-RT
-    if (data.isPartialLive && data._liveDataDiag) {
-      const diag = data._liveDataDiag;
-      const diagParts = [];
-      const journeyLegs = data.journey_legs || data.legs || [];
-      if (journeyLegs.some(l => l.type === 'train') && diag.trainMatches === 0) diagParts.push('TRAIN');
-      if (journeyLegs.some(l => l.type === 'tram') && diag.tramMatches === 0) diagParts.push('TRAM');
-      if (journeyLegs.some(l => l.type === 'bus') && diag.busMatches === 0) diagParts.push('BUS');
-      if (diagParts.length > 0) {
-        const diagY = dataBoxY + dataBoxH + Math.round(2 * sy);
-        ctx.font = `${Math.max(9, Math.round(7 * fs))}px Inter, sans-serif`;
-        ctx.fillStyle = '#000';
-        const diagText = diagParts.join(', ') + ': NO LIVE';
-        // Show error detail if available
-        const errorParts = [];
-        if (diagParts.includes('TRAIN') && diag.trainError) errorParts.push(`Train: ${diag.trainError}`);
-        if (diagParts.includes('TRAM') && diag.tramError) errorParts.push(`Tram: ${diag.tramError}`);
-        if (diagParts.includes('BUS') && diag.busError) errorParts.push(`Bus: ${diag.busError}`);
-        ctx.fillText(diagText, statusBoxX + statusTextPad, diagY + Math.round(6 * sy));
-        if (errorParts.length > 0) {
-          const errorY = diagY + Math.round(10 * sy);
-          const errorText = errorParts.join(' | ');
-          // Truncate to badge width
-          let truncError = errorText;
-          const maxW = statusBoxW - Math.round(8 * sx);
-          if (ctx.measureText(truncError).width > maxW) {
-            while (ctx.measureText(truncError + '\u2026').width > maxW && truncError.length > 5) {
-              truncError = truncError.slice(0, -1);
-            }
-            truncError = truncError.trimEnd() + '\u2026';
-          }
-          ctx.fillText(truncError, statusBoxX + statusTextPad, errorY + Math.round(6 * sy));
-        }
-      }
-    }
+    // V16.0: Diagnostic detail removed from render — 7px text unreadable on e-ink display,
+    // overlaps disruption banner. PARTIAL LIVE badge is sufficient indicator.
+    // Diagnostic data still available in JSON response for admin panel debugging.
   } else if (data.dataSource === 'no-key') {
     // Black filled — no API key configured
     ctx.fillStyle = '#000';
@@ -2811,9 +2779,18 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     } else if (disruptionText.startsWith('Planned work:')) {
       badgeText = disruptionText.replace('Planned work: ', '');
     }
-    badgeText = badgeText.substring(0, 24);
+    // Cap badge width to prevent it consuming too much bar space
+    const maxBadgeW = Math.round(200 * sx);
+    if (ctx.measureText(badgeText).width > maxBadgeW - Math.round(16 * sx)) {
+      const ellipsis = '\u2026';
+      const ellipsisW = ctx.measureText(ellipsis).width;
+      while (ctx.measureText(badgeText).width + ellipsisW > maxBadgeW - Math.round(16 * sx) && badgeText.length > 5) {
+        badgeText = badgeText.slice(0, -1);
+      }
+      badgeText = badgeText.trimEnd() + ellipsis;
+    }
     const textWidth = ctx.measureText(badgeText).width;
-    const delayBoxW = Math.max(Math.round(110 * sx), textWidth + Math.round(16 * sx));
+    const delayBoxW = Math.min(maxBadgeW, Math.max(Math.round(110 * sx), textWidth + Math.round(16 * sx)));
     const delayBoxH = Math.round(22 * sy);
     const delayBoxX = rightBoundary - delayBoxW;
     const delayBoxY = statusBarY + Math.round(5 * sy);
@@ -2841,10 +2818,19 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
     // V16.0: Surface journey resilience from mindset engine (e.g., "RELIABLE", "AT RISK")
     const resilienceText = data.mindset_resilience ? ` \u2022 ${data.mindset_resilience}` : '';
-    const confText = `${confLabel} (${confidenceScore}%)${contextText}${mindsetText}${resilienceText}`;
+    let confText = `${confLabel} (${confidenceScore}%)${contextText}${mindsetText}${resilienceText}`;
     const confMaxWidth = Math.max(Math.round(100 * sx), rightBoundary - Math.round(200 * sx));
-    ctx.fillText(confText, rightBoundary, statusBarMidY, confMaxWidth);
-    const confWidth = Math.min(ctx.measureText(confText).width, confMaxWidth);
+    // Truncate with ellipsis instead of Canvas maxWidth compression (unreadable on e-ink)
+    if (ctx.measureText(confText).width > confMaxWidth) {
+      const ellipsis = '\u2026';
+      const ellipsisW = ctx.measureText(ellipsis).width;
+      while (ctx.measureText(confText).width + ellipsisW > confMaxWidth && confText.length > 10) {
+        confText = confText.slice(0, -1);
+      }
+      confText = confText.trimEnd() + ellipsis;
+    }
+    ctx.fillText(confText, rightBoundary, statusBarMidY);
+    const confWidth = ctx.measureText(confText).width;
     rightBoundary = rightBoundary - confWidth - Math.round(8 * sx);
   }
 
@@ -2852,7 +2838,8 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   ctx.textAlign = 'left';
   ctx.fillStyle = '#FFF';
   ctx.font = `bold ${Math.max(11, Math.round(13 * fs))}px Inter, sans-serif`;
-  const statusMaxWidth = Math.max(Math.round(200 * sx), rightBoundary - Math.round(24 * sx));
+  const statusTextX = Math.round(16 * sx);
+  const statusMaxWidth = Math.max(Math.round(80 * sx), rightBoundary - statusTextX - Math.round(8 * sx));
   if (ctx.measureText(statusText).width > statusMaxWidth) {
     const ellipsis = '\u2026';
     const ellipsisW = ctx.measureText(ellipsis).width;
@@ -2861,7 +2848,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     }
     statusText = statusText.trimEnd() + ellipsis;
   }
-  ctx.fillText(statusText, Math.round(16 * sx), statusBarMidY);
+  ctx.fillText(statusText, statusTextX, statusBarMidY);
   ctx.textAlign = 'left';
 
   // Confidence context now rendered inline in status bar (see confText above)
