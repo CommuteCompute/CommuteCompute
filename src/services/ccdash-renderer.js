@@ -2612,13 +2612,17 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     nowMins = localNow.getHours() * 60 + localNow.getMinutes();
   }
   
-  // Calculate arrival time (now + journey duration)
-  const arrivalMins = nowMins + totalMinutes;
-  const arrivalH = Math.floor(arrivalMins / 60) % 24;
-  const arrivalM = arrivalMins % 60;
-  const arrivalH12 = arrivalH % 12 || 12;
-  const arrivalAmPm = arrivalH >= 12 ? 'pm' : 'am';
-  const calculatedArrival = `${arrivalH12}:${arrivalM.toString().padStart(2, '0')}${arrivalAmPm}`;
+  // Use pre-calculated arrival from API when available (ensures consistency with admin panel).
+  // Only recalculate locally as fallback when API value is missing.
+  let calculatedArrival = data._calculatedArrival;
+  if (!calculatedArrival) {
+    const arrivalMins = nowMins + totalMinutes;
+    const arrivalH = Math.floor(arrivalMins / 60) % 24;
+    const arrivalM = arrivalMins % 60;
+    const arrivalH12 = arrivalH % 12 || 12;
+    const arrivalAmPm = arrivalH >= 12 ? 'pm' : 'am';
+    calculatedArrival = `${arrivalH12}:${arrivalM.toString().padStart(2, '0')}${arrivalAmPm}`;
+  }
   
   // Parse target arrival time
   const [targetH, targetM] = targetArrival.split(':').map(Number);

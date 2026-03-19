@@ -1793,7 +1793,7 @@ export class CommuteCompute {
       id: 'tram-direct',
       name: 'Tram Direct',
       description: `Walk → Tram${tramRouteNumber ? ' ' + tramRouteNumber : ''} (${nearestTramStop || 'Tram'} → ${workArea || 'CBD'}) → Walk`,
-      type: 'express',
+      type: 'direct',
       totalMinutes: 20,
       legs: [
         { type: 'tram', routeNumber: tramRouteNumber || '', origin: { name: nearestTramStop }, destination: { name: workArea || 'CBD' }, originStop: nearestTramStop, minutes: 14, fromHome: true },
@@ -1808,12 +1808,12 @@ export class CommuteCompute {
     routes.push({
       id: 'bus-direct',
       name: 'Bus Alternative',
-      description: `Walk → Bus${busRouteNumber ? ' ' + busRouteNumber : ''} (${homeArea || 'Home'} → ${workArea || 'CBD'}) → Walk`,
+      description: `Walk → Bus${busRouteNumber ? ' ' + busRouteNumber : ''} (${homeArea || 'Home'} → ${workAddressShort || workArea || 'CBD'}) → Walk`,
       type: 'alternative',
       totalMinutes: 30,
       legs: [
         { type: 'walk', to: 'bus stop', from: 'home', minutes: 4, fromHome: true },
-        { type: 'bus', routeNumber: busRouteNumber || '', origin: { name: homeArea || 'Home' }, destination: { name: workArea || 'CBD' }, originStop: homeArea || 'Home', minutes: 20 },
+        { type: 'bus', routeNumber: busRouteNumber || '', origin: { name: homeArea || 'Home' }, destination: { name: workAddressShort || workArea || 'CBD' }, originStop: homeArea || 'Home', minutes: 20 },
         { type: 'walk', to: 'work', minutes: 6, workName: workAddressShort }
       ]
     });

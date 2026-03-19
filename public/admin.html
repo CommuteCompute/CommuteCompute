@@ -2663,6 +2663,29 @@
                             <div style="font-family: 'Courier New', monospace; font-size: 11px; overflow-x: auto; max-height: 300px; overflow-y: auto;">
                                 <pre id="sc-raw-output" style="margin: 0; color: #cbd5e1; white-space: pre-wrap; word-break: break-word;">Loading...</pre>
                             </div>
+                            <button id="download-raw-json" onclick="downloadRawJson()" style="margin-top: 10px; padding: 6px 14px; font-size: 12px; background: rgba(102,126,234,0.2); color: #667eea; border: 1px solid rgba(102,126,234,0.3); border-radius: 6px; cursor: pointer; font-weight: 500;">
+                                <svg width="12" height="12" style="vertical-align: middle; margin-right: 4px;"><use href="#icon-database"/></svg>
+                                Download Raw JSON
+                            </button>
+                            <script>
+                            function downloadRawJson() {
+                                var el = document.getElementById('sc-raw-output');
+                                if (!el || !el.textContent || el.textContent === 'Loading...') {
+                                    alert('Raw data not yet loaded. Please wait for the dashboard to refresh.');
+                                    return;
+                                }
+                                var blob = new Blob([el.textContent], { type: 'application/json' });
+                                var url = URL.createObjectURL(blob);
+                                var a = document.createElement('a');
+                                a.href = url;
+                                var ts = new Date().toISOString().slice(0, 19).replace(/T/g, '_').replace(/:/g, '-');
+                                a.download = 'commutecompute-raw-' + ts + '.json';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                            }
+                            </script>
                         </div>
                     </details>
 
@@ -5786,7 +5809,15 @@
                         </div>
                     </div>`;
             } else {
-                tramEl.innerHTML = '<div class="no-data" style="color: #cbd5e1; text-align: center; padding: 20px;">No tram data available</div>';
+                var tramDiag = scData.raw?._feedDiag?.tram;
+                var diagText = '';
+                if (tramDiag) {
+                    var method = tramDiag.matchMethod || 'unknown';
+                    var entities = tramDiag.entityCount || 0;
+                    var stopId = tramDiag.queriedStopId || 'none';
+                    diagText = '<div style="font-size: 10px; color: #94a3b8; margin-top: 6px;">Feed: ' + entities + ' entities, stop: ' + sanitize(stopId) + ', match: ' + sanitize(method) + (tramDiag.error ? ', error: ' + sanitize(tramDiag.error) : '') + '</div>';
+                }
+                tramEl.innerHTML = '<div class="no-data" style="color: #cbd5e1; text-align: center; padding: 20px;">No tram data available' + diagText + '</div>';
             }
 
             // Bus departures
