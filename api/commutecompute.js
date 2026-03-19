@@ -688,6 +688,22 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
             (leg.type === 'bus' && d.mode === 'bus');
           if (!routeTypeMatch) return false;
 
+          // Only show disruptions that materially affect service timing/availability
+          const MATERIAL_EFFECTS = [
+            'NO_SERVICE', 'SIGNIFICANT_DELAYS', 'MODIFIED_SERVICE',
+            'REDUCED_SERVICE', 'DETOUR'
+          ];
+          if (d.effect && !MATERIAL_EFFECTS.includes(d.effect)) {
+            return false;
+          }
+
+          // Filter out facility/infrastructure alerts that don't affect service
+          const NON_MATERIAL_KEYWORDS = /\b(car\s*park|parking|escalator|elevator|lift|myki|station\s*access|entrance|toilet|amenity|construction|upgrade)\b/i;
+          const alertDesc = (d.headerText || '') + ' ' + (d.description || '');
+          if (NON_MATERIAL_KEYWORDS.test(alertDesc)) {
+            return false;
+          }
+
           // V13.6 STRICT: ONLY match if disruption explicitly lists this leg's route
           // If no affectedRoutes, DO NOT match (can't verify it affects this leg)
           if (!d.affectedRoutes || d.affectedRoutes.length === 0) {
@@ -710,7 +726,7 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
             'upfield': 'upf', 'werribee': 'wer', 'williamstown': 'wil'
           };
 
-          return d.affectedRoutes.some(route => {
+          const routeMatch = d.affectedRoutes.some(route => {
             const routeUpper = route.toUpperCase();
 
             // Match tram by exact route number
@@ -730,6 +746,17 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
             // No match - be conservative and don't show unverifiable alerts
             return false;
           });
+          if (!routeMatch) return false;
+
+          // Stop-level filtering: if disruption specifies affected stops,
+          // verify user's leg stops overlap (filters distant station alerts)
+          if (d.affectedStops && d.affectedStops.length > 0) {
+            const legStops = [leg.originStopId, leg.destinationStopId].filter(Boolean);
+            const hasStopOverlap = legStops.some(s => d.affectedStops.includes(s));
+            if (!hasStopOverlap) return false;
+          }
+
+          return true;
         });
 
         if (matchingDisruption) {

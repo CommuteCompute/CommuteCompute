@@ -743,11 +743,13 @@ export async function getDisruptions(routeType, options = {}) {
       const title = alert?.headerText?.translation?.[0]?.text || 'Alert';
       const description = alert?.descriptionText?.translation?.[0]?.text || '';
 
-      // Extract affected routes from informed entities
+      // Extract affected routes and stops from informed entities
       const affectedRoutes = [];
+      const affectedStops = [];
       if (alert?.informedEntity) {
         for (const ie of alert.informedEntity) {
           if (ie.routeId) affectedRoutes.push(ie.routeId);
+          if (ie.stopId) affectedStops.push(ie.stopId);
         }
       }
 
@@ -760,6 +762,7 @@ export async function getDisruptions(routeType, options = {}) {
         effect: alert?.effect,
         mode,  // V13.6: Include mode for route type filtering
         affectedRoutes,  // V13.6: Specific routes affected
+        affectedStops,   // Specific stops affected (for stop-level filtering)
         type: 'disruption'
       };
     });
