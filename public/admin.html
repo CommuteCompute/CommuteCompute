@@ -5884,8 +5884,10 @@
         // Update coffee decision from CommuteCompute response
         function updateCoffeeFromCommuteCompute(coffee, summary) {
             const el = document.getElementById('coffee-decision');
-            if (!coffee) {
-                el.innerHTML = '<div class="no-data">Unable to calculate</div>';
+            if (!coffee || coffee.decision === null) {
+                el.innerHTML = '<div class="no-data" style="text-align: center; padding: 16px; color: #64748b;">Outside commute window</div>';
+                const badge = document.getElementById('coffee-status-badge');
+                if (badge) { badge.textContent = '--'; badge.style.background = 'rgba(100, 116, 139, 0.2)'; badge.style.color = '#64748b'; }
                 return;
             }
             

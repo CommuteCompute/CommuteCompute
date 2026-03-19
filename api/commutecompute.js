@@ -509,8 +509,8 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         // Valid departures up to 120+ min away are kept — supports low-frequency services
         if (rawMinutes < 0 || rawMinutes > 180) {
           rawMinutes = cumulativeMinutes + (legDuration || 5);
-          // Clamped sentinel — not real live data
-          if (liveData) liveData.isLive = false;
+          // Clamped minutes — use estimate for display, but keep isLive flag.
+          // GTFS-RT DID respond; isLive reflects feed availability, not minute validity.
           leg.isTimetableEstimate = true;
         }
         minutesToDeparture = rawMinutes;
@@ -786,24 +786,29 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       );
     }
 
-    // Subtitle for transit legs: timetable estimate OR "Next:" catchable departures
-    // V16.0 FIX: Subtitle reflects actual data source — no tomorrow-mode override.
-    // Live GTFS-RT data flows through to display. Timetable fallback only when
-    // no live match exists (isTimetableEstimate path).
-    if (isTransitLeg && baseLeg.isTimetableEstimate) {
+    // Subtitle for transit legs: live GTFS-RT departures take priority over timetable.
+    // If isLive is true, show "Next: x, y, z min LIVE" regardless of isTimetableEstimate
+    // (which may have been set by timestamp clamping even when live data exists).
+    if (isTransitLeg && baseLeg.isLive && baseLeg.nextDepartures?.length > 0) {
+      const times = baseLeg.nextDepartures
+        .filter(m => m >= 0 && m <= 120)
+        .slice(0, 3)
+        .join(', ');
+      if (times) {
+        baseLeg.subtitle = `Next: ${times} min LIVE`;
+      }
+    } else if (isTransitLeg && baseLeg.isTimetableEstimate) {
       const estMins = Math.max(1, baseLeg.minutes || 0);
       baseLeg.subtitle = `Scheduled ~${estMins}min`;
-      baseLeg.nextDepartures = [];  // Prevent renderer from appending timetable departures
-      baseLeg.nextDepartureTimesMs = [];  // Renderer checks this FIRST — must also clear
+      baseLeg.nextDepartures = [];
+      baseLeg.nextDepartureTimesMs = [];
     } else if (isTransitLeg && baseLeg.nextDepartures?.length > 0) {
       const times = baseLeg.nextDepartures
         .filter(m => m >= 0 && m <= 120)
         .slice(0, 3)
         .join(', ');
-      const liveSuffix = baseLeg.isLive ? ' LIVE' : '';
-
       if (times) {
-        baseLeg.subtitle = `Next: ${times} min${liveSuffix}`;
+        baseLeg.subtitle = `Next: ${times} min`;
       }
     }
 
@@ -2288,17 +2293,23 @@ export default async function handler(req, res) {
       destination: displayWork,
       destination_address: kvPrefs?.addresses?.work || locations.work?.address || '',
       home_address: kvPrefs?.addresses?.home || locations.home?.address || '',
-      // V13.6: Coffee decision for header box - shows CAFE CLOSED when applicable
-      // Non-commute days: suppress coffee messaging entirely
-      coffee_decision: isCommuteDay ? (
-          coffeeDecision.cafeClosed ? 'CAFE CLOSED' :
-          coffeeDecision.canGet ? 'TIME FOR COFFEE' :
-          'NO TIME FOR COFFEE'
-      ) : null,
-      coffee_subtext: isCommuteDay ? (
-          coffeeDecision.cafeClosed ? 'Outside opening hours' :
-          coffeeDecision.subtext || null
-      ) : null,
+      // Coffee decision gated by ±2hr arrival window (matches renderer logic)
+      // Outside the window, coffee decisions are not actionable
+      coffee_decision: (() => {
+        const coffeeWindowMins = Math.abs(nowMinsForLeave - targetMins);
+        const inCoffeeWindow = isCommuteDay && coffeeWindowMins <= 120;
+        if (!inCoffeeWindow) return null;
+        if (coffeeDecision.cafeClosed) return 'CAFE CLOSED';
+        if (coffeeDecision.canGet) return 'TIME FOR COFFEE';
+        return 'NO TIME FOR COFFEE';
+      })(),
+      coffee_subtext: (() => {
+        const coffeeWindowMins = Math.abs(nowMinsForLeave - targetMins);
+        const inCoffeeWindow = isCommuteDay && coffeeWindowMins <= 120;
+        if (!inCoffeeWindow) return null;
+        if (coffeeDecision.cafeClosed) return 'Outside opening hours';
+        return coffeeDecision.subtext || null;
+      })(),
       // V15.0: Transit availability notice (e.g., "TRAM USING TIMETABLE DATA")
       transit_notice: transitNotice,
       timetable_types: removedTypes.length > 0 ? removedTypes : null,
@@ -2396,7 +2407,9 @@ export default async function handler(req, res) {
     // Unified JSON response — serves admin panel (backward-compat) AND debug data
     if (format === 'json') {
       // Calculate arrival time for summary
-      const arrivalMinsJson = isTomorrowCommute ? targetMins : (nowMinsForLeave + totalMinutes);
+      // Always calculate arrival from now — journey summary shows "if you left now"
+      // Tomorrow's target is already shown in the status bar
+      const arrivalMinsJson = nowMinsForLeave + totalMinutes;
       const arrivalHJson = Math.floor(arrivalMinsJson / 60) % 24;
       const arrivalMJson = arrivalMinsJson % 60;
       const arrivalH12Json = arrivalHJson % 12 || 12;
@@ -2415,15 +2428,22 @@ export default async function handler(req, res) {
         // Journey legs (top-level for admin panel)
         journey_legs: journeyLegs,
 
-        // Coffee decision (admin panel expects this shape)
-        coffee: {
-          canGet: coffeeDecision.canGet ?? false,
-          cafeClosed: coffeeDecision.cafeClosed || false,
-          decision: coffeeDecision.decision || (coffeeDecision.canGet ? 'OK' : 'SKIP'),
-          subtext: coffeeDecision.subtext || '',
-          urgent: coffeeDecision.urgent ?? false,
-          skipReason: coffeeDecision.skipReason || ''
-        },
+        // Coffee decision gated by ±2hr arrival window (matches renderer and coffee_decision field)
+        coffee: (() => {
+          const coffeeWindowMins = Math.abs(nowMinsForLeave - targetMins);
+          const inCoffeeWindow = isCommuteDay && coffeeWindowMins <= 120;
+          if (!inCoffeeWindow) {
+            return { canGet: false, cafeClosed: false, decision: null, subtext: '', urgent: false, skipReason: '' };
+          }
+          return {
+            canGet: coffeeDecision.canGet ?? false,
+            cafeClosed: coffeeDecision.cafeClosed || false,
+            decision: coffeeDecision.decision || (coffeeDecision.canGet ? 'OK' : 'SKIP'),
+            subtext: coffeeDecision.subtext || '',
+            urgent: coffeeDecision.urgent ?? false,
+            skipReason: coffeeDecision.skipReason || ''
+          };
+        })(),
 
         // Journey summary (admin panel expects this shape)
         summary: {
