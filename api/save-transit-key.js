@@ -28,7 +28,8 @@ const TRANSIT_VALIDATORS = {
     // Per opendata.js: KeyId header (case-sensitive), Accept: */*
     makeHeaders: (apiKey) => ({
       'Accept': '*/*',
-      'KeyId': apiKey  // CORRECT: KeyId header (case-sensitive)
+      'Ocp-Apim-Subscription-Key': apiKey,  // Azure APIM standard — matches opendata-client.js fetch
+      'KeyId': apiKey  // Portal-documented header — dual for robustness
     })
   },
   NSW: {

@@ -1,9 +1,9 @@
 {
   "system": {
-    "version": "5.0.2",
+    "version": "5.1.0",
     "name": "Commute Compute System",
     "releaseDate": "2026-03-21",
-    "codename": "Unified Engine"
+    "codename": "State-Aware Live Data"
   },
   "components": {
     "commutecompute": {
@@ -86,6 +86,19 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.1.0",
+      "date": "2026-03-21",
+      "changes": [
+        "STATE-AWARE LIVE DATA: opendata-client.js refactored from Victoria-only to multi-state architecture supporting VIC, NSW, QLD GTFS-RT endpoints",
+        "State-aware transit API routing: fetchGtfsRt(), getDepartures(), getDisruptions() now accept state parameter and route to correct authority endpoint with correct auth headers",
+        "Graceful degradation for states without GTFS-RT (SA, WA, TAS, NT, ACT): returns empty with diagnostic _feedInfo.matchMethod='no-gtfs-rt'",
+        "Fixed missing _feedInfo on null feed return in getDepartures() — previously returned bare [] without diagnostics",
+        "Aligned VIC key validation headers with fetch headers: both now send dual Ocp-Apim-Subscription-Key + KeyId",
+        "State-aware stop detection: detectStopIdsFromAddress() uses fallback-timetables.js for non-VIC coordinate-based nearest-stop lookup",
+        "State threaded through api/commutecompute.js apiOptions to all getDepartures/getDisruptions calls"
+      ]
+    },
     {
       "version": "5.0.2",
       "date": "2026-03-21",
