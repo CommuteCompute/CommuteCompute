@@ -1,5 +1,5 @@
 /**
- * CCDash™ Renderer v3.0
+ * CCDash™ Renderer v3.1
  * Part of the Commute Compute System™
  *
  * Copyright (c) 2026 Angus Bergman
@@ -11,7 +11,7 @@
  * V16.0: Dimension-aware rendering — all layout scales from REF_W×REF_H.
  *
  * ============================================================================
- * FEATURES (v3.0) — CCDashDesignV16.0 Dimension-Aware Rendering
+ * FEATURES (v3.1) — CCDashDesignV16.0 Dimension-Aware Rendering
  * ============================================================================
  *
  * V16.0: Dimension-aware rendering — all layout scales from REF_W×REF_H.
@@ -2683,7 +2683,8 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   // V13.6: Find the actual disruption/delay details from legs
   const disruptedLeg = legsForStatus.find(leg =>
     leg.serviceAlert || leg.hasAlert || leg.status === 'disruption' ||
-    leg.status === 'suspended' || leg.status === 'cancelled' || leg.status === 'delayed'
+    leg.status === 'suspended' || leg.status === 'cancelled' || leg.status === 'delayed' ||
+    leg.status === 'diverted' || leg.state === 'diverted'
   );
 
   if (data.status_type === 'disruption' || data.disruption || hasServiceAlert) {
@@ -2705,6 +2706,16 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     disruptionText = `${delayedService} +${delayedLeg?.delayMinutes || totalLegDelay} MIN`;
     statusText = `\u26A0 ${delayedService} DELAYED \u2192 Arrive ${calculatedArrival}`;
     if (totalLegDelay > 0) statusText += ` (+${totalLegDelay} min)`;
+  } else if (data.status_type === 'diversion' || legsForStatus.some(l => l.status === 'diverted' || l.state === 'diverted')) {
+    // Tram/bus diversion — show badge with delay if applicable
+    disruptionType = 'service';
+    const divertedLeg = legsForStatus.find(l => l.status === 'diverted' || l.state === 'diverted');
+    const divertedService = divertedLeg?.routeNumber ? `${divertedLeg.type?.toUpperCase()} ${divertedLeg.routeNumber}` :
+                            divertedLeg?.lineName || divertedLeg?.type?.toUpperCase() || 'SERVICE';
+    const delayMin = data.delay_minutes || data.delayMinutes || 0;
+    disruptionText = delayMin > 0 ? `+${delayMin} min DELAY` : `${divertedService} DIVERTED`;
+    statusText = `LEAVE NOW \u2192 Arrive ${calculatedArrival}`;
+    if (delayMin > 0) statusText += ` (+${delayMin} min)`;
   } else if (data.isTomorrowCommute) {
     // V16.0: Show LEAVE BY time for tomorrow's commute (more actionable than just target)
     // Calculate tomorrow morning's departure clock time from target minus journey duration
@@ -2969,9 +2980,9 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     const isDelayed = status === 'delayed' || leg.delayMinutes > 0;
     const isSuspended = status === 'suspended' || status === 'cancelled';
     const isDiverted = status === 'diverted';
-    const isSkippedCoffee = leg.type === 'coffee' && leg.canGet === false;
-    const isCoffeeCanGet = leg.type === 'coffee' && leg.canGet !== false;
-    const isExtraTimeCoffee = leg.type === 'coffee' && leg.extraTime;
+    const isSkippedCoffee = leg.type === 'coffee' && (leg.canGet === false || status === 'skipped' || status === 'skip');
+    const isCoffeeCanGet = leg.type === 'coffee' && !isSkippedCoffee;
+    const isExtraTimeCoffee = leg.type === 'coffee' && (leg.extraTime || status === 'extended');
     // V13.5: Skipped legs (cafe detour when running late)
     const isSkippedLeg = leg.skippedForTiming || (status === 'skipped' || status === 'skip');
     // V13.5: Move isWalkLeg declaration before border logic that uses it
@@ -3188,32 +3199,37 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     // V16.0: Walk and coffee legs are compact (single line). Transit is multi-line.
     if (isWalkLeg || leg.type === 'coffee') {
       if (leg.type === 'coffee') {
-        // V16.0: Coffee leg redesign — walk-sized, black bar if time, white+strikethrough if no time
-        const isCoffeeGet = leg.canGet !== false;
-        if (isCoffeeGet) {
+        // V16.0: Coffee leg — compact single-line, black bar if can-get, white if skipped
+        // Time box now rendered separately (see time box section below)
+        const coffeeTimeBoxW = Math.max(72, Math.round(88 * scale));
+        const coffeeContentW = zone.w - coffeeTimeBoxW;
+        if (isCoffeeCanGet) {
           ctx.fillStyle = '#000';
-          ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
+          ctx.fillRect(zone.x, zone.y, coffeeContentW, zone.h);
         }
         ctx.font = `bold ${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;
         const coffTitleY = zone.y + (zone.h + Math.round(16 * fs) * 0.35) / 2;
-        if (isCoffeeGet) {
+        const coffeeTextMaxW = coffeeContentW - textX + zone.x - 10;
+        if (isCoffeeCanGet) {
           ctx.fillStyle = '#FFF';
-          const busy = leg.busyness || 'quiet';
-          const busyLabel = busy === 'busy' ? 'Busy' : busy === 'moderate' ? 'Moderate' : 'Quiet';
-          ctx.fillText(`Time for coffee - ${busyLabel}`, textX, coffTitleY);
+          let coffeeLabel = leg.subtitle || (isExtraTimeCoffee ? '[OK] EXTRA TIME' : '[OK] TIME FOR COFFEE');
+          if (ctx.measureText(coffeeLabel).width > coffeeTextMaxW) {
+            while (ctx.measureText(coffeeLabel + '\u2026').width > coffeeTextMaxW && coffeeLabel.length > 5) {
+              coffeeLabel = coffeeLabel.slice(0, -1);
+            }
+            coffeeLabel = coffeeLabel.trimEnd() + '\u2026';
+          }
+          ctx.fillText(coffeeLabel, textX, coffTitleY);
         } else {
           ctx.fillStyle = '#000';
-          ctx.fillText('No time', textX, coffTitleY);
-          // Strikethrough across the full bar
-          const strikeY = zone.y + zone.h / 2;
-          ctx.strokeStyle = '#000';
-          ctx.lineWidth = 2;
-          ctx.setLineDash([]);
-          ctx.beginPath();
-          ctx.moveTo(zone.x, strikeY);
-          ctx.lineTo(zone.x + zone.w, strikeY);
-          ctx.stroke();
-          ctx.setLineDash([]);
+          let skipLabel = leg.subtitle || '[X] SKIP';
+          if (ctx.measureText(skipLabel).width > coffeeTextMaxW) {
+            while (ctx.measureText(skipLabel + '\u2026').width > coffeeTextMaxW && skipLabel.length > 5) {
+              skipLabel = skipLabel.slice(0, -1);
+            }
+            skipLabel = skipLabel.trimEnd() + '\u2026';
+          }
+          ctx.fillText(skipLabel, textX, coffTitleY);
         }
       } else {
         // Walk leg - single line with duration in text (no duration box)
@@ -3552,7 +3568,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     // Transit/Coffee legs show minutes until departure in black box
     // V13.6: Larger time boxes with bigger numbers and more spacing
     // -----------------------------------------------------------------------
-    if (!isWalkLeg && leg.type !== 'coffee') {
+    if (!isWalkLeg) {
     // V13.6: Increased time box size for better visibility
     const timeBoxW = Math.max(72, Math.round(88 * scale));
     const timeBoxX = zone.x + zone.w - timeBoxW;
@@ -3576,6 +3592,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
       ctx.textBaseline = 'middle';
       ctx.fillText('CANCELLED', timeBoxX + timeBoxW / 2, zone.y + zone.h / 2);
     } else if (isSkippedCoffee) {
+      // Skipped coffee: dashed border time box with actual duration (~X MIN)
       ctx.strokeStyle = '#000';
       ctx.lineWidth = 2;
       ctx.setLineDash([4, 4]);
@@ -3585,7 +3602,10 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
       ctx.font = `bold ${durationSize}px Inter, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('—', timeBoxX + timeBoxW / 2, zone.y + zone.h / 2);
+      const skipDuration = displayMinutes || leg.minutes || leg.durationMinutes || 0;
+      ctx.fillText(skipDuration > 0 ? `~${skipDuration}` : '\u2014', timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 - minOffset);
+      ctx.font = `${durationLabelSize}px Inter, sans-serif`;
+      ctx.fillText('MIN', timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 + labelOffset);
     } else if (isDiverted) {
       ctx.fillStyle = '#000';
       ctx.font = `bold ${durationSize}px Inter, sans-serif`;
