@@ -1,9 +1,9 @@
 /**
  * Commute Compute System™ - Spec Compliance Testing
- * End-to-end CCDashDesignV15.0 and DEVELOPMENT-RULES compliance validation
+ * End-to-end CCDashDesignV16.0 and DEVELOPMENT-RULES compliance validation
  *
  * Tests against:
- * - CCDashDesignV15.md (UNLOCKED specification)
+ * - CCDashDesignV16.md (UNLOCKED specification)
  * - DEVELOPMENT-RULES.md v1.28
  *
  * Copyright (c) 2026 Angus Bergman
@@ -19,7 +19,7 @@ import { URL } from 'url';
 const colors = config.alerts.colors;
 
 // ============================================
-// SPEC CONSTANTS (from CCDashDesignV15.0)
+// SPEC CONSTANTS (from CCDashDesignV16.0)
 // ============================================
 
 const SPEC = {
@@ -174,7 +174,7 @@ const complianceTests = {
   async displayDimensions() {
     const result = {
       name: 'Display Dimensions (800×480)',
-      spec: 'CCDashDesignV15.0 Section 1',
+      spec: 'CCDashDesignV16.0 Section 1',
       passed: false,
       details: [],
     };
@@ -221,7 +221,7 @@ const complianceTests = {
   async zoneBoundaries() {
     const result = {
       name: 'Zone Boundaries (LOCKED)',
-      spec: 'CCDashDesignV15.0 + DEVELOPMENT-RULES Section 7.2',
+      spec: 'CCDashDesignV16.0 + DEVELOPMENT-RULES Section 7.2',
       passed: true,
       details: [],
     };
@@ -411,7 +411,7 @@ const complianceTests = {
   async coffeeDecision() {
     const result = {
       name: 'Coffee Decision Logic',
-      spec: 'CCDashDesignV15.0 Section 7.2 + DEVELOPMENT-RULES Section 12.1',
+      spec: 'CCDashDesignV16.0 Section 7.2 + DEVELOPMENT-RULES Section 12.1',
       passed: false,
       details: [],
     };
@@ -461,7 +461,7 @@ const complianceTests = {
   async journeyLegStructure() {
     const result = {
       name: 'Journey Leg Structure',
-      spec: 'CCDashDesignV15.0 Section 5',
+      spec: 'CCDashDesignV16.0 Section 5',
       passed: true,
       details: [],
     };
@@ -526,7 +526,7 @@ const complianceTests = {
   async weatherData() {
     const result = {
       name: 'Weather Data Structure',
-      spec: 'CCDashDesignV15.0 Section 2.6',
+      spec: 'CCDashDesignV16.0 Section 2.6',
       passed: true,
       details: [],
     };
@@ -580,7 +580,7 @@ const complianceTests = {
   async summaryBarStates() {
     const result = {
       name: 'Summary Bar States',
-      spec: 'CCDashDesignV15.0 Section 4',
+      spec: 'CCDashDesignV16.0 Section 4',
       passed: true,
       details: [],
     };
@@ -683,7 +683,7 @@ const complianceTests = {
   async footerStructure() {
     const result = {
       name: 'Footer Structure',
-      spec: 'CCDashDesignV15.0 Section 6',
+      spec: 'CCDashDesignV16.0 Section 6',
       passed: true,
       details: [],
     };
@@ -934,7 +934,7 @@ async function runAllComplianceTests(verbose = true) {
   console.log('\n' + '═'.repeat(70));
   console.log(`${colors.info}COMMUTE COMPUTE SYSTEM™ - SPEC COMPLIANCE AUDIT${colors.reset}`);
   console.log(`Target: ${config.BASE_URL}`);
-  console.log(`Spec: CCDashDesignV15.0 (UNLOCKED) + DEVELOPMENT-RULES v1.28`);
+  console.log(`Spec: CCDashDesignV16.0 (UNLOCKED) + DEVELOPMENT-RULES v1.28`);
   console.log(`Time: ${new Date().toISOString()}`);
   console.log('═'.repeat(70) + '\n');
 

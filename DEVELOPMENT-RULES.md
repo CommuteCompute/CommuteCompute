@@ -5,8 +5,8 @@
 # Commute Compute™ Development Rules
 
 **MANDATORY COMPLIANCE DOCUMENT**
-**Version:** 1.30
-**Last Updated:** 2026-02-23
+**Version:** 1.31
+**Last Updated:** 2026-03-19
 **Copyright (c) 2026 Commute Compute System by Angus Bergman — AGPL-3.0 Dual Licence**
 
 These rules govern all development on Commute Compute. Compliance is mandatory.
@@ -1222,7 +1222,7 @@ screen /dev/cu.usbmodem* 115200          # macOS
 
 ### 5.7 Dual Subtitle Pipeline
 
-`buildLegSubtitle()` in `api/screen.js` sets `leg.subtitle` for JSON API consumers (admin dashboard). `getLegSubtitle()` in `src/services/ccdash-renderer.js` generates departure-focused subtitles independently for e-ink BMP rendering. Both must be kept consistent when modifying subtitle content. The screen.js subtitle includes origin/destination stop names; the renderer subtitle includes line names, routing, and departure times. Changes to one pipeline must be assessed for impact on the other.
+`buildLegSubtitle()` in `api/commutecompute.js` sets `leg.subtitle` for JSON API consumers (admin dashboard). `getLegSubtitle()` in `src/services/ccdash-renderer.js` generates departure-focused subtitles independently for e-ink BMP rendering. Both must be kept consistent when modifying subtitle content. The commutecompute.js subtitle includes origin/destination stop names; the renderer subtitle includes line names, routing, and departure times. Changes to one pipeline must be assessed for impact on the other.
 
 ---
 
@@ -1298,7 +1298,7 @@ IMAGE_URL="https://your-deployment.vercel.app/api/kindle/image"
 ## Section 7: Spec Integrity
 
 ### 7.1 Spec is Immutable (V15.0)
-The specification `CCDashDesignV15.0` (file: `specs/CCDashDesignV15.md`) cannot be modified without explicit approval from the project owner. Any changes require a new version number and formal review.
+The specification `CCDashDesignV16.0` (file: `specs/CCDashDesignV16.md`) cannot be modified without explicit approval from the project owner. Any changes require a new version number and formal review.
 
 ### 7.2 Zone Boundaries are Sacred
 Zone pixel coordinates defined in the spec are fixed. Never modify the x, y, width, or height of any zone. The entire system depends on these boundaries for partial refresh.
@@ -1308,9 +1308,9 @@ Each zone has exact dimensions per the specification. Content must fit within th
 
 ### 7.4 Spec-Renderer Parity (MANDATORY) [CRITICAL]
 
-**CRITICAL RULE: The CCDashRenderer MUST implement ALL elements defined in CCDashDesignV15.0.**
+**CRITICAL RULE: The CCDashRenderer MUST implement ALL elements defined in CCDashDesignV16.0.**
 
-Every visual element, state, icon, or behaviour specified in `specs/CCDashDesignV15.md` (V15.0) MUST have a corresponding implementation in the renderer (`src/services/ccdash-renderer.js`). No exceptions.
+Every visual element, state, icon, or behaviour specified in `specs/CCDashDesignV16.md` (V16.0) MUST have a corresponding implementation in the renderer (`src/services/ccdash-renderer.js`). No exceptions.
 
 #### 7.4.1 Required Parity Elements
 
@@ -1391,7 +1391,7 @@ if (isWalkLeg) { /* ... */ }  // Works
 
 Two adjacent walk legs MUST NEVER appear in journey leg arrays or dashboard display, under any circumstances. This applies to ALL output paths:
 
-- `api/screen.js` `buildJourneyLegs()` output
+- `api/commutecompute.js` `buildJourneyLegs()` output
 - `api/commutecompute.js` `buildCCDashLegs()` output
 - `src/services/ccdash-renderer.js` rendering input
 
@@ -1604,7 +1604,7 @@ ctx.font = 'bold 16px Inter';
 ```json
 {
   "functions": {
-    "api/screen.js": {
+    "api/commutecompute.js": {
       "includeFiles": "src/**,fonts/**"
     }
   }
@@ -1797,7 +1797,7 @@ const apiOptions = transitApiKey ? { apiKey: transitApiKey } : {};
 ## Section 12: Business Logic
 
 ### 12.1 CoffeeDecision™ is Sacred
-The CoffeeDecision engine logic is specified exactly in the CCDashDesignV15.0 spec. Implement it precisely as documented. No "improvements" or "optimisations" that alter the decision logic.
+The CoffeeDecision engine logic is specified exactly in the CCDashDesignV16.0 spec. Implement it precisely as documented. No "improvements" or "optimisations" that alter the decision logic.
 
 ### 12.2 12-hour Time Format (User-Facing Only)
 **User-facing content and firmware displays** must use 12-hour format with am/pm. This is a deliberate UX decision for readability.
@@ -1859,7 +1859,7 @@ if (farFromDeparture) {
 
 ### 12.6 Non-Commute Day Behaviour (CRITICAL)
 
-On non-commute days (`isCommuteDay === false`), the system MUST suppress: coffee messaging (GET A COFFEE, NO TIME FOR COFFEE, CAFE CLOSED, CAFE STATUS), LATE/EARLY/ON TIME status messaging, and DepartureConfidence™ scoring. Journey legs, departure times, weather, and alerts MUST continue to display normally. The `isCommuteDay` guard must be applied at both the API response level (`api/screen.js`) and the renderer level (`src/services/ccdash-renderer.js`).
+On non-commute days (`isCommuteDay === false`), the system MUST suppress: coffee messaging (GET A COFFEE, NO TIME FOR COFFEE, CAFE CLOSED, CAFE STATUS), LATE/EARLY/ON TIME status messaging, and DepartureConfidence™ scoring. Journey legs, departure times, weather, and alerts MUST continue to display normally. The `isCommuteDay` guard must be applied at both the API response level (`api/commutecompute.js`) and the renderer level (`src/services/ccdash-renderer.js`).
 
 **Suppressed on non-commute days:**
 - All coffee rendering flags: `hasCoffee`, `cafeClosed`, `coffeeSkipped`, `showCafeBusynessOnly`
@@ -3222,12 +3222,12 @@ The following require **explicit approval** before modification:
 
 | Element | Document | Reason |
 |---------|----------|--------|
-| Zone layout positions | CCDashDesignV15.0 | UI consistency |
-| Status bar variants | CCDashDesignV15.0 | User expectations |
-| Leg states | CCDashDesignV15.0 | Visual language |
-| Colour palette | CCDashDesignV15.0 | E-ink optimisation |
-| Mode icons | CCDashDesignV15.0 | Brand consistency |
-| CoffeeDecision logic | CCDashDesignV15.0 | Core feature |
+| Zone layout positions | CCDashDesignV16.0 | UI consistency |
+| Status bar variants | CCDashDesignV16.0 | User expectations |
+| Leg states | CCDashDesignV16.0 | Visual language |
+| Colour palette | CCDashDesignV16.0 | E-ink optimisation |
+| Mode icons | CCDashDesignV16.0 | Brand consistency |
+| CoffeeDecision logic | CCDashDesignV16.0 | Core feature |
 | Anti-brick rules | This document | Device safety |
 
 ### 18.2 Modification Process
@@ -4488,7 +4488,7 @@ for (const route of alternatives) {
 
 ### 23.10 GTFS-RT Source Completeness
 
-**[CRITICAL]:** All three GTFS-RT sources (`gtfs-rt`, `gtfs-rt-route`, `gtfs-rt-broad`) MUST be included in live data detection. The `hasAnyLiveData` check in `api/screen.js` must cover all tiers of the three-tier matching fallback. Missing any tier causes that mode's live data to be discarded as non-live, triggering incorrect "No Live Data" state.
+**[CRITICAL]:** All three GTFS-RT sources (`gtfs-rt`, `gtfs-rt-route`, `gtfs-rt-broad`) MUST be included in live data detection. The `hasAnyLiveData` check in `api/commutecompute.js` must cover all tiers of the three-tier matching fallback. Missing any tier causes that mode's live data to be discarded as non-live, triggering incorrect "No Live Data" state.
 
 ### 23.11 Stop ID Map Consistency
 
@@ -4496,7 +4496,7 @@ for (const route of alternatives) {
 
 ### 23.12 Transit Leg Subtitle Completeness
 
-Transit leg subtitles MUST include both the origin (boarding) stop name and the destination (alighting) stop name when available. Format: `OriginStop → DestStop`. Generic fallback names ("Station", "Tram Stop", "Bus Stop") MUST be filtered using the existing `isGenericName()` check. The destination name comes from `leg.destination?.name`, populated by the automated stop resolution in `api/screen.js`.
+Transit leg subtitles MUST include both the origin (boarding) stop name and the destination (alighting) stop name when available. Format: `OriginStop → DestStop`. Generic fallback names ("Station", "Tram Stop", "Bus Stop") MUST be filtered using the existing `isGenericName()` check. The destination name comes from `leg.destination?.name`, populated by the automated stop resolution in `api/commutecompute.js`.
 
 ---
 
@@ -4816,7 +4816,7 @@ git push origin v3.0.0        # Push tag
 
 | Topic | Document |
 |-------|----------|
-| Dashboard Specification | `specs/CCDashDesignV15.md` |
+| Dashboard Specification | `specs/CCDashDesignV16.md` |
 | System Architecture | `docs/SYSTEM-ARCHITECTURE.md` |
 | Distribution Guide | `DISTRIBUTION.md` |
 | Firmware Anti-Brick | `firmware/ANTI-BRICK-REQUIREMENTS.md` |
@@ -5164,7 +5164,7 @@ Device-facing read-only endpoints (`/api/screen`, `/api/zones`, `/api/status`, `
 Endpoints that check whether the system is configured MUST use KV storage (via `getTransitApiKey()`) as the source of truth, not `PreferencesManager.isConfigured()` which reads from local files.
 
 ```javascript
-// CORRECT — KV-first, consistent with screen.js
+// CORRECT — KV-first, consistent with commutecompute.js
 const transitApiKey = await getTransitApiKey();
 if (!transitApiKey) { /* setup_required */ }
 
@@ -5185,9 +5185,49 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 ---
 
-**Document Version:** 1.14
+## Section 27: Plan Mode Workflow Requirements (MANDATORY)
+
+### 27.1 Plan Mode Exit — Skill Self-Identification
+
+When any development skill exits plan mode (via `ExitPlanMode`), it MUST end the plan presentation by naming itself. This ensures the founder never needs to remind which skill is active after approving a plan.
+
+**Format:** "To proceed with [action], the active skill is **`/[skill-name]`**."
+
+This applies to every plan mode exit, including corrective re-plans (e.g., when deploy verification fails and the skill re-enters plan mode).
+
+### 27.2 Task List Creation on Plan Approval
+
+Immediately after exiting plan mode, the active skill MUST create a task list (via `TaskCreate`) containing:
+
+1. One task per discrete implementation item from the approved plan
+2. A **mandatory final task**: "Cross-compliance check — verify all fixes are mutually compliant and no fix introduces regressions against another"
+
+The task list enables systematic completion tracking and prevents partial implementations from being treated as complete.
+
+### 27.3 Cross-Compliance Final Check
+
+The final task in every plan-derived task list MUST be a cross-compliance check. This check verifies:
+
+1. No fix contradicts or regresses another fix from the same plan
+2. All fixes are consistent with each other (e.g., version strings, data flow, naming)
+3. The comprehensive compliance audit (`./scripts/comprehensive-compliance-audit.sh`) passes with exit code 0 after all fixes are applied
+4. The cc-dev validation (`./scripts/cc-dev-validate.sh`) passes with exit code 0 after all fixes are applied
+
+This task MUST NOT be marked complete until both audit scripts pass and mutual compliance is verified.
+
+### 27.4 Corrective Plan Cycles
+
+When a deploy verification gate fails (Phase 4.2) and the skill re-enters plan mode:
+
+1. The corrective plan follows the same rules (self-identification on exit, task list creation)
+2. The cross-compliance final task applies to both the original and corrective fixes
+3. The corrective task list is independent — do not reuse or append to the original task list
+
+---
+
+**Document Version:** 1.15
 **Maintained By:** Angus Bergman
-**Last Updated:** 2026-02-13
+**Last Updated:** 2026-03-19
 
 ---
 
