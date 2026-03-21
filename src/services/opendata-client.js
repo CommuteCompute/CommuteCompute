@@ -5,17 +5,22 @@
 /**
  * CommuteCompute™ OpenData Client
  * Part of the Commute Compute System™
- * 
- * Uses Transport Victoria OpenData API with GTFS-RT format.
+ *
+ * State-aware GTFS-RT client supporting multiple Australian transit authorities.
+ * VIC: Transport Victoria OpenData API (GTFS-RT Protobuf)
+ * NSW: Transport for NSW Open Data (GTFS-RT Protobuf)
+ * QLD: TransLink Queensland (GTFS-RT Protobuf)
+ * SA/WA/TAS/NT/ACT: No GTFS-RT available — graceful degradation to timetable only.
+ *
  * Per DEVELOPMENT-RULES Section 1.3 and 11.1:
- * - Base URL: https://api.opendata.transport.vic.gov.au/opendata/public-transport/gtfs/realtime/v1
- * - Auth: KeyId header (case-sensitive) with UUID format API key
- * - Format: GTFS Realtime (Protobuf)
- * 
+ * - VIC Base URL: https://api.opendata.transport.vic.gov.au/opendata/public-transport/gtfs/realtime/v1
+ * - VIC Auth: KeyId + Ocp-Apim-Subscription-Key headers with UUID format API key
+ * - Format: GTFS Realtime (Protobuf) — standard across all supported states
+ *
  * Uses Open-Meteo for weather (free, no API key required).
- * 
+ *
  * THIRD-PARTY DATA ATTRIBUTION:
- * - Transit data: Transport Victoria OpenData (CC BY 4.0)
+ * - Transit data: State transit authority open data (see STATE_API_CONFIG)
  * - Weather data: Open-Meteo API (free tier)
  * 
  * Copyright (c) 2025-2026 Angus Bergman
@@ -27,9 +32,39 @@ import GtfsRealtimeBindings from 'gtfs-realtime-bindings';
 import { getTransitApiKey } from '../data/kv-preferences.js';
 import { VIC_METRO_STATIONS, getPlatformIds } from '../data/vic/gtfs-reference.js';
 
-// Transport Victoria OpenData API Configuration
-// Per Development Rules Section 1.1 & 11.1 - GTFS-RT via OpenData
-const API_BASE = 'https://api.opendata.transport.vic.gov.au/opendata/public-transport/gtfs/realtime/v1';
+// State-aware transit API configuration
+// Each state with GTFS-RT support defines: baseUrl, auth headers, and mode mapping.
+// States absent from this map (SA, WA, TAS, NT, ACT) have no GTFS-RT — graceful degradation.
+const STATE_API_CONFIG = {
+  VIC: {
+    baseUrl: 'https://api.opendata.transport.vic.gov.au/opendata/public-transport/gtfs/realtime/v1',
+    makeHeaders: (apiKey) => ({
+      'Ocp-Apim-Subscription-Key': apiKey,  // Azure APIM standard
+      'KeyId': apiKey,                       // Portal-documented header — dual for robustness
+      'Accept': 'application/x-protobuf'
+    }),
+    modeMap: { 0: 'metro', 1: 'tram', 2: 'bus', 3: 'vline' }
+  },
+  NSW: {
+    baseUrl: 'https://api.transport.nsw.gov.au/v1/gtfs/realtime',
+    makeHeaders: (apiKey) => ({
+      'Authorization': `apikey ${apiKey}`,
+      'Accept': 'application/x-protobuf'
+    }),
+    modeMap: { 0: 'sydneytrains', 2: 'buses', 4: 'ferries', 5: 'lightrail' }
+  },
+  QLD: {
+    baseUrl: 'https://gtfsrt.api.translink.com.au/api/realtime/SEQ',
+    makeHeaders: (apiKey) => ({
+      'Authorization': `Bearer ${apiKey}`,
+      'Accept': 'application/x-protobuf'
+    }),
+    modeMap: { 0: 'SEQ', 2: 'SEQ', 4: 'SEQ' }
+  }
+};
+
+// VIC base URL retained as default fallback
+const API_BASE = STATE_API_CONFIG.VIC.baseUrl;
 
 // Melbourne coordinates (default)
 const MELBOURNE_LAT = -37.8136;
@@ -208,13 +243,14 @@ function decodeGtfsRt(buffer) {
 }
 
 /**
- * Fetch GTFS-RT feed from Transport Victoria OpenData API
- * @param {string} mode - 'metro', 'tram', or 'bus'
+ * Fetch GTFS-RT feed from the appropriate state transit authority API
+ * @param {string} mode - Mode string (state-specific, e.g. 'metro', 'sydneytrains', 'SEQ')
  * @param {string} feed - 'trip-updates', 'vehicle-positions', or 'service-alerts'
  * @param {Object} options - { apiKey }
+ * @param {string} state - Australian state code (e.g. 'VIC', 'NSW', 'QLD'). Defaults to 'VIC'.
  * @returns {Object} - Decoded GTFS-RT FeedMessage or null
  */
-async function fetchGtfsRt(mode, feed, options = {}) {
+async function fetchGtfsRt(mode, feed, options = {}, state = 'VIC') {
   if (options.apiKey) {
     // Defensive: handle both string and { devId, apiKey } object formats
     // Clear stale runtimeApiKey to prevent warm-invocation key caching (FIX-4)
@@ -232,18 +268,20 @@ async function fetchGtfsRt(mode, feed, options = {}) {
   // Type guard: ensure apiKey is a string before use as HTTP header
   const keyStr = typeof apiKey === 'object' ? apiKey.apiKey : String(apiKey);
 
-  const url = `${API_BASE}/${mode}/${feed}`;
+  // State-aware URL and header construction
+  const stateConfig = STATE_API_CONFIG[state];
+  if (!stateConfig) {
+    console.warn(`[OpenData] No GTFS-RT support for state: ${state}. Live data unavailable.`);
+    return null;
+  }
+  const url = `${stateConfig.baseUrl}/${mode}/${feed}`;
 
   try {
-    console.log(`[OpenData] Fetching GTFS-RT: ${mode}/${feed}`);
+    console.log(`[OpenData] Fetching GTFS-RT: ${state}/${mode}/${feed}`);
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
     const response = await fetch(url, {
-      headers: {
-        'Ocp-Apim-Subscription-Key': keyStr,  // OpenAPI spec header (Azure APIM standard)
-        'KeyId': keyStr,  // Portal-documented header — sending both for robustness
-        'Accept': 'application/x-protobuf'
-      },
+      headers: stateConfig.makeHeaders(keyStr),
       signal: controller.signal
     });
     clearTimeout(timeoutId);
@@ -287,31 +325,40 @@ async function fetchGtfsRt(mode, feed, options = {}) {
  * Get departures for a stop
  * @param {number} stopId - Stop ID
  * @param {number} routeType - 0=train/metro, 1=tram, 2=bus
- * @param {Object} options - { apiKey, routeNumber }
+ * @param {Object} options - { apiKey, routeNumber, state }
  * @returns {Array} - Array of departure objects
  */
 export async function getDepartures(stopId, routeType, options = {}) {
+  const state = options.state || 'VIC';
+
   // V13.6 FIX: Per Section 23.6 - return empty array if no valid stop ID (not mock data)
   if (!stopId || stopId === 'null' || stopId === 'undefined') {
     const modeNames = { 0: 'metro', 1: 'tram', 2: 'bus', 3: 'vline' };
     const mode = modeNames[routeType] || 'unknown';
     console.warn(`[OpenData] getDepartures skipped for ${mode}: no stop ID detected. Verify address has geocoded coordinates.`);
     const result = [];
-    result._feedInfo = { entityCount: 0, mode, matchMethod: 'skipped-no-stop-id', queriedStopId: null };
+    result._feedInfo = { entityCount: 0, mode, matchMethod: 'skipped-no-stop-id', queriedStopId: null, state };
     return result;
   }
 
-  // Map route type to GTFS-RT mode
-  // 0=metro train, 1=tram, 2=bus, 3=vline (regional train)
-  const modeMap = { 0: 'metro', 1: 'tram', 2: 'bus', 3: 'vline' };
-  const mode = modeMap[routeType] || 'metro';
+  // State-aware mode mapping — each state has different GTFS-RT mode identifiers
+  const stateConfig = STATE_API_CONFIG[state];
+  if (!stateConfig) {
+    console.warn(`[OpenData] No GTFS-RT available for state: ${state}. Returning empty.`);
+    const noRtResult = [];
+    noRtResult._feedInfo = { entityCount: 0, mode: 'unknown', matchMethod: 'no-gtfs-rt', queriedStopId: String(stopId), state };
+    return noRtResult;
+  }
+  const mode = stateConfig.modeMap[routeType] || Object.values(stateConfig.modeMap)[0];
 
   try {
-    const feed = await fetchGtfsRt(mode, 'trip-updates', options);
+    const feed = await fetchGtfsRt(mode, 'trip-updates', options, state);
 
     if (!feed) {
-      console.warn(`[OpenData] No feed returned for ${mode} (stopId=${stopId})`);
-      return [];
+      console.warn(`[OpenData] No feed returned for ${mode} (stopId=${stopId}, state=${state})`);
+      const noFeedResult = [];
+      noFeedResult._feedInfo = { entityCount: 0, mode, matchMethod: 'no-feed', queriedStopId: String(stopId), state };
+      return noFeedResult;
     }
 
     // Process GTFS-RT TripUpdates - try stop-level match first
@@ -382,6 +429,7 @@ export async function getDepartures(stopId, routeType, options = {}) {
       queriedRouteNumber: options.routeNumber || null,
       queriedLineCode: options.lineCode || null,
       mode,
+      state,
       matchMethod: departures.length > 0 && departures[0]?.source === 'gtfs-rt-scan'
         ? 'all-trips-scan' : departures.length > 0 && departures[0]?.source === 'gtfs-rt-route'
         ? 'route-level' : departures.length > 0 && departures[0]?.source === 'gtfs-rt-broad'
@@ -406,6 +454,7 @@ export async function getDepartures(stopId, routeType, options = {}) {
       entityCount: 0,
       queriedStopId: String(stopId),
       mode,
+      state,
       matchMethod: 'none',
       error: error.message
     };
@@ -834,14 +883,21 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0) {
 /**
  * Get service disruptions
  * @param {number} routeType - 0=train, 1=tram, 2=bus
- * @param {Object} options - { apiKey }
+ * @param {Object} options - { apiKey, state }
  */
 export async function getDisruptions(routeType, options = {}) {
-  const modeMap = { 0: 'metro', 1: 'tram', 2: 'bus', 3: 'vline' };
-  const mode = modeMap[routeType] || 'metro';
-  
+  const state = options.state || 'VIC';
+
+  // State-aware mode mapping
+  const stateConfig = STATE_API_CONFIG[state];
+  if (!stateConfig) {
+    // No GTFS-RT for this state — no disruption data available
+    return [];
+  }
+  const mode = stateConfig.modeMap[routeType] || Object.values(stateConfig.modeMap)[0];
+
   try {
-    const feed = await fetchGtfsRt(mode, 'service-alerts', options);
+    const feed = await fetchGtfsRt(mode, 'service-alerts', options, state);
     
     if (!feed?.entity) {
       return [];

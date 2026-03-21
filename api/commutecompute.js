@@ -1820,7 +1820,7 @@ export default async function handler(req, res) {
     let stopDetectionSource = null;
 
     if (homeCoords || homeAddress) {
-      const detected = detectStopIdsFromAddress(homeAddress, homeCoords);
+      const detected = detectStopIdsFromAddress(homeAddress, homeCoords, userState);
       stopDetectionSource = detected?.source || null;
       trainStopId = detected.trainStopId || null;
       tramStopId = detected.tramStopId || null;
@@ -1930,7 +1930,7 @@ export default async function handler(req, res) {
       const workCoords = (locations.work?.lat && locations.work?.lon)
         ? { lat: locations.work.lat, lon: locations.work.lon }
         : null;
-      const workDetected = detectStopIdsFromAddress(workAddress, workCoords);
+      const workDetected = detectStopIdsFromAddress(workAddress, workCoords, userState);
       workTrainStopId = workDetected?.trainStopId || null;
     }
 
@@ -1939,7 +1939,7 @@ export default async function handler(req, res) {
     // Defensive: also handles legacy { devId, apiKey } object format if stored
     const transitApiKey = await getTransitApiKey();
     const apiKeyStr = typeof transitApiKey === 'string' ? transitApiKey : (transitApiKey?.apiKey || null);
-    const apiOptions = apiKeyStr ? { apiKey: apiKeyStr } : {};
+    const apiOptions = apiKeyStr ? { apiKey: apiKeyStr, state: userState } : { state: userState };
 
     // Cafe busyness mode: 'cached' (free — historical averages) or 'live' (Google Places API)
     // This controls ONLY cafe busyness data, NOT transit GTFS-RT fetching

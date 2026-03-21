@@ -17,6 +17,7 @@
 
 import { VIC_METRO_STATIONS, VIC_TRAM_STOPS, VIC_BUS_STOPS, VIC_SUBURB_STOPS, VIC_TRAM_STOPS_WITH_COORDS, VIC_BUS_STOPS_WITH_COORDS } from './vic/gtfs-reference.js';
 import { haversine } from '../utils/haversine.js';
+import { findNearestStop } from './fallback-timetables.js';
 
 /**
  * GTFS Stop ID to actual stop NAME mapping
@@ -190,10 +191,28 @@ export function findNearestStopsMultiple(lat, lon, options = {}) {
  *
  * @param {string} address - Home address string
  * @param {Object|null} coords - Optional { lat, lon } for coordinate-based detection
+ * @param {string} state - Australian state code (e.g. 'VIC', 'NSW'). Defaults to 'VIC'.
  * @returns {Object} Stop IDs and detected suburb info
  */
-export function detectStopIdsFromAddress(address, coords = null) {
-  // PRIMARY: coordinate-based detection
+export function detectStopIdsFromAddress(address, coords = null, state = 'VIC') {
+  // Non-VIC states: use fallback-timetables.js for coordinate-based detection
+  if (state !== 'VIC' && coords?.lat && coords?.lon) {
+    const nearestTrain = findNearestStop(state, coords.lat, coords.lon, 'train');
+    const nearestTram = findNearestStop(state, coords.lat, coords.lon, 'tram');
+    const nearestBus = findNearestStop(state, coords.lat, coords.lon, 'bus');
+    return {
+      trainStopId: nearestTrain?.id || null,
+      tramStopId: nearestTram?.id || null,
+      tramRouteNumber: null,
+      busStopId: nearestBus?.id || null,
+      detectedSuburb: null,
+      stationName: nearestTrain?.name || null,
+      line: null,
+      source: 'coordinates-fallback'
+    };
+  }
+
+  // VIC PRIMARY: coordinate-based detection from full GTFS reference data
   if (coords?.lat && coords?.lon) {
     const nearest = findNearestStops(coords.lat, coords.lon);
     return {
