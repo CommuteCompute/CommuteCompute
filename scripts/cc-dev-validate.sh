@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# CC-DEV VALIDATION SCRIPT v2.0
+# CC-DEV VALIDATION SCRIPT v2.1
 # Copyright (c) 2026 Angus Bergman
 # Licensed under AGPL-3.0
 #
@@ -32,7 +32,7 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1"; ((WARNINGS++)); }
 info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 
 echo "=================================================================="
-echo "  CC-DEV VALIDATION SCRIPT v2.0"
+echo "  CC-DEV VALIDATION SCRIPT v2.1"
 echo "  $(date '+%Y-%m-%d %H:%M:%S')"
 echo "=================================================================="
 echo ""
@@ -167,15 +167,15 @@ echo ""
 # =========================================================================
 info "CHECK 2: Data flow integrity (engine → API → renderer/admin)"
 
-# Key dashboardData fields that screen.js produces
+# Key dashboardData fields that commutecompute.js produces
 # Core fields that MUST be consumed (critical data flow)
 DASHBOARD_FIELDS="confidence_score confidence_label confidence_context confidence_resilience confidence_resilience_detail lifestyle_display lifestyle_primary mindset_stress mindset_display mindset_steps mindset_feels_like"
 # Advisory fields that should ideally be consumed but are not critical
 DASHBOARD_ADVISORY="confidence_text"
 
 for field in $DASHBOARD_FIELDS; do
-    # Check if field is set in screen.js
-    if grep -q "$field" api/screen.js 2>/dev/null; then
+    # Check if field is set in commutecompute.js
+    if grep -q "$field" api/commutecompute.js 2>/dev/null; then
         # Check if field is consumed by renderer OR admin panel
         RENDERER_HIT=$(grep -c "$field" src/services/ccdash-renderer.js 2>/dev/null | head -1 || echo 0)
         ADMIN_HIT=$(grep -c "$field" public/admin.html 2>/dev/null | head -1 || echo 0)
@@ -183,16 +183,16 @@ for field in $DASHBOARD_FIELDS; do
         if [ "$TOTAL" -gt 0 ]; then
             pass "Data field '$field' produced and consumed (renderer:$RENDERER_HIT admin:$ADMIN_HIT)"
         else
-            fail "Data field '$field' produced in screen.js but NEVER consumed"
+            fail "Data field '$field' produced in commutecompute.js but NEVER consumed"
         fi
     else
-        warn "Data field '$field' not found in screen.js"
+        warn "Data field '$field' not found in commutecompute.js"
     fi
 done
 
 # Advisory fields — warn if not consumed (not critical)
 for field in $DASHBOARD_ADVISORY; do
-    if grep -q "$field" api/screen.js 2>/dev/null; then
+    if grep -q "$field" api/commutecompute.js 2>/dev/null; then
         RENDERER_HIT=$(grep -c "$field" src/services/ccdash-renderer.js 2>/dev/null | head -1 || echo 0)
         ADMIN_HIT=$(grep -c "$field" public/admin.html 2>/dev/null | head -1 || echo 0)
         TOTAL=$(( ${RENDERER_HIT:-0} + ${ADMIN_HIT:-0} ))
@@ -222,16 +222,16 @@ echo ""
 info "CHECK 3: GTFS-RT source string consistency"
 
 # Check for incorrect source === 'live' pattern (but NOT apiMode === 'live' which is correct)
-BAD_LIVE=$(grep -rn "source === 'live'\|dataSource === 'live'\|dataMode === 'Live'" api/commutecompute.js api/screen.js public/admin.html src/services/ccdash-renderer.js 2>/dev/null | grep -v 'apiMode' | grep -v '// ' | wc -l | tr -d ' ')
+BAD_LIVE=$(grep -rn "source === 'live'\|dataSource === 'live'\|dataMode === 'Live'" api/commutecompute.js api/commutecompute.js public/admin.html src/services/ccdash-renderer.js 2>/dev/null | grep -v 'apiMode' | grep -v '// ' | wc -l | tr -d ' ')
 if [ "$BAD_LIVE" -gt 0 ]; then
     fail "Found $BAD_LIVE instances of incorrect 'live' source checks (should be 'gtfs-rt')"
-    grep -rn "source === 'live'\|dataSource === 'live'\|dataMode === 'Live'" api/commutecompute.js api/screen.js public/admin.html src/services/ccdash-renderer.js 2>/dev/null | grep -v 'apiMode' | grep -v '// ' | head -5
+    grep -rn "source === 'live'\|dataSource === 'live'\|dataMode === 'Live'" api/commutecompute.js api/commutecompute.js public/admin.html src/services/ccdash-renderer.js 2>/dev/null | grep -v 'apiMode' | grep -v '// ' | head -5
 else
     pass "No incorrect source === 'live' patterns found"
 fi
 
 # Check that correct source strings are used
-CORRECT_SOURCES=$(grep -rn "gtfs-rt" api/commutecompute.js api/screen.js public/admin.html 2>/dev/null | wc -l | tr -d ' ')
+CORRECT_SOURCES=$(grep -rn "gtfs-rt" api/commutecompute.js api/commutecompute.js public/admin.html 2>/dev/null | wc -l | tr -d ' ')
 if [ "$CORRECT_SOURCES" -gt 0 ]; then
     pass "Found $CORRECT_SOURCES references to correct GTFS-RT source strings"
 else
@@ -239,7 +239,7 @@ else
 fi
 
 # Check isLive truthfulness — must use .isLive === true, not just !!data
-BAD_ISLIVE=$(grep -rn "isLive.*!!liveData\|isLive.*!!.*source\|isLive:.*!!dep" api/screen.js api/commutecompute.js 2>/dev/null | wc -l | tr -d ' ')
+BAD_ISLIVE=$(grep -rn "isLive.*!!liveData\|isLive.*!!.*source\|isLive:.*!!dep" api/commutecompute.js api/commutecompute.js 2>/dev/null | wc -l | tr -d ' ')
 if [ "$BAD_ISLIVE" -gt 0 ]; then
     fail "Found $BAD_ISLIVE non-truthful isLive assignments (must use .isLive === true)"
 else
@@ -259,10 +259,10 @@ else
     fail "preferences.js missing apiMode handler"
 fi
 
-if grep -q "apiMode" api/screen.js 2>/dev/null; then
-    pass "screen.js reads apiMode preference"
+if grep -q "apiMode" api/commutecompute.js 2>/dev/null; then
+    pass "commutecompute.js reads apiMode preference"
 else
-    fail "screen.js does not read apiMode preference"
+    fail "commutecompute.js does not read apiMode preference"
 fi
 
 if grep -q "apiMode" api/commutecompute.js 2>/dev/null; then
@@ -392,7 +392,7 @@ echo ""
 # =========================================================================
 info "CHECK 8: API endpoint parity"
 
-ENDPOINTS="api/screen.js api/commutecompute.js api/version.js api/admin/preferences.js api/admin/setup-complete.js api/admin/resolve-stops.js api/status.js api/livedash.js api/zones.js api/zonedata.js"
+ENDPOINTS="api/commutecompute.js api/version.js api/admin/preferences.js api/admin/setup-complete.js api/admin/resolve-stops.js api/status.js api/livedash.js api/zones.js api/zonedata.js"
 for ep in $ENDPOINTS; do
     if [ -f "$ep" ]; then
         pass "Endpoint $ep exists"
@@ -457,11 +457,11 @@ echo ""
 info "CHECK 11: Live data pipeline resilience"
 
 # Check Promise.all has error resilience (per-call .catch() OR fetchWithRetry wrapper)
-SCREEN_CATCH=$(grep -c "getDepartures.*\.catch\|fetchWithRetry.*getDepartures" api/screen.js 2>/dev/null | head -1 || echo 0)
-if [ "${SCREEN_CATCH:-0}" -ge 3 ]; then
-    pass "screen.js: $SCREEN_CATCH getDepartures calls have error resilience"
+CC_CATCH=$(grep -c "getDepartures.*\.catch\|fetchWithRetry.*getDepartures" api/commutecompute.js 2>/dev/null | head -1 || echo 0)
+if [ "${CC_CATCH:-0}" -ge 3 ]; then
+    pass "commutecompute.js: $CC_CATCH getDepartures calls have error resilience"
 else
-    fail "screen.js: only $SCREEN_CATCH getDepartures calls have error resilience — need 3+"
+    fail "commutecompute.js: only $CC_CATCH getDepartures calls have error resilience — need 3+"
 fi
 
 # Check commutecompute.js has error resilience
@@ -473,10 +473,10 @@ else
 fi
 
 # Check diagnostic data is surfaced
-if grep -q "_liveDataDiag" api/screen.js 2>/dev/null; then
-    pass "screen.js provides _liveDataDiag diagnostic object"
+if grep -q "_liveDataDiag" api/commutecompute.js 2>/dev/null; then
+    pass "commutecompute.js provides _liveDataDiag diagnostic object"
 else
-    fail "screen.js missing _liveDataDiag — admin panel cannot diagnose live data issues"
+    fail "commutecompute.js missing _liveDataDiag — admin panel cannot diagnose live data issues"
 fi
 
 if grep -q "_liveDataDiag" api/commutecompute.js 2>/dev/null; then
@@ -548,15 +548,15 @@ echo ""
 # =========================================================================
 info "CHECK 14: Semantic consistency (dataSource pipeline)"
 
-# Verify screen.js sets dataSource to 'gtfs-rt' (may be via ternary)
-if grep -q "gtfs-rt" api/screen.js 2>/dev/null; then
-    if grep -q "dataSource.*gtfs-rt" api/screen.js 2>/dev/null; then
-        pass "screen.js sets dataSource to 'gtfs-rt' (correct)"
+# Verify commutecompute.js sets dataSource to 'gtfs-rt' (may be via ternary)
+if grep -q "gtfs-rt" api/commutecompute.js 2>/dev/null; then
+    if grep -q "dataSource.*gtfs-rt" api/commutecompute.js 2>/dev/null; then
+        pass "commutecompute.js sets dataSource to 'gtfs-rt' (correct)"
     else
-        pass "screen.js references 'gtfs-rt' source strings"
+        pass "commutecompute.js references 'gtfs-rt' source strings"
     fi
 else
-    fail "screen.js does not reference 'gtfs-rt' anywhere"
+    fail "commutecompute.js does not reference 'gtfs-rt' anywhere"
 fi
 
 # Verify renderer checks for 'gtfs-rt'
@@ -576,10 +576,47 @@ fi
 echo ""
 
 # =========================================================================
+# CHECK 15: Plan Mode Workflow Documentation (Section 27)
+# =========================================================================
+info "CHECK 15: Plan mode workflow documentation"
+
+if grep -q "Section 27.*Plan Mode Workflow" DEVELOPMENT-RULES.md 2>/dev/null; then
+    pass "DEVELOPMENT-RULES.md: Section 27 (Plan Mode Workflow) present"
+else
+    fail "DEVELOPMENT-RULES.md: Section 27 (Plan Mode Workflow) missing"
+fi
+
+if grep -q "27.1.*Skill Self-Identification" DEVELOPMENT-RULES.md 2>/dev/null; then
+    pass "DEVELOPMENT-RULES.md: 27.1 skill self-identification documented"
+else
+    fail "DEVELOPMENT-RULES.md: 27.1 skill self-identification missing"
+fi
+
+if grep -q "27.2.*Task List Creation" DEVELOPMENT-RULES.md 2>/dev/null; then
+    pass "DEVELOPMENT-RULES.md: 27.2 task list creation documented"
+else
+    fail "DEVELOPMENT-RULES.md: 27.2 task list creation missing"
+fi
+
+if grep -q "27.3.*Cross-Compliance" DEVELOPMENT-RULES.md 2>/dev/null; then
+    pass "DEVELOPMENT-RULES.md: 27.3 cross-compliance check documented"
+else
+    fail "DEVELOPMENT-RULES.md: 27.3 cross-compliance check missing"
+fi
+
+if grep -q "27.4.*Corrective Plan" DEVELOPMENT-RULES.md 2>/dev/null; then
+    pass "DEVELOPMENT-RULES.md: 27.4 corrective plan cycles documented"
+else
+    fail "DEVELOPMENT-RULES.md: 27.4 corrective plan cycles missing"
+fi
+
+echo ""
+
+# =========================================================================
 # SUMMARY
 # =========================================================================
 echo "=================================================================="
-echo "  CC-DEV VALIDATION SUMMARY v2.0"
+echo "  CC-DEV VALIDATION SUMMARY v2.1"
 echo "=================================================================="
 echo -e "  ${GREEN}PASSED:${NC}     $PASSED"
 echo -e "  ${RED}VIOLATIONS:${NC} $VIOLATIONS"

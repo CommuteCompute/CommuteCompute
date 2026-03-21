@@ -4,7 +4,7 @@
  *
  * Tests against:
  * - DEVELOPMENT-RULES.md v1.28 (Section 22: Admin Panel UI/UX)
- * - CCDashDesignV15.md (UNLOCKED specification)
+ * - CCDashDesignV16.md (UNLOCKED specification)
  * - Project vision and naming conventions
  *
  * Copyright (c) 2026 Angus Bergman
@@ -58,7 +58,7 @@ const SEMANTIC_SPEC = {
   naming: {
     systemName: 'Commute Compute System',
     shortName: 'Commute Compute',
-    dashboardSpec: 'CCDashDesignV15.0',
+    dashboardSpec: 'CCDashDesignV16.0',
     renderer: 'CCDashRendererV2.1',
     multiDevice: 'CC LiveDash',
     journeyEngine: 'CommuteCompute',
@@ -848,7 +848,7 @@ async function runSemanticAudit(verbose = true) {
   console.log(`${colors.info}COMMUTE COMPUTE SYSTEM - SEMANTIC AUDIT${colors.reset}`);
   console.log(`Target: ${config.BASE_URL}`);
   console.log(`Scope: UI/UX Branding, Documentation, Project Vision`);
-  console.log(`Spec: DEVELOPMENT-RULES v1.28 + CCDashDesignV15.0`);
+  console.log(`Spec: DEVELOPMENT-RULES v1.28 + CCDashDesignV16.0`);
   console.log(`Time: ${new Date().toISOString()}`);
   console.log('═'.repeat(70) + '\n');
 

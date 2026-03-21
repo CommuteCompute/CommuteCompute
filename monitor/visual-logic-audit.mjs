@@ -1,9 +1,9 @@
 /**
  * Commute Compute System - Visual Logic Compliance Audit
- * Validates display output against CCDashDesignV15.0 spec and CommuteCompute engines
+ * Validates display output against CCDashDesignV16.0 spec and CommuteCompute engines
  *
  * Tests against:
- * - CCDashDesignV15.0 (UNLOCKED 2026-02-06) - Display format specification
+ * - CCDashDesignV16.0 (UNLOCKED 2026-02-06) - Display format specification
  * - DEVELOPMENT-RULES.md v1.28 Section 12 - Time/Date formatting
  * - CommuteCompute Engine v3.1 - Journey calculation logic
  * - Coffee Decision Engine - Coffee availability logic
@@ -122,12 +122,12 @@ async function fetchJson(urlString) {
 const visualLogicAudits = {
   /**
    * Audit 1: Time Format Compliance
-   * CCDashDesignV15.0: 12-hour time with separate AM/PM field
+   * CCDashDesignV16.0: 12-hour time with separate AM/PM field
    */
   async timeFormatCompliance() {
     const result = {
       name: 'Time Format Compliance (V15)',
-      spec: 'CCDashDesignV15.0 Section 2.2 + DEVELOPMENT-RULES Section 12.2',
+      spec: 'CCDashDesignV16.0 Section 2.2 + DEVELOPMENT-RULES Section 12.2',
       priority: 'CRITICAL',
       passed: true,
       details: [],
@@ -197,12 +197,12 @@ const visualLogicAudits = {
 
   /**
    * Audit 2: Day/Date Format Compliance
-   * CCDashDesignV15.0: Title case day, full month name, no year
+   * CCDashDesignV16.0: Title case day, full month name, no year
    */
   async dayDateFormatCompliance() {
     const result = {
       name: 'Day/Date Format Compliance (V15)',
-      spec: 'CCDashDesignV15.0 Section 2.3',
+      spec: 'CCDashDesignV16.0 Section 2.3',
       priority: 'CRITICAL',
       passed: true,
       details: [],
@@ -271,7 +271,7 @@ const visualLogicAudits = {
   async coffeeDecisionLogic() {
     const result = {
       name: 'Coffee Decision Logic (CommuteCompute)',
-      spec: 'CommuteCompute Engine v3.1 + CCDashDesignV15.0 Section 7',
+      spec: 'CommuteCompute Engine v3.1 + CCDashDesignV16.0 Section 7',
       priority: 'HIGH',
       passed: true,
       details: [],
@@ -365,7 +365,7 @@ const visualLogicAudits = {
   async journeyLegStructure() {
     const result = {
       name: 'Journey Leg Structure (V15)',
-      spec: 'CCDashDesignV15.0 Section 5',
+      spec: 'CCDashDesignV16.0 Section 5',
       priority: 'HIGH',
       passed: true,
       details: [],
@@ -458,7 +458,7 @@ const visualLogicAudits = {
   async dashboardDataCompleteness() {
     const result = {
       name: 'Dashboard Data Completeness (V15)',
-      spec: 'CCDashDesignV15.0 Data Model',
+      spec: 'CCDashDesignV16.0 Data Model',
       priority: 'CRITICAL',
       passed: true,
       details: [],
@@ -523,7 +523,7 @@ const visualLogicAudits = {
   async addressFormatting() {
     const result = {
       name: 'Address Formatting',
-      spec: 'CCDashDesignV15.0 Section 2.1 + 6.1',
+      spec: 'CCDashDesignV16.0 Section 2.1 + 6.1',
       priority: 'MEDIUM',
       passed: true,
       details: [],
@@ -586,7 +586,7 @@ const visualLogicAudits = {
   async weatherIntegration() {
     const result = {
       name: 'Weather Data Integration',
-      spec: 'CCDashDesignV15.0 Section 2.6',
+      spec: 'CCDashDesignV16.0 Section 2.6',
       priority: 'MEDIUM',
       passed: true,
       details: [],
@@ -647,7 +647,7 @@ const visualLogicAudits = {
   async statusTypeLogic() {
     const result = {
       name: 'Status Type Logic',
-      spec: 'CCDashDesignV15.0 Section 4',
+      spec: 'CCDashDesignV16.0 Section 4',
       priority: 'MEDIUM',
       passed: true,
       details: [],
@@ -713,7 +713,7 @@ const visualLogicAudits = {
   async transitDepartureTimes() {
     const result = {
       name: 'Transit Departure Times (V15)',
-      spec: 'CCDashDesignV15.0 Section 5.3 - Transit Legs',
+      spec: 'CCDashDesignV16.0 Section 5.3 - Transit Legs',
       priority: 'HIGH',
       passed: true,
       details: [],
@@ -791,7 +791,7 @@ const visualLogicAudits = {
   async apiVersionCompliance() {
     const result = {
       name: 'API Version Compliance',
-      spec: 'CCDashDesignV15.0 API Contract',
+      spec: 'CCDashDesignV16.0 API Contract',
       priority: 'MEDIUM',
       passed: true,
       details: [],
@@ -851,8 +851,8 @@ async function runVisualLogicAudit(verbose = true) {
   console.log('\n' + '═'.repeat(70));
   console.log(`${colors.info}COMMUTE COMPUTE SYSTEM - VISUAL LOGIC AUDIT${colors.reset}`);
   console.log(`Target: ${config.BASE_URL}`);
-  console.log(`Scope: CCDashDesignV15.0 Compliance, CommuteCompute Engine Logic`);
-  console.log(`Spec: CCDashDesignV15.0 (UNLOCKED 2026-02-06) + DEVELOPMENT-RULES v1.28`);
+  console.log(`Scope: CCDashDesignV16.0 Compliance, CommuteCompute Engine Logic`);
+  console.log(`Spec: CCDashDesignV16.0 (UNLOCKED 2026-02-06) + DEVELOPMENT-RULES v1.28`);
   console.log(`Time: ${new Date().toISOString()}`);
   console.log('═'.repeat(70) + '\n');
 
