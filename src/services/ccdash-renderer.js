@@ -2245,7 +2245,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     ctx.fillStyle = '#000';
     ctx.fillRect(statusBoxX, dataBoxY, statusBoxW, dataBoxH);
     ctx.fillStyle = '#FFF';
-    ctx.fillText('\u25CB SCHEDULED', statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
+    ctx.fillText('\u25CB SCHEDULED DATA', statusBoxX + statusTextPad, dataBoxY + dataBoxH / 2);
   }
   
   ctx.fillStyle = '#000';
@@ -2319,7 +2319,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   const hasCoffee = data.isCommuteDay !== false && isWithinArrivalWindow && !!coffeeLegCanGet;
   const cafeClosed = data.isCommuteDay !== false && (!!coffeeLegClosed || isCafeClosedFromData);
   const coffeeSkipped = data.isCommuteDay !== false && isWithinArrivalWindow && !!coffeeLegSkipped && !isCafeClosedFromData;
-  const showCafeBusynessOnly = data.isCommuteDay !== false && !isWithinArrivalWindow && coffeeLeg && !cafeClosed;
+  const showCafeBusynessOnly = !hasCoffee && !coffeeSkipped && !cafeClosed && (coffeeLeg || data.cafe_busyness);
   
   // v1.40: Calculate arrival time early for coffee header display
   const earlyTotalMinutes = data.total_minutes || data.totalMinutes || data.journeyDuration || 20;

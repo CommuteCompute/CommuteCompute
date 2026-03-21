@@ -101,8 +101,8 @@
 #define BATTERY_FULL_MV 4200           // Fully charged LiPo
 #define BATTERY_USB_THRESH_MV 4250     // Above this = USB powered (not battery)
 #define BATTERY_EMPTY_MV 3000          // Fully discharged
-#define BATTERY_LOW_WARN_MV 3700       // ~15% — show warning on e-ink
-#define BATTERY_SHUTDOWN_MV 3500       // ~5% — auto shutdown to protect cell
+#define BATTERY_LOW_WARN_MV 3060       // 5% — show warning on e-ink
+#define BATTERY_SHUTDOWN_MV 3030       // ~2.5% — auto shutdown to protect cell
 #define BATTERY_ABSENT_MV 1000         // Below this = no battery connected
 
 // =============================================================================

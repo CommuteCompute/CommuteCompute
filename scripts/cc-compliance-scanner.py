@@ -1038,6 +1038,7 @@ def check_smartcommute_removed(repo_root: Path, results: AuditResults):
         "comprehensive-compliance-audit.sh",
         "cc-compliance-scanner.py",
         "cc-constants.json",
+        "cc-meta-audit.sh",
     }
 
     violations = []
