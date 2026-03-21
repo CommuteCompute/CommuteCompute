@@ -51,7 +51,8 @@ const STATE_API_CONFIG = {
       'Authorization': `apikey ${apiKey}`,
       'Accept': 'application/x-protobuf'
     }),
-    modeMap: { 0: 'sydneytrains', 2: 'buses', 4: 'ferries', 5: 'lightrail' }
+    // Mode 1 (tram) → lightrail for Sydney Light Rail; mode 3 (vline) → sydneytrains
+    modeMap: { 0: 'sydneytrains', 1: 'lightrail', 2: 'buses', 3: 'sydneytrains', 4: 'ferries', 5: 'lightrail' }
   },
   QLD: {
     baseUrl: 'https://gtfsrt.api.translink.com.au/api/realtime/SEQ',
@@ -59,7 +60,8 @@ const STATE_API_CONFIG = {
       'Authorization': `Bearer ${apiKey}`,
       'Accept': 'application/x-protobuf'
     }),
-    modeMap: { 0: 'SEQ', 2: 'SEQ', 4: 'SEQ' }
+    // SEQ is a unified feed — all modes route to same endpoint
+    modeMap: { 0: 'SEQ', 1: 'SEQ', 2: 'SEQ', 3: 'SEQ', 4: 'SEQ' }
   }
 };
 
@@ -387,7 +389,7 @@ export async function getDepartures(stopId, routeType, options = {}) {
     // route number or line code. Works for all modes (tram, bus, train).
     if (departures.length === 0 && feedEntityCount > 0 && (options.routeNumber || options.lineCode)) {
       const routeFallbackDepartures = processRouteLevelDepartures(
-        feed, stopId, options.routeNumber, routeType, options.lineCode
+        feed, stopId, options.routeNumber, routeType, options.lineCode, state
       );
       if (routeFallbackDepartures.length > 0) {
         console.log(`[OpenData] Route-level fallback found ${routeFallbackDepartures.length} departures for ${options.routeNumber || options.lineCode} (stopId=${stopId} not matched directly)`);
@@ -402,7 +404,7 @@ export async function getDepartures(stopId, routeType, options = {}) {
     // Uses Strategy 1 only (exact stop match within trips) — no median estimation —
     // to avoid showing departures from routes that don't serve the user's stop.
     if (departures.length === 0 && feedEntityCount > 0 && !options.routeNumber && !options.lineCode && mode !== 'metro') {
-      const scanDepartures = processAllTripsStopSearch(feed, stopId, routeType);
+      const scanDepartures = processAllTripsStopSearch(feed, stopId, routeType, state);
       if (scanDepartures.length > 0) {
         console.log(`[OpenData] All-trips stop search found ${scanDepartures.length} departures for stopId=${stopId} in ${mode} feed`);
         scanDepartures.forEach(d => departures.push(d));
@@ -519,7 +521,7 @@ function matchesStopId(gtfsStopId, queriedStopId) {
  * @param {string} lineCode - Expected 3-letter line code (e.g., "SHM" for train) or null
  * @returns {Array} - Departure objects from route-level matching
  */
-function processRouteLevelDepartures(feed, stopId, routeNumber, routeType, lineCode) {
+function processRouteLevelDepartures(feed, stopId, routeNumber, routeType, lineCode, state = 'VIC') {
   const nowMs = getNowMs();
   const departures = [];
   if (!feed?.entity || (!routeNumber && !lineCode)) return departures;
@@ -587,13 +589,14 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType, lineC
     if (minutes >= -2 && minutes <= 120) {
       const delay = pickedStu.departure?.delay || pickedStu.arrival?.delay || 0;
       const isDelayed = delay > 60;
-      const lineName = getLineName(routeId);
+      const isVIC = (state === 'VIC');
+      const lineName = isVIC ? getLineName(routeId) : (tripUpdate.trip?.tripHeadsign || '');
       const finalStop = stus[stus.length - 1]?.stopId || '';
 
       departures.push({
         minutes: Math.max(0, minutes),
         departureTimeMs: depMs,
-        destination: lineName,
+        destination: lineName || tripUpdate.trip?.tripHeadsign || '',
         lineName,
         routeNumber: extractedRoute || getRouteNumber(routeId) || null,
         routeId,
@@ -638,7 +641,7 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType, lineC
  * @param {number} routeType - 0=metro, 1=tram, 2=bus
  * @returns {Array} - Departure objects from matching trips
  */
-function processAllTripsStopSearch(feed, stopId, routeType) {
+function processAllTripsStopSearch(feed, stopId, routeType, state = 'VIC') {
   const nowMs = getNowMs();
   const departures = [];
   const stopIdStr = String(stopId);
@@ -684,12 +687,13 @@ function processAllTripsStopSearch(feed, stopId, routeType) {
         const delay = stu.departure?.delay || stu.arrival?.delay || 0;
         const isDelayed = delay > 60;
         const routeId = tripUpdate.trip?.routeId;
-        const lineName = getLineName(routeId);
+        const isVIC = (state === 'VIC');
+        const lineName = isVIC ? getLineName(routeId) : (tripUpdate.trip?.tripHeadsign || '');
 
         departures.push({
           minutes: Math.max(0, minutes),
           departureTimeMs: depMs,
-          destination: lineName,
+          destination: lineName || tripUpdate.trip?.tripHeadsign || '',
           lineName,
           routeNumber: getRouteNumber(routeId) || null,
           routeId,
