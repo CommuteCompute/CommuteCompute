@@ -688,7 +688,7 @@
                 document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v4.0';
                 document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v3.0';
                 document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.0.1');
+                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.0.2');
                 if (v.repoUrls) checkForUpstreamUpdates(v.system?.version, v.repoUrls);
             })
             .catch(() => {});
@@ -760,7 +760,7 @@
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">System</span>
-                <span class="cc-footer-version-value" id="cc-footer-system-version">v5.0.1</span>
+                <span class="cc-footer-version-value" id="cc-footer-system-version">v5.0.2</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">Build</span>

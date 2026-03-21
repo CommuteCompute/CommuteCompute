@@ -660,7 +660,7 @@ See [LEGAL.md](LEGAL.md) for complete trade mark and intellectual property detai
 </p>
 
 <p align="center">
-  <strong>Commute Compute&#8482; System v5.0.1</strong><br>
+  <strong>Commute Compute&#8482; System v5.0.2</strong><br>
   V16.0 Complete Journey Intelligence<br>
   CommuteCompute&#8482; Engine v4.0 | CCDash&#8482; Renderer v3.0 | CC LiveDash&#8482; v3.1 | Admin Panel v6.0 | CCFirm&#8482; v8.1.0<br>
   <br>
