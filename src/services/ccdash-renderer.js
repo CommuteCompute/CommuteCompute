@@ -2612,11 +2612,13 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     nowMins = localNow.getHours() * 60 + localNow.getMinutes();
   }
   
+  // arrivalMins is always needed for diffMins calculation (late/early/on-time status)
+  const arrivalMins = nowMins + totalMinutes;
+
   // Use pre-calculated arrival from API when available (ensures consistency with admin panel).
   // Only recalculate locally as fallback when API value is missing.
   let calculatedArrival = data._calculatedArrival;
   if (!calculatedArrival) {
-    const arrivalMins = nowMins + totalMinutes;
     const arrivalH = Math.floor(arrivalMins / 60) % 24;
     const arrivalM = arrivalMins % 60;
     const arrivalH12 = arrivalH % 12 || 12;

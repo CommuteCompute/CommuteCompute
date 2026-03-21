@@ -5468,8 +5468,9 @@
             }
         }
 
-        // Location-agnostic timezone detection
-        let detectedTimezone = null;
+        // Location-agnostic timezone detection — default to Melbourne per FD-JURISDICTION
+        // Updated by updateSystemStatus() when user's state config loads
+        let detectedTimezone = 'Australia/Melbourne';
 
         function getTimezoneForState(state) {
             const timezones = {
