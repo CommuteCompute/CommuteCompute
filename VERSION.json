@@ -1,8 +1,8 @@
 {
   "system": {
-    "version": "5.0.0",
+    "version": "5.0.1",
     "name": "Commute Compute System",
-    "releaseDate": "2026-03-02",
+    "releaseDate": "2026-03-21",
     "codename": "Unified Engine"
   },
   "components": {

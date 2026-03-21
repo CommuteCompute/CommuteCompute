@@ -1085,14 +1085,14 @@ void loop() {
             batteryPercent = calculateBatteryPercent(batteryVoltageMv);
             onBatteryPower = isOnBatteryPower(batteryVoltageMv);
 
-            // Battery critical (<=5%): auto shutdown to protect cell
-            if (onBatteryPower && batteryVoltageMv <= BATTERY_SHUTDOWN_MV) {
+            // Battery critical (<=2%): auto shutdown to protect cell
+            if (onBatteryPower && batteryPercent <= 2) {
                 doAutoShutdown();
                 // Never returns — device enters indefinite deep sleep
             }
 
-            // Battery low (<=15%): show warning once
-            if (onBatteryPower && batteryVoltageMv <= BATTERY_LOW_WARN_MV && !lowBatteryWarningShown) {
+            // Battery low (<=5%): show warning once
+            if (onBatteryPower && batteryPercent <= 5 && !lowBatteryWarningShown) {
                 showLowBatteryWarning(batteryPercent);
                 lowBatteryWarningShown = true;
             }
