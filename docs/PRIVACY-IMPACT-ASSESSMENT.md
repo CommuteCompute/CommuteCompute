@@ -53,7 +53,7 @@ The following describes the end-to-end data flow within the Commute Compute Syst
 
 1. **Configuration** -- The user opens the Setup Wizard in a browser and enters their Transport Victoria OpenData API key, optional Google Places API key, home/work addresses, and transit route preferences.
 2. **Storage** -- All preferences are written to Redis (Upstash, via Vercel Marketplace). Redis encrypts data at rest. No `.env` files are used; all secrets are stored exclusively in Redis.
-3. **Request** -- The TRMNL Display hardware periodically requests a dashboard image from `api/screen.js` over HTTPS, authenticating via its device token.
+3. **Request** -- The TRMNL Display hardware periodically requests a dashboard image from `api/commutecompute.js` over HTTPS, authenticating via its device token.
 4. **Transit Data Fetch** -- The server-side endpoint calls the Transport Victoria OpenData API using the user's stored API key, retrieving real-time GTFS-RT and scheduled GTFS data for the configured routes.
 5. **Route Processing** -- The CommuteCompute engine processes the transit data, calculating departure times, walking estimates, and contextual information.
 6. **Rendering** -- The CCDash renderer generates a 1-bit BMP image (optimised for e-ink display) containing the processed transit information.
@@ -73,8 +73,8 @@ The following describes the end-to-end data flow within the Commute Compute Syst
                                                      v
 +-------------------+        HTTPS         +-------------------+
 |                   | <------------------- |                   |
-|   TRMNL Display   |   1-bit BMP image    |   api/screen.js   |
-|   (Hardware)      | <------------------- |   (Vercel)        |
+|   TRMNL Display   |   1-bit BMP image    | api/commutecompute|
+|   (Hardware)      | <------------------- |   .js (Vercel)    |
 |                   |                       |                   |
 +-------------------+                       +--------+----------+
                                                      |

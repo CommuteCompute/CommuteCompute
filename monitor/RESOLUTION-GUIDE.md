@@ -90,7 +90,7 @@ Comprehensive troubleshooting guide for all monitored endpoints, pages, and data
    ```json
    {
      "functions": {
-       "api/screen.js": {
+       "api/commutecompute.js": {
          "memory": 1024
        }
      }
@@ -128,9 +128,9 @@ Comprehensive troubleshooting guide for all monitored endpoints, pages, and data
 
 **Resolution steps:**
 
-1. **Verify CCDashDesignV15.0 spec compliance**
+1. **Verify CCDashDesignV16.0 spec compliance**
    - Zone boundaries are LOCKED per `DEVELOPMENT-RULES.md`
-   - Check `specs/CCDashDesignV15.md` (V15.0) for exact coordinates
+   - Check `specs/CCDashDesignV16.md` (V16.0) for exact coordinates
 
 2. **BMP encoding issues**
    - 1-bit BMP only (no greyscale)

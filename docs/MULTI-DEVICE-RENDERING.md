@@ -13,7 +13,7 @@ Copyright (c) 2025-2026 Angus Bergman — AGPL-3.0 Dual Licence
 
 ## Overview
 
-The V15.0 Dashboard Specification (`specs/CCDashDesignV15.md`) defines the canonical layout for 800×480 TRMNL OG displays. The **LiveDash** renderer (`src/services/livedash.js`) adapts this specification to different screen sizes and resolutions while maintaining visual consistency.
+The V15.0 Dashboard Specification (`specs/CCDashDesignV16.md`) defines the canonical layout for 800×480 TRMNL OG displays. The **LiveDash** renderer (`src/services/livedash.js`) adapts this specification to different screen sizes and resolutions while maintaining visual consistency.
 
 This document explains:
 1. How zone scaling works
@@ -27,7 +27,7 @@ This document explains:
 
 ### Base Reference: TRMNL OG (800×480)
 
-The CCDashDesignV15.0 spec defines exact pixel positions for 800×480:
+The CCDashDesignV16.0 spec defines exact pixel positions for 800×480:
 
 | Zone | Y Start | Y End | Height |
 |------|---------|-------|--------|
@@ -378,7 +378,7 @@ User Request
 
 ## Related Documentation
 
-- `specs/CCDashDesignV15.md` — Canonical V15.0 layout specification
+- `specs/CCDashDesignV16.md` — Canonical V15.0 layout specification
 - `docs/hardware/DEVICE-COMPATIBILITY.md` — Supported devices list
 - `DEVELOPMENT-RULES.md` — Section 8 (Design Specification)
 - `src/services/livedash.js` — LiveDash implementation

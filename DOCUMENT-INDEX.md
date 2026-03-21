@@ -97,7 +97,7 @@
 | File | Description |
 |------|-------------|
 | `specs/README.md` | Specs folder readme |
-| `specs/CCDashDesignV15.md` | **CURRENT** Dashboard design spec (V15.0) |
+| `specs/CCDashDesignV16.md` | **CURRENT** Dashboard design spec (V15.0) |
 
 ### specs/archive/
 

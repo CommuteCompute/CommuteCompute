@@ -63,9 +63,8 @@ Complete mapping of each trade mark to its constituent files in the codebase.
 | `api/zones-tiered.js` | API | Tiered refresh intervals (1/2/5 min) |
 | `api/zone/[id].js` | API | Individual zone BMP endpoint |
 | `api/zonedata.js` | API | All zones with metadata |
-| `api/screen.js` | API | Full 800x480 PNG endpoint |
-| `api/fullscreen.js` | API | Fullscreen render endpoint |
-| `specs/CCDashDesignV15.md` | Spec | Dashboard specification V15.0 (UNLOCKED) |
+| `api/commutecompute.js` | API | Unified endpoint (JSON/PNG/BMP) |
+| `specs/CCDashDesignV16.md` | Spec | Dashboard specification V16.0 (UNLOCKED) |
 
 ### CC LiveDash(TM) -- Multi-Device Preview Renderer
 
@@ -99,7 +98,7 @@ Complete mapping of each trade mark to its constituent files in the codebase.
 | `src/journey-display/index.js` | Core | Module exports |
 | `src/journey-display/api.js` | API | HTTP API handlers |
 | `src/journey-display/engine.js` | Core | Journey calculation |
-| `src/journey-display/renderer.js` | Core | Canvas rendering |
+| `src/journey-display/engine.js` | Core | Display engine |
 | `src/journey-display/diff.js` | Core | Zone change detection |
 | `src/journey-display/models.js` | Core | Data models and types |
 
@@ -113,7 +112,7 @@ Complete mapping of each trade mark to its constituent files in the codebase.
 | `src/services/journey-planner.js` | CommuteCompute(TM) | Journey calculation |
 | `src/services/journey-scenarios.js` | CommuteCompute(TM) | Scenario handling |
 | `src/services/dashboard-service.js` | CCDash(TM) | Dashboard data aggregation |
-| `src/services/health-monitor.js` | System | System health checks |
+| `src/utils/config-token.js` | System | Token encode/decode |
 | `src/utils/config-token.js` | System | Token encode/decode |
 
 ---
@@ -428,10 +427,10 @@ commute-compute/
 │   ├── commutecompute.js         # CommuteCompute(TM) REST endpoint
 │   ├── health.js                 # Health check
 │   ├── livedash.js               # Multi-device renderer
+│   ├── commutecompute.js         # Unified endpoint (JSON/PNG/BMP)
 │   ├── fullscreen.js             # Fullscreen render endpoint
 │   ├── save-google-key.js        # Google API key validation
 │   ├── save-transit-key.js       # Transit API key validation
-│   ├── screen.js                 # Full screen PNG
 │   ├── status.js                 # Server status
 │   ├── zonedata.js               # All zones with data
 │   ├── zones.js                  # Zone-based refresh
@@ -459,14 +458,13 @@ commute-compute/
 │   │   ├── diff.js               # Zone diffing
 │   │   ├── engine.js             # Display engine
 │   │   ├── index.js              # Module exports
-│   │   ├── models.js             # Data models
-│   │   └── renderer.js           # Display rendering
+│   │   └── models.js             # Data models
 │   ├── services/                 # Service layer
 │   │   ├── cafe-busy-detector.js # Cafe busy status
 │   │   ├── ccdash-renderer.js    # CCDash(TM) consolidated renderer v2.1
 │   │   ├── dashboard-service.js  # Dashboard aggregation
 │   │   ├── geocoding-service.js  # Address resolution
-│   │   ├── health-monitor.js     # System health
+│   │   ├── smart-journey-integration.js  # Integration layer
 │   │   ├── image-renderer.js     # Image generation
 │   │   ├── journey-planner.js    # Journey calculation
 │   │   ├── journey-scenarios.js  # Scenario handling
@@ -510,7 +508,7 @@ commute-compute/
 │   ├── Inter-Bold.ttf
 │   └── Inter-Regular.ttf
 ├── specs/
-│   └── CCDashDesignV15.md        # Dashboard spec V15.0 (UNLOCKED)
+│   └── CCDashDesignV16.md        # Dashboard spec V16.0 (UNLOCKED)
 ├── docs/                         # Documentation
 └── DEVELOPMENT-RULES.md          # Development rules (v1.28)
 ```
@@ -1025,9 +1023,9 @@ All API keys entered via admin panel are validated:
 │                     VERCEL DEPLOYMENT                        │
 │                                                              │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
-│  │ api/zones.js │  │api/livedash  │  │ api/screen.js│       │
-│  │  (Function)  │  │  .js         │  │  (Function)  │       │
-│  │              │  │  (Function)  │  │              │       │
+│  │ api/zones.js │  │api/livedash  │  │api/commute-  │       │
+│  │  (Function)  │  │  .js         │  │ compute.js   │       │
+│  │              │  │  (Function)  │  │  (Function)  │       │
 │  └──────────────┘  └──────────────┘  └──────────────┘       │
 │                                                              │
 │  ┌──────────────────────────────────────────────────────┐   │
@@ -2082,7 +2080,7 @@ grep -rn "Clara\|Toorak\|Norman" src/ api/ --include="*.js" \
 ## References
 
 - [DEVELOPMENT-RULES.md](../DEVELOPMENT-RULES.md) -- All development rules (v1.28)
-- [specs/CCDashDesignV15.md](../specs/CCDashDesignV15.md) -- Dashboard specification V15.0 (UNLOCKED)
+- [specs/CCDashDesignV16.md](../specs/CCDashDesignV16.md) -- Dashboard specification V16.0 (UNLOCKED)
 - [firmware/ANTI-BRICK-REQUIREMENTS.md](../firmware/ANTI-BRICK-REQUIREMENTS.md) -- Firmware safety rules
 - [firmware/BOOT-SEQUENCE.md](../firmware/BOOT-SEQUENCE.md) -- Boot sequence documentation
 - [firmware/PAIRING-SPEC.md](../firmware/PAIRING-SPEC.md) -- Device pairing specification

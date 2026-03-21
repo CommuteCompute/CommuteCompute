@@ -407,7 +407,7 @@ START
 
 ## Related Documents
 
-- [CCDashDesignV15.0](../specs/CCDashDesignV15.md) — Visual specification (LOCKED)
+- [CCDashDesignV16.0](../specs/CCDashDesignV16.md) — Visual specification (LOCKED)
 - [ARCHITECTURE.md](ARCHITECTURE.md) — System architecture
 - [DEVELOPMENT-RULES.md](../DEVELOPMENT-RULES.md) — Development rules
 

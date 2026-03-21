@@ -104,7 +104,7 @@ Create a **"set and forget"** smart transit display that tells you exactly when 
 
 ### Phase 1: Foundation -- COMPLETE
 - [x] Core server architecture
-- [x] CCDashDesignV15.0 dashboard specification (CCDash™)
+- [x] CCDashDesignV16.0 dashboard specification (CCDash™)
 - [x] Zone-based partial refresh
 - [x] Transport Victoria API integration
 - [x] Weather (BOM) integration
@@ -292,7 +292,7 @@ Things we explicitly **will not** pursue:
 
 ### Decision Making
 - Major changes require specification updates
-- CCDashDesignV15.0 spec is LOCKED — changes require new version
+- CCDashDesignV16.0 spec is LOCKED — changes require new version
 - DEVELOPMENT-RULES.md v1.28 is the source of truth
 - Community input welcome via GitLab Issues
 
