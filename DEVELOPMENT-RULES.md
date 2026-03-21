@@ -858,7 +858,7 @@ TZ=Australia/Melbourne
 | Endpoint | Purpose |
 |----------|---------|
 | `/api/zones` | Zone data for TRMNL (1-bit BMP, partial refresh) |
-| `/api/screen` | Full 800×480 PNG for TRMNL webhook |
+| `/api/commutecompute` | Full 800×480 PNG for TRMNL webhook (unified endpoint; firmware backward-compatible via `vercel.json` rewrite) |
 | `/api/kindle/image` | Kindle-optimised PNG (portrait, 8-bit) |
 | `/api/livedash` | LiveDash multi-device renderer (TRMNL, Kindle, web) |
 | `/api/status` | Server health check |
@@ -1749,7 +1749,7 @@ const [trains, trams] = await Promise.all([
 |----------|---------------|
 | `/api/zones` | [YES] |
 | `/api/zonedata` | [YES] |
-| `/api/screen` | [YES] |
+| `/api/commutecompute` | [YES] |
 | `/api/zones-tiered` | [YES] |
 
 **Why This Matters:**
@@ -1771,7 +1771,7 @@ const apiOptions = transitApiKey ? { apiKey: transitApiKey } : {};
 **How It Works:**
 1. User enters API key in Admin Panel / Setup Wizard
 2. `/api/save-transit-key` validates and saves to Redis
-3. Direct endpoints (`/api/zones`, `/api/zonedata`, `/api/screen`) load key from Redis
+3. Direct endpoints (`/api/zones`, `/api/zonedata`, `/api/commutecompute`) load key from Redis
 4. No environment variable configuration required
 
 **Storage Module:** `src/data/kv-preferences.js`
@@ -1939,7 +1939,7 @@ When the admin panel needs server-rendered content (like CCDash preview), sync l
 // [YES] CORRECT - Sync before loading preview
 async function loadEinkPreview() {
     await syncConfigToKV();  // Ensure server has latest config
-    const imageUrl = `${BASE_URL}/api/screen?t=${Date.now()}`;
+    const imageUrl = `${BASE_URL}/api/commutecompute?t=${Date.now()}`;
     // ... load image
 }
 
@@ -2880,7 +2880,7 @@ fi
 
 | Endpoint Type | Limit | Window | Action on Exceed |
 |---------------|-------|--------|------------------|
-| Public API (`/api/screen`, `/api/zones`) | 100 req | 1 hour | 429 Too Many Requests |
+| Public API (`/api/commutecompute`, `/api/zones`) | 100 req | 1 hour | 429 Too Many Requests |
 | Admin API (`/api/admin/*`) | 20 req | 1 minute | 429 + temporary block |
 | Pairing (`/api/pair/*`) | 10 req | 1 minute | 429 + 5 min cooldown |
 | Device webhook | 60 req | 1 hour | 429 (allows 1/min refresh) |
@@ -2944,10 +2944,10 @@ Add to `vercel.json`:
 
 ```cpp
 // [NO] FORBIDDEN - HTTP
-const char* apiUrl = "http://example.com/api/screen";
+const char* apiUrl = "http://example.com/api/commutecompute";
 
 // [YES] REQUIRED - HTTPS only
-const char* apiUrl = "https://example.com/api/screen";
+const char* apiUrl = "https://example.com/api/commutecompute";
 ```
 
 **Note**: Vercel automatically provides HTTPS. This rule ensures no code bypasses it.
@@ -4554,7 +4554,7 @@ Transit leg subtitles MUST include both the origin (boarding) stop name and the 
 │  Setup Wizard │ Admin Panel │ Simulator │ Preview │ Help                │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                             API LAYER                                    │
-│  /api/zones │ /api/livedash │ /api/screen │ /api/admin/* │ /api/health │
+│  /api/zones │ /api/livedash │ /api/commutecompute │ /api/admin/* │ /api/health │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                           SERVICE LAYER                                  │
 │  CommuteCompute™ │ CC LiveDash™ │ Zone Renderer │ Weather (BOM)          │
@@ -4595,7 +4595,7 @@ Transit leg subtitles MUST include both the origin (boarding) stop name and the 
 │              (1-bit BMP)         (multi-device)          (web view)      │
 │                     │                     │                     │         │
 │                     ▼                     ▼                     ▼         │
-│               /api/zones           /api/livedash         /api/screen     │
+│               /api/zones           /api/livedash    /api/commutecompute  │
 │              (TRMNL BMP)          (All devices)         (Full PNG)       │
 │                                                                           │
 └───────────────────────────────────────────────────────────────────────────┘
@@ -4751,7 +4751,7 @@ SETUP (one-time API calls)          RUNTIME (zero API calls in Free Mode)
 | Endpoint | Purpose | Required |
 |----------|---------|----------|
 | `/api/zones` | Zone data for TRMNL | [YES] MANDATORY |
-| `/api/screen` | PNG for webhook/preview | [YES] MANDATORY |
+| `/api/commutecompute` | PNG for webhook/preview | [YES] MANDATORY |
 | `/api/livedash` | Multi-device renderer | [YES] MANDATORY |
 | `/api/health` | Health check | [YES] MANDATORY |
 | `/api/status` | Server status | [YES] MANDATORY |
@@ -5157,7 +5157,7 @@ setAdminCorsHeaders(res);
 res.setHeader('Access-Control-Allow-Origin', process.env.CC_ALLOWED_ORIGIN || '*');
 ```
 
-Device-facing read-only endpoints (`/api/screen`, `/api/zones`, `/api/status`, `/api/health`, `/api/livedash`) may use wildcard CORS for firmware compatibility.
+Device-facing read-only endpoints (`/api/commutecompute`, `/api/zones`, `/api/status`, `/api/health`, `/api/livedash`) may use wildcard CORS for firmware compatibility.
 
 ### 26.5 KV-First Configuration Check
 

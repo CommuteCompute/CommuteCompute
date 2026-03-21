@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.0.1",
+    "version": "5.0.2",
     "name": "Commute Compute System",
     "releaseDate": "2026-03-21",
     "codename": "Unified Engine"
@@ -86,6 +86,27 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.0.2",
+      "date": "2026-03-21",
+      "changes": [
+        "WCAG 2.2 AA contrast fix: #94a3b8 replaced with #cbd5e1 across admin panel analytics (4.2:1 -> 7.5:1 ratio on dark backgrounds)",
+        "Endpoint unification docs: 16 stale /api/screen references updated to /api/commutecompute in DEVELOPMENT-RULES.md and ARCHITECTURE.md (firmware-context refs preserved)",
+        "DCO CI enforcement: dco-check job added to .gitlab-ci.yml lint stage, validates Signed-off-by on merge request commits"
+      ]
+    },
+    {
+      "version": "5.0.1",
+      "date": "2026-03-21",
+      "changes": [
+        "Trade mark status corrected to Accepted Early per IP Australia primary source letters",
+        "Format-default CI test (8 cases) protecting POST=json/GET=png boundary",
+        "15 stale /api/screen references fixed in user-facing documentation",
+        "README project scale updated (460 files, 472,000+ lines)",
+        "6 context-aware compliance scanner extensions added",
+        "Package-lock.json synced to v5.0.1"
+      ]
+    },
     {
       "version": "5.0.0",
       "date": "2026-03-02",

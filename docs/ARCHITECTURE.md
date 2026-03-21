@@ -178,7 +178,7 @@ The Commute Compute System(TM) is composed of four core trade mark families work
                 │                         │  │ -- /api/livedash        │
                 │ APIs:                   │  │ -- /api/livedash?dev=X  │
                 │ -- /api/zones           │  │                         │
-                │ -- /api/screen          │  │                         │
+                │ -- /api/commutecompute  │  │                         │
                 │ -- /api/zone/[id]       │  │                         │
                 └─────────┬───────────────┘  └─────────┬───────────────┘
                           └───────────┬────────────────┘
@@ -526,7 +526,8 @@ commute-compute/
 │                    API LAYER (CCDash(TM) / CC LiveDash(TM))             │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
 │  │  CCDash(TM) │  │CC LiveDash  │  │  CCDash(TM) │  │ /api/admin/*│   │
-│  │ /api/zones  │  │(TM)        │  │ /api/screen │  │             │   │
+│  │ /api/zones  │  │(TM)        │  │/api/commute-│  │             │   │
+│  │             │  │             │  │  compute    │  │             │   │
 │  │             │  │/api/livedash│  │             │  │             │   │
 │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘   │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -612,7 +613,7 @@ commute-compute/
 ┌───────────────────────────────┐   ┌───────────────────────────────┐
 │  CCDash(TM) APIs:             │   │  CC LiveDash(TM) APIs:        │
 │  -- /api/zones (BMP zones)    │   │  -- /api/livedash (all devs)  │
-│  -- /api/screen (full PNG)    │   │  -- /api/livedash?device=X    │
+│  -- /api/commutecompute (PNG) │   │  -- /api/livedash?device=X    │
 │  -- /api/zone/[id]            │   │                               │
 └───────────────┬───────────────┘   └───────────────┬───────────────┘
                 │                                    │
@@ -708,7 +709,7 @@ commute-compute/
 | `/api/zones-tiered` | GET | Tiered refresh intervals | JSON + BMP data |
 | `/api/zone/[id]` | GET | Single zone BMP | BMP binary |
 | `/api/zonedata` | GET | All zones with metadata | JSON |
-| `/api/screen` | GET | Full screen PNG | PNG |
+| `/api/commutecompute` | GET | Full screen PNG (unified endpoint; `/api/screen` rewritten via `vercel.json`) | PNG |
 | `/api/fullscreen` | GET | Fullscreen render | PNG |
 | `/api/livedash` | GET | Multi-device renderer | BMP/PNG |
 | `/api/commutecompute` | GET | CommuteCompute(TM) engine | JSON |
@@ -1050,7 +1051,7 @@ All API keys entered via admin panel are validated:
 | Endpoint | Purpose | Required |
 |----------|---------|----------|
 | `/api/zones` | Zone data for TRMNL | Yes |
-| `/api/screen` | PNG for webhook | Yes |
+| `/api/commutecompute` | PNG for webhook | Yes |
 | `/api/livedash` | Multi-device renderer | Yes |
 | `/api/health` | Health check | Yes |
 | `/api/status` | Server status | Yes |

@@ -25,6 +25,27 @@ lint-job:
     - npx eslint api/ src/
     - echo "ESLint checks passed."
 
+dco-check:
+  stage: lint
+  image: node:${NODE_VERSION}
+  script:
+    - |
+      echo "--- DCO Signature Check ---"
+      FAILED=0
+      for commit in $(git log origin/main..HEAD --format=%H 2>/dev/null); do
+        if ! git log -1 --format=%B "$commit" | grep -q "Signed-off-by:"; then
+          echo "FAIL: Commit $(git log -1 --format='%h %s' $commit) missing Signed-off-by"
+          FAILED=1
+        fi
+      done
+      if [ "$FAILED" = "1" ]; then
+        echo "DCO check failed. Use: git commit -s"
+        exit 1
+      fi
+      echo "PASS: All commits have valid Signed-off-by lines"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
 # Stage 2: Comprehensive compliance audit (240+ checks)
 audit-job:
   stage: audit
