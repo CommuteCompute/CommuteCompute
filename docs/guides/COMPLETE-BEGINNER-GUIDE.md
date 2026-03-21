@@ -354,7 +354,7 @@ The wizard now shows your admin authentication token:
 Before proceeding to flash your device, verify your dashboard is working by visiting your Vercel deployment URL in a browser:
 
 1. Open a new browser tab
-2. Go to: `https://YOUR-PROJECT-NAME.vercel.app/api/screen`
+2. Go to: `https://YOUR-PROJECT-NAME.vercel.app/api/commutecompute`
    (Replace `YOUR-PROJECT-NAME` with your actual project name)
 3. You should see a rendered dashboard image (the layout will be visible even without live departure data)
 
@@ -488,7 +488,7 @@ Wait for "SUCCESS" message (takes approximately 30-60 seconds).
 8. Click **Submit** -- the Setup Wizard automatically sends your WiFi credentials **and** your server URL to the device via Bluetooth
 9. Display connects to WiFi and immediately begins fetching your dashboard (takes 30-60 seconds)
 
-The Setup Wizard automatically works out your server URL from its own web address (e.g., `https://your-project-name.vercel.app/api/screen`). You do not need to enter or configure it manually.
+The Setup Wizard automatically works out your server URL from its own web address (e.g., `https://your-project-name.vercel.app/api/commutecompute`). You do not need to enter or configure it manually.
 
 [TIP] If WiFi scanning does not show your network, ensure your router's 2.4 GHz band is enabled. Some dual-band routers disable 2.4 GHz when only 5 GHz is active.
 

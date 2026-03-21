@@ -107,7 +107,7 @@ const TRMNL_BYOS = {
 };
 ```
 
-**Webhook Endpoint**: `/api/screen`
+**Webhook Endpoint**: `/api/commutecompute`
 
 **Response Format**:
 ```json
@@ -370,7 +370,7 @@ The webhook URL is automatically configured during BLE setup via the Setup Wizar
 1. Open the **Setup Wizard** in Chrome or Edge at `https://your-project-name.vercel.app/setup-wizard.html`
 2. Click **Connect to Device** and select your TRMNL display from the Bluetooth device list
 3. Enter your WiFi credentials (SSID and password)
-4. Click **Submit** -- the Setup Wizard sends WiFi credentials **and** the webhook URL (`/api/screen`) to the device via BLE
+4. Click **Submit** -- the Setup Wizard sends WiFi credentials **and** the webhook URL (`/api/commutecompute`) to the device via BLE
 5. Device connects to WiFi and immediately begins fetching your dashboard
 
 ### 4. Test Display
@@ -459,7 +459,7 @@ https://your-server-name.vercel.app/api/dashboard?device=kindle-pw3&orientation=
 
 ### TRMNL Display (OG) Webhook
 
-**Endpoint**: `GET /api/screen`
+**Endpoint**: `GET /api/commutecompute`
 
 **Response** (JSON):
 ```json
@@ -619,14 +619,14 @@ All outputs follow e-ink best practices:
 **Device not refreshing**:
 - Verify the server URL was delivered correctly during BLE provisioning (re-run WiFi setup if needed)
 - Verify Vercel deployment is running (check `/api/status`)
-- Test webhook directly in browser at `/api/screen`
+- Test webhook directly in browser at `/api/commutecompute`
 - Check serial output for connection errors
 
 **Image not displaying**:
 - Verify image is 800×480 pixels exactly
 - Check PNG format (not JPEG)
 - Ensure base64 encoding is valid
-- Test `/api/screen` endpoint
+- Test `/api/commutecompute` endpoint
 
 **Slow refresh**:
 - Normal: 15-30 seconds per refresh
