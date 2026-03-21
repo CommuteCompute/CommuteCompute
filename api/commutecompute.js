@@ -1828,6 +1828,7 @@ export default async function handler(req, res) {
     let trainStopId = null;
     let tramStopId = null;
     let busStopId = null;
+    let ferryStopId = null;
     let detectedTramRoute = null;
     let stopDetectionSource = null;
 
@@ -1837,6 +1838,7 @@ export default async function handler(req, res) {
       trainStopId = detected.trainStopId || null;
       tramStopId = detected.tramStopId || null;
       busStopId = detected.busStopId || null;
+      ferryStopId = detected.ferryStopId || null;
       detectedTramRoute = detected.tramRouteNumber || null;
     }
 
@@ -1844,6 +1846,7 @@ export default async function handler(req, res) {
     if (!trainStopId) trainStopId = kvPrefs?.trainStopId || null;
     if (!tramStopId) tramStopId = kvPrefs?.tramStopId || null;
     if (!busStopId) busStopId = kvPrefs?.busStopId || null;
+    if (!ferryStopId) ferryStopId = kvPrefs?.ferryStopId || null;
     if (!stopDetectionSource && (trainStopId || tramStopId)) stopDetectionSource = 'stored';
 
     // Apply user station overrides from admin panel (persistent Redis preferences)
@@ -2014,18 +2017,20 @@ export default async function handler(req, res) {
       if (lineEntry) trainApiOptions.lineCode = lineEntry[0];
     }
 
-    const [trains, trams, buses, weather, metroDisruptions, tramDisruptions, busDisruptions] = await Promise.all([
+    const [trains, trams, buses, ferries, weather, metroDisruptions, tramDisruptions, busDisruptions, ferryDisruptions] = await Promise.all([
       skipLiveData ? Promise.resolve([]) : fetchWithRetry(() => getDepartures(trainStopId, 0, trainApiOptions), 'screen-train'),
       skipLiveData ? Promise.resolve([]) : fetchWithRetry(() => getDepartures(tramStopId, 1, tramApiOptions), 'screen-tram'),
       skipLiveData ? Promise.resolve([]) : fetchWithRetry(() => getDepartures(busStopId, 2, busApiOptions), 'screen-bus'),
+      (skipLiveData || !ferryStopId) ? Promise.resolve([]) : fetchWithRetry(() => getDepartures(ferryStopId, 4, apiOptions), 'screen-ferry'),
       getWeather(locations.home?.lat, locations.home?.lon, STATE_TIMEZONES[userState] || 'Australia/Melbourne'),
       skipLiveData ? Promise.resolve([]) : getDisruptions(0, apiOptions).catch(() => []),
       skipLiveData ? Promise.resolve([]) : getDisruptions(1, apiOptions).catch(() => []),
-      skipLiveData ? Promise.resolve([]) : getDisruptions(2, apiOptions).catch(() => [])
+      skipLiveData ? Promise.resolve([]) : getDisruptions(2, apiOptions).catch(() => []),
+      (skipLiveData || !ferryStopId) ? Promise.resolve([]) : getDisruptions(4, apiOptions).catch(() => [])
     ]);
-    const disruptions = [...metroDisruptions, ...tramDisruptions, ...busDisruptions];
+    const disruptions = [...metroDisruptions, ...tramDisruptions, ...busDisruptions, ...ferryDisruptions];
 
-    const transitData = { trains, trams, buses, disruptions };
+    const transitData = { trains, trams, buses, ferries, disruptions };
 
     // Determine if we actually have live transit data (from GTFS-RT, not fallback)
     // Per Section 23.6: "LIVE" indicators must reflect actual data source

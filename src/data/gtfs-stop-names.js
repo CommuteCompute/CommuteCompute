@@ -302,11 +302,13 @@ export function detectStopIdsFromAddress(address, coords = null, state = 'VIC') 
       const nearestTrain = findNearestStop(state, coords.lat, coords.lon, 'train') || findNearestStop(state, coords.lat, coords.lon, 'metro');
       const nearestTram = findNearestStop(state, coords.lat, coords.lon, 'tram') || findNearestStop(state, coords.lat, coords.lon, 'lightrail');
       const nearestBus = findNearestStop(state, coords.lat, coords.lon, 'bus');
+      const nearestFerry = findNearestStop(state, coords.lat, coords.lon, 'ferry');
       return {
         trainStopId: nearestTrain?.id || null,
         tramStopId: nearestTram?.id || null,
         tramRouteNumber: null,
         busStopId: nearestBus?.id || null,
+        ferryStopId: nearestFerry?.id || null,
         detectedSuburb: null,
         stationName: nearestTrain?.name || nearestTram?.name || null,
         line: null,

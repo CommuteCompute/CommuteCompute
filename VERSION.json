@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.2.0",
+    "version": "5.2.1",
     "name": "Commute Compute System",
     "releaseDate": "2026-03-22",
     "codename": "Turnkey Multi-State"
@@ -86,6 +86,17 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.2.1",
+      "date": "2026-03-22",
+      "changes": [
+        "Fix NSW lightrail mode mapping: mode 1 (tram) now routes to lightrail feed instead of silently falling back to sydneytrains",
+        "Fix QLD mode completeness: modes 1 and 3 mapped to SEQ unified feed (prevents undefined fallback)",
+        "Ferry live data: ferryStopId detection, getDepartures(ferryStopId, 4) call, and ferry disruption fetching for NSW/QLD",
+        "State parameter propagated through route-level and all-trips fallback functions — non-VIC departures use tripHeadsign for destination",
+        "All transit modes that have GTFS-RT feeds now produce live departure data when API key is valid"
+      ]
+    },
     {
       "version": "5.2.0",
       "date": "2026-03-22",
