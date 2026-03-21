@@ -83,6 +83,106 @@ export function getStopNameById(stopId) {
 export const MELBOURNE_STOP_IDS = VIC_SUBURB_STOPS;
 
 /**
+ * State-specific suburb-to-stop mappings for non-VIC capital cities.
+ * Used as fallback when coordinate detection returns null.
+ * Format matches MELBOURNE_STOP_IDS: suburb name (lowercase) → { trainStation, tram/lightrail, bus, stationName }
+ */
+const STATE_SUBURB_STOPS = {
+  NSW: {
+    'sydney': { trainStation: '10101100', busStop: '209310', stationName: 'Central Station' },
+    'circular quay': { trainStation: '10101124', stationName: 'Circular Quay' },
+    'town hall': { trainStation: '10101120', stationName: 'Town Hall' },
+    'wynyard': { trainStation: '10101123', stationName: 'Wynyard' },
+    'martin place': { trainStation: '10101126', stationName: 'Martin Place' },
+    'kings cross': { trainStation: '10101128', stationName: 'Kings Cross' },
+    'redfern': { trainStation: '10101130', stationName: 'Redfern' },
+    'north sydney': { trainStation: '10101132', stationName: 'North Sydney' },
+    'chatswood': { trainStation: '10101210', stationName: 'Chatswood' },
+    'parramatta': { trainStation: '10101320', busStop: '209314', stationName: 'Parramatta' },
+    'strathfield': { trainStation: '10101211', stationName: 'Strathfield' },
+    'bondi junction': { trainStation: '10101610', busStop: '209313', stationName: 'Bondi Junction' },
+    'epping': { trainStation: '10101214', stationName: 'Epping' },
+    'hornsby': { trainStation: '10101216', stationName: 'Hornsby' },
+    'hurstville': { trainStation: '10101612', stationName: 'Hurstville' },
+    'blacktown': { trainStation: '10101324', stationName: 'Blacktown' },
+    'penrith': { trainStation: '10101326', stationName: 'Penrith' },
+    'liverpool': { trainStation: '10101328', stationName: 'Liverpool' },
+    'campbelltown': { trainStation: '10101616', stationName: 'Campbelltown' },
+    'macquarie park': { trainStation: '10101222', stationName: 'Macquarie Park' },
+    'olympic park': { trainStation: '10101322', stationName: 'Olympic Park' },
+    'newcastle': { trainStation: '10102100', stationName: 'Newcastle Interchange' },
+    'wollongong': { trainStation: '10103100', stationName: 'Wollongong' },
+  },
+  QLD: {
+    'brisbane': { trainStation: '600014', busStop: '001040', stationName: 'Central' },
+    'roma street': { trainStation: '600015', stationName: 'Roma Street' },
+    'fortitude valley': { trainStation: '600016', stationName: 'Fortitude Valley' },
+    'south bank': { trainStation: '600030', stationName: 'South Bank' },
+    'south brisbane': { trainStation: '600031', stationName: 'South Brisbane' },
+    'toowong': { trainStation: '600236', stationName: 'Toowong' },
+    'indooroopilly': { trainStation: '600237', stationName: 'Indooroopilly' },
+    'bowen hills': { trainStation: '600012', stationName: 'Bowen Hills' },
+    'milton': { trainStation: '600235', stationName: 'Milton' },
+    'caboolture': { trainStation: '600050', stationName: 'Caboolture' },
+    'helensvale': { trainStation: '600080', stationName: 'Helensvale' },
+    'robina': { trainStation: '600082', stationName: 'Robina' },
+    'gold coast': { trainStation: '600080', stationName: 'Helensvale' },
+    'surfers paradise': { busStop: '001700', stationName: 'Surfers Paradise' },
+  },
+  SA: {
+    'adelaide': { trainStation: '9100001', tram: '9200001', busStop: '9300050', stationName: 'Adelaide' },
+    'glenelg': { trainStation: '9100300', tram: '9200030', stationName: 'Glenelg' },
+    'north adelaide': { trainStation: '9100009', stationName: 'North Adelaide' },
+    'goodwood': { trainStation: '9100010', stationName: 'Goodwood' },
+    'mitcham': { trainStation: '9100013', stationName: 'Mitcham' },
+    'blackwood': { trainStation: '9100014', stationName: 'Blackwood' },
+    'gawler': { trainStation: '9100020', stationName: 'Gawler Central' },
+    'seaford': { trainStation: '9100021', stationName: 'Seaford' },
+    'noarlunga': { trainStation: '9100022', stationName: 'Noarlunga Centre' },
+    'elizabeth': { trainStation: '9100023', stationName: 'Elizabeth' },
+    'salisbury': { trainStation: '9100024', stationName: 'Salisbury' },
+  },
+  WA: {
+    'perth': { trainStation: '99T2001', busStop: '10001', stationName: 'Perth Station' },
+    'fremantle': { trainStation: '99T2140', busStop: '10051', stationName: 'Fremantle' },
+    'joondalup': { trainStation: '99T2072', busStop: '10052', stationName: 'Joondalup' },
+    'subiaco': { trainStation: '99T2010', stationName: 'Subiaco' },
+    'leederville': { trainStation: '99T2011', stationName: 'Leederville' },
+    'stirling': { trainStation: '99T2012', stationName: 'Stirling' },
+    'midland': { trainStation: '99T2021', stationName: 'Midland' },
+    'armadale': { trainStation: '99T2031', stationName: 'Armadale' },
+    'mandurah': { trainStation: '99T2034', stationName: 'Mandurah' },
+    'rockingham': { trainStation: '99T2035', stationName: 'Rockingham' },
+    'cockburn': { trainStation: '99T2032', stationName: 'Cockburn Central' },
+  },
+  TAS: {
+    'hobart': { busStop: '20001', stationName: 'Hobart CBD' },
+    'sandy bay': { busStop: '20004', stationName: 'Sandy Bay' },
+    'glenorchy': { busStop: '20005', stationName: 'Glenorchy' },
+    'kingston': { busStop: '20007', stationName: 'Kingston' },
+    'launceston': { busStop: '21001', stationName: 'Launceston CBD' },
+    'burnie': { busStop: '22001', stationName: 'Burnie CBD' },
+    'devonport': { busStop: '23001', stationName: 'Devonport' },
+  },
+  ACT: {
+    'canberra': { lightrail: '3000001', busStop: '3100001', stationName: 'Alinga Street' },
+    'civic': { lightrail: '3000001', busStop: '3100002', stationName: 'Civic' },
+    'gungahlin': { lightrail: '3000015', busStop: '3100055', stationName: 'Gungahlin Place' },
+    'woden': { lightrail: '3000021', busStop: '3100050', stationName: 'Woden' },
+    'belconnen': { busStop: '3100051', stationName: 'Belconnen' },
+    'tuggeranong': { busStop: '3100052', stationName: 'Tuggeranong' },
+    'dickson': { lightrail: '3000008', busStop: '3100053', stationName: 'Dickson' },
+    'barton': { busStop: '3100056', stationName: 'Barton' },
+  },
+  NT: {
+    'darwin': { busStop: '4000001', stationName: 'Darwin City' },
+    'casuarina': { busStop: '4000004', stationName: 'Casuarina' },
+    'palmerston': { busStop: '4000005', stationName: 'Palmerston' },
+    'alice springs': { busStop: '4100001', stationName: 'Alice Springs' },
+  }
+};
+
+/**
  * Find nearest stops by coordinates from GTFS reference data
  * Searches VIC_METRO_STATIONS (with coords), VIC_TRAM_STOPS_WITH_COORDS,
  * and VIC_BUS_STOPS_WITH_COORDS for the closest stop of each mode.
@@ -195,21 +295,48 @@ export function findNearestStopsMultiple(lat, lon, options = {}) {
  * @returns {Object} Stop IDs and detected suburb info
  */
 export function detectStopIdsFromAddress(address, coords = null, state = 'VIC') {
-  // Non-VIC states: use fallback-timetables.js for coordinate-based detection
-  if (state !== 'VIC' && coords?.lat && coords?.lon) {
-    const nearestTrain = findNearestStop(state, coords.lat, coords.lon, 'train');
-    const nearestTram = findNearestStop(state, coords.lat, coords.lon, 'tram');
-    const nearestBus = findNearestStop(state, coords.lat, coords.lon, 'bus');
-    return {
-      trainStopId: nearestTrain?.id || null,
-      tramStopId: nearestTram?.id || null,
-      tramRouteNumber: null,
-      busStopId: nearestBus?.id || null,
-      detectedSuburb: null,
-      stationName: nearestTrain?.name || null,
-      line: null,
-      source: 'coordinates-fallback'
-    };
+  // Non-VIC states: coordinate-based detection from fallback data, then suburb name matching
+  if (state !== 'VIC') {
+    // Try coordinates first (preferred — more accurate)
+    if (coords?.lat && coords?.lon) {
+      const nearestTrain = findNearestStop(state, coords.lat, coords.lon, 'train') || findNearestStop(state, coords.lat, coords.lon, 'metro');
+      const nearestTram = findNearestStop(state, coords.lat, coords.lon, 'tram') || findNearestStop(state, coords.lat, coords.lon, 'lightrail');
+      const nearestBus = findNearestStop(state, coords.lat, coords.lon, 'bus');
+      return {
+        trainStopId: nearestTrain?.id || null,
+        tramStopId: nearestTram?.id || null,
+        tramRouteNumber: null,
+        busStopId: nearestBus?.id || null,
+        detectedSuburb: null,
+        stationName: nearestTrain?.name || nearestTram?.name || null,
+        line: null,
+        source: 'coordinates-fallback'
+      };
+    }
+
+    // Suburb name matching for non-VIC states
+    const stateSuburbs = STATE_SUBURB_STOPS[state];
+    if (stateSuburbs && address) {
+      const addrLower = address.toLowerCase();
+      const suburbKeys = Object.keys(stateSuburbs).sort((a, b) => b.length - a.length);
+      for (const suburb of suburbKeys) {
+        if (addrLower.includes(suburb)) {
+          const ids = stateSuburbs[suburb];
+          return {
+            trainStopId: ids.trainStation || null,
+            tramStopId: ids.tram || ids.lightrail || null,
+            tramRouteNumber: null,
+            busStopId: ids.busStop || null,
+            detectedSuburb: suburb,
+            stationName: ids.stationName || null,
+            line: null,
+            source: 'suburb-state'
+          };
+        }
+      }
+    }
+
+    return { trainStopId: null, tramStopId: null, tramRouteNumber: null, busStopId: null, detectedSuburb: null, stationName: null, line: null, source: null };
   }
 
   // VIC PRIMARY: coordinate-based detection from full GTFS reference data

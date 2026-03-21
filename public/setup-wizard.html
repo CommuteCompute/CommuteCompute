@@ -987,10 +987,10 @@
 
     function loadFooterVersions() {
         fetch('/api/version').then(function(r){return r.json();}).then(function(v) {
-            document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v4.0';
+            document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v4.1';
             document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v3.1';
             document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.1.1');
+            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.2.0');
             if (v.repoUrls) checkForUpstreamUpdates(v.system?.version, v.repoUrls);
         }).catch(function(){});
     }

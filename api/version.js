@@ -26,10 +26,10 @@ export default async function handler(req, res) {
     : '2026-01-31';
 
   res.json({
-    version: 'v5.1.1',
+    version: 'v5.2.0',
     date: buildDate,
     system: {
-      version: '5.1.1',
+      version: '5.2.0',
       name: 'Commute Compute System',
       copyright: '© 2026 Angus Bergman',
       license: 'AGPL-3.0'
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
     components: {
       // CommuteCompute journey calculation engine (V4.0)
       commutecompute: {
-        version: 'v4.0',
+        version: 'v4.1',
         name: 'CommuteCompute Engine',
         description: 'GTFS coordinate-based stop detection (226 metro + 1637 tram + 4151 bus stops), runtime line verification for alighting stops, no hardcoded station fallbacks, shared haversine utility, real-time multi-modal journey planning with Metro Tunnel citybound detection, direction-based train filtering, route-aware transit filtering, transit-to-walk conversion, suburb extraction, strictly live GTFS-RT, Departure Confidence, Sleep Optimizer, Alt Transit, Lifestyle Context, Mindset analysis',
         metroTunnelCompliant: true,
