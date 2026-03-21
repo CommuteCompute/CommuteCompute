@@ -59,7 +59,8 @@ const scenarios = {
         title: 'Coffee Stop',
         subtitle: '[OK] TIME FOR COFFEE',
         duration: 5,
-        status: StepStatus.NORMAL
+        status: StepStatus.NORMAL,
+        canGet: true
       },
       {
         type: StepType.WALK,
@@ -115,6 +116,7 @@ const scenarios = {
         subtitle: '[X] SKIP -- Running late',
         duration: null,
         status: StepStatus.SKIPPED,
+        canGet: false,
         skipReason: 'Running late'
       },
       {
@@ -222,6 +224,8 @@ const scenarios = {
         subtitle: '[OK] EXTRA TIME -- Disruption',
         duration: 10,
         status: StepStatus.EXTENDED,
+        canGet: true,
+        extraTime: true,
         extendReason: 'Disruption'
       },
       {
@@ -285,7 +289,8 @@ const scenarios = {
         title: 'Tram 70 Diverted',
         subtitle: 'Next: 8, 16 min • Wallen Rd',
         duration: 8,
-        status: StepStatus.DIVERTED
+        status: StepStatus.DIVERTED,
+        divertedStop: 'Wallen Rd'
       },
       {
         type: StepType.WALK,
@@ -405,7 +410,8 @@ const scenarios = {
         title: 'Coffee at High St Cafe',
         subtitle: '[OK] FRIDAY TREAT',
         duration: 15,
-        status: StepStatus.NORMAL
+        status: StepStatus.NORMAL,
+        canGet: true
       }
     ]
   },

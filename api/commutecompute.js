@@ -1628,7 +1628,19 @@ async function handleDemoMode(req, res, scenarioName) {
         title: step.title || 'Continue',
         subtitle: step.subtitle || '',
         minutes: step.duration || 5,
-        state: step.status?.toLowerCase() || 'normal'
+        state: step.status?.toLowerCase() || 'normal',
+        // Delay/diversion/coffee fields — required for correct rendering of demo scenarios
+        delayMinutes: step.delayMinutes || null,
+        reason: step.cancelReason || step.reason || null,
+        cancelReason: step.cancelReason || null,
+        canGet: step.canGet,
+        extraTime: step.extraTime || (step.extendReason ? true : false),
+        departTime: step.departTime || null,
+        busyness: step.busyness || null,
+        divertedStop: step.divertedStop || null,
+        skippedForTiming: step.status === 'SKIPPED' || step.skippedForTiming || false,
+        skipReason: step.skipReason || null,
+        expressBadge: step.expressBadge || false,
       })),
       destination: scenario.destination || 'WORK'
     };

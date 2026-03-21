@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.1.0",
+    "version": "5.1.1",
     "name": "Commute Compute System",
     "releaseDate": "2026-03-21",
     "codename": "State-Aware Live Data"
@@ -14,12 +14,12 @@
       "lastUpdated": "2026-03-02"
     },
     "renderer": {
-      "version": "3.0",
+      "version": "3.1",
       "name": "CCDash Renderer",
       "spec": "CCDashDesignV16.0",
-      "description": "V16.0 spec-compliant rendering with transit countdown fix (trusts leg.minutes, 180-min sanity cap), cafe closed case-insensitive matching, confidence context line rendering, subtitle overflow protection, lifestyle obligation styling, transit-to-walk display, suburb locations, unified cafe closed/skipped rendering, confidence labels, sleep mode, mindset status, lifestyle context display",
+      "description": "V16.0 spec-compliant rendering with transit countdown fix (trusts leg.minutes, 180-min sanity cap), cafe closed case-insensitive matching, confidence context line rendering, subtitle overflow protection, lifestyle obligation styling, transit-to-walk display, suburb locations, unified cafe closed/skipped rendering, confidence labels, sleep mode, mindset status, lifestyle context display, robust coffee skip detection, coffee time box rendering, diversion status bar",
       "locked": false,
-      "lastUpdated": "2026-03-02"
+      "lastUpdated": "2026-03-21"
     },
     "adminPanel": {
       "version": "6.0.0",
@@ -86,6 +86,15 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.1.1",
+      "date": "2026-03-21",
+      "changes": [
+        "CCDash Renderer v3.1: robust coffee skip detection (status + canGet), coffee time box rendering enabled, skipped coffee shows ~X MIN duration, diversion status bar with delay badge",
+        "Demo mode leg mapping: forwards delayMinutes, canGet, extraTime, departTime, divertedStop, cancelReason to renderer",
+        "Journey scenarios enriched with canGet, divertedStop fields for correct demo rendering"
+      ]
+    },
     {
       "version": "5.1.0",
       "date": "2026-03-21",

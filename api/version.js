@@ -26,10 +26,10 @@ export default async function handler(req, res) {
     : '2026-01-31';
 
   res.json({
-    version: 'v5.1.0',
+    version: 'v5.1.1',
     date: buildDate,
     system: {
-      version: '5.1.0',
+      version: '5.1.1',
       name: 'Commute Compute System',
       copyright: '© 2026 Angus Bergman',
       license: 'AGPL-3.0'
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
       },
       // CCDash renderer (implements CCDashDesignV16.0 spec)
       renderer: {
-        version: 'v3.0',
+        version: 'v3.1',
         name: 'CCDash Renderer',
         spec: 'CCDashDesignV16.0',
         specLocked: false,
