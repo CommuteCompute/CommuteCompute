@@ -20,7 +20,7 @@
 Before ANY testing, read and understand:
 
 - [ ] `DEVELOPMENT-RULES.md` v1.22 — All applicable sections
-- [ ] `specs/CCDashDesignV15.md` — Dashboard specification V15.0 (LOCKED)
+- [ ] `specs/CCDashDesignV16.md` — Dashboard specification V15.0 (LOCKED)
 - [ ] This checklist — Follow exactly, no improvisation
 
 ### Architecture Overview
@@ -185,7 +185,7 @@ Before ANY testing, read and understand:
 
 **Navigate to**: `/admin.html` → Dashboard tab
 
-**Header Display** (per CCDashDesignV15.0):
+**Header Display** (per CCDashDesignV16.0):
 - [ ] Location name (home address, truncated)
 - [ ] Current time (12-hour format, e.g., "7:24")
 - [ ] AM/PM indicator (separate element)
@@ -227,7 +227,7 @@ Before ANY testing, read and understand:
 **Preview Display**:
 - [ ] Renders at selected device resolution
 - [ ] 1-bit black/white only (no greyscale)
-- [ ] Matches CCDashDesignV15.0 spec exactly
+- [ ] Matches CCDashDesignV16.0 spec exactly
 - [ ] Updates on data change
 
 **Scenario Testing**:
@@ -377,7 +377,7 @@ curl "https://your-project.vercel.app/api/screen?token=BASE64_CONFIG_TOKEN"
 **Verification**:
 - [ ] Only changed zones returned
 - [ ] BMP format: 1-bit, bottom-up
-- [ ] Zone dimensions match CCDashDesignV15.0 spec
+- [ ] Zone dimensions match CCDashDesignV16.0 spec
 - [ ] Hash-based change detection working
 
 ---
