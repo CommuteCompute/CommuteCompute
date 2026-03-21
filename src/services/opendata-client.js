@@ -362,7 +362,7 @@ export async function getDepartures(stopId, routeType, options = {}) {
     }
 
     // Process GTFS-RT TripUpdates - try stop-level match first
-    const departures = processGtfsRtDepartures(feed, stopId, routeType);
+    const departures = processGtfsRtDepartures(feed, stopId, routeType, state);
 
     // V15.0: Attach diagnostic info for debugging GTFS-RT feed coverage
     const feedEntityCount = feed.entity?.length || 0;
@@ -789,7 +789,7 @@ function processAnyRouteDepartures(feed) {
  * @param {number} routeType - 0=metro, 1=tram, 2=bus (for flexible matching)
  * @returns {Array} - Departure objects
  */
-function processGtfsRtDepartures(feed, stopId, routeType = 0) {
+function processGtfsRtDepartures(feed, stopId, routeType = 0, state = 'VIC') {
   const nowMs = getNowMs();
   const departures = [];
   const stopIdStr = String(stopId);
@@ -838,18 +838,20 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0) {
         const delay = stu.departure?.delay || stu.arrival?.delay || 0;
         const isDelayed = delay > 60; // More than 1 minute delay
 
-        // Determine destination and direction — handles both City Loop and Metro Tunnel
+        // Determine destination and direction
         const stops = tripUpdate.stopTimeUpdate;
         const finalStop = stops[stops.length - 1]?.stopId || '';
         const userStopIndex = stops.findIndex(s => matchesStopId(s.stopId, stopIdStr));
-        const isCitybound = isTrainCitybound(stops, userStopIndex);
         const routeId = tripUpdate.trip?.routeId;
         const lineName = getLineName(routeId);
-        const destination = isCitybound ? 'City' : lineName;
 
-        // Detect Metro Tunnel vs City Loop line from route ID
+        // VIC-specific: City Loop and Metro Tunnel direction detection
+        // Non-VIC: skip direction detection (not applicable outside Melbourne)
+        const isVIC = (state === 'VIC');
+        const isCitybound = isVIC ? isTrainCitybound(stops, userStopIndex) : false;
+        const destination = isCitybound ? 'City' : (tripUpdate.trip?.tripHeadsign || lineName);
         const lineCode = routeId?.match(/-([A-Z]{3}):?$/)?.[1] || '';
-        const isMetroTunnel = METRO_TUNNEL_LINE_CODES.has(lineCode);
+        const isMetroTunnel = isVIC ? METRO_TUNNEL_LINE_CODES.has(lineCode) : false;
 
         departures.push({
           minutes,
@@ -947,9 +949,10 @@ export async function getDisruptions(routeType, options = {}) {
  * @param {number} lon - Longitude (default Melbourne)
  * @returns {Object} - Weather object with temp, condition, umbrella
  */
-export async function getWeather(lat = MELBOURNE_LAT, lon = MELBOURNE_LON) {
+export async function getWeather(lat = MELBOURNE_LAT, lon = MELBOURNE_LON, timezone = 'Australia/Melbourne') {
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,precipitation,relative_humidity_2m,wind_speed_10m,uv_index&hourly=weather_code,precipitation,temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,uv_index&forecast_days=1&timezone=Australia%2FMelbourne`;
+    const tz = encodeURIComponent(timezone);
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,precipitation,relative_humidity_2m,wind_speed_10m,uv_index&hourly=weather_code,precipitation,temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,uv_index&forecast_days=1&timezone=${tz}`;
     const weatherController = new AbortController();
     const weatherTimeoutId = setTimeout(() => weatherController.abort(), 8000);
     const res = await fetch(url, { signal: weatherController.signal });

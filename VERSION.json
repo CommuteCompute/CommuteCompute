@@ -1,17 +1,17 @@
 {
   "system": {
-    "version": "5.1.1",
+    "version": "5.2.0",
     "name": "Commute Compute System",
-    "releaseDate": "2026-03-21",
-    "codename": "State-Aware Live Data"
+    "releaseDate": "2026-03-22",
+    "codename": "Turnkey Multi-State"
   },
   "components": {
     "commutecompute": {
-      "version": "4.0",
+      "version": "4.1",
       "name": "CommuteCompute Engine",
-      "description": "GTFS coordinate-based stop detection (226 metro + 1637 tram + 4151 bus stops), runtime line verification for alighting stops, no hardcoded station fallbacks, shared haversine utility, real-time multi-modal journey planning with Metro Tunnel citybound detection, direction-based train filtering, route-aware transit filtering, transit-to-walk conversion, suburb extraction, strictly live GTFS-RT, Departure Confidence, Sleep Optimizer, Alt Transit, Lifestyle Context, Mindset analysis",
+      "description": "Multi-state GTFS-RT support (VIC/NSW/QLD live, SA/WA/TAS/NT/ACT timetable fallback), coordinate-based stop detection (226 VIC metro + 1637 tram + 4151 bus + expanded fallback stops for all states), state-aware suburb-to-stop mappings for all capital cities, graceful no-GTFS-RT degradation, runtime line verification, Metro Tunnel citybound detection (VIC), direction-based train filtering, route-aware transit filtering, Departure Confidence, Sleep Optimizer, Alt Transit, Lifestyle Context, Mindset analysis",
       "locked": false,
-      "lastUpdated": "2026-03-02"
+      "lastUpdated": "2026-03-22"
     },
     "renderer": {
       "version": "3.1",
@@ -86,6 +86,21 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.2.0",
+      "date": "2026-03-22",
+      "changes": [
+        "TURNKEY MULTI-STATE: CommuteCompute Engine v4.1 — state-independent live data for all Australian states",
+        "NSW and QLD GTFS-RT live data wired via existing STATE_API_CONFIG endpoints (Transport for NSW, TransLink SEQ)",
+        "SA/WA/TAS/NT/ACT graceful degradation — returns empty with diagnostics instead of throwing error",
+        "Expanded fallback stop data: ~200 new stops across Sydney, Brisbane, Adelaide, Perth, Hobart, Canberra, Darwin",
+        "Suburb-to-stop mappings for all 7 non-VIC capital cities (Sydney 23 suburbs, Brisbane 14, Adelaide 11, Perth 11, etc.)",
+        "processGtfsRtDepartures() guarded for non-VIC: Metro Tunnel and City Loop direction detection skipped outside Melbourne",
+        "getWeather() timezone parameterised — uses state-specific timezone instead of hardcoded Melbourne",
+        "getServiceAlerts() state-aware — fetches disruptions for all GTFS-RT-capable states, not just VIC",
+        "Generate script template (generate-state-reference.js) for future full GTFS reference data per state"
+      ]
+    },
     {
       "version": "5.1.1",
       "date": "2026-03-21",

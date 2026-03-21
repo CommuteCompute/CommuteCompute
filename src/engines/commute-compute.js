@@ -561,7 +561,7 @@ export class CommuteCompute {
     
     if (!this.fallbackMode) {
       // Per Dev Rules Section 3: Zero-Config - pass API key to opendata-client module
-      if (this.state === 'VIC' && this.apiKeys.transitKey) {
+      if (this.apiKeys.transitKey) {
         transitApi.setApiKey(this.apiKeys.transitKey);
       }
     }
@@ -912,67 +912,71 @@ export class CommuteCompute {
    * Fetch live transit data from state API
    */
   async fetchLiveTransitData() {
-    // State-specific API calls
-    // v1.42: VIC fully implemented via Transport Victoria OpenData GTFS-RT
-    // Other states: pending integration (fallback to scheduled timetables)
-    // See: DEVELOPMENT-RULES.md Section 11.1 for API requirements
-    if (this.state === 'VIC') {
-      // Use Transport Victoria OpenData API client
-      try {
-        // Get stop IDs from preferences, or auto-detect based on journey destination
-        // GTFS-RT uses direction-specific stop IDs (different platforms = different IDs)
-        // 
-        // Per DEVELOPMENT-RULES.md Section 17.4: No hardcoded personal data
-        // Stop IDs should come from user preferences or be auto-detected
-        //
-        // Melbourne City Loop detection:
-        // - If work is in CBD (lat ~-37.81, lon ~144.96), use citybound stops
-        // - Otherwise use outbound stops
-        const trainStopId = this.preferences.trainStopId || this.detectTrainStopId();
-        const tramStopId = this.preferences.tramStopId || this.detectTramStopId();
-        
-        // Per DEVELOPMENT-RULES.md Section 17.4: No hardcoded stops
-        // If stop IDs not configured, log warning and use fallback data
-        if (!trainStopId && !tramStopId) {
-          throw new Error('Stop IDs not configured - please configure via Setup Wizard');
-        }
-        
-        // Pass API key directly to each call (Zero-Config: no env vars)
-        const apiOptions = { apiKey: this.apiKeys.transitKey };
-        
-        const [trains, trams, buses] = await Promise.all([
-          trainStopId ? transitApi.getDepartures(trainStopId, 0, apiOptions) : Promise.resolve([]),
-          tramStopId ? transitApi.getDepartures(tramStopId, 1, apiOptions) : Promise.resolve([]),
-          Promise.resolve([])  // 2 = bus (skip for now)
-        ]);
-        
+    // State-aware live data fetching — uses STATE_API_CONFIG from opendata-client
+    // VIC: Transport Victoria OpenData GTFS-RT
+    // NSW: Transport for NSW GTFS-RT
+    // QLD: TransLink SEQ GTFS-RT
+    // SA/WA/TAS/NT/ACT: No GTFS-RT available — graceful degradation
+    const stateConfig = this.stateConfig || STATE_CONFIG[this.state] || STATE_CONFIG.VIC;
+
+    if (!stateConfig.gtfsRealtimeBase) {
+      // States without GTFS-RT — return empty with diagnostics (no error)
+      return {
+        trains: [], trams: [], buses: [],
+        source: 'no-gtfs-rt', state: this.state,
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    try {
+      const trainStopId = this.preferences.trainStopId || this.detectTrainStopId();
+      const tramStopId = this.preferences.tramStopId || this.detectTramStopId();
+      const busStopId = this.preferences.busStopId || null;
+
+      if (!trainStopId && !tramStopId && !busStopId) {
         return {
-          trains: trains.map(t => ({
-            ...t,
-            isScheduled: !t.isLive,
-            delayMinutes: t.delay || t.delayMinutes || 0,
-            source: t.isLive ? 'live' : 'scheduled'
-          })),
-          trams: trams.map(t => ({
-            ...t,
-            isScheduled: !t.isLive,
-            source: t.isLive ? 'live' : 'scheduled'
-          })),
-          buses: buses.map(b => ({
-            ...b,
-            isScheduled: !b.isLive,
-            source: b.isLive ? 'live' : 'scheduled'
-          })),
-          source: 'opendata',
+          trains: [], trams: [], buses: [],
+          source: 'no-stops', state: this.state,
           timestamp: new Date().toISOString()
         };
-      } catch (error) {
-        throw error; // Let caller handle fallback
       }
+
+      // State-aware API options — state routes to correct API endpoint and auth headers
+      const apiOptions = { apiKey: this.apiKeys.transitKey, state: this.state };
+      const modes = stateConfig.modes || {};
+
+      // Determine mode IDs per state — tram may be 'lightrail' in some states
+      const trainMode = modes.train ?? modes.metro;
+      const tramMode = modes.tram ?? modes.lightrail;
+      const busMode = modes.bus;
+
+      const [trains, trams, buses] = await Promise.all([
+        trainStopId && trainMode !== undefined
+          ? transitApi.getDepartures(trainStopId, trainMode, apiOptions) : Promise.resolve([]),
+        tramStopId && tramMode !== undefined
+          ? transitApi.getDepartures(tramStopId, tramMode, apiOptions) : Promise.resolve([]),
+        busStopId && busMode !== undefined
+          ? transitApi.getDepartures(busStopId, busMode, apiOptions) : Promise.resolve([]),
+      ]);
+
+      const mapDep = (t) => ({
+        ...t,
+        isScheduled: !t.isLive,
+        delayMinutes: t.delay || t.delayMinutes || 0,
+        source: t.isLive ? 'live' : 'scheduled'
+      });
+
+      return {
+        trains: (trains || []).map(mapDep),
+        trams: (trams || []).map(mapDep),
+        buses: (buses || []).map(mapDep),
+        source: 'opendata',
+        state: this.state,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      throw error; // Let caller handle fallback
     }
-    
-    // Other states - not yet implemented
-    throw new Error('Live API not implemented for ' + this.state);
   }
 
   /**
@@ -985,39 +989,39 @@ export class CommuteCompute {
       return '';
     }
     
-    // v1.42: Fetch service alerts from Transport Victoria OpenData API
-    if (this.state === 'VIC') {
-      try {
-        const apiOptions = { apiKey: this.apiKeys.transitKey };
-        
-        // Fetch alerts for all modes (metro, tram)
-        const [metroAlerts, tramAlerts] = await Promise.all([
-          transitApi.getDisruptions(0, apiOptions).catch(() => []),
-          transitApi.getDisruptions(1, apiOptions).catch(() => [])
-        ]);
-        
-        const allAlerts = [...metroAlerts, ...tramAlerts];
-        
-        if (allAlerts.length === 0) {
-          return '';
-        }
-        
-        // Concatenate alert titles for CoffeeDecision.isDisrupted() check
-        // CoffeeDecision looks for: 'Major Delays', 'Suspended', 'Buses replace', 'Cancellation'
-        const alertText = allAlerts
-          .map(a => a.title || '')
-          .filter(t => t.length > 0)
-          .join('; ');
-        
-        return alertText;
-        
-      } catch (error) {
+    // Fetch service alerts from state GTFS-RT API (VIC, NSW, QLD)
+    const stateConfig = this.stateConfig || STATE_CONFIG[this.state];
+    if (!stateConfig?.gtfsRealtimeBase) {
+      // States without GTFS-RT — no live alerts available
+      return '';
+    }
+
+    try {
+      const apiOptions = { apiKey: this.apiKeys.transitKey, state: this.state };
+      const modes = stateConfig.modes || {};
+
+      // Fetch alerts for all available modes in this state
+      const modeIds = [...new Set(Object.values(modes))];
+      const alertPromises = modeIds.map(modeId =>
+        transitApi.getDisruptions(modeId, apiOptions).catch(() => [])
+      );
+      const alertArrays = await Promise.all(alertPromises);
+      const allAlerts = alertArrays.flat();
+
+      if (allAlerts.length === 0) {
         return '';
       }
+
+      // Concatenate alert titles for CoffeeDecision.isDisrupted() check
+      const alertText = allAlerts
+        .map(a => a.title || '')
+        .filter(t => t.length > 0)
+        .join('; ');
+
+      return alertText;
+    } catch (error) {
+      return '';
     }
-    
-    // Other states - not yet implemented
-    return '';
   }
 
   /**

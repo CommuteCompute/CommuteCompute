@@ -135,9 +135,9 @@ The pipeline runs entirely serverless on Vercel. The device fetches a pre-render
 
 All five engines operate under the CommuteCompute&#8482; umbrella. They share data, influence each other, and produce a unified commute intelligence model.
 
-### 1. CommuteCompute&#8482; Engine (v4.0)
+### 1. CommuteCompute&#8482; Engine (v4.1)
 
-Core journey orchestration with GTFS coordinate-based stop detection (226 metro + 1637 tram + 4151 bus stops), runtime line verification for alighting stops, real-time multi-modal planning, and Melbourne Metro Tunnel compliance.
+Multi-state GTFS-RT support (VIC/NSW/QLD live data, SA/WA/TAS/NT/ACT timetable fallback). Core journey orchestration with coordinate-based stop detection across all Australian capital cities, runtime line verification, real-time multi-modal planning, and Melbourne Metro Tunnel compliance.
 
 | | |
 |---|---|
@@ -660,9 +660,9 @@ See [LEGAL.md](LEGAL.md) for complete trade mark and intellectual property detai
 </p>
 
 <p align="center">
-  <strong>Commute Compute&#8482; System v5.1.1</strong><br>
-  V16.0 Complete Journey Intelligence<br>
-  CommuteCompute&#8482; Engine v4.0 | CCDash&#8482; Renderer v3.1 | CC LiveDash&#8482; v3.1 | Admin Panel v6.0 | CCFirm&#8482; v8.1.0<br>
+  <strong>Commute Compute&#8482; System v5.2.0</strong><br>
+  V16.0 Turnkey Multi-State<br>
+  CommuteCompute&#8482; Engine v4.1 | CCDash&#8482; Renderer v3.1 | CC LiveDash&#8482; v3.1 | Admin Panel v6.0 | CCFirm&#8482; v8.1.0<br>
   <br>
   Copyright (c) 2026 Angus Bergman. All rights reserved.<br>
   <em>Built in Melbourne, Australia.</em>

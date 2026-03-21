@@ -2018,7 +2018,7 @@ export default async function handler(req, res) {
       skipLiveData ? Promise.resolve([]) : fetchWithRetry(() => getDepartures(trainStopId, 0, trainApiOptions), 'screen-train'),
       skipLiveData ? Promise.resolve([]) : fetchWithRetry(() => getDepartures(tramStopId, 1, tramApiOptions), 'screen-tram'),
       skipLiveData ? Promise.resolve([]) : fetchWithRetry(() => getDepartures(busStopId, 2, busApiOptions), 'screen-bus'),
-      getWeather(locations.home?.lat, locations.home?.lon),
+      getWeather(locations.home?.lat, locations.home?.lon, STATE_TIMEZONES[userState] || 'Australia/Melbourne'),
       skipLiveData ? Promise.resolve([]) : getDisruptions(0, apiOptions).catch(() => []),
       skipLiveData ? Promise.resolve([]) : getDisruptions(1, apiOptions).catch(() => []),
       skipLiveData ? Promise.resolve([]) : getDisruptions(2, apiOptions).catch(() => [])
