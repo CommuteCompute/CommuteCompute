@@ -38,7 +38,7 @@
 
 ## Overview
 
-Commute Compute™ is a self-hosted commuter intelligence system for e-ink displays. You tell it where you live, where you work, and when you need to arrive. Every 60 seconds it pulls live transit, weather, and places data, runs it through five intelligence engines, and renders a single-glance dashboard image to your display. No phone needed — everything you need for your morning commute is visible from across the room.
+Commute Compute™ is a self-hosted commuter intelligence system for e-ink displays. You tell it where you live, where you work, and when you need to arrive. Every 60 seconds it pulls live transit, weather, and places data, runs it through its intelligence engines, and renders a single-glance dashboard image to your display. No phone needed — everything you need for your morning commute is visible from across the room.
 
 The CCDash™ dashboard includes live departure countdowns, walking time to your stop, weather preparation (umbrella, jacket, sunscreen), coffee feasibility at nearby cafes, commute confidence scoring, sleep optimisation for next-day readiness, and alternative transport costs when services are disrupted. All rendered as a 1-bit 800×480 image designed for e-ink.
 
@@ -552,8 +552,8 @@ The TRMNL Display (OG) is the primary supported device and provides the best exp
 
 | Metric | Value |
 |:-------|:------|
-| Source Files | 271 |
-| Lines of Code | 112,000+ |
+| Source Files | 460 |
+| Lines of Code | 472,000+ |
 | Intelligence Engines | 5 |
 | Development Rules Sections | 24 |
 | Automated Compliance Checks | 360+ |

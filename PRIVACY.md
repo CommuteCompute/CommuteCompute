@@ -5,8 +5,8 @@
 # Commute Compute™ — Privacy Policy & Data Collection Disclosure
 
 **Effective Date:** 15 February 2026
-**Last Updated:** 16 February 2026
-**System Version:** v5.0.0
+**Last Updated:** 21 March 2026
+**System Version:** v5.0.1
 
 ---
 

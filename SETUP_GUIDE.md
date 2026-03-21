@@ -188,7 +188,7 @@ This key is essential for live real-time departure countdowns -- the core featur
 
 Before proceeding to flash your device, verify your dashboard is working by visiting your Vercel deployment URL in a browser:
 
-1. Open: `https://your-project-name.vercel.app/api/screen`
+1. Open: `https://your-project-name.vercel.app/api/commutecompute`
 2. You should see a rendered dashboard image (even without live departure data, the layout should be visible)
 3. If you see an error or blank page, check that Redis is connected (`/api/kv-status` shows `"connected": true`) and that your addresses were saved correctly in the Setup Wizard
 
@@ -249,7 +249,7 @@ pio run -e trmnl -t upload --upload-port /dev/cu.usbmodem*
 6. Click **Submit** -- the Setup Wizard automatically sends your WiFi credentials **and** your server URL (webhook endpoint) to the device via BLE
 7. Device connects to WiFi and immediately begins fetching your dashboard
 
-The Setup Wizard derives your server URL automatically from its own address (e.g., `https://your-project-name.vercel.app/api/screen`). No manual server URL configuration is required.
+The Setup Wizard derives your server URL automatically from its own address (e.g., `https://your-project-name.vercel.app/api/commutecompute`). No manual server URL configuration is required.
 
 [TIP] If WiFi scanning does not show your network, ensure your router's 2.4 GHz band is enabled. Some dual-band routers disable 2.4 GHz when 5 GHz is active.
 
@@ -284,7 +284,7 @@ See [firmware/kindle/README.md](firmware/kindle/README.md) for Kindle-specific s
 
 ### Check Dashboard Preview
 
-Open: `https://your-project-name.vercel.app/api/screen`
+Open: `https://your-project-name.vercel.app/api/commutecompute`
 
 You should see your personalised dashboard image.
 
@@ -302,7 +302,7 @@ Your TRMNL display should show:
 
 Once configured, your TRMNL display periodically fetches a dashboard image from your personal Commute Compute™ server deployment.
 
-**Endpoint:** Your device connects to `/api/screen` on your Vercel deployment (e.g., `https://your-project.vercel.app/api/screen`). This URL was automatically configured during BLE setup.
+**Endpoint:** Your device connects to `/api/commutecompute` on your Vercel deployment (e.g., `https://your-project.vercel.app/api/commutecompute`). This URL was automatically configured during BLE setup.
 
 **What the dashboard contains:**
 - Live departure times for your configured transit stops
@@ -314,7 +314,7 @@ Once configured, your TRMNL display periodically fetches a dashboard image from 
 
 **Privacy:** The dashboard image is generated server-side from your Redis-stored preferences. Your device does not send personal data to the server — it only receives the rendered image. Your WiFi credentials never leave the device.
 
-**Security:** Treat your deployment URL as a sensitive credential. Anyone with access to your `/api/screen` URL can view your dashboard image. Use a custom domain or keep your Vercel subdomain private.
+**Security:** Treat your deployment URL as a sensitive credential. Anyone with access to your `/api/commutecompute` URL can view your dashboard image. Use a custom domain or keep your Vercel subdomain private.
 
 ---
 

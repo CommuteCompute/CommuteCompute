@@ -4,8 +4,8 @@
 
 # Commute Compute System™ — Legal & Intellectual Property
 
-**Document Version:** 1.7
-**Last Updated:** 2026-02-27
+**Document Version:** 1.8
+**Last Updated:** 2026-03-21
 **Owner:** Angus Bergman
 
 ---
@@ -20,12 +20,12 @@ All intellectual property rights in the Commute Compute System, including but no
 
 ### Filed Trade Mark Applications (IP Australia)
 
-The following trade mark applications have been filed with IP Australia and are at **Accepted — Awaiting Publication (accepted 6 March 2026)** status. These are **not yet registered trade marks** — registration is pending completion of the examination and opposition process.
+The following trade mark applications have been filed with IP Australia and are at **Accepted Early (accepted 6 March 2026)** status. Publication on Australian Trade Mark Search (ATMOSS) deferred to after 20 July 2026. These are **not yet published and not yet registered trade marks** — registration is pending completion of the publication and opposition process.
 
 | Application No. | Mark | Type | Classes | Status | Filed |
 |-----------------|------|------|---------|--------|-------|
-| TM 2627709 | COMMUTE COMPUTE | Word Mark | 9, 39, 42 | Accepted — Awaiting Publication | 20 February 2026 |
-| TM 2627710 | CC Logo | Figurative Mark | 9, 39, 42 | Accepted — Awaiting Publication | 20 February 2026 |
+| TM 2627709 | COMMUTE COMPUTE | Word Mark | 9, 39, 42 | Accepted Early | 20 February 2026 |
+| TM 2627710 | CC Logo | Figurative Mark | 9, 39, 42 | Accepted Early | 20 February 2026 |
 
 Filing references: AMCZ-2615437674, AMCZ-2615438195
 ABN: 59 402 869 395
@@ -387,6 +387,7 @@ For security vulnerability reporting, see our [Responsible Disclosure Policy](SE
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.8 | 2026-03-21 | Updated trade mark status from "Accepted — Awaiting Publication" to "Accepted Early"; added ATMOSS publication deferral note (after 20 July 2026); clarified marks are not yet published and not yet registered |
 | 1.7 | 2026-02-27 | Replaced advisory subsection with legislative reference format citing Privacy Act 1988, Competition and Consumer Act 2010, and state consumer protection laws; added Unfair Trading Practices proactive compliance section (UTP Bill 2026, 1 July 2027 commencement) |
 | 1.6 | 2026-02-16 | Added Sole Trader Structure & Liability Mitigation section, supply chain integrity documentation, enhanced consumer law compliance disclosure |
 | 1.5 | 2026-02-16 | Added SECURITY.md cross-reference for responsible disclosure, added email to Contact section, corrected "inquiries" to "enquiries" (Australian English) |

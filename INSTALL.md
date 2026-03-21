@@ -431,13 +431,13 @@ The system automatically:
 Your webhook URL is:
 
 ```
-https://your-project.vercel.app/api/screen
+https://your-project.vercel.app/api/commutecompute
 ```
 
 Replace `your-project` with your actual project/service name.
 
-**Example (Vercel)**: `https://your-project.vercel.app/api/screen`
-**Example (Render)**: `https://your-server-name.onrender.com/api/screen`
+**Example (Vercel)**: `https://your-project.vercel.app/api/commutecompute`
+**Example (Render)**: `https://your-server-name.onrender.com/api/commutecompute`
 
 ### 6.2 Flash Custom Firmware
 

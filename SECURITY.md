@@ -12,7 +12,7 @@ Licensed under AGPL-3.0
 
 **Effective Date:** 16 February 2026
 **Last Updated:** 16 February 2026
-**System Version:** v5.0.0
+**System Version:** v5.0.1
 
 ---
 
@@ -55,7 +55,7 @@ For all security-related matters:
 
 The following are in-scope for security reports:
 
-- **API endpoints** (`/api/screen`, `/api/admin/*`, `/api/pair/*`, `/api/profiles`)
+- **API endpoints** (`/api/commutecompute`, `/api/admin/*`, `/api/pair/*`, `/api/profiles`)
 - **Authentication and authorisation** (admin token handling, API key storage and retrieval)
 - **Data handling** (Redis storage, preference encoding/decoding, config token generation)
 - **Firmware** (CCFirm™ device firmware, OTA update mechanism, device pairing)
