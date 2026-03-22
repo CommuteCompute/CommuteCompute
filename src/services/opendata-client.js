@@ -396,7 +396,7 @@ export async function getDepartures(stopId, routeType, options = {}) {
     // proximity uses actual stop coordinates for accurate departure times and must
     // run first so the inaccurate median heuristic doesn't block it.
     if (departures.length === 0 && feedEntityCount > 0 && mode === 'tram') {
-      const coordDepartures = processCoordinateProximitySearch(feed, stopId, routeType, state, options.routeNumber || null);
+      const coordDepartures = processCoordinateProximitySearch(feed, stopId, routeType, state, options.routeNumber || null, options.lat || null, options.lon || null);
       cascadeAttempts.push({ tier: 'coord-proximity', tried: true, found: coordDepartures.length });
       if (coordDepartures.length > 0) {
         console.log(`[OpenData] Coordinate-proximity search found ${coordDepartures.length} departures for stopId=${stopId} in ${mode} feed`);
@@ -761,15 +761,20 @@ function processAllTripsStopSearch(feed, stopId, routeType, state = 'VIC') {
  * @param {string|null} targetRouteNumber - If set, only match trips on this route
  * @returns {Array} - Departure objects from coordinate-matched trips
  */
-function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC', targetRouteNumber = null) {
+function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC', targetRouteNumber = null, fallbackLat = null, fallbackLon = null) {
   const nowMs = getNowMs();
   const departures = [];
   if (!feed?.entity || state !== 'VIC' || routeType !== 1) return departures;
 
   // Find target stop coordinates from static GTFS data
+  // V16.0: When stop ID isn't in VIC_TRAM_STOPS_WITH_COORDS (common — GTFS static IDs
+  // differ from coordinate DB IDs, e.g. stop 1567 stored as 18705), fall back to the
+  // user's address coordinates passed from the engine.
   const stopIdStr = String(stopId);
   const targetStop = VIC_TRAM_STOPS_WITH_COORDS.find(s => s.id === stopIdStr);
-  if (!targetStop?.lat || !targetStop?.lon) return departures;
+  const searchLat = targetStop?.lat ?? fallbackLat;
+  const searchLon = targetStop?.lon ?? fallbackLon;
+  if (!searchLat || !searchLon) return departures;
 
   // Build a lookup map of feed stop IDs → coordinates from static GTFS data
   const coordCache = {};
@@ -802,7 +807,7 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
       const coords = coordCache[feedStopId];
       if (!coords) continue;
 
-      const dist = haversine(targetStop.lat, targetStop.lon, coords.lat, coords.lon);
+      const dist = haversine(searchLat, searchLon, coords.lat, coords.lon);
       if (dist < searchRadius) {
         const depTime = stus[i].departure?.time || stus[i].arrival?.time;
         if (!depTime) continue;

@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.3.3",
+    "version": "5.3.4",
     "name": "Commute Compute System",
     "releaseDate": "2026-03-22",
     "codename": "Turnkey Multi-State"
@@ -86,6 +86,14 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.3.4",
+      "date": "2026-03-22",
+      "changes": [
+        "Fix tram GTFS-RT matching: coord-proximity search now accepts address coordinates as fallback when stop ID not in VIC_TRAM_STOPS_WITH_COORDS (e.g. stop 1567 stored as 18705) — enables live tram data that was previously falling to timetable",
+        "Fix train departure catchability: findMatchingDeparture now collects ALL departure times (was limited to first 5 which could all be before user arrival, causing timetable fallback on low-frequency services)"
+      ]
+    },
     {
       "version": "5.3.3",
       "date": "2026-03-22",

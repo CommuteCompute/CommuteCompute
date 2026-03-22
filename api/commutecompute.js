@@ -1115,9 +1115,11 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
   // Clone primary to avoid mutating shared transitData objects
   const primary = { ...matchedDepartures[0] };
   if (primary) {
-    // Collect all departure times in milliseconds for live countdown
+    // V16.0: Collect ALL departure times — the catchability filter in buildJourneyLegs
+    // selects the ones the user can actually catch. Previously limited to first 5, which
+    // caused timetable fallback when all 5 nearest trains departed before user arrival.
     const depTimes = [];
-    for (const d of matchedDepartures.slice(0, 5)) {
+    for (const d of matchedDepartures) {
       if (d.departureTimeMs) {
         depTimes.push(d.departureTimeMs);
       } else if (typeof d.minutes === 'number') {
@@ -1125,6 +1127,7 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
       }
     }
     primary.allDepartureTimesMs = depTimes;
+    // Display-facing nextDepartures stays limited to 5 (for "Next: x, y, z min" subtitle)
     primary.nextDepartures = matchedDepartures.slice(0, 5).map(d => d.minutes).filter(m => m !== undefined);
   }
 
@@ -2082,6 +2085,14 @@ export default async function handler(req, res) {
     const tramLeg = route?.legs?.find(l => l.type === 'tram');
     const busLeg = route?.legs?.find(l => l.type === 'bus');
     const tramApiOptions = { ...apiOptions };
+    // V16.0: Pass home coordinates for coord-proximity fallback.
+    // When the detected tram stop ID isn't in VIC_TRAM_STOPS_WITH_COORDS
+    // (common — GTFS static IDs differ from coordinate DB IDs), the coord-proximity
+    // search uses these coordinates directly instead of failing silently.
+    if (homeCoords) {
+      tramApiOptions.lat = homeCoords.lat;
+      tramApiOptions.lon = homeCoords.lon;
+    }
     // Don't filter tram API by route number — multiple lines serve the same stop
     // and user wants to see whichever line is coming next
     const tramRouteNum = tramLeg?.routeNumber || detectedTramRoute;
