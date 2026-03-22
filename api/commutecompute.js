@@ -2496,6 +2496,14 @@ export default async function handler(req, res) {
         if (coffeeDecision.cafeClosed) return 'Outside opening hours';
         return coffeeDecision.subtext || null;
       })(),
+      // Cafe status — independent of commute window. Shows open/closed and cafe name.
+      cafe_name: (() => {
+        const name = kvPrefs?.locations?.cafe?.name || kvPrefs?.cafe?.name || null;
+        if (!name) return null;
+        // Extract short name (first part before comma)
+        return name.split(',')[0].trim();
+      })(),
+      cafe_is_open: kvPrefs?.addresses?.cafe ? cafeIsOpen : null,
       // V15.0: Transit availability notice (e.g., "TRAM USING TIMETABLE DATA")
       transit_notice: transitNotice,
       timetable_types: removedTypes.length > 0 ? removedTypes : null,
