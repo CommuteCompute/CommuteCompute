@@ -1,5 +1,5 @@
 /**
- * CCDash™ Renderer v3.1
+ * CCDash™ Renderer v3.2
  * Part of the Commute Compute System™
  *
  * Copyright (c) 2026 Angus Bergman
@@ -2458,7 +2458,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     ctx.textAlign = 'left';
     ctx.fillStyle = '#000';
   } else if (showCafeBusynessOnly) {
-    // V13.3: Outside ±2hr window - just show cafe busyness info, no decision
+    // V13.3: Outside ±2hr window - show cafe name + busyness info
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 2;
     ctx.strokeRect(coffeeBoxX, coffeeBoxY, coffeeBoxW, coffeeBoxH);
@@ -2467,29 +2467,80 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     ctx.fillStyle = '#000';
     ctx.strokeStyle = '#000';
     ctx.lineWidth = Math.max(1, Math.round(2 * fs));
-    // Cup body outline
     ctx.strokeRect(coffeeBoxX + Math.round(16 * sx), coffeeBoxY + Math.round(28 * sy), Math.round(28 * sx), Math.round(36 * sy));
-    // Handle
     ctx.beginPath();
     ctx.arc(coffeeBoxX + Math.round(44 * sx), coffeeBoxY + Math.round(44 * sy), Math.round(10 * fs), -Math.PI/2, Math.PI/2);
     ctx.stroke();
 
-    // "CAFE STATUS" header
-    ctx.font = `bold ${Math.max(11, Math.round(14 * fs))}px Inter, sans-serif`;
+    // Cafe name header (or fallback to "CAFE STATUS") — scale to fit
+    const busyCafeTextX = coffeeBoxX + Math.round(62 * sx);
+    const busyCafeMaxW = coffeeBoxX + coffeeBoxW - busyCafeTextX - Math.round(4 * sx);
+    const cafeNameLabel = data.cafe_name ? data.cafe_name.toUpperCase() : 'CAFE STATUS';
+    let busyCafeFontSize = Math.max(11, Math.round(14 * fs));
+    ctx.font = `bold ${busyCafeFontSize}px Inter, sans-serif`;
+    while (ctx.measureText(cafeNameLabel).width > busyCafeMaxW && busyCafeFontSize > 9) {
+      busyCafeFontSize--;
+      ctx.font = `bold ${busyCafeFontSize}px Inter, sans-serif`;
+    }
     ctx.textAlign = 'left';
-    ctx.fillText('CAFE STATUS', coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(24 * sy));
+    ctx.fillText(cafeNameLabel, busyCafeTextX, coffeeBoxY + Math.round(18 * sy));
 
-    // Busyness level
+    // Open/closed + busyness combined
     ctx.font = `bold ${Math.max(11, Math.round(18 * fs))}px Inter, sans-serif`;
-    const busyLabel = cafeBusyness === 'quiet' ? 'QUIET' :
-                      cafeBusyness === 'moderate' ? 'MODERATE' :
-                      cafeBusyness === 'busy' ? 'BUSY' : cafeBusyness.toUpperCase();
-    ctx.fillText(busyLabel, coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(46 * sy));
+    if (data.cafe_is_open) {
+      const busyLabel = cafeBusyness === 'quiet' ? 'QUIET' :
+                        cafeBusyness === 'moderate' ? 'MODERATE' :
+                        cafeBusyness === 'busy' ? 'BUSY' : cafeBusyness.toUpperCase();
+      ctx.fillText(`OPEN + ${busyLabel}`, coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(42 * sy));
+      // Wait time
+      if (cafeWaitTime !== '--' && cafeWaitTime !== null && cafeWaitTime !== undefined) {
+        ctx.font = `${Math.max(11, Math.round(12 * fs))}px Inter, sans-serif`;
+        ctx.fillText(`~${cafeWaitTime} min wait`, coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(64 * sy));
+      }
+    } else {
+      ctx.fillText('CLOSED', coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(42 * sy));
+    }
 
-    // Wait time — only show when a real value exists (not '--' placeholder)
-    if (cafeWaitTime !== '--' && cafeWaitTime !== null && cafeWaitTime !== undefined) {
-      ctx.font = `${Math.max(11, Math.round(12 * fs))}px Inter, sans-serif`;
-      ctx.fillText(`~${cafeWaitTime} min wait`, coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(64 * sy));
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#000';
+  } else if (data.cafe_name && data.cafe_is_open !== null && data.cafe_is_open !== undefined) {
+    // Cafe status fallback — no busyness data, no coffee decision, no sleep mode,
+    // but a cafe is configured. Shows cafe name + open/closed in the CoffeeDecision box.
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(coffeeBoxX, coffeeBoxY, coffeeBoxW, coffeeBoxH);
+
+    // Coffee cup icon (outline only)
+    ctx.fillStyle = '#000';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = Math.max(1, Math.round(2 * fs));
+    ctx.strokeRect(coffeeBoxX + Math.round(16 * sx), coffeeBoxY + Math.round(28 * sy), Math.round(28 * sx), Math.round(36 * sy));
+    ctx.beginPath();
+    ctx.arc(coffeeBoxX + Math.round(44 * sx), coffeeBoxY + Math.round(44 * sy), Math.round(10 * fs), -Math.PI/2, Math.PI/2);
+    ctx.stroke();
+
+    // Cafe name — scale font to fit available width
+    const cafeTextX = coffeeBoxX + Math.round(62 * sx);
+    const cafeMaxW = coffeeBoxX + coffeeBoxW - cafeTextX - Math.round(4 * sx);
+    const cafeNameStr = data.cafe_name.toUpperCase();
+    let cafeFontSize = Math.max(11, Math.round(14 * fs));
+    ctx.font = `bold ${cafeFontSize}px Inter, sans-serif`;
+    while (ctx.measureText(cafeNameStr).width > cafeMaxW && cafeFontSize > 9) {
+      cafeFontSize--;
+      ctx.font = `bold ${cafeFontSize}px Inter, sans-serif`;
+    }
+    ctx.textAlign = 'left';
+    ctx.fillText(cafeNameStr, cafeTextX, coffeeBoxY + Math.round(28 * sy));
+
+    // Open/closed status — with busyness when open
+    ctx.font = `bold ${Math.max(11, Math.round(22 * fs))}px Inter, sans-serif`;
+    if (data.cafe_is_open) {
+      const busyLevel = cafeBusyness && cafeBusyness !== 'quiet' && cafeBusyness !== '--'
+        ? ` + ${cafeBusyness.toUpperCase()}`
+        : cafeBusyness === 'quiet' ? ' + QUIET' : '';
+      ctx.fillText(`OPEN${busyLevel}`, cafeTextX, coffeeBoxY + Math.round(54 * sy));
+    } else {
+      ctx.fillText('CLOSED', cafeTextX, coffeeBoxY + Math.round(54 * sy));
     }
 
     ctx.textAlign = 'left';

@@ -447,6 +447,7 @@ All rules from previous versions have been incorporated. The canonical source is
 | `Metro API` | Doesn't exist | `GTFS-RT via OpenData` |
 | `Real-time API` | Ambiguous | `GTFS-RT Trip Updates` |
 | Hardcoded API keys | Security risk | Config token in URL |
+| Specific stop/station names in code comments | Privacy risk — may infer user address | Generic descriptions (e.g. "nearby intersection", "user's tram stop") |
 | `deepSleep()` in setup() | Causes brick | State machine in loop() |
 | `esp_task_wdt_*` | Causes freezes | Remove watchdog entirely |
 | `FONT_12x16` | Rotation bug | `FONT_8x8` only |

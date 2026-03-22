@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.3.0",
+    "version": "5.3.2",
     "name": "Commute Compute System",
     "releaseDate": "2026-03-22",
     "codename": "Turnkey Multi-State"
@@ -86,6 +86,26 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.3.2",
+      "date": "2026-03-22",
+      "changes": [
+        "Fix coordinate-proximity closest-route preference: at intersections where multiple tram routes have nearby stops, only the route with the physically closest stop is matched — prevents wrong route selection",
+        "Fix coordinate-proximity departure time accuracy: find all stops within radius with future departures and pick earliest, instead of single closest stop that may have a past departure (tram already passed it)",
+        "Fix broad fallback City Loop filtering: add finalStop to processAnyRouteDepartures() departure objects — enables correct filtering of trains that do not serve City Loop stations"
+      ]
+    },
+    {
+      "version": "5.3.1",
+      "date": "2026-03-22",
+      "changes": [
+        "Fix tram GTFS-RT matching: coordinate-proximity search now runs before route-level median heuristic for trams, producing accurate departure times",
+        "Fix coordinate-proximity direction heuristic: removed flawed isApproaching position-based heuristic, use matched stop departure time directly within 500m search radius",
+        "Fix live data detection: gtfs-rt-coord source now recognised in status badge logic",
+        "Fix tram route naming consistency: route number populated from detection/engine regardless of GTFS-RT availability",
+        "Fix _feedInfo.matchMethod diagnostics: coordinate-proximity matches now tracked as coord-proximity"
+      ]
+    },
     {
       "version": "5.3.0",
       "date": "2026-03-22",

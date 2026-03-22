@@ -385,9 +385,24 @@ export async function getDepartures(stopId, routeType, options = {}) {
       }
     }
 
+    // V16.0: For trams, coordinate-proximity runs BEFORE route-level.
+    // VIC tram GTFS-RT feeds use different stop IDs than static GTFS (known issue).
+    // Route-level's median-stop heuristic estimates departure at a mid-route stop,
+    // producing times 10-20 min off (e.g. 25 min when actual is 7 min). Coordinate-
+    // proximity uses actual stop coordinates for accurate departure times and must
+    // run first so the inaccurate median heuristic doesn't block it.
+    if (departures.length === 0 && feedEntityCount > 0 && mode === 'tram') {
+      const coordDepartures = processCoordinateProximitySearch(feed, stopId, routeType, state, options.routeNumber || null);
+      if (coordDepartures.length > 0) {
+        console.log(`[OpenData] Coordinate-proximity search found ${coordDepartures.length} departures for stopId=${stopId} in ${mode} feed`);
+        coordDepartures.forEach(d => departures.push(d));
+      }
+    }
+
     // V15.0: Route-level fallback when stop-level match fails.
     // When the GTFS-RT feed has entities but none match the stop ID, search by
     // route number or line code. Works for all modes (tram, bus, train).
+    // For trams, this only runs if coordinate-proximity (above) found nothing.
     if (departures.length === 0 && feedEntityCount > 0 && (options.routeNumber || options.lineCode)) {
       const routeFallbackDepartures = processRouteLevelDepartures(
         feed, stopId, options.routeNumber, routeType, options.lineCode, state
@@ -401,23 +416,11 @@ export async function getDepartures(stopId, routeType, options = {}) {
 
     // V16.0: CASCADING fallback — all-trips scan runs whenever previous levels found nothing.
     // Previously gated by !options.routeNumber which blocked this when route-level failed.
-    // Now cascading: stop-level → route-level → all-trips scan → broad fallback.
     if (departures.length === 0 && feedEntityCount > 0 && mode !== 'metro') {
       const scanDepartures = processAllTripsStopSearch(feed, stopId, routeType, state);
       if (scanDepartures.length > 0) {
         console.log(`[OpenData] All-trips stop search found ${scanDepartures.length} departures for stopId=${stopId} in ${mode} feed`);
         scanDepartures.forEach(d => departures.push(d));
-      }
-    }
-
-    // V16.0: Coordinate-proximity fallback for trams — finds trips passing near the user's
-    // tram stop by matching GTFS-RT stop IDs to static GTFS coordinates. Solves the VIC tram
-    // feed issue where stop IDs in the feed don't match the queried stop ID directly.
-    if (departures.length === 0 && feedEntityCount > 0 && mode === 'tram') {
-      const coordDepartures = processCoordinateProximitySearch(feed, stopId, routeType, state, options.routeNumber || null);
-      if (coordDepartures.length > 0) {
-        console.log(`[OpenData] Coordinate-proximity search found ${coordDepartures.length} departures for stopId=${stopId} in ${mode} feed`);
-        coordDepartures.forEach(d => departures.push(d));
       }
     }
 
@@ -441,7 +444,8 @@ export async function getDepartures(stopId, routeType, options = {}) {
       queriedLineCode: options.lineCode || null,
       mode,
       state,
-      matchMethod: departures.length > 0 && departures[0]?.source === 'gtfs-rt-scan'
+      matchMethod: departures.length > 0 && departures[0]?.source === 'gtfs-rt-coord'
+        ? 'coord-proximity' : departures.length > 0 && departures[0]?.source === 'gtfs-rt-scan'
         ? 'all-trips-scan' : departures.length > 0 && departures[0]?.source === 'gtfs-rt-route'
         ? 'route-level' : departures.length > 0 && departures[0]?.source === 'gtfs-rt-broad'
         ? 'broad-fallback' : departures.length > 0 ? 'stop-level' : 'none'
@@ -768,13 +772,15 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
     }
 
     const stus = tripUpdate.stopTimeUpdate;
-    let closestStu = null;
-    let closestDist = 500; // 500m radius — tram stops typically 200-400m apart
-    let closestIdx = -1;
 
+    // Find ALL stops within radius that have valid departure times.
+    // When a route number is specified, use 500m (same route, wider search).
+    // When no route number, use 150m to avoid matching stops on intersecting
+    // roads served by different tram routes (~200-300m away).
+    const searchRadius = targetRouteNumber ? 500 : 150;
+    const candidates = [];
     for (let i = 0; i < stus.length; i++) {
       const feedStopId = String(stus[i].stopId);
-      // Look up coordinates from cache or static data
       if (!(feedStopId in coordCache)) {
         const staticStop = VIC_TRAM_STOPS_WITH_COORDS.find(s => s.id === feedStopId);
         coordCache[feedStopId] = staticStop ? { lat: staticStop.lat, lon: staticStop.lon } : null;
@@ -783,53 +789,67 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
       if (!coords) continue;
 
       const dist = haversine(targetStop.lat, targetStop.lon, coords.lat, coords.lon);
-      if (dist < closestDist) {
-        closestDist = dist;
-        closestStu = stus[i];
-        closestIdx = i;
+      if (dist < searchRadius) {
+        const depTime = stus[i].departure?.time || stus[i].arrival?.time;
+        if (!depTime) continue;
+        const depMs = (depTime.low || depTime) * 1000;
+        const mins = Math.round((depMs - nowMs) / 60000);
+        if (mins >= -2 && mins <= 120) {
+          candidates.push({ stu: stus[i], dist, depMs, mins });
+        }
       }
     }
 
-    if (!closestStu) continue;
+    if (candidates.length === 0) continue;
 
-    const depTime = closestStu.departure?.time || closestStu.arrival?.time;
-    if (!depTime) continue;
+    // Pick the candidate with the earliest future departure (>= 0 min).
+    // For approaching trams, the closest stop may be one already passed (past time),
+    // but the next stop in the sequence has a future time — that's the one we want.
+    // Fall back to closest-by-distance if all candidates are slightly past.
+    const futureCandidates = candidates.filter(c => c.mins >= 0);
+    const best = futureCandidates.length > 0
+      ? futureCandidates.sort((a, b) => a.mins - b.mins || a.dist - b.dist)[0]
+      : candidates.sort((a, b) => a.dist - b.dist)[0];
 
-    const depMs = (depTime.low || depTime) * 1000;
-
-    // V16.0: Adjust departure time based on distance between matched stop and user's stop.
-    // Average tram speed ~16 km/h in Melbourne (accounting for stops, traffic lights).
-    // If the matched stop is BEFORE the user's stop in the sequence (lower index),
-    // the tram arrives at the user's stop LATER → add travel time.
-    // closestDist is in metres; 16 km/h = 267 m/min.
-    const travelTimeMs = Math.round((closestDist / 267) * 60000);
-    // Determine direction: check if there's a stop AFTER the matched one that's
-    // closer to the user's stop (tram is approaching) vs further away (tram passed).
-    // Simple heuristic: if matched stop is in the first half of the trip sequence,
-    // tram is likely approaching → add travel time. Otherwise subtract.
-    const isApproaching = closestIdx < stus.length / 2;
-    const adjustedDepMs = isApproaching ? depMs + travelTimeMs : depMs - travelTimeMs;
-    const minutes = Math.round((adjustedDepMs - nowMs) / 60000);
-
-    if (minutes >= -2 && minutes <= 120) {
-      const delay = closestStu.departure?.delay || closestStu.arrival?.delay || 0;
-      const routeId = tripUpdate.trip?.routeId;
-      departures.push({
-        minutes: Math.max(0, minutes),
-        departureTimeMs: adjustedDepMs,
-        destination: getLineName(routeId) || tripUpdate.trip?.tripHeadsign || '',
-        lineName: getLineName(routeId),
-        routeNumber: getRouteNumber(routeId) || null,
-        routeId,
-        tripId: tripUpdate.trip?.tripId,
-        isCitybound: false,
-        delay: Math.round(delay / 60),
-        isDelayed: delay > 60,
-        isLive: true,
-        source: 'gtfs-rt-coord'
-      });
-    }
+    const delay = best.stu.departure?.delay || best.stu.arrival?.delay || 0;
+    const routeId = tripUpdate.trip?.routeId;
+    departures.push({
+      minutes: Math.max(0, best.mins),
+      departureTimeMs: best.depMs,
+      destination: getLineName(routeId) || tripUpdate.trip?.tripHeadsign || '',
+      lineName: getLineName(routeId),
+      routeNumber: getRouteNumber(routeId) || null,
+      routeId,
+      tripId: tripUpdate.trip?.tripId,
+      isCitybound: false,
+      delay: Math.round(delay / 60),
+      isDelayed: delay > 60,
+      isLive: true,
+      source: 'gtfs-rt-coord',
+      _matchDist: best.dist  // Used for closest-route preference below
+    });
   }
+
+  // When no route filter specified, prefer the route with the closest matched stop.
+  // At intersections where multiple tram routes have nearby stops on different
+  // roads, only the closest route's departures are kept — prevents matching a
+  // different route whose stops happen to be within the 500m search radius.
+  if (!targetRouteNumber && departures.length > 0) {
+    const routeDistances = {};
+    for (const d of departures) {
+      const rn = d.routeNumber || d.routeId || 'unknown';
+      if (!(rn in routeDistances) || d._matchDist < routeDistances[rn]) {
+        routeDistances[rn] = d._matchDist;
+      }
+    }
+    const closestRoute = Object.entries(routeDistances).sort((a, b) => a[1] - b[1])[0][0];
+    const filtered = departures.filter(d => (d.routeNumber || d.routeId || 'unknown') === closestRoute);
+    departures.length = 0;
+    filtered.forEach(d => departures.push(d));
+  }
+
+  // Clean up internal field before returning
+  for (const d of departures) { delete d._matchDist; }
 
   departures.sort((a, b) => a.departureTimeMs - b.departureTimeMs);
   const deduped = [];
@@ -897,6 +917,9 @@ function processAnyRouteDepartures(feed) {
       routeNumber: extractedRoute,
       routeId,
       tripId: tripUpdate.trip?.tripId,
+      finalStop: finalStopId, // Enables City Loop filtering — without this,
+                              // Sandringham trains (terminating at Flinders St)
+                              // incorrectly pass the filter for Parliament-bound journeys
       isCitybound,
       isMetroTunnel,
       isLive: true,

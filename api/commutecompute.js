@@ -491,8 +491,13 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       const hasDepTimes = liveData.allDepartureTimesMs?.length > 0;
 
       if (hasDepTimes) {
-        // Filter to departures after user arrives at stop
-        const catchableDepartures = liveData.allDepartureTimesMs.filter(depMs => depMs >= arrivalAtStopMs);
+        // Filter to departures after user arrives at stop.
+        // Route-level and coordinate-proximity produce ESTIMATED departure times
+        // (from nearby/mid-route stops, not the exact user stop). Allow a 3-min
+        // buffer so that departures slightly before estimated arrival still count
+        // as catchable — the estimation error is typically 1-3 min.
+        const estimationBuffer = (liveData.source === 'gtfs-rt-route' || liveData.source === 'gtfs-rt-coord') ? 3 * 60000 : 0;
+        const catchableDepartures = liveData.allDepartureTimesMs.filter(depMs => depMs >= arrivalAtStopMs - estimationBuffer);
         if (catchableDepartures.length > 0) {
           actualDepartureMs = catchableDepartures[0];
           nextDepartureTimesMs = catchableDepartures.slice(0, 5);
@@ -2050,6 +2055,12 @@ export default async function handler(req, res) {
     // and user wants to see whichever line is coming next
     const tramRouteNum = tramLeg?.routeNumber || detectedTramRoute;
     if (tramRouteNum) tramApiOptions.routeNumber = tramRouteNum;
+    // Ensure tram leg has route number for consistent display ("Route 58" not "Tram").
+    // Without this, route number only gets populated from GTFS-RT live data, causing
+    // display to flip between "Route 58 to X" and "Tram to X" between refreshes.
+    if (tramLeg && tramRouteNum && !tramLeg.routeNumber) {
+      tramLeg.routeNumber = tramRouteNum;
+    }
     const busApiOptions = { ...apiOptions };
     if (busLeg?.routeNumber) busApiOptions.routeNumber = busLeg.routeNumber;
 
@@ -2112,9 +2123,9 @@ export default async function handler(req, res) {
 
     // Determine if we actually have live transit data (from GTFS-RT, not fallback)
     // Per Section 23.6: "LIVE" indicators must reflect actual data source
-    const hasLiveTrainData = trains.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad' || t.source === 'gtfs-rt-scan') && t.isLive === true);
-    const hasLiveTramData = trams.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad' || t.source === 'gtfs-rt-scan') && t.isLive === true);
-    const hasLiveBusData = buses.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad' || t.source === 'gtfs-rt-scan') && t.isLive === true);
+    const hasLiveTrainData = trains.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad' || t.source === 'gtfs-rt-scan' || t.source === 'gtfs-rt-coord') && t.isLive === true);
+    const hasLiveTramData = trams.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad' || t.source === 'gtfs-rt-scan' || t.source === 'gtfs-rt-coord') && t.isLive === true);
+    const hasLiveBusData = buses.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad' || t.source === 'gtfs-rt-scan' || t.source === 'gtfs-rt-coord') && t.isLive === true);
     const hasAnyLiveData = hasLiveTrainData || hasLiveTramData || hasLiveBusData;
 
     // =========================================================================
