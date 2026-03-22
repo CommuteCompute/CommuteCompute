@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.2.1",
+    "version": "5.3.0",
     "name": "Commute Compute System",
     "releaseDate": "2026-03-22",
     "codename": "Turnkey Multi-State"
@@ -14,12 +14,12 @@
       "lastUpdated": "2026-03-22"
     },
     "renderer": {
-      "version": "3.1",
+      "version": "3.2",
       "name": "CCDash Renderer",
       "spec": "CCDashDesignV16.0",
-      "description": "V16.0 spec-compliant rendering with transit countdown fix (trusts leg.minutes, 180-min sanity cap), cafe closed case-insensitive matching, confidence context line rendering, subtitle overflow protection, lifestyle obligation styling, transit-to-walk display, suburb locations, unified cafe closed/skipped rendering, confidence labels, sleep mode, mindset status, lifestyle context display, robust coffee skip detection, coffee time box rendering, diversion status bar",
+      "description": "V16.0 spec-compliant rendering with per-leg element scaling (prevents overlap with 7+ legs), coffee leg redesign (no number bubble, no time box, coffee icon replaces [OK], centre-aligned text), route/line names in transit titles, transit countdown fix, cafe closed case-insensitive matching, confidence context line rendering, subtitle overflow protection, lifestyle obligation styling, suburb locations, unified cafe closed/skipped rendering, diversion status bar",
       "locked": false,
-      "lastUpdated": "2026-03-21"
+      "lastUpdated": "2026-03-22"
     },
     "adminPanel": {
       "version": "6.0.0",
@@ -86,6 +86,15 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.3.0",
+      "date": "2026-03-22",
+      "changes": [
+        "CCDash Renderer v3.2: per-leg element scaling prevents overlap with 7+ journey legs, coffee leg redesign (no number bubble, no time box, coffee icon replaces [OK] text, centre-aligned label), route/line names in transit leg titles (e.g. Sandringham to Parliament, Route 19 to City)",
+        "Timetable fallback now shows 3 estimated departures with headway instead of single Scheduled ~Xmin",
+        "buildLegTitle: train legs show line name, tram legs show Route N format"
+      ]
+    },
     {
       "version": "5.2.1",
       "date": "2026-03-22",

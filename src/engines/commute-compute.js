@@ -1727,7 +1727,7 @@ export class CommuteCompute {
           { type: 'walk', to: 'tram stop', minutes: 2, stopName: nearestTramStop },
           { type: 'tram', routeNumber: tramRouteNumber || '', origin: { name: nearestTramStop }, destination: { name: nearestTrainStation }, originStop: nearestTramStop, minutes: 6 },
           { type: 'walk', to: 'train platform', minutes: 2, stationName: nearestTrainStation },
-          { type: 'train', origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 8 },
+          { type: 'train', isCitybound: true, origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 8 },
           { type: 'walk', to: 'work', minutes: 5, workName: workAddressShort }
         ]
       });
@@ -1748,7 +1748,7 @@ export class CommuteCompute {
           { type: 'walk', to: 'cafe', from: 'home', minutes: 4, fromHome: true, cafeName, destinationName: cafeName },
           { type: 'coffee', location: cafeName, cafeName, minutes: 5, canGet: true },
           { type: 'walk', to: 'train platform', from: cafeName, minutes: 5, stationName: nearestTrainStation },
-          { type: 'train', origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 10 },
+          { type: 'train', isCitybound: true, origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 10 },
           { type: 'walk', to: 'work', minutes: 6, workName: workAddressShort }
         ]
       });
@@ -1766,7 +1766,7 @@ export class CommuteCompute {
       totalMinutes: 22,
       legs: [
         { type: 'walk', to: 'station', from: 'home', minutes: 7, fromHome: true, stationName: nearestTrainStation },
-        { type: 'train', origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 10 },
+        { type: 'train', isCitybound: true, origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 10 },
         { type: 'walk', to: 'work', minutes: 5, workName: workAddressShort }
       ]
     });
@@ -1784,7 +1784,7 @@ export class CommuteCompute {
       legs: [
         { type: 'walk', to: 'tram stop', from: 'home', minutes: 4, fromHome: true, stopName: nearestTramStop },
         { type: 'tram', routeNumber: tramRouteNumber || '', origin: { name: nearestTramStop }, destination: { name: nearestTrainStation }, originStop: nearestTramStop, minutes: 10 },
-        { type: 'train', origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 10 },
+        { type: 'train', isCitybound: true, origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 10 },
         { type: 'walk', to: 'work', minutes: 4, workName: workAddressShort }
       ]
     });

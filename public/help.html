@@ -1009,9 +1009,9 @@
             .then(r => r.json())
             .then(v => {
                 document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v4.1';
-                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v3.1';
+                document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v3.2';
                 document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.2.1');
+                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.3.0');
             })
             .catch(() => {});
     }
@@ -1037,11 +1037,11 @@
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">CCDash&#8482; Renderer</span>
-                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v3.1</span>
+                <span class="cc-footer-version-value" id="cc-footer-renderer-version">v3.2</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">System</span>
-                <span class="cc-footer-version-value" id="cc-footer-system-version">v5.2.1</span>
+                <span class="cc-footer-version-value" id="cc-footer-system-version">v5.3.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">Build</span>
