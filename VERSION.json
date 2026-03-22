@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.3.2",
+    "version": "5.3.4",
     "name": "Commute Compute System",
     "releaseDate": "2026-03-22",
     "codename": "Turnkey Multi-State"
@@ -86,6 +86,24 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.3.4",
+      "date": "2026-03-22",
+      "changes": [
+        "Fix tram GTFS-RT matching: coord-proximity search now accepts address coordinates as fallback when stop ID not in VIC_TRAM_STOPS_WITH_COORDS (e.g. stop 1567 stored as 18705) — enables live tram data that was previously falling to timetable",
+        "Fix train departure catchability: findMatchingDeparture now collects ALL departure times (was limited to first 5 which could all be before user arrival, causing timetable fallback on low-frequency services)"
+      ]
+    },
+    {
+      "version": "5.3.3",
+      "date": "2026-03-22",
+      "changes": [
+        "Fix City Loop filtering: shared filterCityLoopPreference() with soft-preference — when Loop services are infrequent (>20 min gap vs direct), accepts direct trains to Flinders Street instead of forcing 48-min wait for rare Loop service",
+        "Fix City Loop filter consistency: filterUnavailableTransitLegs now uses same finalStop-based filter as findMatchingDeparture (was using !isMetroTunnel proxy, causing filter/matcher disagreement)",
+        "Fix timetable subtitle stability: 'Scheduled ~Xmin' now shows transit ride duration (stable) instead of departure countdown (volatile across renders)",
+        "Fix tram GTFS-RT cascade diagnostics: cascade attempt tracking (tier, tried, found) attached to _feedInfo for diagnosing stop-ID matching failures"
+      ]
+    },
     {
       "version": "5.3.2",
       "date": "2026-03-22",

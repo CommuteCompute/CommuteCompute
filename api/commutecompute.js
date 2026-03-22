@@ -821,12 +821,16 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         if (times) {
           baseLeg.subtitle = `Scheduled ~${times} min`;
         } else {
-          const estMins = Math.max(1, baseLeg.minutes || 0);
-          baseLeg.subtitle = `Scheduled ~${estMins}min`;
+          // Show transit DURATION (how long the ride takes), not departure countdown.
+          // The time box already shows departure countdown. legDuration is stable
+          // across renders — matches user expectation ("~7min" = ride takes ~7 min).
+          const transitDuration = Math.max(1, legDuration || baseLeg.minutes || 0);
+          baseLeg.subtitle = `Scheduled ~${transitDuration}min`;
         }
       } else {
-        const estMins = Math.max(1, baseLeg.minutes || 0);
-        baseLeg.subtitle = `Scheduled ~${estMins}min`;
+        // Show transit DURATION, not departure countdown (stable across renders)
+        const transitDuration = Math.max(1, legDuration || baseLeg.minutes || 0);
+        baseLeg.subtitle = `Scheduled ~${transitDuration}min`;
       }
     } else if (isTransitLeg && baseLeg.nextDepartures?.length > 0) {
       const times = baseLeg.nextDepartures
@@ -999,6 +1003,54 @@ function buildLegSubtitle(leg, transitData) {
 }
 
 /**
+ * V16.0: Shared City Loop filtering with soft-preference.
+ * Used by both findMatchingDeparture() and filterUnavailableTransitLegs()
+ * to ensure consistent train selection.
+ *
+ * When City Loop services are infrequent (e.g. Sunday/evening), the nearest
+ * Loop train may be 30-50 min away while a direct train to Flinders Street
+ * departs in 5 min. The soft-preference accepts direct trains when the gap
+ * exceeds 20 min — the user can alight at Flinders Street and walk ~5-7 min
+ * to nearby City Loop stations.
+ *
+ * @param {Array} dirMatches - Direction-filtered departures
+ * @returns {Array} - Filtered departures (City Loop preferred, direct fallback)
+ */
+function filterCityLoopPreference(dirMatches) {
+  const CITY_LOOP_PLATFORM_IDS = new Set([
+    ...(VIC_METRO_STATIONS?.PAR?.platforms || []),
+    ...(VIC_METRO_STATIONS?.MCE?.platforms || []),
+    ...(VIC_METRO_STATIONS?.FGS?.platforms || []),
+    ...(VIC_METRO_STATIONS?.SSS?.platforms || []),
+  ]);
+
+  const cityLoopTrains = dirMatches.filter(d => {
+    if (!d.finalStop) return !d.isMetroTunnel; // Fallback when no trip data
+    for (const pid of CITY_LOOP_PLATFORM_IDS) {
+      if (d.finalStop === pid || d.finalStop.endsWith(`:${pid}`) || d.finalStop.endsWith(`-${pid}`)) {
+        return true;
+      }
+    }
+    return false;
+  });
+
+  if (cityLoopTrains.length > 0) {
+    // Soft preference: if nearest City Loop train is >20 min further away
+    // than nearest direct train, accept all direction-matched trains.
+    // On weekdays Loop trains run every 5-10 min (gap small, filter strict).
+    // On Sundays/evenings Loop services 30-50 min apart (gap large, direct accepted).
+    const nearestLoopMin = Math.min(...cityLoopTrains.map(d => d.minutes ?? Infinity));
+    const nearestDirectMin = Math.min(...dirMatches.map(d => d.minutes ?? Infinity));
+    if (nearestLoopMin - nearestDirectMin > 20) {
+      return dirMatches; // Direct service is far superior — accept all
+    }
+    return cityLoopTrains;
+  }
+
+  return dirMatches; // No Loop trains found — keep all direction-matched
+}
+
+/**
  * Find matching departure from live data
  * V13.6: Enhanced to return all upcoming departure times for live countdown
  * @param {Object} leg - The journey leg
@@ -1027,31 +1079,9 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
       // actually reaches the destination station. Uses trip stop sequence when available,
       // falls back to excluding Metro Tunnel lines for City Loop destinations.
       if (leg.requiresCityLoop) {
-        // City Loop trains are non-Metro-Tunnel trains that DON'T terminate at
-        // Flinders Street. Check if the departure's final stop is a City Loop station
-        // (Parliament, Melbourne Central, Flagstaff, Southern Cross platform IDs).
-        const CITY_LOOP_PLATFORM_IDS = new Set([
-          // Parliament: all platforms
-          ...(VIC_METRO_STATIONS?.PAR?.platforms || []),
-          // Melbourne Central: all platforms
-          ...(VIC_METRO_STATIONS?.MCE?.platforms || []),
-          // Flagstaff: all platforms
-          ...(VIC_METRO_STATIONS?.FGS?.platforms || []),
-          // Southern Cross: all platforms
-          ...(VIC_METRO_STATIONS?.SSS?.platforms || []),
-        ]);
-        // Keep trains whose final stop is a City Loop station (meaning they go through it)
-        const cityLoopTrains = dirMatches.filter(d => {
-          if (!d.finalStop) return !d.isMetroTunnel; // Fallback when no trip data
-          // Check if any City Loop platform matches the final stop
-          for (const pid of CITY_LOOP_PLATFORM_IDS) {
-            if (d.finalStop === pid || d.finalStop.endsWith(`:${pid}`) || d.finalStop.endsWith(`-${pid}`)) {
-              return true;
-            }
-          }
-          return false;
-        });
-        if (cityLoopTrains.length > 0) dirMatches = cityLoopTrains;
+        // V16.0: Shared City Loop filtering with soft-preference.
+        // When Loop services are infrequent, accepts direct trains to Flinders St.
+        dirMatches = filterCityLoopPreference(dirMatches);
       } else if (leg.requiresMetroTunnel && dirMatches.some(d => d.isMetroTunnel)) {
         dirMatches = dirMatches.filter(d => d.isMetroTunnel);
       }
@@ -1085,9 +1115,11 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
   // Clone primary to avoid mutating shared transitData objects
   const primary = { ...matchedDepartures[0] };
   if (primary) {
-    // Collect all departure times in milliseconds for live countdown
+    // V16.0: Collect ALL departure times — the catchability filter in buildJourneyLegs
+    // selects the ones the user can actually catch. Previously limited to first 5, which
+    // caused timetable fallback when all 5 nearest trains departed before user arrival.
     const depTimes = [];
-    for (const d of matchedDepartures.slice(0, 5)) {
+    for (const d of matchedDepartures) {
       if (d.departureTimeMs) {
         depTimes.push(d.departureTimeMs);
       } else if (typeof d.minutes === 'number') {
@@ -1095,6 +1127,7 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
       }
     }
     primary.allDepartureTimesMs = depTimes;
+    // Display-facing nextDepartures stays limited to 5 (for "Next: x, y, z min" subtitle)
     primary.nextDepartures = matchedDepartures.slice(0, 5).map(d => d.minutes).filter(m => m !== undefined);
   }
 
@@ -1209,9 +1242,10 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
         // For trains: filter by direction, not route number — any line in the right direction
         if (isCitybound && departures && departures.length > 0) {
           let dirMatches = departures.filter(d => d.isCitybound === isCitybound);
-          // Metro Tunnel vs City Loop: prefer matching tunnel/loop trains
-          if (requiresCityLoop && dirMatches.some(d => !d.isMetroTunnel)) {
-            dirMatches = dirMatches.filter(d => !d.isMetroTunnel);
+          // V16.0: Use shared City Loop filter — consistent with findMatchingDeparture().
+          // Includes soft-preference: accepts direct trains when Loop services infrequent.
+          if (requiresCityLoop) {
+            dirMatches = filterCityLoopPreference(dirMatches);
           } else if (requiresMetroTunnel && dirMatches.some(d => d.isMetroTunnel)) {
             dirMatches = dirMatches.filter(d => d.isMetroTunnel);
           }
@@ -2051,6 +2085,14 @@ export default async function handler(req, res) {
     const tramLeg = route?.legs?.find(l => l.type === 'tram');
     const busLeg = route?.legs?.find(l => l.type === 'bus');
     const tramApiOptions = { ...apiOptions };
+    // V16.0: Pass home coordinates for coord-proximity fallback.
+    // When the detected tram stop ID isn't in VIC_TRAM_STOPS_WITH_COORDS
+    // (common — GTFS static IDs differ from coordinate DB IDs), the coord-proximity
+    // search uses these coordinates directly instead of failing silently.
+    if (homeCoords) {
+      tramApiOptions.lat = homeCoords.lat;
+      tramApiOptions.lon = homeCoords.lon;
+    }
     // Don't filter tram API by route number — multiple lines serve the same stop
     // and user wants to see whichever line is coming next
     const tramRouteNum = tramLeg?.routeNumber || detectedTramRoute;

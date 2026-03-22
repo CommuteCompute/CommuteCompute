@@ -26,10 +26,10 @@ export default async function handler(req, res) {
     : '2026-01-31';
 
   res.json({
-    version: 'v5.3.2',
+    version: 'v5.3.4',
     date: buildDate,
     system: {
-      version: '5.3.2',
+      version: '5.3.4',
       name: 'Commute Compute System',
       copyright: '© 2026 Angus Bergman',
       license: 'AGPL-3.0'
