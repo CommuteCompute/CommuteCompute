@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.3.4",
+    "version": "5.3.7",
     "name": "Commute Compute System",
     "releaseDate": "2026-03-22",
     "codename": "Turnkey Multi-State"
@@ -86,6 +86,36 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.3.7",
+      "date": "2026-03-22",
+      "changes": [
+        "Fix tram GTFS-RT stop ID mismatch: new alt-stop-id cascade tier tries GTFS_STOP_NAMES aliases and nearby stops on the same road (within 350m) — bridges gap when the user's exact stop ID doesn't appear in the feed's trip data",
+        "Aggregate alt stop ID departures across all matching stops with trip ID dedup — captures full departure set when different trips visit different stops along the same road",
+        "Multi-route tram support: findMatchingDeparture skips route filter for trams (user catches whichever route arrives first), dynamic route number updated from actual catchable departure",
+        "Train direction filter in raw feed fallback: outbound trains no longer display as going to citybound destinations (e.g. Frankston incorrectly shown as 'to Parliament Station')",
+        "Coord-proximity route-only fallback: when route filter confirms correct line but no stops have coordinates, accepts trip using earliest future stop_time_update as approximation"
+      ]
+    },
+    {
+      "version": "5.3.6",
+      "date": "2026-03-22",
+      "changes": [
+        "Fix catchable departure timing: subtitle shows ALL future live departures (Next: X, Y, Z min LIVE) while timing uses first CATCHABLE departure after user arrival — prevents uncatchable departures corrupting journey timing",
+        "Fix journey contribution cascade: downstream legs now receive correct arrivalAtStopMs because timing only uses departures the user can actually catch based on cumulative leg dependencies",
+        "Fix raw feed fallback: when no catchable departure exists in GTFS-RT window, uses estimated timing instead of closest-from-NOW (which was uncatchable and corrupted arrival calculation)"
+      ]
+    },
+    {
+      "version": "5.3.5",
+      "date": "2026-03-22",
+      "changes": [
+        "Fix route number normalisation: GTFS route IDs with leading zeros (e.g. '058') now match engine route numbers ('58') — resolves tram consistently showing 'Scheduled' despite live GTFS-RT data being available",
+        "Fix catchability fallback: when live GTFS-RT data exists but no departure is catchable from the user's arrival timing, live departure times are still displayed instead of falling back to timetable",
+        "Fix timestamp clamping: valid GTFS-RT departures >180 min away no longer incorrectly set isTimetableEstimate — low-frequency services stay marked as live",
+        "Fix route matching fallback: findMatchingDeparture keeps all departures when route filter empties instead of returning null — prevents silent discard of live data"
+      ]
+    },
     {
       "version": "5.3.4",
       "date": "2026-03-22",
