@@ -18,6 +18,7 @@
 import { getDepartures, getDisruptions, getWeather, METRO_LINE_NAMES } from '../src/services/opendata-client.js';
 import CommuteCompute from '../src/engines/commute-compute.js';
 import { GTFS_STOP_NAMES, getStopNameById, cleanStopName, MELBOURNE_STOP_IDS, detectStopIdsFromAddress, findNearestStops } from '../src/data/gtfs-stop-names.js';
+import { VIC_METRO_STATIONS } from '../src/data/vic/gtfs-reference.js';
 import { getTransitApiKey, getPreferences, getUserState, setDeviceStatus, getClient, getStationOverrides, setStationOverrides, getPreferredTramRoute, setPreferredTramRoute } from '../src/data/kv-preferences.js';
 import { renderFullDashboard, renderFullScreenBMP, DISPLAY_DIMENSIONS } from '../src/services/ccdash-renderer.js';
 import { getScenario, getScenarioNames } from '../src/services/journey-scenarios.js';
@@ -542,10 +543,6 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     // data. Live GTFS-RT or timetable estimate with "Scheduled ~Xmin" display.
     if (isTransitLeg && !actualDepartureMs) {
       leg.isTimetableEstimate = true;
-      // V16.0 FIX: Always calculate timetable departure estimates when no live
-      // GTFS-RT match exists. Previously gated by !isTomorrowCommute which blocked
-      // all departure data after 10:01am. Timetable estimates use current time +
-      // cumulative journey time, which is valid regardless of tomorrow mode.
       const estWaitMins = 2;
       const estDepartMins = nowMins + cumulativeMinutes + estWaitMins;
       const estH = Math.floor(estDepartMins / 60) % 24;
@@ -554,14 +551,22 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       const estAmPm = estH >= 12 ? 'pm' : 'am';
       departTime = `~${estH12}:${estM.toString().padStart(2, '0')}${estAmPm}`;
       minutesToDeparture = Math.min(cumulativeMinutes + estWaitMins, 180);
-      // Provide estimated departure timestamps so renderer can show 3 departures
-      const estDepartMs = nowMs + (minutesToDeparture * 60000);
-      const headway = leg.type === 'tram' ? 8 : (leg.type === 'train' ? 10 : 15);
-      nextDepartureTimesMs = [
-        estDepartMs,
-        estDepartMs + (headway * 60000),
-        estDepartMs + (headway * 2 * 60000)
-      ];
+
+      // V16.0: Only generate headway-based scheduled departures when the GTFS-RT feed
+      // was genuinely unavailable (no entities). If the feed responded with data but
+      // matching failed, don't fabricate departure times — the stop name subtitle is
+      // sufficient. Fake departures confuse users when real live data exists nearby.
+      const feedForMode = leg.type === 'tram' ? transitData.trams : (leg.type === 'train' ? transitData.trains : transitData.buses);
+      const feedHadEntities = feedForMode?._feedInfo?.entityCount > 0;
+      if (!feedHadEntities) {
+        const estDepartMs = nowMs + (minutesToDeparture * 60000);
+        const headway = leg.type === 'tram' ? 8 : (leg.type === 'train' ? 10 : 15);
+        nextDepartureTimesMs = [
+          estDepartMs,
+          estDepartMs + (headway * 60000),
+          estDepartMs + (headway * 2 * 60000)
+        ];
+      }
     }
 
     // V13.6: Calculate the actual journey contribution for this leg
@@ -631,9 +636,10 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     };
 
     // Handle coffee leg state based on coffee decision
-    // V13 Spec Section 5.5: Coffee subtitle must be "[OK] TIME FOR COFFEE" or "[X] SKIP - Running late"
+    // V16.0: Coffee subtitle — renderer draws coffee icon, no [OK] text prefix
     if (leg.type === 'coffee') {
       baseLeg.canGet = coffeeDecision.canGet;  // Pass to renderer for styling
+      baseLeg.minutes = null;  // V16.0: Coffee legs have no duration time box
       if (!coffeeDecision.canGet) {
         baseLeg.state = 'skip';
         baseLeg.status = 'skipped';  // Also set status for renderer
@@ -643,7 +649,7 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         baseLeg.subtitle = coffeeDecision.cafeClosed ? '[X] CLOSED -- Cafe not open' : '[X] SKIP -- Running late';
         legNumber--; // Don't increment for skipped leg
       } else {
-        baseLeg.subtitle = '[OK] TIME FOR COFFEE';
+        baseLeg.subtitle = 'TIME FOR COFFEE';
       }
     }
 
@@ -800,10 +806,23 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         baseLeg.subtitle = `Next: ${times} min LIVE`;
       }
     } else if (isTransitLeg && baseLeg.isTimetableEstimate) {
-      const estMins = Math.max(1, baseLeg.minutes || 0);
-      baseLeg.subtitle = `Scheduled ~${estMins}min`;
-      baseLeg.nextDepartures = [];
-      baseLeg.nextDepartureTimesMs = [];
+      // V16.0: Show 3 timetable-estimated departures instead of just "Scheduled ~Xmin"
+      // nextDepartureTimesMs was populated with headway-based estimates at timetable fallback
+      if (baseLeg.nextDepartures?.length > 0) {
+        const times = baseLeg.nextDepartures
+          .filter(m => m >= 0 && m <= 120)
+          .slice(0, 3)
+          .join(', ');
+        if (times) {
+          baseLeg.subtitle = `Scheduled ~${times} min`;
+        } else {
+          const estMins = Math.max(1, baseLeg.minutes || 0);
+          baseLeg.subtitle = `Scheduled ~${estMins}min`;
+        }
+      } else {
+        const estMins = Math.max(1, baseLeg.minutes || 0);
+        baseLeg.subtitle = `Scheduled ~${estMins}min`;
+      }
     } else if (isTransitLeg && baseLeg.nextDepartures?.length > 0) {
       const times = baseLeg.nextDepartures
         .filter(m => m >= 0 && m <= 120)
@@ -877,10 +896,11 @@ function buildLegTitle(leg) {
     }
     case 'train': {
       const destName = leg.destination?.name || 'City';
-      return `Train to ${destName}`;
+      const line = leg.lineName || '';
+      return line ? `${line} to ${destName}` : `Train to ${destName}`;
     }
     case 'tram': {
-      const num = leg.routeNumber ? `Tram ${leg.routeNumber}` : 'Tram';
+      const num = leg.routeNumber ? `Route ${leg.routeNumber}` : (leg.lineName || 'Tram');
       const destName = leg.destination?.name || 'City';
       return `${num} to ${destName}`;
     }
@@ -998,9 +1018,35 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
     // isCitybound is set by processGtfsRtDepartures from the trip's final stop.
     if (leg.isCitybound !== undefined) {
       let dirMatches = departures.filter(d => d.isCitybound === leg.isCitybound);
-      // Metro Tunnel vs City Loop: prefer matching tunnel/loop trains
-      if (leg.requiresCityLoop && dirMatches.some(d => !d.isMetroTunnel)) {
-        dirMatches = dirMatches.filter(d => !d.isMetroTunnel);
+      // V16.0: City Loop vs Metro Tunnel — filter by whether the departure's trip
+      // actually reaches the destination station. Uses trip stop sequence when available,
+      // falls back to excluding Metro Tunnel lines for City Loop destinations.
+      if (leg.requiresCityLoop) {
+        // City Loop trains are non-Metro-Tunnel trains that DON'T terminate at
+        // Flinders Street. Check if the departure's final stop is a City Loop station
+        // (Parliament, Melbourne Central, Flagstaff, Southern Cross platform IDs).
+        const CITY_LOOP_PLATFORM_IDS = new Set([
+          // Parliament: all platforms
+          ...(VIC_METRO_STATIONS?.PAR?.platforms || []),
+          // Melbourne Central: all platforms
+          ...(VIC_METRO_STATIONS?.MCE?.platforms || []),
+          // Flagstaff: all platforms
+          ...(VIC_METRO_STATIONS?.FGS?.platforms || []),
+          // Southern Cross: all platforms
+          ...(VIC_METRO_STATIONS?.SSS?.platforms || []),
+        ]);
+        // Keep trains whose final stop is a City Loop station (meaning they go through it)
+        const cityLoopTrains = dirMatches.filter(d => {
+          if (!d.finalStop) return !d.isMetroTunnel; // Fallback when no trip data
+          // Check if any City Loop platform matches the final stop
+          for (const pid of CITY_LOOP_PLATFORM_IDS) {
+            if (d.finalStop === pid || d.finalStop.endsWith(`:${pid}`) || d.finalStop.endsWith(`-${pid}`)) {
+              return true;
+            }
+          }
+          return false;
+        });
+        if (cityLoopTrains.length > 0) dirMatches = cityLoopTrains;
       } else if (leg.requiresMetroTunnel && dirMatches.some(d => d.isMetroTunnel)) {
         dirMatches = dirMatches.filter(d => d.isMetroTunnel);
       }
@@ -2007,6 +2053,24 @@ export default async function handler(req, res) {
     const busApiOptions = { ...apiOptions };
     if (busLeg?.routeNumber) busApiOptions.routeNumber = busLeg.routeNumber;
 
+    // V16.0: Re-detect tram stop from route leg origin — the route's tram stop may differ
+    // from the home-detected stop (user walks HOME → CAFE → TRAM STOP, so tram stop is
+    // near the cafe, not near home). Search GTFS_STOP_NAMES by origin name to find correct ID.
+    if (tramLeg?.origin?.name && tramStopId) {
+      const tramOriginName = tramLeg.origin.name.toLowerCase();
+      // Strict match: stop name must contain ALL parts of the origin name (order-independent)
+      // Prevents partial matches on common road names shared across multiple stops
+      const originParts = tramOriginName.split(/[\/,]/).map(p => p.trim()).filter(p => p.length > 2);
+      const matchingEntry = Object.entries(GTFS_STOP_NAMES).find(([, name]) => {
+        const nameLower = name.toLowerCase();
+        return originParts.length > 0 && originParts.every(part => nameLower.includes(part));
+      });
+      if (matchingEntry && matchingEntry[0] !== tramStopId) {
+        console.log(`[CommuteCompute] Tram stop re-detected from route leg: ${tramStopId} → ${matchingEntry[0]} (${matchingEntry[1]})`);
+        tramStopId = matchingEntry[0];
+      }
+    }
+
     // V15.0: Extract train line code for route-level fallback
     const trainLeg = route?.legs?.find(l => l.type === 'train' || l.type === 'vline');
     const trainApiOptions = { ...apiOptions };
@@ -2015,6 +2079,20 @@ export default async function handler(req, res) {
         ([, name]) => name.toLowerCase() === trainLeg.lineName.toLowerCase()
       );
       if (lineEntry) trainApiOptions.lineCode = lineEntry[0];
+    }
+
+    // V16.0: Set requiresCityLoop / requiresMetroTunnel on train leg based on destination
+    // Sandringham line terminates at Flinders Street — doesn't serve City Loop stations.
+    // Frankston/Cranbourne/Pakenham go through City Loop (Parliament, Melbourne Central, etc.)
+    const CITY_LOOP_STATIONS = ['parliament', 'melbourne central', 'flagstaff', 'southern cross'];
+    const METRO_TUNNEL_STATIONS = ['town hall', 'state library', 'parkville', 'arden', 'anzac'];
+    if (trainLeg?.destination?.name) {
+      const destLower = trainLeg.destination.name.toLowerCase();
+      if (CITY_LOOP_STATIONS.some(s => destLower.includes(s))) {
+        trainLeg.requiresCityLoop = true;
+      } else if (METRO_TUNNEL_STATIONS.some(s => destLower.includes(s))) {
+        trainLeg.requiresMetroTunnel = true;
+      }
     }
 
     const [trains, trams, buses, ferries, weather, metroDisruptions, tramDisruptions, busDisruptions, ferryDisruptions] = await Promise.all([
@@ -2146,11 +2224,13 @@ export default async function handler(req, res) {
       }
     }
 
-    // Issue 3: When cafe is closed/skipped, REMOVE the coffee leg entirely from journey
-    // and merge surrounding walk legs into a direct bypass walk. This prevents a
-    // closed cafe from allocating 5 min in the journey total.
+    // Issue 3: When cafe is closed/skipped OR outside commute window, REMOVE the coffee
+    // leg entirely from journey and merge surrounding walk legs into a direct bypass walk.
+    // This prevents coffee from inflating journey timing on non-commute days.
+    // Cafe status still shows in header bar regardless (CoffeeDecision card).
     let effectiveRoute = route;
-    if (coffeeDecision.cafeClosed || !coffeeDecision.canGet) {
+    const shouldBypassCoffee = coffeeDecision.cafeClosed || !coffeeDecision.canGet || isNonCommuteDayPreview || earlyIsTomorrowCommute;
+    if (shouldBypassCoffee) {
       const routeLegs = [...(route?.legs || []).map(l => ({ ...l }))];
       const coffeeIdx = routeLegs.findIndex(leg => leg.type === 'coffee');
 

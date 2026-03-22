@@ -30,7 +30,8 @@
 
 import GtfsRealtimeBindings from 'gtfs-realtime-bindings';
 import { getTransitApiKey } from '../data/kv-preferences.js';
-import { VIC_METRO_STATIONS, getPlatformIds } from '../data/vic/gtfs-reference.js';
+import { VIC_METRO_STATIONS, getPlatformIds, VIC_TRAM_STOPS_WITH_COORDS } from '../data/vic/gtfs-reference.js';
+import { haversine } from '../utils/haversine.js';
 
 // State-aware transit API configuration
 // Each state with GTFS-RT support defines: baseUrl, auth headers, and mode mapping.
@@ -398,12 +399,10 @@ export async function getDepartures(stopId, routeType, options = {}) {
       }
     }
 
-    // V16.0: All-trips stop search for tram/bus when stop-level AND route-level both fail.
-    // When no route number is available, scan ALL trips in the feed for stop-level matches.
-    // This catches GTFS-RT feeds where stop IDs differ from static GTFS (known tram issue).
-    // Uses Strategy 1 only (exact stop match within trips) — no median estimation —
-    // to avoid showing departures from routes that don't serve the user's stop.
-    if (departures.length === 0 && feedEntityCount > 0 && !options.routeNumber && !options.lineCode && mode !== 'metro') {
+    // V16.0: CASCADING fallback — all-trips scan runs whenever previous levels found nothing.
+    // Previously gated by !options.routeNumber which blocked this when route-level failed.
+    // Now cascading: stop-level → route-level → all-trips scan → broad fallback.
+    if (departures.length === 0 && feedEntityCount > 0 && mode !== 'metro') {
       const scanDepartures = processAllTripsStopSearch(feed, stopId, routeType, state);
       if (scanDepartures.length > 0) {
         console.log(`[OpenData] All-trips stop search found ${scanDepartures.length} departures for stopId=${stopId} in ${mode} feed`);
@@ -411,11 +410,21 @@ export async function getDepartures(stopId, routeType, options = {}) {
       }
     }
 
-    // V15.0: Broad fallback — only for trains when stop-level AND route-level both fail.
-    // Disabled for tram/bus: broad fallback produces departures from routes that don't
-    // serve the user's stop, showing incorrect route numbers. Trains are safe because
-    // direction-based matching (isCitybound) still applies in findMatchingDeparture.
-    if (departures.length === 0 && feedEntityCount > 0 && !options.routeNumber && !options.lineCode && mode === 'metro') {
+    // V16.0: Coordinate-proximity fallback for trams — finds trips passing near the user's
+    // tram stop by matching GTFS-RT stop IDs to static GTFS coordinates. Solves the VIC tram
+    // feed issue where stop IDs in the feed don't match the queried stop ID directly.
+    if (departures.length === 0 && feedEntityCount > 0 && mode === 'tram') {
+      const coordDepartures = processCoordinateProximitySearch(feed, stopId, routeType, state, options.routeNumber || null);
+      if (coordDepartures.length > 0) {
+        console.log(`[OpenData] Coordinate-proximity search found ${coordDepartures.length} departures for stopId=${stopId} in ${mode} feed`);
+        coordDepartures.forEach(d => departures.push(d));
+      }
+    }
+
+    // V16.0: CASCADING broad fallback for trains — runs whenever previous levels found nothing.
+    // Previously gated by !options.lineCode which blocked this when route-level failed.
+    // Direction-based matching (isCitybound) in findMatchingDeparture still filters correctly.
+    if (departures.length === 0 && feedEntityCount > 0 && mode === 'metro') {
       const broadDepartures = processAnyRouteDepartures(feed);
       if (broadDepartures.length > 0) {
         console.log(`[OpenData] Broad fallback: ${broadDepartures.length} departures from mixed routes in ${mode} feed (stopId=${stopId})`);
@@ -622,7 +631,7 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType, lineC
       deduped.push(d);
     }
   }
-  return deduped.slice(0, 5);
+  return deduped.slice(0, 10);
 }
 
 /**
@@ -717,15 +726,125 @@ function processAllTripsStopSearch(feed, stopId, routeType, state = 'VIC') {
       deduped.push(d);
     }
   }
-  return deduped.slice(0, 5);
+  return deduped.slice(0, 10);
 }
 
 /**
- * V15.0: Broad tram fallback — extract departures from ALL routes in the feed.
- * Used when stop-level matching fails AND no specific route number is available.
- * GTFS-RT tram stop IDs differ from static GTFS, so this provides approximate
- * live timing data from any tram route in the feed (midpoint of each trip).
- * This is a last resort to ensure tram legs are preserved in the display.
+ * V16.0: Coordinate-proximity tram matching — finds trips whose stop sequences
+ * include stops within a radius of the user's tram stop coordinates.
+ * Used when the GTFS-RT feed's stop IDs don't match our static GTFS stop IDs
+ * (known issue with VIC tram feeds). Looks up each feed stop ID in the static
+ * VIC_TRAM_STOPS_WITH_COORDS data to get coordinates, then checks proximity.
+ *
+ * @param {Object} feed - Decoded GTFS-RT FeedMessage
+ * @param {string|number} stopId - Queried stop ID (used to find target coordinates)
+ * @param {number} routeType - 0=metro, 1=tram, 2=bus
+ * @param {string} state - State code
+ * @param {string|null} targetRouteNumber - If set, only match trips on this route
+ * @returns {Array} - Departure objects from coordinate-matched trips
+ */
+function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC', targetRouteNumber = null) {
+  const nowMs = getNowMs();
+  const departures = [];
+  if (!feed?.entity || state !== 'VIC' || routeType !== 1) return departures;
+
+  // Find target stop coordinates from static GTFS data
+  const stopIdStr = String(stopId);
+  const targetStop = VIC_TRAM_STOPS_WITH_COORDS.find(s => s.id === stopIdStr);
+  if (!targetStop?.lat || !targetStop?.lon) return departures;
+
+  // Build a lookup map of feed stop IDs → coordinates from static GTFS data
+  const coordCache = {};
+
+  for (const entity of feed.entity) {
+    const tripUpdate = entity.tripUpdate;
+    if (!tripUpdate?.stopTimeUpdate?.length) continue;
+
+    // V16.0: Filter by route number to avoid matching stops on different tram lines
+    // that happen to pass near the same intersection
+    if (targetRouteNumber) {
+      const tripRoute = getRouteNumber(tripUpdate.trip?.routeId);
+      if (tripRoute && tripRoute !== String(targetRouteNumber)) continue;
+    }
+
+    const stus = tripUpdate.stopTimeUpdate;
+    let closestStu = null;
+    let closestDist = 500; // 500m radius — tram stops typically 200-400m apart
+    let closestIdx = -1;
+
+    for (let i = 0; i < stus.length; i++) {
+      const feedStopId = String(stus[i].stopId);
+      // Look up coordinates from cache or static data
+      if (!(feedStopId in coordCache)) {
+        const staticStop = VIC_TRAM_STOPS_WITH_COORDS.find(s => s.id === feedStopId);
+        coordCache[feedStopId] = staticStop ? { lat: staticStop.lat, lon: staticStop.lon } : null;
+      }
+      const coords = coordCache[feedStopId];
+      if (!coords) continue;
+
+      const dist = haversine(targetStop.lat, targetStop.lon, coords.lat, coords.lon);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestStu = stus[i];
+        closestIdx = i;
+      }
+    }
+
+    if (!closestStu) continue;
+
+    const depTime = closestStu.departure?.time || closestStu.arrival?.time;
+    if (!depTime) continue;
+
+    const depMs = (depTime.low || depTime) * 1000;
+
+    // V16.0: Adjust departure time based on distance between matched stop and user's stop.
+    // Average tram speed ~16 km/h in Melbourne (accounting for stops, traffic lights).
+    // If the matched stop is BEFORE the user's stop in the sequence (lower index),
+    // the tram arrives at the user's stop LATER → add travel time.
+    // closestDist is in metres; 16 km/h = 267 m/min.
+    const travelTimeMs = Math.round((closestDist / 267) * 60000);
+    // Determine direction: check if there's a stop AFTER the matched one that's
+    // closer to the user's stop (tram is approaching) vs further away (tram passed).
+    // Simple heuristic: if matched stop is in the first half of the trip sequence,
+    // tram is likely approaching → add travel time. Otherwise subtract.
+    const isApproaching = closestIdx < stus.length / 2;
+    const adjustedDepMs = isApproaching ? depMs + travelTimeMs : depMs - travelTimeMs;
+    const minutes = Math.round((adjustedDepMs - nowMs) / 60000);
+
+    if (minutes >= -2 && minutes <= 120) {
+      const delay = closestStu.departure?.delay || closestStu.arrival?.delay || 0;
+      const routeId = tripUpdate.trip?.routeId;
+      departures.push({
+        minutes: Math.max(0, minutes),
+        departureTimeMs: adjustedDepMs,
+        destination: getLineName(routeId) || tripUpdate.trip?.tripHeadsign || '',
+        lineName: getLineName(routeId),
+        routeNumber: getRouteNumber(routeId) || null,
+        routeId,
+        tripId: tripUpdate.trip?.tripId,
+        isCitybound: false,
+        delay: Math.round(delay / 60),
+        isDelayed: delay > 60,
+        isLive: true,
+        source: 'gtfs-rt-coord'
+      });
+    }
+  }
+
+  departures.sort((a, b) => a.departureTimeMs - b.departureTimeMs);
+  const deduped = [];
+  for (const d of departures) {
+    if (deduped.length === 0 || d.departureTimeMs - deduped[deduped.length - 1].departureTimeMs > 60000) {
+      deduped.push(d);
+    }
+  }
+  return deduped.slice(0, 10);
+}
+
+/**
+ * V15.0: Broad fallback — extract departures from ALL routes in the feed.
+ * Used for trains when all previous matching strategies fail.
+ * Direction-based matching (isCitybound) in findMatchingDeparture still filters correctly.
  *
  * @param {Object} feed - Decoded GTFS-RT FeedMessage
  * @returns {Array} - Departure objects from mixed routes
@@ -762,15 +881,24 @@ function processAnyRouteDepartures(feed) {
     const pickIdx = Math.floor(futureDeps.length / 2);
     const picked = futureDeps[pickIdx];
 
+    // V16.0: Detect direction from trip's stop sequence for proper filtering
+    const finalStopId = stus[stus.length - 1]?.stopId || '';
+    const lineCode = routeId?.match(/-([A-Z]{3}):?$/)?.[1] || '';
+    const isMetroTunnel = METRO_TUNNEL_LINE_CODES.has(lineCode);
+    // Use median stop index to detect if train is heading towards city
+    const medianIdx = Math.floor(stus.length / 2);
+    const isCitybound = isTrainCitybound(stus, medianIdx);
+
     departures.push({
       minutes: Math.max(0, picked.minutes),
       departureTimeMs: picked.depMs,
-      destination: lineName,
+      destination: isCitybound ? 'City' : (lineName || ''),
       lineName,
       routeNumber: extractedRoute,
       routeId,
       tripId: tripUpdate.trip?.tripId,
-      isCitybound: false,
+      isCitybound,
+      isMetroTunnel,
       isLive: true,
       source: 'gtfs-rt-broad'
     });
@@ -783,7 +911,7 @@ function processAnyRouteDepartures(feed) {
       dedupedBroad.push(d);
     }
   }
-  return dedupedBroad.slice(0, 5);
+  return dedupedBroad.slice(0, 10);
 }
 
 /**
@@ -878,9 +1006,10 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0, state = 'VIC') {
     }
   }
 
-  // Sort by departure time and limit to 5
+  // Sort by departure time — return up to 10 to support inter-leg catchability
+  // (user may not reach the stop for 30+ min due to earlier transit legs)
   departures.sort((a, b) => a.minutes - b.minutes);
-  return departures.slice(0, 5);
+  return departures.slice(0, 10);
 }
 
 // V13.6: getMockDepartures removed per Section 23.6 — no mock data fallbacks.

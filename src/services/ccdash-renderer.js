@@ -570,14 +570,14 @@ function drawBusIcon(ctx, x, y, size = 32) {
  * Draw coffee icon (32x32) WITH STEAM LINES
  * V10 Spec Section 5.3.5 - Per reference image 2
  */
-function drawCoffeeIcon(ctx, x, y, size = 32) {
+function drawCoffeeIcon(ctx, x, y, size = 32, color = '#000') {
   const scale = size / 32;
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(scale, scale);
-  
-  ctx.fillStyle = '#000';
-  ctx.strokeStyle = '#000';
+
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
   ctx.lineWidth = 2;
   
   // Steam lines (wavy lines above cup) - per reference image
@@ -1138,16 +1138,19 @@ function renderLegZone(ctx, leg, zone, legNumber = 1, isHighlighted = false) {
   }
   
   // Leg number circle (V10 Spec Section 5.2) - scaled
-  // v1.21: Fixed positioning - consistent spacing
+  // V16.0: Coffee-can-get legs have no number bubble
+  const isCoffeeCanGetZone = leg.type === 'coffee' && leg.canGet !== false;
   const numberX = x + 6;
   const numberY = y + (h - numberSize) / 2;
-  drawLegNumber(ctx, legNumber, numberX, numberY, status, numberSize);
-  
+  if (!isCoffeeCanGetZone) {
+    drawLegNumber(ctx, legNumber, numberX, numberY, status, numberSize);
+  }
+
   // Mode icon (V10 Spec Section 5.3) - scaled
-  // v1.21: Icon starts right after number with 4px gap
-  const iconX = numberX + numberSize + 4;
+  // V16.0: Coffee-can-get has no number bubble, icon starts closer to left
+  const iconX = isCoffeeCanGetZone ? x + 6 : numberX + numberSize + 4;
   const iconY = y + (h - iconSize) / 2;
-  
+
   // For skipped coffee, use outline variant (1-bit safe, no gray pixels)
   const useOutline = (leg.type === 'coffee' && !leg.canGet);
   drawModeIcon(ctx, leg.type, iconX, iconY, iconSize, useOutline);
@@ -1172,9 +1175,11 @@ function renderLegZone(ctx, leg, zone, legNumber = 1, isHighlighted = false) {
   ctx.fillText(title, textX, titleY);
   
   // v1.20: Time box dimensions (scaled) - define early for DEPART positioning
-  const timeBoxW = Math.max(56, Math.round(72 * scale));
+  // V16.0: Coffee legs have no time box
+  const hasTimeBox = leg.type !== 'coffee' && leg.type !== 'walk';
+  const timeBoxW = hasTimeBox ? Math.max(56, Math.round(72 * scale)) : 0;
   const timeBoxX = w - timeBoxW;
-  
+
   // Subtitle (V10 Spec Section 5.5)
   // Calculate max width to prevent overlap with DEPART column and time box
   const hasDepart = ['train', 'tram', 'bus', 'vline', 'ferry'].includes(leg.type) && leg.departTime;
@@ -1219,66 +1224,45 @@ function renderLegZone(ctx, leg, zone, legNumber = 1, isHighlighted = false) {
   const timeBoxH = h;
   const timeBoxY = y;
   
-  // Determine time box style
-  let timeBoxBg = '#000';
-  let timeBoxTextColor = '#FFF';
-  let showDuration = true;
-  
-  if (isHighlighted || isCoffeeInverted) {
-    timeBoxBg = '#FFF';
-    timeBoxTextColor = '#000';
-  } else if (status === 'delayed') {
-    timeBoxBg = '#FFF';
-    timeBoxTextColor = '#000';
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([6, 4]);
-    ctx.strokeRect(timeBoxX + 2, timeBoxY + 2, timeBoxW - 4, timeBoxH - 4);
-    ctx.setLineDash([]);
-  } else if (leg.type === 'coffee' && !leg.canGet) {
-    // Skip coffee - solid border, no fill (1-bit: use #000, not gray)
-    ctx.strokeStyle = '#000';  // E-ink 1-bit: NO GRAY
-    ctx.lineWidth = 2;
-    ctx.setLineDash([]);
-    ctx.strokeRect(timeBoxX + 2, timeBoxY + 2, timeBoxW - 4, timeBoxH - 4);
-    ctx.setLineDash([]);
-    showDuration = false;
-    // Draw "—" for skipped - v1.20: scaled
-    const skipFontSize = Math.max(16, Math.round(22 * scale));
-    ctx.fillStyle = '#000';  // E-ink 1-bit: NO GRAY
-    ctx.font = `bold ${skipFontSize}px Inter, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('—', timeBoxX + timeBoxW / 2, timeBoxY + timeBoxH / 2);
-    ctx.textAlign = 'left';
-  }
-  
-  if (showDuration && !(leg.type === 'coffee' && !leg.canGet)) {
+  // V16.0: Time box only for transit legs (not coffee or walk)
+  if (hasTimeBox) {
+    let timeBoxBg = '#000';
+    let timeBoxTextColor = '#FFF';
+
+    if (isHighlighted) {
+      timeBoxBg = '#FFF';
+      timeBoxTextColor = '#000';
+    } else if (status === 'delayed') {
+      timeBoxBg = '#FFF';
+      timeBoxTextColor = '#000';
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6, 4]);
+      ctx.strokeRect(timeBoxX + 2, timeBoxY + 2, timeBoxW - 4, timeBoxH - 4);
+      ctx.setLineDash([]);
+    }
+
     // Time box background
     ctx.fillStyle = timeBoxBg;
     if (timeBoxBg === '#000') {
       ctx.fillRect(timeBoxX, timeBoxY, timeBoxW, timeBoxH);
     }
-    
-    // v1.20: Scale time text based on box height
+
     const minFontSize = Math.max(16, Math.round(22 * scale));
     const labelFontSize = Math.max(7, Math.round(9 * scale));
     const minOffset = Math.round(8 * scale);
     const labelOffset = Math.round(12 * scale);
-    
-    // Time text
+
     ctx.fillStyle = timeBoxTextColor;
     ctx.font = `bold ${minFontSize}px Inter, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    
+
     const minutes = leg.minutes ?? leg.durationMinutes ?? '--';
-    const displayMin = leg.type === 'coffee' ? `~${minutes}` : minutes.toString();
-    ctx.fillText(displayMin, timeBoxX + timeBoxW / 2, timeBoxY + timeBoxH / 2 - minOffset);
-    
+    ctx.fillText(minutes.toString(), timeBoxX + timeBoxW / 2, timeBoxY + timeBoxH / 2 - minOffset);
+
     ctx.font = `${labelFontSize}px Inter, sans-serif`;
-    const timeLabel = leg.type === 'walk' ? 'MIN WALK' : 'MIN';
-    ctx.fillText(timeLabel, timeBoxX + timeBoxW / 2, timeBoxY + timeBoxH / 2 + labelOffset);
+    ctx.fillText('MIN', timeBoxX + timeBoxW / 2, timeBoxY + timeBoxH / 2 + labelOffset);
   }
   
   // Reset
@@ -1322,16 +1306,18 @@ function getLegTitle(leg) {
       // V13.3: Show specific cafe name
       return leg.cafeName || leg.location || leg.name || 'Coffee at Cafe';
     case 'tram':
-      // V13.3: Show specific stop name in title
+      // V16.0: Show route number in title
       if (leg.status === 'diverted') {
-        return `Tram ${leg.routeNumber || ''} Diverted`;
+        return `Route ${leg.routeNumber || ''} Diverted`;
       }
       const tramDest = getDestName();
-      return `Tram ${leg.routeNumber || ''} to ${tramDest}`;
+      const tramLabel = leg.routeNumber ? `Route ${leg.routeNumber}` : (leg.lineName || 'Tram');
+      return `${tramLabel} to ${tramDest}`;
     case 'train':
-      // V13.3: Show specific station name
+      // V16.0: Show line name in title (e.g. "Sandringham to Parliament Station")
       const trainDest = getDestName();
-      return `Train to ${trainDest}`;
+      const trainLine = leg.lineName || '';
+      return trainLine ? `${trainLine} to ${trainDest}` : `Train to ${trainDest}`;
     case 'bus':
       if (leg.isReplacement) {
         return 'Rail Replacement Bus';
@@ -2966,8 +2952,8 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     return Math.min(cumulativeMinutes, 180);
   });
 
-  // v1.29: Identify transit leg types (use departure countdown) vs walk (use duration)
-  const isTransitLeg = (type) => ['train', 'tram', 'bus', 'vline', 'ferry', 'coffee'].includes(type);
+  // V16.0: Transit leg types that have time boxes (coffee removed — no longer has time box)
+  const isTransitLeg = (type) => ['train', 'tram', 'bus', 'vline', 'ferry'].includes(type);
   
   // Count delayed legs for status bar (DELAY vs DELAYS)
   const delayedLegs = legs.filter(l => l.status === 'delayed' || l.delayMinutes > 0);
@@ -2987,6 +2973,23 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     const isSkippedLeg = leg.skippedForTiming || (status === 'skipped' || status === 'skip');
     // V13.5: Move isWalkLeg declaration before border logic that uses it
     const isWalkLeg = leg.type === 'walk';
+
+    // V16.0: Per-leg element scaling — cap sizes to zone height to prevent overlap
+    const zh = zone.h;
+    const isCompactLeg = isWalkLeg || leg.type === 'coffee';
+    // Compact legs (walk/coffee): elements must fit in ~27-40px
+    // Transit legs: elements must fit in ~53-80px
+    const effNumberSize = Math.min(numberSize, Math.round(zh * 0.65));
+    const effTitleSize = isCompactLeg
+      ? Math.min(titleSize, Math.max(11, Math.round(zh * 0.5)))
+      : Math.min(titleSize, Math.max(11, Math.round(zh * 0.38)));
+    const effSubtitleSize = Math.min(subtitleSize, Math.max(11, Math.round(zh * 0.3)));
+    const effTransitIconSize = Math.min(transitIconSize, Math.round(zh * 0.8));
+    const effWalkIconSize = Math.min(walkIconSize, Math.round(zh * 0.7));
+    const effDepartLabelSize = Math.min(departLabelSize, Math.max(7, Math.round(zh * 0.18)));
+    const effDepartTimeSize = Math.min(departTimeSize, Math.max(9, Math.round(zh * 0.32)));
+    const effDurationSize = Math.min(durationSize, Math.max(14, Math.round(zh * 0.55)));
+    const effDurationLabelSize = Math.min(durationLabelSize, Math.max(8, Math.round(zh * 0.2)));
 
     // V16.0: Inject total walk steps into first walk leg for LifestyleContext engine visibility
     if (isWalkLeg && data.mindset_steps && !leg._stepsInjected) {
@@ -3168,15 +3171,18 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     // - Suspended: Dashed circle with X (per ref image 6)
     // v1.27: scaled leg numbers
     // -----------------------------------------------------------------------
-    if (isSuspended) {
-      drawLegNumber(ctx, 'X', zone.x + 6, zone.y + (zone.h - numberSize) / 2, 'cancelled', numberSize);
+    // V16.0: Coffee-can-get legs have no number bubble (icon serves as identifier)
+    if (isCoffeeCanGet) {
+      // No number bubble for coffee — coffee icon drawn below serves as identifier
+    } else if (isSuspended) {
+      drawLegNumber(ctx, 'X', zone.x + 6, zone.y + (zone.h - effNumberSize) / 2, 'cancelled', effNumberSize);
     } else if (isSkippedLeg) {
       // V13.5: Skipped legs get dashed circle outline (same as skipped coffee)
-      drawLegNumber(ctx, legNum, zone.x + 6, zone.y + (zone.h - numberSize) / 2, 'skipped', numberSize);
+      drawLegNumber(ctx, legNum, zone.x + 6, zone.y + (zone.h - effNumberSize) / 2, 'skipped', effNumberSize);
     } else {
-      drawLegNumber(ctx, legNum, zone.x + 6, zone.y + (zone.h - numberSize) / 2, status, numberSize);
+      drawLegNumber(ctx, legNum, zone.x + 6, zone.y + (zone.h - effNumberSize) / 2, status, effNumberSize);
     }
-    
+
     // -----------------------------------------------------------------------
     // MODE ICON (V10 Spec Section 5.3) - v1.27: scaled
     // V13.3: Transit icons double height to match two text lines
@@ -3185,8 +3191,9 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     // -----------------------------------------------------------------------
     // V13.5: Use outline icons for all skipped/delayed/diverted/suspended legs
     const useOutlineIcon = isDelayed || isSkippedCoffee || isSkippedLeg || isSuspended || isDiverted;
-    const currentIconSize = isWalkLeg ? walkIconSize : transitIconSize;
-    const iconX = zone.x + 8 + numberSize + 6;
+    const currentIconSize = isWalkLeg ? effWalkIconSize : effTransitIconSize;
+    // V16.0: Coffee-can-get has no number bubble, so icon starts closer to left edge
+    const iconX = isCoffeeCanGet ? zone.x + 8 : zone.x + 8 + effNumberSize + 6;
     drawModeIcon(ctx, leg.type, iconX, zone.y + (zone.h - currentIconSize) / 2, currentIconSize, useOutlineIcon);
 
     // -----------------------------------------------------------------------
@@ -3199,27 +3206,35 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     // V16.0: Walk and coffee legs are compact (single line). Transit is multi-line.
     if (isWalkLeg || leg.type === 'coffee') {
       if (leg.type === 'coffee') {
-        // V16.0: Coffee leg — compact single-line, black bar if can-get, white if skipped
-        // Time box now rendered separately (see time box section below)
-        const coffeeTimeBoxW = Math.max(72, Math.round(88 * scale));
-        const coffeeContentW = zone.w - coffeeTimeBoxW;
+        // V16.0: Coffee leg — compact single-line, NO time box, NO number bubble
+        // Black bar fills entire zone width for can-get; white for skipped
         if (isCoffeeCanGet) {
           ctx.fillStyle = '#000';
-          ctx.fillRect(zone.x, zone.y, coffeeContentW, zone.h);
+          ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
         }
-        ctx.font = `bold ${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;
-        const coffTitleY = zone.y + (zone.h + Math.round(16 * fs) * 0.35) / 2;
-        const coffeeTextMaxW = coffeeContentW - textX + zone.x - 10;
+        const coffeeFontSize = effTitleSize;
+        ctx.font = `bold ${coffeeFontSize}px Inter, sans-serif`;
+        // V16.0: Vertically centre text using textBaseline 'middle' for accurate alignment
+        ctx.textBaseline = 'middle';
+        const coffTitleY = zone.y + zone.h / 2;
+        const coffeeTextMaxW = zone.w - textX + zone.x - 10;
         if (isCoffeeCanGet) {
           ctx.fillStyle = '#FFF';
-          let coffeeLabel = leg.subtitle || (isExtraTimeCoffee ? '[OK] EXTRA TIME' : '[OK] TIME FOR COFFEE');
-          if (ctx.measureText(coffeeLabel).width > coffeeTextMaxW) {
-            while (ctx.measureText(coffeeLabel + '\u2026').width > coffeeTextMaxW && coffeeLabel.length > 5) {
+          // V16.0: Draw small coffee icon instead of [OK] prefix
+          const coffeeIconSz = Math.min(Math.round(zh * 0.6), 20);
+          const coffeeIconY = coffTitleY - coffeeIconSz / 2;
+          drawCoffeeIcon(ctx, textX, coffeeIconY, coffeeIconSz, '#FFF');
+          ctx.fillStyle = '#FFF';
+          const labelX = textX + coffeeIconSz + 6;
+          let coffeeLabel = leg.subtitle || (isExtraTimeCoffee ? 'EXTRA TIME' : 'TIME FOR COFFEE');
+          const labelMaxW = coffeeTextMaxW - coffeeIconSz - 6;
+          if (ctx.measureText(coffeeLabel).width > labelMaxW) {
+            while (ctx.measureText(coffeeLabel + '\u2026').width > labelMaxW && coffeeLabel.length > 5) {
               coffeeLabel = coffeeLabel.slice(0, -1);
             }
             coffeeLabel = coffeeLabel.trimEnd() + '\u2026';
           }
-          ctx.fillText(coffeeLabel, textX, coffTitleY);
+          ctx.fillText(coffeeLabel, labelX, coffTitleY);
         } else {
           ctx.fillStyle = '#000';
           let skipLabel = leg.subtitle || '[X] SKIP';
@@ -3231,10 +3246,11 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
           }
           ctx.fillText(skipLabel, textX, coffTitleY);
         }
+        ctx.textBaseline = 'top';  // Reset
       } else {
         // Walk leg - single line with duration in text (no duration box)
-        ctx.font = `bold ${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;
-        const titleY = zone.y + (zone.h - 16) / 2;
+        ctx.font = `bold ${effTitleSize}px Inter, sans-serif`;
+        const titleY = zone.y + (zone.h - effTitleSize) / 2;
         if (idx === 0) leg.isFirst = true;
         const walkDuration = leg.minutes || leg.durationMinutes || 0;
         let legTitle = leg.title || getLegTitle(leg);
@@ -3258,14 +3274,14 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
         ctx.fillText(legTitle, textX, titleY);
       }
     } else {
-      // V13: Transit/Coffee - multi-line layout
-      ctx.font = `bold ${titleSize}px Inter, sans-serif`;
+      // V13: Transit - multi-line layout
+      ctx.font = `bold ${effTitleSize}px Inter, sans-serif`;
 
       // v1.30: Title and subtitle CLOSE together, vertically centered as a unit
-      const textBlockHeight = titleSize + subtitleSize + 4;  // V13: Slightly more spacing
+      const textBlockHeight = effTitleSize + effSubtitleSize + 4;
       const textBlockY = zone.y + (zone.h - textBlockHeight) / 2;
       const titleY = textBlockY;
-      const subtitleY = textBlockY + titleSize + 4;  // V13: 4px gap
+      const subtitleY = textBlockY + effTitleSize + 4;
       const verticalPadding = Math.max(4, Math.round(zone.h * 0.08));
 
       if (idx === 0) leg.isFirst = true;
@@ -3274,7 +3290,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
       // B3: Truncate title to available width (Section 7.2-7.3 compliance)
       // Compute inline to avoid referencing timeBoxW/departColW before declaration
       const titleTimeBoxW = isWalkLeg ? 0 : Math.max(72, Math.round(88 * scale));
-      const titleDepartColW = (['train', 'tram', 'bus', 'vline', 'ferry', 'coffee'].includes(leg.type) && leg.departTime) ? Math.max(40, Math.round(50 * scale)) : 0;
+      const titleDepartColW = (['train', 'tram', 'bus', 'vline', 'ferry'].includes(leg.type) && leg.departTime) ? Math.max(40, Math.round(50 * scale)) : 0;
       const titleMaxWidth = zone.w - textX - titleTimeBoxW - titleDepartColW - Math.round(30 * scale);
       if (ctx.measureText(legTitle).width > titleMaxWidth) {
         const ellipsis = '\u2026';
@@ -3288,9 +3304,9 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
 
       // -----------------------------------------------------------------------
       // SUBTITLE (V10 Spec Section 5.5) - v1.27: scaled
-      // V13: Only for transit/coffee legs (walk legs are single-line)
+      // V13: Only for transit legs (walk/coffee legs are single-line)
       // -----------------------------------------------------------------------
-      ctx.font = `${subtitleSize}px Inter, sans-serif`;
+      ctx.font = `${effSubtitleSize}px Inter, sans-serif`;
       let legSubtitle = leg.subtitle;
 
       // V15.0: screen.js provides subtitle with "Next: X, Y min LIVE" (catchable only)
@@ -3446,15 +3462,14 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     }
 
     // v1.27: Calculate max width with scaled elements
-    // V13.1: DEPART column now shows for transit AND coffee legs
-    const hasDepart = (['train', 'tram', 'bus', 'vline', 'ferry', 'coffee'].includes(leg.type) && leg.departTime) ||
-                      (leg.type === 'coffee' && leg.canGet !== false);
-    const timeBoxW = isWalkLeg ? 0 : Math.max(72, Math.round(88 * scale));
+    // V16.0: DEPART column for transit legs only (coffee no longer has time box/depart)
+    const hasDepart = ['train', 'tram', 'bus', 'vline', 'ferry'].includes(leg.type) && leg.departTime;
+    const timeBoxW = (isWalkLeg || leg.type === 'coffee') ? 0 : Math.max(72, Math.round(88 * scale));
     const departColW = hasDepart ? Math.max(40, Math.round(50 * scale)) : 0;
     const subtitleMaxWidth = zone.w - textX - timeBoxW - departColW - Math.round(60 * scale);
 
     // If subtitle is too wide, drop "Alight at" first (departure times are more useful)
-    ctx.font = `${subtitleSize}px Inter, sans-serif`;
+    ctx.font = `${effSubtitleSize}px Inter, sans-serif`;
     if (ctx.measureText(legSubtitle).width > subtitleMaxWidth) {
       const alightIdx = legSubtitle.indexOf(' \u2022 Alight at ');
       if (alightIdx > -1) {
@@ -3488,7 +3503,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     // B1: Canvas clipping region for subtitle zone (Section 7.2-7.3 compliance)
     ctx.save();
     ctx.beginPath();
-    ctx.rect(textX, subtitleY - 2, subtitleMaxWidth, subtitleSize + 4);
+    ctx.rect(textX, subtitleY - 2, subtitleMaxWidth, effSubtitleSize + 4);
     ctx.clip();
 
     if (nextIdx > -1) {
@@ -3496,19 +3511,19 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
       const beforeNext = legSubtitle.substring(0, nextIdx + 3);
       const nextPart = legSubtitle.substring(nextIdx + 3);
 
-      ctx.font = `${subtitleSize}px Inter, sans-serif`;
+      ctx.font = `${effSubtitleSize}px Inter, sans-serif`;
       ctx.fillText(beforeNext, textX, subtitleY, subtitleMaxWidth);
       const beforeWidth = ctx.measureText(beforeNext).width;
 
       // Render "Next:" portion in bold with maxWidth protection
-      ctx.font = `bold ${subtitleSize}px Inter, sans-serif`;
+      ctx.font = `bold ${effSubtitleSize}px Inter, sans-serif`;
       const remainingWidth = subtitleMaxWidth - beforeWidth;
       if (remainingWidth > 0) {
         ctx.fillText(nextPart, textX + beforeWidth, subtitleY, remainingWidth);
       }
     } else if (startsWithNext) {
       // Entire subtitle is "Next: x,y,z min" - render all bold
-      ctx.font = `bold ${subtitleSize}px Inter, sans-serif`;
+      ctx.font = `bold ${effSubtitleSize}px Inter, sans-serif`;
       ctx.fillText(legSubtitle, textX, subtitleY, subtitleMaxWidth);
     } else {
       // No "Next:" - render normally
@@ -3518,13 +3533,13 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     ctx.restore();
 
     // -----------------------------------------------------------------------
-    // DEPART TIME COLUMN - V13.1: Now shows for transit AND coffee legs
+    // DEPART TIME COLUMN - V16.0: Transit legs only (coffee no longer has depart column)
     // Shows the scheduled departure time for this leg in sequence
     // -----------------------------------------------------------------------
     if (hasDepart) {
       // V13.6: DEPART column further left for clear separation from countdown box
       const departColCenter = zone.x + zone.w - timeBoxW - departColW - Math.round(35 * scale);
-      const departBlockY = zone.y + (zone.h - departLabelSize - departTimeSize - 1) / 2;
+      const departBlockY = zone.y + (zone.h - effDepartLabelSize - effDepartTimeSize - 1) / 2;
 
       // B1: Canvas clipping region for DEPART column (Section 7.2-7.3 compliance)
       ctx.save();
@@ -3532,30 +3547,15 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
       ctx.rect(departColCenter - departColW, zone.y, departColW * 2, zone.h);
       ctx.clip();
 
-      // "DEPART" label - for coffee, show "LEAVE" instead
-      ctx.font = `bold ${departLabelSize}px Inter, sans-serif`;
+      ctx.font = `bold ${effDepartLabelSize}px Inter, sans-serif`;
       ctx.textAlign = 'center';
-      const departLabel = leg.type === 'coffee' ? 'LEAVE' : 'DEPART';
-      ctx.fillText(departLabel, departColCenter, departBlockY);
+      ctx.fillText('DEPART', departColCenter, departBlockY);
 
       // Time directly below with minimal gap
-      // V13.1: Calculate scheduled departure time if not provided
-      let displayDepartTime = leg.departTime;
-      if (!displayDepartTime && leg.type === 'coffee') {
-        // For coffee: depart time is when user should leave cafe
-        // Calculate from now + cumulative time to coffee
-        const now = new Date();
-        const coffeeEndMins = departureCountdowns[idx];
-        const departDate = new Date(now.getTime() + coffeeEndMins * 60000);
-        const h = departDate.getHours();
-        const m = departDate.getMinutes();
-        const ampm = h >= 12 ? 'pm' : 'am';
-        const h12 = h > 12 ? h - 12 : (h === 0 ? 12 : h);
-        displayDepartTime = `${h12}:${String(m).padStart(2, '0')}${ampm}`;
-      }
+      const displayDepartTime = leg.departTime;
 
-      ctx.font = `bold ${departTimeSize}px Inter, sans-serif`;
-      ctx.fillText(displayDepartTime, departColCenter, departBlockY + departLabelSize + 1, departColW * 2);
+      ctx.font = `bold ${effDepartTimeSize}px Inter, sans-serif`;
+      ctx.fillText(displayDepartTime, departColCenter, departBlockY + effDepartLabelSize + 1, departColW * 2);
       ctx.textAlign = 'left';
 
       ctx.restore();
@@ -3564,25 +3564,21 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
 
     // -----------------------------------------------------------------------
     // TIME BOX (V10 Spec Section 5.6) - Per reference images
-    // V13.3: Walk legs have NO time box - duration shown in title text
-    // Transit/Coffee legs show minutes until departure in black box
-    // V13.6: Larger time boxes with bigger numbers and more spacing
+    // V16.0: Walk and coffee legs have NO time box
+    // Transit legs show minutes until departure in black box
     // -----------------------------------------------------------------------
-    if (!isWalkLeg) {
-    // V13.6: Increased time box size for better visibility
-    const timeBoxW = Math.max(72, Math.round(88 * scale));
-    const timeBoxX = zone.x + zone.w - timeBoxW;
-    // V13.6: More spacing between number and 'MIN' label
+    if (!isWalkLeg && leg.type !== 'coffee') {
+    const timeBoxW2 = Math.max(72, Math.round(88 * scale));
+    const timeBoxX = zone.x + zone.w - timeBoxW2;
     const minOffset = Math.round(6 * scale);
     const labelOffset = Math.round(16 * scale);
 
     // B1: Canvas clipping region for time box (Section 7.2-7.3 compliance)
     ctx.save();
     ctx.beginPath();
-    ctx.rect(timeBoxX, zone.y, timeBoxW, zone.h);
+    ctx.rect(timeBoxX, zone.y, timeBoxW2, zone.h);
     ctx.clip();
 
-    // V13.1: Transit/Coffee = minutes until departure
     const displayMinutes = departureCountdowns[idx];
 
     if (isSuspended) {
@@ -3590,34 +3586,18 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
       ctx.font = `bold ${Math.max(11, Math.round(11 * scale * fs))}px Inter, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('CANCELLED', timeBoxX + timeBoxW / 2, zone.y + zone.h / 2);
-    } else if (isSkippedCoffee) {
-      // Skipped coffee: dashed border time box with actual duration (~X MIN)
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([4, 4]);
-      ctx.strokeRect(timeBoxX + 2, zone.y + 2, timeBoxW - 4, zone.h - 4);
-      ctx.setLineDash([]);
-      ctx.fillStyle = '#000';
-      ctx.font = `bold ${durationSize}px Inter, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const skipDuration = displayMinutes || leg.minutes || leg.durationMinutes || 0;
-      ctx.fillText(skipDuration > 0 ? `~${skipDuration}` : '\u2014', timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 - minOffset);
-      ctx.font = `${durationLabelSize}px Inter, sans-serif`;
-      ctx.fillText('MIN', timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 + labelOffset);
+      ctx.fillText('CANCELLED', timeBoxX + timeBoxW2 / 2, zone.y + zone.h / 2);
     } else if (isDiverted) {
       ctx.fillStyle = '#000';
-      ctx.font = `bold ${durationSize}px Inter, sans-serif`;
+      ctx.font = `bold ${effDurationSize}px Inter, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      // v1.29: Walk=duration, Transit=cumulative
-      ctx.fillText(displayMinutes.toString(), timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 - minOffset);
-      ctx.font = `${durationLabelSize}px Inter, sans-serif`;
-      ctx.fillText(isWalkLeg ? 'MIN WALK' : 'MIN', timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 + labelOffset);
-    } else if (isDelayed && leg.type !== 'walk') {
+      ctx.fillText(displayMinutes.toString(), timeBoxX + timeBoxW2 / 2, zone.y + zone.h / 2 - minOffset);
+      ctx.font = `${effDurationLabelSize}px Inter, sans-serif`;
+      ctx.fillText('MIN', timeBoxX + timeBoxW2 / 2, zone.y + zone.h / 2 + labelOffset);
+    } else if (isDelayed) {
       ctx.fillStyle = '#FFF';
-      ctx.fillRect(timeBoxX, zone.y, timeBoxW, zone.h);
+      ctx.fillRect(timeBoxX, zone.y, timeBoxW2, zone.h);
       ctx.strokeStyle = '#000';
       ctx.lineWidth = 3;
       ctx.setLineDash([6, 4]);
@@ -3627,30 +3607,25 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.fillStyle = '#000';
-      ctx.font = `bold ${durationSize}px Inter, sans-serif`;
+      ctx.font = `bold ${effDurationSize}px Inter, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      // v1.29: Walk=duration, Transit=cumulative
-      ctx.fillText(displayMinutes.toString(), timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 - minOffset);
-      ctx.font = `${durationLabelSize}px Inter, sans-serif`;
-      const delayedTimeLabel = leg.type === 'walk' ? 'MIN WALK' : 'MIN';
-      ctx.fillText(delayedTimeLabel, timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 + labelOffset);
+      ctx.fillText(displayMinutes.toString(), timeBoxX + timeBoxW2 / 2, zone.y + zone.h / 2 - minOffset);
+      ctx.font = `${effDurationLabelSize}px Inter, sans-serif`;
+      ctx.fillText('MIN', timeBoxX + timeBoxW2 / 2, zone.y + zone.h / 2 + labelOffset);
     } else {
       ctx.fillStyle = '#000';
-      ctx.fillRect(timeBoxX, zone.y, timeBoxW, zone.h);
+      ctx.fillRect(timeBoxX, zone.y, timeBoxW2, zone.h);
       ctx.fillStyle = '#FFF';
-      ctx.font = `bold ${durationSize}px Inter, sans-serif`;
+      ctx.font = `bold ${effDurationSize}px Inter, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      // v1.29: Walk=duration, Transit=cumulative (coffee gets ~ prefix)
-      const displayMin = leg.type === 'coffee' ? `~${displayMinutes}` : displayMinutes.toString();
-      ctx.fillText(displayMin, timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 - minOffset);
-      ctx.font = `${durationLabelSize}px Inter, sans-serif`;
-      const normalTimeLabel = leg.type === 'walk' ? 'MIN WALK' : 'MIN';
-      ctx.fillText(normalTimeLabel, timeBoxX + timeBoxW / 2, zone.y + zone.h / 2 + labelOffset);
+      ctx.fillText(displayMinutes.toString(), timeBoxX + timeBoxW2 / 2, zone.y + zone.h / 2 - minOffset);
+      ctx.font = `${effDurationLabelSize}px Inter, sans-serif`;
+      ctx.fillText('MIN', timeBoxX + timeBoxW2 / 2, zone.y + zone.h / 2 + labelOffset);
     }
     ctx.restore();
-    }  // V13.3: End of !isWalkLeg block for time box
+    }  // V16.0: End of transit-only time box block
 
     ctx.textAlign = 'left';
     ctx.fillStyle = '#000';
