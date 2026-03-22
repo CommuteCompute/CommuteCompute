@@ -385,6 +385,10 @@ export async function getDepartures(stopId, routeType, options = {}) {
       }
     }
 
+    // V16.0: Cascade attempt tracking — records which tiers were tried and results.
+    // Enables diagnosis when GTFS-RT data exists but cascade fails to match.
+    const cascadeAttempts = [];
+
     // V16.0: For trams, coordinate-proximity runs BEFORE route-level.
     // VIC tram GTFS-RT feeds use different stop IDs than static GTFS (known issue).
     // Route-level's median-stop heuristic estimates departure at a mid-route stop,
@@ -393,6 +397,7 @@ export async function getDepartures(stopId, routeType, options = {}) {
     // run first so the inaccurate median heuristic doesn't block it.
     if (departures.length === 0 && feedEntityCount > 0 && mode === 'tram') {
       const coordDepartures = processCoordinateProximitySearch(feed, stopId, routeType, state, options.routeNumber || null);
+      cascadeAttempts.push({ tier: 'coord-proximity', tried: true, found: coordDepartures.length });
       if (coordDepartures.length > 0) {
         console.log(`[OpenData] Coordinate-proximity search found ${coordDepartures.length} departures for stopId=${stopId} in ${mode} feed`);
         coordDepartures.forEach(d => departures.push(d));
@@ -407,6 +412,7 @@ export async function getDepartures(stopId, routeType, options = {}) {
       const routeFallbackDepartures = processRouteLevelDepartures(
         feed, stopId, options.routeNumber, routeType, options.lineCode, state
       );
+      cascadeAttempts.push({ tier: 'route-level', tried: true, found: routeFallbackDepartures.length });
       if (routeFallbackDepartures.length > 0) {
         console.log(`[OpenData] Route-level fallback found ${routeFallbackDepartures.length} departures for ${options.routeNumber || options.lineCode} (stopId=${stopId} not matched directly)`);
         // Copy results to departures array (preserving array identity for _feedInfo)
@@ -418,6 +424,7 @@ export async function getDepartures(stopId, routeType, options = {}) {
     // Previously gated by !options.routeNumber which blocked this when route-level failed.
     if (departures.length === 0 && feedEntityCount > 0 && mode !== 'metro') {
       const scanDepartures = processAllTripsStopSearch(feed, stopId, routeType, state);
+      cascadeAttempts.push({ tier: 'all-trips-scan', tried: true, found: scanDepartures.length });
       if (scanDepartures.length > 0) {
         console.log(`[OpenData] All-trips stop search found ${scanDepartures.length} departures for stopId=${stopId} in ${mode} feed`);
         scanDepartures.forEach(d => departures.push(d));
@@ -429,10 +436,16 @@ export async function getDepartures(stopId, routeType, options = {}) {
     // Direction-based matching (isCitybound) in findMatchingDeparture still filters correctly.
     if (departures.length === 0 && feedEntityCount > 0 && mode === 'metro') {
       const broadDepartures = processAnyRouteDepartures(feed);
+      cascadeAttempts.push({ tier: 'broad-fallback', tried: true, found: broadDepartures.length });
       if (broadDepartures.length > 0) {
         console.log(`[OpenData] Broad fallback: ${broadDepartures.length} departures from mixed routes in ${mode} feed (stopId=${stopId})`);
         broadDepartures.forEach(d => departures.push(d));
       }
+    }
+
+    // Record stop-level attempt (always the first tier tried)
+    if (feedEntityCount > 0) {
+      cascadeAttempts.unshift({ tier: 'stop-level', tried: true, found: departures.length > 0 && departures[0]?.source === 'gtfs-rt' ? departures.length : 0 });
     }
 
     departures._feedInfo = {
@@ -444,6 +457,7 @@ export async function getDepartures(stopId, routeType, options = {}) {
       queriedLineCode: options.lineCode || null,
       mode,
       state,
+      cascadeAttempts,
       matchMethod: departures.length > 0 && departures[0]?.source === 'gtfs-rt-coord'
         ? 'coord-proximity' : departures.length > 0 && departures[0]?.source === 'gtfs-rt-scan'
         ? 'all-trips-scan' : departures.length > 0 && departures[0]?.source === 'gtfs-rt-route'
