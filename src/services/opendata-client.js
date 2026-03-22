@@ -186,6 +186,18 @@ function getRouteNumber(routeId) {
 }
 
 /**
+ * Normalise route number for comparison — strips leading zeros.
+ * GTFS route IDs may produce "058" while engine legs use "58".
+ * @param {string|number|null} rn - Route number
+ * @returns {string|null} - Normalised route number without leading zeros
+ */
+function normalizeRouteNumber(rn) {
+  if (!rn) return null;
+  const n = parseInt(String(rn), 10);
+  return isNaN(n) ? String(rn) : String(n);
+}
+
+/**
  * Extract 3-letter line code from GTFS route ID.
  * Used for train route-level fallback (e.g., "aus:vic:vic-02-SHM:" → "SHM")
  * @param {string} routeId - GTFS route ID
@@ -389,6 +401,30 @@ export async function getDepartures(stopId, routeType, options = {}) {
     // Enables diagnosis when GTFS-RT data exists but cascade fails to match.
     const cascadeAttempts = [];
 
+    // V16.0: Alternative stop ID matching — same physical stop with different GTFS ID.
+    // GTFS-RT feeds may use a different stop ID namespace than GTFS static data.
+    // Produces EXACT stop-level matches with accurate departure times (unlike
+    // coord-proximity approximations). Runs before coord-proximity for priority.
+    if (departures.length === 0 && feedEntityCount > 0 && options.altStopIds?.length > 0) {
+      // Aggregate across ALL alt IDs — different trips may visit different stops
+      // along the same road. Dedup by trip ID to avoid counting the same tram twice.
+      const seenTrips = new Set();
+      const altMatches = [];
+      for (const altId of options.altStopIds) {
+        const altDeps = processGtfsRtDepartures(feed, altId, routeType, state);
+        for (const d of altDeps) {
+          if (d.tripId && seenTrips.has(d.tripId)) continue;
+          if (d.tripId) seenTrips.add(d.tripId);
+          departures.push(d);
+          if (!altMatches.includes(altId)) altMatches.push(altId);
+        }
+      }
+      if (departures.length > 0) {
+        console.log(`[OpenData] Alt stop IDs matched ${departures.length} departures from ${altMatches.length} stops for stopId=${stopId} in ${mode} feed`);
+      }
+      cascadeAttempts.push({ tier: 'alt-stop-id', tried: true, altsTried: options.altStopIds.length, matched: altMatches.length > 0 ? altMatches : null, found: departures.length });
+    }
+
     // V16.0: For trams, coordinate-proximity runs BEFORE route-level.
     // VIC tram GTFS-RT feeds use different stop IDs than static GTFS (known issue).
     // Route-level's median-stop heuristic estimates departure at a mid-route stop,
@@ -566,7 +602,7 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType, lineC
     let extractedRoute = null;
     if (targetRoute) {
       extractedRoute = getRouteNumber(routeId);
-      if (extractedRoute !== targetRoute) continue;
+      if (normalizeRouteNumber(extractedRoute) !== normalizeRouteNumber(targetRoute)) continue;
     } else if (lineCode) {
       const extractedCode = getLineCode(routeId);
       if (extractedCode !== lineCode) continue;
@@ -787,7 +823,7 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
     // that happen to pass near the same intersection
     if (targetRouteNumber) {
       const tripRoute = getRouteNumber(tripUpdate.trip?.routeId);
-      if (tripRoute && tripRoute !== String(targetRouteNumber)) continue;
+      if (tripRoute && normalizeRouteNumber(tripRoute) !== normalizeRouteNumber(targetRouteNumber)) continue;
     }
 
     const stus = tripUpdate.stopTimeUpdate;
@@ -819,7 +855,44 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
       }
     }
 
-    if (candidates.length === 0) continue;
+    if (candidates.length === 0) {
+      // Route filter passed (this IS the correct line) but no stops in this trip
+      // had coordinates in VIC_TRAM_STOPS_WITH_COORDS. Accept the trip using earliest
+      // future stop_time_update as approximation. Only when route is confirmed —
+      // without a route filter, this would match trams on parallel roads.
+      if (targetRouteNumber) {
+        let earliestFutureMs = null;
+        for (const stu of stus) {
+          const depTime = stu.departure?.time || stu.arrival?.time;
+          if (!depTime) continue;
+          const depMs = (depTime.low || depTime) * 1000;
+          const mins = Math.round((depMs - nowMs) / 60000);
+          if (mins >= 0 && mins <= 120 && (!earliestFutureMs || depMs < earliestFutureMs)) {
+            earliestFutureMs = depMs;
+          }
+        }
+        if (earliestFutureMs) {
+          const mins = Math.round((earliestFutureMs - nowMs) / 60000);
+          const routeId = tripUpdate.trip?.routeId;
+          departures.push({
+            minutes: mins,
+            departureTimeMs: earliestFutureMs,
+            destination: getLineName(routeId) || tripUpdate.trip?.tripHeadsign || '',
+            lineName: getLineName(routeId),
+            routeNumber: getRouteNumber(routeId) || null,
+            routeId,
+            tripId: tripUpdate.trip?.tripId,
+            isCitybound: false,
+            delay: 0,
+            isDelayed: false,
+            isLive: true,
+            source: 'gtfs-rt-coord',
+            _matchDist: searchRadius
+          });
+        }
+      }
+      continue;
+    }
 
     // Pick the candidate with the earliest future departure (>= 0 min).
     // For approaching trams, the closest stop may be one already passed (past time),

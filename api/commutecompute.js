@@ -18,7 +18,8 @@
 import { getDepartures, getDisruptions, getWeather, METRO_LINE_NAMES } from '../src/services/opendata-client.js';
 import CommuteCompute from '../src/engines/commute-compute.js';
 import { GTFS_STOP_NAMES, getStopNameById, cleanStopName, MELBOURNE_STOP_IDS, detectStopIdsFromAddress, findNearestStops } from '../src/data/gtfs-stop-names.js';
-import { VIC_METRO_STATIONS } from '../src/data/vic/gtfs-reference.js';
+import { VIC_METRO_STATIONS, VIC_TRAM_STOPS_WITH_COORDS } from '../src/data/vic/gtfs-reference.js';
+import { haversine } from '../src/utils/haversine.js';
 import { getTransitApiKey, getPreferences, getUserState, setDeviceStatus, getClient, getStationOverrides, setStationOverrides, getPreferredTramRoute, setPreferredTramRoute } from '../src/data/kv-preferences.js';
 import { renderFullDashboard, renderFullScreenBMP, DISPLAY_DIMENSIONS } from '../src/services/ccdash-renderer.js';
 import { getScenario, getScenarioNames } from '../src/services/journey-scenarios.js';
@@ -498,13 +499,30 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         // as catchable — the estimation error is typically 1-3 min.
         const estimationBuffer = (liveData.source === 'gtfs-rt-route' || liveData.source === 'gtfs-rt-coord') ? 3 * 60000 : 0;
         const catchableDepartures = liveData.allDepartureTimesMs.filter(depMs => depMs >= arrivalAtStopMs - estimationBuffer);
+        // Show ALL future live departures for subtitle (Next: X, Y, Z min LIVE)
+        const allFutureDeps = liveData.allDepartureTimesMs.filter(ms => ms > nowMs);
+        if (allFutureDeps.length > 0) {
+          nextDepartureTimesMs = allFutureDeps.slice(0, 10);
+        }
+        // Use first CATCHABLE departure for timing (minutes box, depart time, journey contribution)
         if (catchableDepartures.length > 0) {
           actualDepartureMs = catchableDepartures[0];
-          nextDepartureTimesMs = catchableDepartures.slice(0, 5);
+          // Multi-route support: update leg route number from the actual catchable
+          // departure. When multiple tram routes serve the same stop, the first
+          // catchable departure may be a different route than the engine planned.
+          if (leg.type === 'tram' && liveData.allDepartures?.length > 0) {
+            const catchableDep = liveData.allDepartures.find(d => d.departureTimeMs === actualDepartureMs);
+            if (catchableDep?.routeNumber) leg.routeNumber = catchableDep.routeNumber;
+            if (catchableDep?.lineName) leg.lineName = catchableDep.lineName;
+          }
         }
       } else if (liveData.departureTimeMs && liveData.departureTimeMs >= arrivalAtStopMs) {
         actualDepartureMs = liveData.departureTimeMs;
         nextDepartureTimesMs = [actualDepartureMs];
+      }
+      // When live data exists, mark the leg — even if no catchable departure was found
+      if (!actualDepartureMs && nextDepartureTimesMs?.length > 0) {
+        leg.hasLiveData = true;
       }
 
       if (actualDepartureMs) {
@@ -517,7 +535,6 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
           rawMinutes = cumulativeMinutes + (legDuration || 5);
           // Clamped minutes — use estimate for display, but keep isLive flag.
           // GTFS-RT DID respond; isLive reflects feed availability, not minute validity.
-          leg.isTimetableEstimate = true;
         }
         minutesToDeparture = rawMinutes;
 
@@ -543,34 +560,68 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       }
     }
 
-    // V15.0: Timetable fallback. If GTFS-RT has no live data for this transit leg,
-    // estimate departure as arrival + 2 min average wait. Per Section 23.6: No mock
-    // data. Live GTFS-RT or timetable estimate with "Scheduled ~Xmin" display.
-    if (isTransitLeg && !actualDepartureMs) {
-      leg.isTimetableEstimate = true;
-      const estWaitMins = 2;
-      const estDepartMins = nowMins + cumulativeMinutes + estWaitMins;
-      const estH = Math.floor(estDepartMins / 60) % 24;
-      const estM = estDepartMins % 60;
-      const estH12 = estH % 12 || 12;
-      const estAmPm = estH >= 12 ? 'pm' : 'am';
-      departTime = `~${estH12}:${estM.toString().padStart(2, '0')}${estAmPm}`;
-      minutesToDeparture = Math.min(cumulativeMinutes + estWaitMins, 180);
-
-      // V16.0: Only generate headway-based scheduled departures when the GTFS-RT feed
-      // was genuinely unavailable (no entities). If the feed responded with data but
-      // matching failed, don't fabricate departure times — the stop name subtitle is
-      // sufficient. Fake departures confuse users when real live data exists nearby.
+    // Timetable fallback. Only when GTFS-RT has NO live data at all for this mode.
+    // When live data exists (liveData non-null OR raw feed has live departures),
+    // show live departure times — never fall back to "Scheduled".
+    if (isTransitLeg && !actualDepartureMs && !liveData) {
       const feedForMode = leg.type === 'tram' ? transitData.trams : (leg.type === 'train' ? transitData.trains : transitData.buses);
-      const feedHadEntities = feedForMode?._feedInfo?.entityCount > 0;
-      if (!feedHadEntities) {
-        const estDepartMs = nowMs + (minutesToDeparture * 60000);
-        const headway = leg.type === 'tram' ? 8 : (leg.type === 'train' ? 10 : 15);
-        nextDepartureTimesMs = [
-          estDepartMs,
-          estDepartMs + (headway * 60000),
-          estDepartMs + (headway * 2 * 60000)
-        ];
+      const feedLiveDeps = feedForMode?.filter(d => d.isLive === true && d.departureTimeMs) || [];
+
+      // For trains: filter raw feed by direction — outbound trains should never
+      // show as going to a citybound destination (e.g. Parliament Station).
+      if (leg.type === 'train' && leg.isCitybound !== undefined) {
+        const dirFiltered = feedLiveDeps.filter(d => d.isCitybound === leg.isCitybound);
+        feedLiveDeps.length = 0;
+        dirFiltered.forEach(d => feedLiveDeps.push(d));
+      }
+      if (feedLiveDeps.length > 0) {
+        // findMatchingDeparture returned null (direction/route mismatch) but
+        // the raw feed HAS live departures for this mode. Show them rather than
+        // falling back to timetable — the user should see live data when it exists.
+        const rawDepTimes = feedLiveDeps.map(d => d.departureTimeMs).sort((a, b) => a - b);
+        // Show ALL future departures for subtitle (Next: X, Y, Z min LIVE)
+        const futureDeps = rawDepTimes.filter(ms => ms > nowMs);
+        if (futureDeps.length > 0) {
+          nextDepartureTimesMs = futureDeps.slice(0, 10);
+        }
+        // Use first CATCHABLE departure for timing — must be after user arrives at stop
+        const catchableFuture = futureDeps.filter(ms => ms >= arrivalAtStopMs);
+        if (catchableFuture.length > 0) {
+          actualDepartureMs = catchableFuture[0];
+          let rawMinutes = Math.round((actualDepartureMs - nowMs) / 60000);
+          if (rawMinutes > 180) rawMinutes = cumulativeMinutes + (legDuration || 5);
+          minutesToDeparture = rawMinutes;
+          const departDate = new Date(actualDepartureMs);
+          const departMelb = getMelbourneDisplayTime(departDate, state);
+          const departH12 = departMelb.hour % 12 || 12;
+          const departAmPm = departMelb.hour >= 12 ? 'pm' : 'am';
+          departTime = `${departH12}:${departMelb.minute.toString().padStart(2, '0')}${departAmPm}`;
+        }
+        // Mark as having live data even without catchable departure
+        leg.hasLiveData = true;
+        // Don't set isTimetableEstimate — live data exists in the feed
+      } else {
+        // Genuinely no live data — timetable estimate
+        leg.isTimetableEstimate = true;
+        const estWaitMins = 2;
+        const estDepartMins = nowMins + cumulativeMinutes + estWaitMins;
+        const estH = Math.floor(estDepartMins / 60) % 24;
+        const estM = estDepartMins % 60;
+        const estH12 = estH % 12 || 12;
+        const estAmPm = estH >= 12 ? 'pm' : 'am';
+        departTime = `~${estH12}:${estM.toString().padStart(2, '0')}${estAmPm}`;
+        minutesToDeparture = Math.min(cumulativeMinutes + estWaitMins, 180);
+
+        const feedHadEntities = feedForMode?._feedInfo?.entityCount > 0;
+        if (!feedHadEntities) {
+          const estDepartMs = nowMs + (minutesToDeparture * 60000);
+          const headway = leg.type === 'tram' ? 8 : (leg.type === 'train' ? 10 : 15);
+          nextDepartureTimesMs = [
+            estDepartMs,
+            estDepartMs + (headway * 60000),
+            estDepartMs + (headway * 2 * 60000)
+          ];
+        }
       }
     }
 
@@ -627,8 +678,9 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       actualDepartureMs,           // V13.6: Actual departure timestamp for stable arrival calc
       // V15.0: Live data flags — isLive and isTimetableEstimate are mutually exclusive.
       // Per Pattern 7: isLive: true = GTFS-RT match ONLY. If timetable estimate is used,
-      // the leg is not live even if the GTFS-RT feed responded (no catchable departure matched).
-      isLive: isTransitLeg && liveData?.isLive === true && !leg.isTimetableEstimate,
+      // isLive reflects whether GTFS-RT data exists for this mode — true when matched
+      // departure has isLive, OR when raw feed had live data (hasLiveData flag).
+      isLive: isTransitLeg && (liveData?.isLive === true || leg.hasLiveData === true) && !leg.isTimetableEstimate,
       isTimetableEstimate: leg.isTimetableEstimate || false,
       // V13.6: Stop/station names for renderer display
       originStop: leg.originStop,
@@ -1101,15 +1153,21 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
     }
     // No route number filtering for trains — any line in the right direction
   } else if (leg.routeNumber) {
-    // For trams/buses: filter by route number (specific routes serve specific corridors)
-    const routeMatches = departures.filter(d =>
-      d.routeNumber?.toString() === leg.routeNumber.toString()
-    );
-    if (routeMatches.length > 0) {
-      matchedDepartures = routeMatches;
-    } else {
-      return null;
+    // For trams: skip route filter — user catches whichever route arrives first
+    // at their stop. The first catchable departure's route number populates the
+    // title dynamically (see allDepartures route lookup in buildJourneyLegs).
+    // For buses: still filter by route (different routes go different places).
+    if (leg.type !== 'tram') {
+      const legRoute = parseInt(String(leg.routeNumber), 10);
+      const routeMatches = departures.filter(d => {
+        if (!d.routeNumber) return false;
+        return parseInt(String(d.routeNumber), 10) === legRoute;
+      });
+      if (routeMatches.length > 0) {
+        matchedDepartures = routeMatches;
+      }
     }
+    // Trams: matchedDepartures stays as ALL departures — any route at this stop
   }
 
   // Clone primary to avoid mutating shared transitData objects
@@ -1127,6 +1185,10 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
       }
     }
     primary.allDepartureTimesMs = depTimes;
+    // Store all departure objects for route lookup — when catchability selects a
+    // departure from a different route (multi-route tram), we need to find its
+    // routeNumber and lineName to update the leg title dynamically.
+    primary.allDepartures = matchedDepartures;
     // Display-facing nextDepartures stays limited to 5 (for "Next: x, y, z min" subtitle)
     primary.nextDepartures = matchedDepartures.slice(0, 5).map(d => d.minutes).filter(m => m !== undefined);
   }
@@ -2102,6 +2164,39 @@ export default async function handler(req, res) {
     // display to flip between "Route 58 to X" and "Tram to X" between refreshes.
     if (tramLeg && tramRouteNum && !tramLeg.routeNumber) {
       tramLeg.routeNumber = tramRouteNum;
+    }
+    // Find alternative stop IDs for the tram stop — same physical stop (name alias)
+    // AND nearby stops on the same road (within 350m). The GTFS-RT feed may not
+    // include the user's exact stop ID in trip data, but neighboring stops on the
+    // same road provide departure times within 1-2 min of accuracy.
+    if (tramStopId && GTFS_STOP_NAMES) {
+      const tramStopName = GTFS_STOP_NAMES[String(tramStopId)];
+      if (tramStopName) {
+        // Same name, different GTFS ID
+        const sameNameIds = Object.entries(GTFS_STOP_NAMES)
+          .filter(([id, name]) => id !== String(tramStopId) && name === tramStopName)
+          .map(([id]) => id);
+        // Nearby stops on the same road (within 350m)
+        let nearbyRoadIds = [];
+        const userStop = VIC_TRAM_STOPS_WITH_COORDS.find(s => s.id === String(tramStopId));
+        if (userStop) {
+          const roadParts = tramStopName.replace(/#\d+.*$/, '').trim().toLowerCase()
+            .split(/[\/,&]/).map(p => p.trim()).filter(p => p.length > 3);
+          if (roadParts.length > 0) {
+            nearbyRoadIds = VIC_TRAM_STOPS_WITH_COORDS
+              .filter(s => {
+                if (s.id === String(tramStopId) || sameNameIds.includes(s.id)) return false;
+                if (haversine(userStop.lat, userStop.lon, s.lat, s.lon) > 350) return false;
+                const sName = s.name.toLowerCase();
+                return roadParts.some(p => sName.includes(p));
+              })
+              .sort((a, b) => haversine(userStop.lat, userStop.lon, a.lat, a.lon) - haversine(userStop.lat, userStop.lon, b.lat, b.lon))
+              .map(s => s.id);
+          }
+        }
+        const altIds = [...sameNameIds, ...nearbyRoadIds];
+        if (altIds.length > 0) tramApiOptions.altStopIds = altIds;
+      }
     }
     const busApiOptions = { ...apiOptions };
     if (busLeg?.routeNumber) busApiOptions.routeNumber = busLeg.routeNumber;
