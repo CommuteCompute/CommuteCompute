@@ -743,13 +743,25 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         baseLeg.subtitle = `+${baseLeg.delayMinutes} MIN • ${baseLeg.subtitle}`;
       }
 
-      // V16.0 FIX: Calculate "Next: x, y, z" ONLY from catchable departures.
-      // Filter by arrivalAtStopMs — nextDepartureTimesMs may include departures
-      // before user arrives (it contains all future deps for renderer's own filtering).
+      // Calculate "Next: x, y, z" from catchable departures, padded to 3.
+      // Primary: departures after user arrives at stop (catchable).
+      // Padding: future departures fill remaining slots up to 3 total for display.
       if (baseLeg.nextDepartureTimesMs?.length > 0) {
-        baseLeg.nextDepartures = baseLeg.nextDepartureTimesMs
+        const catchable = baseLeg.nextDepartureTimesMs
           .filter(depMs => depMs >= arrivalAtStopMs)
           .map(depMs => Math.round((depMs - nowMs) / 60000));
+        // Pad with future departures (from now) if fewer than 3 catchable
+        if (catchable.length < 3) {
+          const allFuture = baseLeg.nextDepartureTimesMs
+            .filter(depMs => depMs > nowMs)
+            .map(depMs => Math.round((depMs - nowMs) / 60000));
+          for (const m of allFuture) {
+            if (catchable.length >= 3) break;
+            if (!catchable.includes(m)) catchable.push(m);
+          }
+          catchable.sort((a, b) => a - b);
+        }
+        baseLeg.nextDepartures = catchable;
       }
 
       // Issue 6: Sanitise GTFS disruption jargon before user-facing display
@@ -1176,21 +1188,20 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
     }
     // No route number filtering for trains — any line in the right direction
   } else if (leg.routeNumber) {
-    // For trams: skip route filter — user catches whichever route arrives first
-    // at their stop. The first catchable departure's route number populates the
-    // title dynamically (see allDepartures route lookup in buildJourneyLegs).
-    // For buses: still filter by route (different routes go different places).
-    if (leg.type !== 'tram') {
-      const legRoute = parseInt(String(leg.routeNumber), 10);
-      const routeMatches = departures.filter(d => {
-        if (!d.routeNumber) return false;
-        return parseInt(String(d.routeNumber), 10) === legRoute;
-      });
-      if (routeMatches.length > 0) {
-        matchedDepartures = routeMatches;
-      }
+    // For trams: PREFER matching route but fall back to any-route if none.
+    // Prevents wrong route (e.g. Route 78) overriding configured route (Route 58)
+    // when coord-proximity or all-trips-scan picks up trips from nearby intersections.
+    // For buses: strict filter — different routes go different places.
+    const legRoute = parseInt(String(leg.routeNumber), 10);
+    const routeMatches = departures.filter(d => {
+      if (!d.routeNumber) return false;
+      return parseInt(String(d.routeNumber), 10) === legRoute;
+    });
+    if (routeMatches.length > 0) {
+      matchedDepartures = routeMatches;
     }
-    // Trams: matchedDepartures stays as ALL departures — any route at this stop
+    // Trams: if no matching route, matchedDepartures stays as ALL departures
+    // Buses: if no matching route, also stays as ALL (same fallback behaviour)
   }
 
   // Clone primary to avoid mutating shared transitData objects
@@ -2250,6 +2261,19 @@ export default async function handler(req, res) {
         ([, name]) => name.toLowerCase() === trainLeg.lineName.toLowerCase()
       );
       if (lineEntry) trainApiOptions.lineCode = lineEntry[0];
+    }
+
+    // Build alt stop IDs for metro — same pattern as trams. GTFS-RT metro feed may use
+    // different stop IDs than static GTFS data. Same-name station platforms provide
+    // accurate stop-level departure times through alt-stop matching.
+    if (trainStopId && GTFS_STOP_NAMES) {
+      const trainStopName = GTFS_STOP_NAMES[String(trainStopId)];
+      if (trainStopName) {
+        const sameNameIds = Object.entries(GTFS_STOP_NAMES)
+          .filter(([id, name]) => id !== String(trainStopId) && name === trainStopName)
+          .map(([id]) => id);
+        if (sameNameIds.length > 0) trainApiOptions.altStopIds = sameNameIds;
+      }
     }
 
     // V16.0: Set requiresCityLoop / requiresMetroTunnel on train leg based on destination
