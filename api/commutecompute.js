@@ -507,14 +507,37 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         // Use first CATCHABLE departure for timing (minutes box, depart time, journey contribution)
         if (catchableDepartures.length > 0) {
           actualDepartureMs = catchableDepartures[0];
-          // Multi-route support: update leg route number from the actual catchable
-          // departure. When multiple tram routes serve the same stop, the first
-          // catchable departure may be a different route than the engine planned.
-          if (leg.type === 'tram' && liveData.allDepartures?.length > 0) {
+          // Update leg route/line from actual catchable departure.
+          // Multiple routes/lines may serve the same stop — the first catchable
+          // departure may be a different route than the engine planned.
+          if (liveData.allDepartures?.length > 0) {
             const catchableDep = liveData.allDepartures.find(d => d.departureTimeMs === actualDepartureMs);
             if (catchableDep?.routeNumber) leg.routeNumber = catchableDep.routeNumber;
             if (catchableDep?.lineName) leg.lineName = catchableDep.lineName;
           }
+        } else if (liveData.allDepartureTimesMs.length > 0) {
+          // V16.0 FIX: No catchable departure in GTFS-RT feed — all returned
+          // departures are before user's arrival at this stop. Project next
+          // departure from observed headway rather than falling back to the
+          // nearest uncatchable departure (which shows stale 0 MIN data).
+          const sorted = [...new Set(liveData.allDepartureTimesMs)].sort((a, b) => a - b);
+          let headwayMs;
+          if (sorted.length >= 2) {
+            const rawHeadway = (sorted[sorted.length - 1] - sorted[0]) / (sorted.length - 1);
+            // Clamp headway to 3-30 min range to avoid bunching/sparse artefacts
+            headwayMs = Math.max(3 * 60000, Math.min(30 * 60000, rawHeadway));
+          } else {
+            // Single departure — use mode-specific default headway
+            headwayMs = (leg.type === 'tram' ? 8 : leg.type === 'train' ? 10 : 15) * 60000;
+          }
+          let projected = sorted[sorted.length - 1];
+          while (projected < arrivalAtStopMs) {
+            projected += headwayMs;
+          }
+          actualDepartureMs = projected;
+          // Include projected departure in nextDepartureTimesMs for renderer
+          const combined = [...(nextDepartureTimesMs || []), projected];
+          nextDepartureTimesMs = combined.sort((a, b) => a - b).slice(0, 10);
         }
       } else if (liveData.departureTimeMs && liveData.departureTimeMs >= arrivalAtStopMs) {
         actualDepartureMs = liveData.departureTimeMs;
@@ -720,13 +743,13 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         baseLeg.subtitle = `+${baseLeg.delayMinutes} MIN • ${baseLeg.subtitle}`;
       }
 
-      // V15.0: Calculate "Next: x, y, z" ONLY from catchable departures.
-      // baseLeg.nextDepartureTimesMs is already filtered to departures >= arrivalAtStopMs.
-      // Do NOT fall back to liveData.nextDepartures — those include uncatchable departures.
+      // V16.0 FIX: Calculate "Next: x, y, z" ONLY from catchable departures.
+      // Filter by arrivalAtStopMs — nextDepartureTimesMs may include departures
+      // before user arrives (it contains all future deps for renderer's own filtering).
       if (baseLeg.nextDepartureTimesMs?.length > 0) {
-        baseLeg.nextDepartures = baseLeg.nextDepartureTimesMs.map(depMs =>
-          Math.round((depMs - nowMs) / 60000)
-        );
+        baseLeg.nextDepartures = baseLeg.nextDepartureTimesMs
+          .filter(depMs => depMs >= arrivalAtStopMs)
+          .map(depMs => Math.round((depMs - nowMs) / 60000));
       }
 
       // Issue 6: Sanitise GTFS disruption jargon before user-facing display
