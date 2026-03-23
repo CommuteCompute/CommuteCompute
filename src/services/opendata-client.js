@@ -456,9 +456,11 @@ export async function getDepartures(stopId, routeType, options = {}) {
       }
     }
 
-    // V16.0: CASCADING fallback — all-trips scan runs whenever previous levels found nothing.
-    // Previously gated by !options.routeNumber which blocked this when route-level failed.
-    if (departures.length === 0 && feedEntityCount > 0 && mode !== 'metro') {
+    // All-trips scan — searches ALL trips for the exact stop ID with lenient matching.
+    // Produces accurate stop-level departure times (unlike broad fallback's heuristic).
+    // Now runs for ALL modes including metro — previously excluded metro, causing trains
+    // to fall through to broad fallback's inaccurate heuristic.
+    if (departures.length === 0 && feedEntityCount > 0) {
       const scanDepartures = processAllTripsStopSearch(feed, stopId, routeType, state);
       cascadeAttempts.push({ tier: 'all-trips-scan', tried: true, found: scanDepartures.length });
       if (scanDepartures.length > 0) {
@@ -467,8 +469,7 @@ export async function getDepartures(stopId, routeType, options = {}) {
       }
     }
 
-    // V16.0: CASCADING broad fallback for trains — runs whenever previous levels found nothing.
-    // Previously gated by !options.lineCode which blocked this when route-level failed.
+    // Broad fallback for trains — last resort when all previous tiers found nothing.
     // Direction-based matching (isCitybound) in findMatchingDeparture still filters correctly.
     if (departures.length === 0 && feedEntityCount > 0 && mode === 'metro') {
       const broadDepartures = processAnyRouteDepartures(feed);
@@ -753,15 +754,24 @@ function processAllTripsStopSearch(feed, stopId, routeType, state = 'VIC') {
         const isVIC = (state === 'VIC');
         const lineName = isVIC ? getLineName(routeId) : (tripUpdate.trip?.tripHeadsign || '');
 
+        // Detect direction and Metro Tunnel status for metro filtering
+        const matchedIdx = stus.indexOf(stu);
+        const scanIsCitybound = isVIC ? isTrainCitybound(stus, matchedIdx) : false;
+        const scanLineCode = routeId?.match(/-([A-Z]{3}):?$/)?.[1] || '';
+        const scanIsMetroTunnel = isVIC ? METRO_TUNNEL_LINE_CODES.has(scanLineCode) : false;
+        const scanFinalStop = stus[stus.length - 1]?.stopId || '';
+
         departures.push({
           minutes: Math.max(0, minutes),
           departureTimeMs: depMs,
-          destination: lineName || tripUpdate.trip?.tripHeadsign || '',
+          destination: scanIsCitybound ? 'City' : (lineName || tripUpdate.trip?.tripHeadsign || ''),
           lineName,
           routeNumber: getRouteNumber(routeId) || null,
           routeId,
           tripId: tripUpdate.trip?.tripId,
-          isCitybound: false,
+          finalStop: scanFinalStop,
+          isCitybound: scanIsCitybound,
+          isMetroTunnel: scanIsMetroTunnel,
           delay: Math.round(delay / 60),
           isDelayed,
           isLive: true,
@@ -874,10 +884,12 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
         if (earliestFutureMs) {
           const mins = Math.round((earliestFutureMs - nowMs) / 60000);
           const routeId = tripUpdate.trip?.routeId;
+          const noCoordHeadsign = tripUpdate.trip?.tripHeadsign || '';
           departures.push({
             minutes: mins,
             departureTimeMs: earliestFutureMs,
-            destination: getLineName(routeId) || tripUpdate.trip?.tripHeadsign || '',
+            destination: noCoordHeadsign || getLineName(routeId) || '',
+            headsign: noCoordHeadsign || null,
             lineName: getLineName(routeId),
             routeNumber: getRouteNumber(routeId) || null,
             routeId,
@@ -905,10 +917,14 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
 
     const delay = best.stu.departure?.delay || best.stu.arrival?.delay || 0;
     const routeId = tripUpdate.trip?.routeId;
+    // Prefer headsign for destination — shows actual tram terminus direction
+    // rather than line name which is less informative for tram route display
+    const tripHeadsign = tripUpdate.trip?.tripHeadsign || '';
     departures.push({
       minutes: Math.max(0, best.mins),
       departureTimeMs: best.depMs,
-      destination: getLineName(routeId) || tripUpdate.trip?.tripHeadsign || '',
+      destination: tripHeadsign || getLineName(routeId) || '',
+      headsign: tripHeadsign || null,
       lineName: getLineName(routeId),
       routeNumber: getRouteNumber(routeId) || null,
       routeId,
@@ -989,9 +1005,10 @@ function processAnyRouteDepartures(feed) {
 
     if (futureDeps.length === 0) continue;
     futureDeps.sort((a, b) => a.depMs - b.depMs);
-    // Use median of future stops — best estimate for a mid-route stop
-    const pickIdx = Math.floor(futureDeps.length / 2);
-    const picked = futureDeps[pickIdx];
+    // Use earliest future departure — closest approximation to when this train
+    // departs the user's area. Median was picking mid-route stops, producing times
+    // 30-60 min too late for stations near the start/end of a trip.
+    const picked = futureDeps[0];
 
     // V16.0: Detect direction from trip's stop sequence for proper filtering
     const finalStopId = stus[stus.length - 1]?.stopId || '';
