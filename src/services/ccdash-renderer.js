@@ -3423,7 +3423,9 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
           let cumulativeMins = 0;
           for (let i = 0; i < idx; i++) {
             if (!legs[i].skippedForTiming) {
-              cumulativeMins += (legs[i].minutes || legs[i].durationMinutes || 0);
+              // V16.0 FIX: Use journeyContribution (wait + transit) not minutes (countdown from NOW).
+              // minutes for transit legs is minutesToDeparture which double-counts walk time.
+              cumulativeMins += (legs[i].journeyContribution || legs[i].minutes || legs[i].durationMinutes || 0);
             }
           }
           const arrivalAtStopMs = nowMs + (cumulativeMins * 60000);

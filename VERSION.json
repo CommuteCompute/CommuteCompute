@@ -1,8 +1,8 @@
 {
   "system": {
-    "version": "5.3.7",
+    "version": "5.3.8",
     "name": "Commute Compute System",
-    "releaseDate": "2026-03-22",
+    "releaseDate": "2026-03-23",
     "codename": "Turnkey Multi-State"
   },
   "components": {
@@ -86,6 +86,16 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.3.8",
+      "date": "2026-03-23",
+      "changes": [
+        "Fix inter-leg timing dependency: when all GTFS-RT departures are before user's calculated arrival at a stop, project next departure from observed headway instead of falling back to uncatchable nearest departure — prevents stale 0 MIN countdown and past DEPART times on downstream transit legs",
+        "Fix Next subtitle catchability: nextDepartures now filtered by arrivalAtStopMs before display — 'Next: X, Y, Z min LIVE' only shows departures the user can actually reach based on cumulative walk+transit+walk timing",
+        "Fix renderer cumulative timing: Location 1 subtitle calculation now uses journeyContribution (wait + transit) instead of minutes (countdown from NOW) for cumulative — prevents double-counting walk time to transit stops",
+        "Fix train line name from catchable departure: line/route name update from actual catchable departure now applies to all transit types (was tram-only) — prevents showing wrong line when multiple lines serve the same station"
+      ]
+    },
     {
       "version": "5.3.7",
       "date": "2026-03-22",
