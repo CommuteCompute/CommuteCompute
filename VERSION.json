@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.4.0",
+    "version": "5.4.2",
     "name": "Commute Compute System",
     "releaseDate": "2026-03-24",
     "codename": "Turnkey Multi-State"
@@ -86,6 +86,23 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.4.2",
+      "date": "2026-03-24",
+      "changes": [
+        "Fix City Loop destination label: when soft-preference accepts a non-City-Loop train, use GTFS-RT headsign (actual terminus) instead of hardcoded 'City' for destination — prevents impossible route labels like a direct-to-Flinders line shown as going to a City Loop station"
+      ]
+    },
+    {
+      "version": "5.4.1",
+      "date": "2026-03-24",
+      "changes": [
+        "Revert tram direction filter: GTFS-RT stop ID namespace mismatch made lookahead coordinates unavailable, causing coord-proximity to return no results and trams to fall back to timetable",
+        "Revert cascade < 3 threshold: mixed-tier results caused wrong routes (Route 78 instead of 58) when route-level merged with coord-proximity",
+        "Revert City Loop destination label override: liveData.destination is always 'City' for citybound trains, incorrectly overriding all train destinations including Frankston-through-Loop services",
+        "Fix renderer Next: stripping: only strip and recompute when nextDepartureTimesMs is available — preserves API subtitle for timetable fallback legs"
+      ]
+    },
     {
       "version": "5.4.0",
       "date": "2026-03-24",
