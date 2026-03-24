@@ -431,45 +431,34 @@ export async function getDepartures(stopId, routeType, options = {}) {
     // producing times 10-20 min off (e.g. 25 min when actual is 7 min). Coordinate-
     // proximity uses actual stop coordinates for accurate departure times and must
     // run first so the inaccurate median heuristic doesn't block it.
-    // V5.4.0: Continue cascade for trams if fewer than 3 results — ensures 3 live
-    // catchable departures are available when the service frequency supports it.
-    if (departures.length < 3 && feedEntityCount > 0 && mode === 'tram') {
-      const coordDepartures = processCoordinateProximitySearch(feed, stopId, routeType, state, options.routeNumber || null, options.lat || null, options.lon || null, options.destLat || null, options.destLon || null);
+    // V16.0: For trams, coordinate-proximity runs BEFORE route-level.
+    // VIC tram GTFS-RT feeds use different stop IDs than static GTFS (known issue).
+    // Route-level's median-stop heuristic estimates departure at a mid-route stop,
+    // producing times 10-20 min off (e.g. 25 min when actual is 7 min). Coordinate-
+    // proximity uses actual stop coordinates for accurate departure times and must
+    // run first so the inaccurate median heuristic doesn't block it.
+    if (departures.length === 0 && feedEntityCount > 0 && mode === 'tram') {
+      const coordDepartures = processCoordinateProximitySearch(feed, stopId, routeType, state, options.routeNumber || null, options.lat || null, options.lon || null);
       cascadeAttempts.push({ tier: 'coord-proximity', tried: true, found: coordDepartures.length });
       if (coordDepartures.length > 0) {
         console.log(`[OpenData] Coordinate-proximity search found ${coordDepartures.length} departures for stopId=${stopId} in ${mode} feed`);
-        // Dedup by tripId when merging with higher-tier results
-        const existingTripIds = new Set(departures.map(d => d.tripId).filter(Boolean));
-        for (const d of coordDepartures) {
-          if (!d.tripId || !existingTripIds.has(d.tripId)) {
-            departures.push(d);
-            if (d.tripId) existingTripIds.add(d.tripId);
-          }
-        }
+        coordDepartures.forEach(d => departures.push(d));
       }
     }
 
     // V15.0: Route-level fallback when stop-level match fails.
     // When the GTFS-RT feed has entities but none match the stop ID, search by
     // route number or line code. Works for all modes (tram, bus, train).
-    // For trams, this only runs if coordinate-proximity (above) found < 3.
-    // V5.4.0: For trams, continue cascade if fewer than 3 results.
-    const routeCascadeThreshold = mode === 'tram' ? 3 : 1;
-    if (departures.length < routeCascadeThreshold && feedEntityCount > 0 && (options.routeNumber || options.lineCode)) {
+    // For trams, this only runs if coordinate-proximity (above) found nothing.
+    if (departures.length === 0 && feedEntityCount > 0 && (options.routeNumber || options.lineCode)) {
       const routeFallbackDepartures = processRouteLevelDepartures(
         feed, stopId, options.routeNumber, routeType, options.lineCode, state
       );
       cascadeAttempts.push({ tier: 'route-level', tried: true, found: routeFallbackDepartures.length });
       if (routeFallbackDepartures.length > 0) {
         console.log(`[OpenData] Route-level fallback found ${routeFallbackDepartures.length} departures for ${options.routeNumber || options.lineCode} (stopId=${stopId} not matched directly)`);
-        // Dedup by tripId when merging with higher-tier results
-        const existingTripIds = new Set(departures.map(d => d.tripId).filter(Boolean));
-        for (const d of routeFallbackDepartures) {
-          if (!d.tripId || !existingTripIds.has(d.tripId)) {
-            departures.push(d);
-            if (d.tripId) existingTripIds.add(d.tripId);
-          }
-        }
+        // Copy results to departures array (preserving array identity for _feedInfo)
+        routeFallbackDepartures.forEach(d => departures.push(d));
       }
     }
 
@@ -824,7 +813,7 @@ function processAllTripsStopSearch(feed, stopId, routeType, state = 'VIC') {
  * @param {string|null} targetRouteNumber - If set, only match trips on this route
  * @returns {Array} - Departure objects from coordinate-matched trips
  */
-function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC', targetRouteNumber = null, fallbackLat = null, fallbackLon = null, destLat = null, destLon = null) {
+function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC', targetRouteNumber = null, fallbackLat = null, fallbackLon = null) {
   const nowMs = getNowMs();
   const departures = [];
   if (!feed?.entity || state !== 'VIC' || routeType !== 1) return departures;
@@ -877,7 +866,7 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
         const depMs = (depTime.low || depTime) * 1000;
         const mins = Math.round((depMs - nowMs) / 60000);
         if (mins >= -2 && mins <= 120) {
-          candidates.push({ stu: stus[i], dist, depMs, mins, stuIdx: i });
+          candidates.push({ stu: stus[i], dist, depMs, mins });
         }
       }
     }
@@ -931,35 +920,6 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
     const best = futureCandidates.length > 0
       ? futureCandidates.sort((a, b) => a.mins - b.mins || a.dist - b.dist)[0]
       : candidates.sort((a, b) => a.dist - b.dist)[0];
-
-    // Direction filter: skip trips heading AWAY from the user's destination.
-    // Compare the matched stop vs a lookahead stop ~5 positions ahead in the
-    // trip sequence. If the lookahead is further from the destination than the
-    // matched stop, the tram is traveling away — wrong direction.
-    if (destLat && destLon) {
-      const bestCoords = coordCache[stus[best.stuIdx]?.stopId];
-      if (bestCoords) {
-        const distToDest = haversine(bestCoords.lat, bestCoords.lon, destLat, destLon);
-        // Check a stop further along the trip sequence
-        const lookaheadIdx = Math.min(best.stuIdx + 5, stus.length - 1);
-        if (lookaheadIdx > best.stuIdx) {
-          const laStopId = stus[lookaheadIdx]?.stopId;
-          // Populate coordCache for lookahead if needed
-          if (laStopId && !(laStopId in coordCache)) {
-            const laStatic = VIC_TRAM_STOPS_WITH_COORDS.find(s => s.id === laStopId);
-            coordCache[laStopId] = laStatic ? { lat: laStatic.lat, lon: laStatic.lon } : null;
-          }
-          const laCoords = laStopId ? coordCache[laStopId] : null;
-          if (laCoords) {
-            const laDistToDest = haversine(laCoords.lat, laCoords.lon, destLat, destLon);
-            if (laDistToDest > distToDest + 50) {
-              // Lookahead stop is further from destination — tram heading away
-              continue;
-            }
-          }
-        }
-      }
-    }
 
     const delay = best.stu.departure?.delay || best.stu.arrival?.delay || 0;
     const routeId = tripUpdate.trip?.routeId;

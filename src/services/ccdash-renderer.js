@@ -3454,15 +3454,16 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
       }
     }
 
-    // V15.1/V5.4.0: ALWAYS recompute "Next:" from absolute departure times.
-    // The renderer independently verifies catchability — never trusts API subtitle's
-    // "Next:" values which may include uncatchable departures. Strip existing "Next:"
-    // from subtitle so this block always runs and overwrites with accurate values.
-    if (legSubtitle && legSubtitle.includes('Next:')) {
+    // V15.1/V5.4.1: Recompute "Next:" from absolute departure times when available.
+    // The renderer independently verifies catchability using nextDepartureTimesMs.
+    // Only strip existing "Next:" when we have absolute timestamps to rebuild from —
+    // otherwise preserve the API subtitle (timetable fallback has no timestamps).
+    if (legSubtitle && legSubtitle.includes('Next:') &&
+        leg.nextDepartureTimesMs && leg.nextDepartureTimesMs.length > 0) {
       legSubtitle = legSubtitle.replace(/\s*Next:.*$/i, '').trim();
     }
     if (['train', 'tram', 'bus', 'vline', 'ferry'].includes(leg.type) &&
-        legSubtitle && !isSuspended) {
+        legSubtitle && !legSubtitle.includes('Next:') && !isSuspended) {
       const hasLiveData = leg.isLive === true;
       const liveIndicator = hasLiveData ? ' LIVE' : '';
       const tilde = hasLiveData ? '' : '~';
