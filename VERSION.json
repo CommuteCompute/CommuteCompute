@@ -1,8 +1,8 @@
 {
   "system": {
-    "version": "5.4.2",
+    "version": "5.4.3",
     "name": "Commute Compute System",
-    "releaseDate": "2026-03-24",
+    "releaseDate": "2026-03-25",
     "codename": "Turnkey Multi-State"
   },
   "components": {
@@ -86,6 +86,13 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.4.3",
+      "date": "2026-03-25",
+      "changes": [
+        "Restore Next: departure padding for service frequency display — when fewer than 3 catchable departures exist, pad with future-from-now departures up to 3. The DEPART time box shows the actual catchable departure; Next: provides service frequency context"
+      ]
+    },
     {
       "version": "5.4.2",
       "date": "2026-03-24",

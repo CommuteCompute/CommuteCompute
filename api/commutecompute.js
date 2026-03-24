@@ -770,12 +770,25 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       }
 
       // V5.4.0: Calculate "Next: x, y, z" from CATCHABLE departures only.
-      // No padding with uncatchable future departures — display must accurately
-      // reflect what the user can actually catch from this stop.
+      // Calculate "Next: x, y, z" from catchable departures, padded to 3.
+      // Primary: departures after user arrives at stop (catchable).
+      // Padding: future departures fill remaining slots up to 3 for service
+      // frequency context — the DEPART time box shows the actual catchable departure.
       if (baseLeg.nextDepartureTimesMs?.length > 0) {
         const catchable = baseLeg.nextDepartureTimesMs
           .filter(depMs => depMs >= arrivalAtStopMs)
           .map(depMs => Math.round((depMs - nowMs) / 60000));
+        // Pad with future departures (from now) if fewer than 3 catchable
+        if (catchable.length < 3) {
+          const allFuture = baseLeg.nextDepartureTimesMs
+            .filter(depMs => depMs > nowMs)
+            .map(depMs => Math.round((depMs - nowMs) / 60000));
+          for (const m of allFuture) {
+            if (catchable.length >= 3) break;
+            if (!catchable.includes(m)) catchable.push(m);
+          }
+          catchable.sort((a, b) => a - b);
+        }
         baseLeg.nextDepartures = catchable;
       }
 
