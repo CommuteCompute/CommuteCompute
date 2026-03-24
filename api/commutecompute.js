@@ -443,8 +443,10 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       if (isDestGeneric(leg.destination.name)) {
         const gtfsDest = getStopNameById(stopIds.trainStopId);
         const workSuburb = extractSuburb(locations.work?.address);
-        // Strip "Station" suffix — tram alights at a tram stop near the station, not the station itself
-        const areaName = gtfsDest ? gtfsDest.replace(/\s+Station$/i, '') : null;
+        // V5.4.0: Abbreviate "Station" to "Stn" rather than stripping entirely.
+        // Distinguishes the station area from the suburb name (avoids confusion
+        // when user is already in the same suburb as the alighting station).
+        const areaName = gtfsDest ? gtfsDest.replace(/\s+Station$/i, ' Stn') : null;
         leg.destination.name = areaName || workSuburb || leg.destination.name;
       }
     }
@@ -486,6 +488,34 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
 
     const liveData = isTransitLeg ? findMatchingDeparture(leg, transitData, nowMs) : null;
     const arrivalAtStopMs = nowMs + (cumulativeMinutes * 60000);
+
+    // V5.4.0: When soft-preference accepts a non-City-Loop train (late evening),
+    // correct the destination label to reflect where the train actually goes.
+    // Without this, the display shows impossible routes (e.g. a line that terminates
+    // before the City Loop labeled as going to a City Loop station).
+    if (leg.type === 'train' && leg.requiresCityLoop && liveData?.finalStop) {
+      const CITY_LOOP_PLATFORM_IDS = new Set([
+        ...(VIC_METRO_STATIONS?.PAR?.platforms || []),
+        ...(VIC_METRO_STATIONS?.MCE?.platforms || []),
+        ...(VIC_METRO_STATIONS?.FGS?.platforms || []),
+        ...(VIC_METRO_STATIONS?.SSS?.platforms || []),
+      ]);
+      let reachesLoop = false;
+      for (const pid of CITY_LOOP_PLATFORM_IDS) {
+        if (liveData.finalStop === pid || liveData.finalStop.endsWith(`:${pid}`) || liveData.finalStop.endsWith(`-${pid}`)) {
+          reachesLoop = true;
+          break;
+        }
+      }
+      if (!reachesLoop && leg.destination) {
+        // Train doesn't reach City Loop — update destination to actual terminus
+        const actualDest = liveData.destination || liveData.headsign || '';
+        if (actualDest) {
+          leg.destination.name = actualDest.replace(/\s+Station$/i, ' Station');
+          leg.destinationOverridden = true;
+        }
+      }
+    }
 
     // For transit legs, find first live departure AFTER user arrives at stop
     if (isTransitLeg && liveData) {
@@ -743,24 +773,13 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         baseLeg.subtitle = `+${baseLeg.delayMinutes} MIN • ${baseLeg.subtitle}`;
       }
 
-      // Calculate "Next: x, y, z" from catchable departures, padded to 3.
-      // Primary: departures after user arrives at stop (catchable).
-      // Padding: future departures fill remaining slots up to 3 total for display.
+      // V5.4.0: Calculate "Next: x, y, z" from CATCHABLE departures only.
+      // No padding with uncatchable future departures — display must accurately
+      // reflect what the user can actually catch from this stop.
       if (baseLeg.nextDepartureTimesMs?.length > 0) {
         const catchable = baseLeg.nextDepartureTimesMs
           .filter(depMs => depMs >= arrivalAtStopMs)
           .map(depMs => Math.round((depMs - nowMs) / 60000));
-        // Pad with future departures (from now) if fewer than 3 catchable
-        if (catchable.length < 3) {
-          const allFuture = baseLeg.nextDepartureTimesMs
-            .filter(depMs => depMs > nowMs)
-            .map(depMs => Math.round((depMs - nowMs) / 60000));
-          for (const m of allFuture) {
-            if (catchable.length >= 3) break;
-            if (!catchable.includes(m)) catchable.push(m);
-          }
-          catchable.sort((a, b) => a - b);
-        }
         baseLeg.nextDepartures = catchable;
       }
 
@@ -2188,6 +2207,13 @@ export default async function handler(req, res) {
     if (homeCoords) {
       tramApiOptions.lat = homeCoords.lat;
       tramApiOptions.lon = homeCoords.lon;
+    }
+    // V5.4.0: Pass destination coordinates for tram direction filtering.
+    // Coord-proximity uses these to filter wrong-direction trams by comparing
+    // stop sequence progression relative to the destination.
+    if (locations.work?.lat) {
+      tramApiOptions.destLat = locations.work.lat;
+      tramApiOptions.destLon = locations.work.lon;
     }
     // Don't filter tram API by route number — multiple lines serve the same stop
     // and user wants to see whichever line is coming next
