@@ -1,8 +1,8 @@
 {
   "system": {
-    "version": "5.3.9",
+    "version": "5.4.0",
     "name": "Commute Compute System",
-    "releaseDate": "2026-03-23",
+    "releaseDate": "2026-03-24",
     "codename": "Turnkey Multi-State"
   },
   "components": {
@@ -86,6 +86,18 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.4.0",
+      "date": "2026-03-24",
+      "changes": [
+        "Tram direction filtering: coord-proximity now filters wrong-direction trams using stop-sequence lookahead relative to destination coordinates — prevents matching opposite-direction services at shared stops",
+        "Force 3 live catchable: tram cascade continues to lower tiers when fewer than 3 departures found (with tripId dedup) — ensures 3 live departure times when service frequency supports it",
+        "Catchable-only Next display: removed uncatchable departure padding from Next: subtitle — only departures the user can physically reach are shown",
+        "Renderer catchability recomputation: renderer always recomputes Next: from absolute timestamps instead of trusting API subtitle — belt-and-suspenders against uncatchable leakage",
+        "City Loop label accuracy: when soft-preference accepts a non-City-Loop train (late evening), destination label updated to the train's actual terminus instead of showing an unreachable City Loop station",
+        "Tram destination clarity: tram alight destinations now show abbreviated station suffix (Stn) to distinguish station area from suburb name"
+      ]
+    },
     {
       "version": "5.3.9",
       "date": "2026-03-23",
