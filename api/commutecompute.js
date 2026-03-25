@@ -1166,7 +1166,12 @@ function filterCityLoopPreference(dirMatches) {
   ]);
 
   const cityLoopTrains = dirMatches.filter(d => {
-    if (!d.finalStop) return !d.isMetroTunnel; // Fallback when no trip data
+    // V5.4.9: Use trip-scan flag as primary — scans ALL stops in the trip for
+    // City Loop platforms. More reliable than finalStop which may be the outbound
+    // terminus (past City Loop) for trains that PASS THROUGH the Loop.
+    if (d.passesCityLoop !== undefined) return d.passesCityLoop;
+    // Fallback: finalStop check for departures without trip-scan data
+    if (!d.finalStop) return !d.isMetroTunnel;
     for (const pid of CITY_LOOP_PLATFORM_IDS) {
       if (d.finalStop === pid || d.finalStop.endsWith(`:${pid}`) || d.finalStop.endsWith(`-${pid}`)) {
         return true;
