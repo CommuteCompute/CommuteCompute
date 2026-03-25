@@ -161,7 +161,7 @@ You have several options for deleting your data:
 
 2. **Delete your Vercel deployment:** If you delete your Vercel project entirely, all associated Redis data is permanently removed along with the deployment. No residual personal data remains in the Commute Compute™ application after the project is deleted. Vercel's own data retention policies apply to infrastructure-level backups — see the [Vercel Privacy Policy](https://vercel.com/legal/privacy-policy) for details.
 
-3. **Request deletion by email:** If you are unable to delete your data using the methods above, or if you have any questions about data deletion, contact us at commutecompute.licensing@gmail.com and we will assist you within 30 days.
+3. **Request deletion by email:** If you are unable to delete your data using the methods above, or if you have any questions about data deletion, contact us at info@commutecompute.com and we will assist you within 30 days.
 
 ---
 
@@ -328,7 +328,7 @@ All inputs are provided directly by you via the Setup Wizard or Admin Panel and 
 The *Privacy Act 1988* (Cth), as amended by the *Privacy and Other Legislation Amendment Act 2024* (Royal Assent 10 December 2024), provides individuals with a statutory cause of action for serious invasions of privacy (effective 10 June 2025). Commute Compute™ is committed to handling all personal information in accordance with the Australian Privacy Principles to minimise the risk of such invasions.
 
 If you believe your privacy has been seriously invaded through the use of this service, you may:
-1. Contact us at commutecompute.licensing@gmail.com
+1. Contact us at info@commutecompute.com
 2. Lodge a complaint with the Office of the Australian Information Commissioner (OAIC) at [oaic.gov.au](https://www.oaic.gov.au/)
 3. Seek legal advice regarding your rights under the statutory tort provisions
 
@@ -338,13 +338,13 @@ If you believe your privacy has been seriously invaded through the use of this s
 
 For privacy-related enquiries:
 
-- **Email:** commutecompute.licensing@gmail.com
+- **Email:** info@commutecompute.com
 - **GitLab Issues:** [gitlab.com/angusbergman/commute-compute-system/issues](https://gitlab.com/angusbergman/commute-compute-system/issues)
 - **Licensing and legal:** See [LEGAL.md](LEGAL.md)
 
 ### Complaint Resolution
 
-If you have a privacy concern or complaint, please contact us first at commutecompute.licensing@gmail.com. We will respond within 30 days.
+If you have a privacy concern or complaint, please contact us first at info@commutecompute.com. We will respond within 30 days.
 
 If you are not satisfied with our response, you may lodge a complaint with the Office of the Australian Information Commissioner (OAIC) at [oaic.gov.au/privacy/privacy-complaints](https://www.oaic.gov.au/privacy/privacy-complaints) or by calling 1300 363 992.
 

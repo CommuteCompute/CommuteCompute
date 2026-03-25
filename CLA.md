@@ -101,7 +101,7 @@ You must not submit third-party work as if it were Your own original creation.
 
 ## 6. Notification of Changes
 
-You agree to notify the Licensor of any facts or circumstances of which You become aware that would make any of the representations in this Agreement inaccurate in any respect. Such notification should be sent to: **commutecompute.licensing@gmail.com**
+You agree to notify the Licensor of any facts or circumstances of which You become aware that would make any of the representations in this Agreement inaccurate in any respect. Such notification should be sent to: **licensing@commutecompute.com**
 
 ---
 
@@ -131,7 +131,7 @@ By submitting a Contribution to the Project, and by signing and returning this A
 
 ## Signature Block
 
-Please complete the following and email a signed copy to **commutecompute.licensing@gmail.com**.
+Please complete the following and email a signed copy to **licensing@commutecompute.com**.
 
 ```
 Individual Contributor Licence Agreement — Commute Compute™

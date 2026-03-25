@@ -206,10 +206,13 @@ export function findNearestStops(lat, lon, options = {}) {
   }
 
   // Tram: search VIC_TRAM_STOPS_WITH_COORDS
+  // V5.4.7: Extract route number from stop name (format: "Street/Street #58")
+  // before cleanStopName strips it. Enables coord-proximity 500m radius + route filter.
   for (const stop of VIC_TRAM_STOPS_WITH_COORDS) {
     const dist = haversine(lat, lon, stop.lat, stop.lon);
     if (dist <= radius && (!result.tram || dist < result.tram.distance)) {
-      result.tram = { id: stop.id, name: cleanStopName(stop.name), distance: dist };
+      const routeMatch = stop.name?.match(/#(\d+)/);
+      result.tram = { id: stop.id, name: cleanStopName(stop.name), distance: dist, routeNumber: routeMatch?.[1] || null };
     }
   }
 

@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.4.3",
+    "version": "5.4.8",
     "name": "Commute Compute System",
     "releaseDate": "2026-03-25",
     "codename": "Turnkey Multi-State"
@@ -86,6 +86,53 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.4.8",
+      "date": "2026-03-25",
+      "changes": [
+        "Revert auto-detected tram route from nearest stop name: at intersections the nearest stop may be from a different route (e.g. Route 129) than what the user rides (Route 58) — only route engine and user preference are reliable sources",
+        "Widen no-route-filter coord-proximity radius from 150m to 300m: 150m was too narrow to find tram stops at intersections, 300m gives enough reach while closest-route logic disambiguates multiple routes",
+        "Revert detectStopIdsFromAddress tramRouteNumber to null: keep route extraction in findNearestStops for logging only"
+      ]
+    },
+    {
+      "version": "5.4.7",
+      "date": "2026-03-25",
+      "changes": [
+        "Tram route number extraction: extract route number from VIC_TRAM_STOPS_WITH_COORDS stop names (#NN suffix) in findNearestStops and return via detectStopIdsFromAddress — enables coord-proximity 500m radius with route filter instead of 150m without",
+        "Use preferredTramRoute in tramApiOptions: add user-configured preferred tram route as fallback source for coord-proximity route filtering (priority: route engine > preference > auto-detected)",
+        "Fix renderer subtitle duplication: add Scheduled startsWith check to renderer gate that appends Next: departures — prevents Scheduled ~X min and ~Next: X min showing simultaneously",
+        "Train departure padding from raw feed: merge same-direction raw feed departures into nextDepartureTimesMs when City Loop or route filtering reduces matched departures — provides richer Next: frequency context"
+      ]
+    },
+    {
+      "version": "5.4.6",
+      "date": "2026-03-25",
+      "changes": [
+        "Confidence-gated tram direction filter: require >= 3 coord stops and >= 500m geographic span before applying direction rejection — prevents false rejection when GTFS-RT/static stop ID namespace mismatch leaves sparse coordCache",
+        "Broad fallback stopId-aware matching: pass target stopId to processAnyRouteDepartures so it matches the user's actual station before falling back to earliest-future heuristic — fixes wrong departure times from mid-route stops",
+        "Timetable fallback always generates headway-based departure estimates: removes feedHadEntities guard so Scheduled subtitle shows departure countdown (8, 16, 24 min) instead of transit duration (~6min) when GTFS-RT entities exist but filtering removed all matches",
+        "Contact email separation: info@commutecompute.com for general/security/privacy enquiries, licensing@commutecompute.com for licensing only — SECURITY.md, PRIVACY.md, privacy.html, admin.html updated"
+      ]
+    },
+    {
+      "version": "5.4.5",
+      "date": "2026-03-25",
+      "changes": [
+        "Tram direction filter v2: use trip endpoint coordinates (first/last stops with coords in coordCache) to filter wrong-direction trams — more robust than v5.4.0 single-lookahead which failed on unmapped stops",
+        "Remove redundant Alight at subtitle: leg title already shows 'to [destination]' which implies the alighting stop — saves e-ink display space",
+        "Destination coordinate passthrough restored for coord-proximity direction filtering"
+      ]
+    },
+    {
+      "version": "5.4.4",
+      "date": "2026-03-25",
+      "changes": [
+        "Fix Next: departure subtitle suppression: clear stale isTimetableEstimate flag when findMatchingDeparture returns live GTFS-RT data — resolves conflict between filterUnavailableTransitLegs strict route matching and findMatchingDeparture any-route fallback",
+        "Fix renderer Next: rebuild on empty subtitle: allow departure time recomputation when API subtitle is empty (previously required non-empty subtitle to run rebuild block)",
+        "Update contact email: licensing@commutecompute.com for licensing enquiries, info@commutecompute.com for general contact — 13 files updated across documentation, legal, and HTML pages"
+      ]
+    },
     {
       "version": "5.4.3",
       "date": "2026-03-25",
