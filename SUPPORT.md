@@ -75,7 +75,8 @@ If you're using Commute Compute™ for your daily commute and finding it useful,
 ## Contact
 
 - **Issues/Bugs**: [GitLab Issues](https://gitlab.com/angusbergman/commute-compute-system/issues)
-- **Email**: commutecompute.licensing@gmail.com
+- **General enquiries**: info@commutecompute.com
+- **Licensing enquiries**: licensing@commutecompute.com
 - **GitLab**: [@angusbergman](https://gitlab.com/angusbergman)
 
 ---

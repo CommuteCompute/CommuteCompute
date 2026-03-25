@@ -3462,8 +3462,11 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
         leg.nextDepartureTimesMs && leg.nextDepartureTimesMs.length > 0) {
       legSubtitle = legSubtitle.replace(/\s*Next:.*$/i, '').trim();
     }
+    // V5.4.7: Also skip when subtitle already contains "Scheduled" departure times.
+    // Previously only checked for "Next:" — when API set "Scheduled ~9, 17, 25 min",
+    // this block appended a duplicate "• ~Next: 9, 17, 25 min" on top.
     if (['train', 'tram', 'bus', 'vline', 'ferry'].includes(leg.type) &&
-        legSubtitle && !legSubtitle.includes('Next:') && !isSuspended) {
+        !isSuspended && (!legSubtitle || (!legSubtitle.includes('Next:') && !legSubtitle.startsWith('Scheduled')))) {
       const hasLiveData = leg.isLive === true;
       const liveIndicator = hasLiveData ? ' LIVE' : '';
       const tilde = hasLiveData ? '' : '~';
@@ -3505,12 +3508,9 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
         }
       }
 
-      // Build subtitle parts separately so we can drop alight info if too wide
-      // FIX-7: Skip "Alight at" when subtitle already contains origin → destination
+      // V5.4.5: Alight info removed — leg title already shows "to [destination]"
+      // which implies the alighting stop. Saves display space on e-ink.
       let alightSuffix = '';
-      if (leg.destinationName && !isGenericStop(leg.destinationName) && !legSubtitle.includes(' \u2192 ')) {
-        alightSuffix = ` \u2022 Alight at ${leg.destinationName}`;
-      }
 
       // Assemble full subtitle: stop name + alight + next departures
       let fullSubtitle = legSubtitle + alightSuffix;

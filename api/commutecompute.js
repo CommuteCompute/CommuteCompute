@@ -489,6 +489,14 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     const liveData = isTransitLeg ? findMatchingDeparture(leg, transitData, nowMs) : null;
     const arrivalAtStopMs = nowMs + (cumulativeMinutes * 60000);
 
+    // V5.4.4: Clear stale isTimetableEstimate when findMatchingDeparture returns live data.
+    // filterUnavailableTransitLegs uses strict route matching which may miss departures
+    // that findMatchingDeparture finds via its any-route fallback. When live data IS found,
+    // the timetable flag must be cleared so isLive and Next: subtitle render correctly.
+    if (liveData?.isLive && leg.isTimetableEstimate) {
+      leg.isTimetableEstimate = false;
+    }
+
     // V5.4.2: When soft-preference accepts a non-City-Loop train (late evening),
     // correct the destination to the train's actual terminus from GTFS-RT headsign.
     // Uses headsign (actual terminus) NOT destination (hardcoded "City" for citybound).
@@ -529,6 +537,23 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         const allFutureDeps = liveData.allDepartureTimesMs.filter(ms => ms > nowMs);
         if (allFutureDeps.length > 0) {
           nextDepartureTimesMs = allFutureDeps.slice(0, 10);
+        }
+        // V5.4.7: Pad with same-direction raw feed departures for frequency context.
+        // When City Loop or route filtering reduces allDepartureTimesMs to 1-2 entries,
+        // the raw feed still has all direction-matched trains for richer "Next:" display.
+        if (nextDepartureTimesMs && nextDepartureTimesMs.length < 5 && (leg.type === 'train' || leg.type === 'vline')) {
+          const feedForMode = leg.type === 'vline' ? transitData.trains : transitData.trains;
+          const rawDirDeps = feedForMode?.filter(d =>
+            d.isLive && d.departureTimeMs > nowMs &&
+            (leg.isCitybound === undefined || d.isCitybound === leg.isCitybound)
+          ) || [];
+          for (const d of rawDirDeps) {
+            if (nextDepartureTimesMs.length >= 10) break;
+            if (!nextDepartureTimesMs.includes(d.departureTimeMs)) {
+              nextDepartureTimesMs.push(d.departureTimeMs);
+            }
+          }
+          nextDepartureTimesMs.sort((a, b) => a - b);
         }
         // Use first CATCHABLE departure for timing (minutes box, depart time, journey contribution)
         if (catchableDepartures.length > 0) {
@@ -661,16 +686,17 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         departTime = `~${estH12}:${estM.toString().padStart(2, '0')}${estAmPm}`;
         minutesToDeparture = Math.min(cumulativeMinutes + estWaitMins, 180);
 
-        const feedHadEntities = feedForMode?._feedInfo?.entityCount > 0;
-        if (!feedHadEntities) {
-          const estDepartMs = nowMs + (minutesToDeparture * 60000);
-          const headway = leg.type === 'tram' ? 8 : (leg.type === 'train' ? 10 : 15);
-          nextDepartureTimesMs = [
-            estDepartMs,
-            estDepartMs + (headway * 60000),
-            estDepartMs + (headway * 2 * 60000)
-          ];
-        }
+        // V5.4.6: Always generate headway-based departure estimates for timetable mode.
+        // Previously gated on !feedHadEntities — when GTFS-RT feed had entities but
+        // direction/route filtering removed all matches, the subtitle showed transit
+        // duration ("Scheduled ~6min") instead of departure countdown.
+        const estDepartMs = nowMs + (minutesToDeparture * 60000);
+        const headway = leg.type === 'tram' ? 8 : (leg.type === 'train' ? 10 : 15);
+        nextDepartureTimesMs = [
+          estDepartMs,
+          estDepartMs + (headway * 60000),
+          estDepartMs + (headway * 2 * 60000)
+        ];
       }
     }
 
@@ -2217,9 +2243,16 @@ export default async function handler(req, res) {
       tramApiOptions.lat = homeCoords.lat;
       tramApiOptions.lon = homeCoords.lon;
     }
-    // Don't filter tram API by route number — multiple lines serve the same stop
-    // and user wants to see whichever line is coming next
-    const tramRouteNum = tramLeg?.routeNumber || detectedTramRoute;
+    // V5.4.5: Pass destination coordinates for tram direction filtering.
+    // Coord-proximity uses trip endpoint coordinates to filter wrong-direction trams.
+    if (locations.work?.lat) {
+      tramApiOptions.destLat = locations.work.lat;
+      tramApiOptions.destLon = locations.work.lon;
+    }
+    // V5.4.8: Route number for coord-proximity 500m radius + route filter.
+    // Only use route engine or user preference — auto-detected route from nearest stop
+    // is unreliable at intersections (picks wrong route, e.g. 129 instead of 58).
+    const tramRouteNum = tramLeg?.routeNumber || preferredTramRoute || null;
     if (tramRouteNum) tramApiOptions.routeNumber = tramRouteNum;
     // Ensure tram leg has route number for consistent display ("Route 58" not "Tram").
     // Without this, route number only gets populated from GTFS-RT live data, causing

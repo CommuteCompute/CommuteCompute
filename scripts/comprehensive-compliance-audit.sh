@@ -1930,7 +1930,7 @@ fi
 
 subsection "5.6 No personal email addresses in firmware source"
 if [ -d "firmware/src" ]; then
-    # Allow the copyright-standard commutecompute.licensing@gmail.com but flag any other personal emails
+    # Allow the copyright-standard licensing@commutecompute.com but flag any other personal emails
     PERSONAL_EMAILS=$(grep -rnoE '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}' firmware/src/ firmware/include/ 2>/dev/null | grep -v 'commutecompute\.licensing@gmail\.com' | head -5 || true)
     if [ -n "$PERSONAL_EMAILS" ]; then
         fail "Personal email addresses found in firmware source:"

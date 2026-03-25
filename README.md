@@ -633,7 +633,7 @@ This project is dual-licensed:
 | **Open Source (AGPL-3.0)** | Free to use, modify, and distribute. All modifications and network-accessible deployments must release source code under AGPL-3.0. |
 | **Commercial Licence** | For proprietary/closed-source use without AGPL obligations. Contact for terms. |
 
-For commercial licensing enquiries: **commutecompute.licensing@gmail.com**
+For commercial licensing enquiries: **licensing@commutecompute.com**
 
 <br>
 
@@ -660,7 +660,7 @@ See [LEGAL.md](LEGAL.md) for complete trade mark and intellectual property detai
 </p>
 
 <p align="center">
-  <strong>Commute Compute&#8482; System v5.4.3</strong><br>
+  <strong>Commute Compute&#8482; System v5.4.8</strong><br>
   V16.0 Turnkey Multi-State<br>
   CommuteCompute&#8482; Engine v4.1 | CCDash&#8482; Renderer v3.2 | CC LiveDash&#8482; v3.1 | Admin Panel v6.0 | CCFirm&#8482; v8.1.0<br>
   <br>

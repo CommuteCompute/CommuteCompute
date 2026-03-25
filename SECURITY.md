@@ -22,7 +22,7 @@ We take the security of Commute Compute™ seriously. If you discover a security
 
 ### How to Report
 
-- **Email:** commutecompute.licensing@gmail.com
+- **Email:** info@commutecompute.com
 - **Subject line:** `[SECURITY] Brief description of the vulnerability`
 
 ### Disclosure Timeline
@@ -42,7 +42,7 @@ We do not currently operate a bug bounty programme. However, we are happy to cre
 
 For all security-related matters:
 
-- **Email:** commutecompute.licensing@gmail.com
+- **Email:** info@commutecompute.com
 - **GitLab confidential issues:** For urgent security matters, issues can also be reported via the [GitLab repository's confidential issue feature](https://gitlab.com/angusbergman/commute-compute-system/-/issues/new?issue[confidential]=true)
 - **Licensing and legal:** See [LEGAL.md](LEGAL.md)
 - **Privacy policy:** See [PRIVACY.md](PRIVACY.md)

@@ -60,7 +60,7 @@ This project is **dual-licensed** under the following terms:
 The Commute Compute System is available under the GNU Affero General Public License v3.0. You may use, modify, and distribute this software provided that all modifications and derivative works are also released under AGPL-3.0, and that users interacting with the software over a network are given access to the corresponding source code.
 
 **2. Commercial Licence**
-For commercial or proprietary use without AGPL-3.0 obligations (e.g., closed-source products, SaaS deployments without source disclosure, or embedding in proprietary systems), a separate commercial licence is available. Contact **commutecompute.licensing@gmail.com** for terms.
+For commercial or proprietary use without AGPL-3.0 obligations (e.g., closed-source products, SaaS deployments without source disclosure, or embedding in proprietary systems), a separate commercial licence is available. Contact **licensing@commutecompute.com** for terms.
 
 By using, copying, modifying, or distributing any part of this system under the open-source licence, you acknowledge and agree that:
 
@@ -149,7 +149,7 @@ The following components are dual-licensed under **AGPL-3.0** and a **commercial
 - Brand guidelines (for reference only)
 
 **AGPL-3.0 Licence:** https://www.gnu.org/licenses/agpl-3.0.html
-**Commercial Licence:** Contact commutecompute.licensing@gmail.com
+**Commercial Licence:** Contact licensing@commutecompute.com
 
 ### What AGPL-3.0 Permits
 
@@ -165,7 +165,7 @@ The following components are dual-licensed under **AGPL-3.0** and a **commercial
 
 ### Commercial Licence Option
 
-For use cases incompatible with AGPL-3.0 (closed-source products, proprietary SaaS, embedded systems without source disclosure), contact commutecompute.licensing@gmail.com for a commercial licence.
+For use cases incompatible with AGPL-3.0 (closed-source products, proprietary SaaS, embedded systems without source disclosure), contact licensing@commutecompute.com for a commercial licence.
 
 ---
 
@@ -210,7 +210,7 @@ No representations, warranties, or commitments regarding commercial licence avai
 
 To enquire about commercial licensing:
 
-**Email:** commutecompute.licensing@gmail.com
+**Email:** licensing@commutecompute.com
 
 ### What a Commercial Licence May Include
 
@@ -376,7 +376,7 @@ CCFirm™ firmware files include explicit third-party attribution in headers:
 For licensing enquiries, trade mark permissions, or legal questions:
 
 **Angus Bergman**
-**Email:** commutecompute.licensing@gmail.com
+**Email:** licensing@commutecompute.com
 GitLab: [@angusbergman](https://gitlab.com/angusbergman)
 
 For security vulnerability reporting, see our [Responsible Disclosure Policy](SECURITY.md).

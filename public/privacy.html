@@ -794,7 +794,7 @@
                 <div class="section-content">
                     <p>For privacy-related enquiries:</p>
                     <ul>
-                        <li><strong>Email:</strong> <a class="ext-link" href="mailto:commutecompute.licensing@gmail.com">commutecompute.licensing@gmail.com</a></li>
+                        <li><strong>Email:</strong> <a class="ext-link" href="mailto:info@commutecompute.com">info@commutecompute.com</a></li>
                         <li><strong>GitLab Issues:</strong> <a class="ext-link" href="https://gitlab.com/angusbergman/commute-compute-system/issues" target="_blank" rel="noopener">gitlab.com/angusbergman/commute-compute-system/issues</a></li>
                         <li><strong>Licensing and legal:</strong> See <a class="ext-link" href="https://gitlab.com/angusbergman/commute-compute-system/-/blob/main/LEGAL.md" target="_blank" rel="noopener">LEGAL.md</a></li>
                     </ul>
@@ -823,7 +823,7 @@
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">System</span>
-                    <span class="cc-footer-version-value" id="cc-footer-system-version">v5.4.3</span>
+                    <span class="cc-footer-version-value" id="cc-footer-system-version">v5.4.8</span>
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">Build</span>
@@ -850,7 +850,7 @@
             document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v4.1';
             document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v3.2';
             document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.4.3');
+            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.4.8');
             if (v.repoUrls) checkForUpstreamUpdates(v.system?.version, v.repoUrls);
         }).catch(function(){});
     }

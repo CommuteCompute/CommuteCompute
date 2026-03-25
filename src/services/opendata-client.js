@@ -438,7 +438,7 @@ export async function getDepartures(stopId, routeType, options = {}) {
     // proximity uses actual stop coordinates for accurate departure times and must
     // run first so the inaccurate median heuristic doesn't block it.
     if (departures.length === 0 && feedEntityCount > 0 && mode === 'tram') {
-      const coordDepartures = processCoordinateProximitySearch(feed, stopId, routeType, state, options.routeNumber || null, options.lat || null, options.lon || null);
+      const coordDepartures = processCoordinateProximitySearch(feed, stopId, routeType, state, options.routeNumber || null, options.lat || null, options.lon || null, options.destLat || null, options.destLon || null);
       cascadeAttempts.push({ tier: 'coord-proximity', tried: true, found: coordDepartures.length });
       if (coordDepartures.length > 0) {
         console.log(`[OpenData] Coordinate-proximity search found ${coordDepartures.length} departures for stopId=${stopId} in ${mode} feed`);
@@ -478,7 +478,7 @@ export async function getDepartures(stopId, routeType, options = {}) {
     // Broad fallback for trains — last resort when all previous tiers found nothing.
     // Direction-based matching (isCitybound) in findMatchingDeparture still filters correctly.
     if (departures.length === 0 && feedEntityCount > 0 && mode === 'metro') {
-      const broadDepartures = processAnyRouteDepartures(feed);
+      const broadDepartures = processAnyRouteDepartures(feed, stopId);
       cascadeAttempts.push({ tier: 'broad-fallback', tried: true, found: broadDepartures.length });
       if (broadDepartures.length > 0) {
         console.log(`[OpenData] Broad fallback: ${broadDepartures.length} departures from mixed routes in ${mode} feed (stopId=${stopId})`);
@@ -813,7 +813,7 @@ function processAllTripsStopSearch(feed, stopId, routeType, state = 'VIC') {
  * @param {string|null} targetRouteNumber - If set, only match trips on this route
  * @returns {Array} - Departure objects from coordinate-matched trips
  */
-function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC', targetRouteNumber = null, fallbackLat = null, fallbackLon = null) {
+function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC', targetRouteNumber = null, fallbackLat = null, fallbackLon = null, destLat = null, destLon = null) {
   const nowMs = getNowMs();
   const departures = [];
   if (!feed?.entity || state !== 'VIC' || routeType !== 1) return departures;
@@ -846,9 +846,10 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
 
     // Find ALL stops within radius that have valid departure times.
     // When a route number is specified, use 500m (same route, wider search).
-    // When no route number, use 150m to avoid matching stops on intersecting
-    // roads served by different tram routes (~200-300m away).
-    const searchRadius = targetRouteNumber ? 500 : 150;
+    // V5.4.8: 300m without route filter — wide enough for intersection stops,
+    // narrow enough to avoid parallel-road false matches (~300m+ away).
+    // Closest-route logic at end of function disambiguates multiple routes.
+    const searchRadius = targetRouteNumber ? 500 : 300;
     const candidates = [];
     for (let i = 0; i < stus.length; i++) {
       const feedStopId = String(stus[i].stopId);
@@ -867,6 +868,32 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
         const mins = Math.round((depMs - nowMs) / 60000);
         if (mins >= -2 && mins <= 120) {
           candidates.push({ stu: stus[i], dist, depMs, mins });
+        }
+      }
+    }
+
+    // V5.4.6: Confidence-gated direction filter using trip endpoint coordinates.
+    // VIC tram GTFS-RT uses different stop IDs than static GTFS — most stops lack
+    // coordinates in coordCache. Only apply direction filter when we have enough
+    // data to determine direction reliably (>= 3 coord stops, >= 500m span).
+    // Without this gate, sparse coordCache causes incorrect rejection of valid trips.
+    if (destLat && destLon && candidates.length > 0) {
+      let firstCoordStop = null, lastCoordStop = null;
+      let coordStopCount = 0;
+      for (let i = 0; i < stus.length; i++) {
+        const sc = coordCache[String(stus[i].stopId)];
+        if (sc) {
+          if (!firstCoordStop) firstCoordStop = sc;
+          lastCoordStop = sc;
+          coordStopCount++;
+        }
+      }
+      if (firstCoordStop && lastCoordStop && firstCoordStop !== lastCoordStop && coordStopCount >= 3) {
+        const span = haversine(firstCoordStop.lat, firstCoordStop.lon, lastCoordStop.lat, lastCoordStop.lon);
+        if (span >= 500) {
+          const firstDist = haversine(firstCoordStop.lat, firstCoordStop.lon, destLat, destLon);
+          const lastDist = haversine(lastCoordStop.lat, lastCoordStop.lon, destLat, destLon);
+          if (lastDist > firstDist + 200) continue; // High-confidence: heading away
         }
       }
     }
@@ -980,13 +1007,20 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
  * Used for trains when all previous matching strategies fail.
  * Direction-based matching (isCitybound) in findMatchingDeparture still filters correctly.
  *
+ * V5.4.6: Accepts targetStopId — tries matching the user's specific station within
+ * each trip before falling back to earliest-future heuristic. Without this, the
+ * heuristic picks mid-route stops producing wrong departure times.
+ *
  * @param {Object} feed - Decoded GTFS-RT FeedMessage
+ * @param {string|number|null} targetStopId - User's station stop ID (optional)
  * @returns {Array} - Departure objects from mixed routes
  */
-function processAnyRouteDepartures(feed) {
+function processAnyRouteDepartures(feed, targetStopId = null) {
   const nowMs = getNowMs();
   const departures = [];
   if (!feed?.entity) return departures;
+
+  const targetStr = targetStopId ? String(targetStopId) : null;
 
   for (const entity of feed.entity) {
     const tripUpdate = entity.tripUpdate;
@@ -997,24 +1031,40 @@ function processAnyRouteDepartures(feed) {
     const lineName = getLineName(routeId);
     const stus = tripUpdate.stopTimeUpdate;
 
-    // Use future departure heuristic (same as route-level matching)
-    const futureDeps = [];
-    for (const stu of stus) {
-      const depTime = stu.departure?.time || stu.arrival?.time;
-      if (!depTime) continue;
-      const depMs = (depTime.low || depTime) * 1000;
-      const minutes = Math.round((depMs - nowMs) / 60000);
-      if (minutes >= 2 && minutes <= 120) {
-        futureDeps.push({ stu, depMs, minutes });
+    // V5.4.6: Try matching the user's specific stop first (accurate departure time)
+    let picked = null;
+    if (targetStr) {
+      for (const stu of stus) {
+        if (matchesStopId(stu.stopId, targetStr)) {
+          const depTime = stu.departure?.time || stu.arrival?.time;
+          if (!depTime) continue;
+          const depMs = (depTime.low || depTime) * 1000;
+          const minutes = Math.round((depMs - nowMs) / 60000);
+          if (minutes >= -2 && minutes <= 120) {
+            picked = { stu, depMs, minutes };
+            break;
+          }
+        }
       }
     }
 
-    if (futureDeps.length === 0) continue;
-    futureDeps.sort((a, b) => a.depMs - b.depMs);
-    // Use earliest future departure — closest approximation to when this train
-    // departs the user's area. Median was picking mid-route stops, producing times
-    // 30-60 min too late for stations near the start/end of a trip.
-    const picked = futureDeps[0];
+    // Fall back to earliest future departure heuristic
+    if (!picked) {
+      const futureDeps = [];
+      for (const stu of stus) {
+        const depTime = stu.departure?.time || stu.arrival?.time;
+        if (!depTime) continue;
+        const depMs = (depTime.low || depTime) * 1000;
+        const minutes = Math.round((depMs - nowMs) / 60000);
+        if (minutes >= 2 && minutes <= 120) {
+          futureDeps.push({ stu, depMs, minutes });
+        }
+      }
+
+      if (futureDeps.length === 0) continue;
+      futureDeps.sort((a, b) => a.depMs - b.depMs);
+      picked = futureDeps[0];
+    }
 
     // V16.0: Detect direction from trip's stop sequence for proper filtering
     const finalStopId = stus[stus.length - 1]?.stopId || '';

@@ -93,7 +93,7 @@ Commute Compute™ is dual-licensed: the open-source version is AGPL-3.0, and a 
 ### How to Sign
 
 1. Read the [CLA](CLA.md)
-2. Email a signed copy to commutecompute.licensing@gmail.com
+2. Email a signed copy to licensing@commutecompute.com
 3. Include your GitHub/GitLab username in the email
 4. Your signed CLA will be acknowledged before your first PR is merged
 

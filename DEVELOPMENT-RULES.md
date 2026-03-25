@@ -3373,7 +3373,7 @@ A commercial licence is available for use cases incompatible with AGPL-3.0 (clos
 - Commercial licence terms are **bespoke** and negotiated on a **per-licensee basis** at the **sole and absolute discretion** of Angus Bergman
 - No standard commercial licence template or published pricing exists — all terms are confirmed individually
 - A commercial licence is only effective when confirmed in a **written agreement signed by Angus Bergman**
-- Contact: **commutecompute.licensing@gmail.com**
+- Contact: **licensing@commutecompute.com**
 
 See **LEGAL.md** for the full commercial licence framework.
 
