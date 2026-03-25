@@ -767,6 +767,20 @@ function processAllTripsStopSearch(feed, stopId, routeType, state = 'VIC') {
         const scanIsMetroTunnel = isVIC ? METRO_TUNNEL_LINE_CODES.has(scanLineCode) : false;
         const scanFinalStop = stus[stus.length - 1]?.stopId || '';
 
+        // V5.4.9: Scan trip for City Loop traversal
+        const scanCityLoopPlatforms = [
+          ...(VIC_METRO_STATIONS?.PAR?.platforms || []),
+          ...(VIC_METRO_STATIONS?.MCE?.platforms || []),
+          ...(VIC_METRO_STATIONS?.FGS?.platforms || []),
+          ...(VIC_METRO_STATIONS?.SSS?.platforms || []),
+        ];
+        const scanPassesCityLoop = isVIC ? stus.some(s => {
+          const sid = String(s.stopId);
+          return scanCityLoopPlatforms.some(pid =>
+            sid === pid || sid.endsWith(':' + pid) || sid.endsWith('-' + pid)
+          );
+        }) : false;
+
         departures.push({
           minutes: Math.max(0, minutes),
           departureTimeMs: depMs,
@@ -776,6 +790,7 @@ function processAllTripsStopSearch(feed, stopId, routeType, state = 'VIC') {
           routeId,
           tripId: tripUpdate.trip?.tripId,
           finalStop: scanFinalStop,
+          passesCityLoop: scanPassesCityLoop,
           isCitybound: scanIsCitybound,
           isMetroTunnel: scanIsMetroTunnel,
           delay: Math.round(delay / 60),
@@ -818,12 +833,24 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
   const departures = [];
   if (!feed?.entity || state !== 'VIC' || routeType !== 1) return departures;
 
+  // V5.4.9: Pre-compute lookup map for flexible stop ID matching.
+  // GTFS-RT tram feeds use prefixed IDs (e.g. "aus:vic:tram-1567") while
+  // VIC_TRAM_STOPS_WITH_COORDS uses bare numerics ("1567"). Exact === match
+  // always fails. Map by both exact ID and trailing numeric for prefix tolerance.
+  const tramStopById = {};
+  for (const s of VIC_TRAM_STOPS_WITH_COORDS) {
+    tramStopById[s.id] = s;
+  }
+  function lookupTramStop(idStr) {
+    if (tramStopById[idStr]) return tramStopById[idStr];
+    const numeric = idStr.match(/(\d+)$/)?.[1];
+    if (numeric && tramStopById[numeric]) return tramStopById[numeric];
+    return null;
+  }
+
   // Find target stop coordinates from static GTFS data
-  // V16.0: When stop ID isn't in VIC_TRAM_STOPS_WITH_COORDS (common — GTFS static IDs
-  // differ from coordinate DB IDs, e.g. stop 1567 stored as 18705), fall back to the
-  // user's address coordinates passed from the engine.
   const stopIdStr = String(stopId);
-  const targetStop = VIC_TRAM_STOPS_WITH_COORDS.find(s => s.id === stopIdStr);
+  const targetStop = lookupTramStop(stopIdStr);
   const searchLat = targetStop?.lat ?? fallbackLat;
   const searchLon = targetStop?.lon ?? fallbackLon;
   if (!searchLat || !searchLon) return departures;
@@ -854,7 +881,7 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
     for (let i = 0; i < stus.length; i++) {
       const feedStopId = String(stus[i].stopId);
       if (!(feedStopId in coordCache)) {
-        const staticStop = VIC_TRAM_STOPS_WITH_COORDS.find(s => s.id === feedStopId);
+        const staticStop = lookupTramStop(feedStopId);
         coordCache[feedStopId] = staticStop ? { lat: staticStop.lat, lon: staticStop.lon } : null;
       }
       const coords = coordCache[feedStopId];
@@ -1173,6 +1200,21 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0, state = 'VIC') {
         const lineCode = routeId?.match(/-([A-Z]{3}):?$/)?.[1] || '';
         const isMetroTunnel = isVIC ? METRO_TUNNEL_LINE_CODES.has(lineCode) : false;
 
+        // V5.4.9: Scan trip's full stop sequence for City Loop traversal.
+        // finalStop check alone fails when citybound trains terminate past City Loop.
+        const cityLoopPlatforms = [
+          ...(VIC_METRO_STATIONS?.PAR?.platforms || []),
+          ...(VIC_METRO_STATIONS?.MCE?.platforms || []),
+          ...(VIC_METRO_STATIONS?.FGS?.platforms || []),
+          ...(VIC_METRO_STATIONS?.SSS?.platforms || []),
+        ];
+        const passesCityLoop = isVIC ? stops.some(s => {
+          const sid = String(s.stopId);
+          return cityLoopPlatforms.some(pid =>
+            sid === pid || sid.endsWith(':' + pid) || sid.endsWith('-' + pid)
+          );
+        }) : false;
+
         departures.push({
           minutes,
           departureTimeMs: depMs, // Absolute departure time for live countdown
@@ -1183,6 +1225,7 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0, state = 'VIC') {
           routeId,
           tripId: tripUpdate.trip?.tripId,
           finalStop,
+          passesCityLoop,
           isCitybound,
           isMetroTunnel,         // true = Metro Tunnel line, false = City Loop line
           delay: Math.round(delay / 60), // Convert to minutes
