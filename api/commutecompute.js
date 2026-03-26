@@ -1172,8 +1172,13 @@ function filterCityLoopPreference(dirMatches) {
     // City Loop platforms. More reliable than finalStop which may be the outbound
     // terminus (past City Loop) for trains that PASS THROUGH the Loop.
     if (d.passesCityLoop !== undefined) return d.passesCityLoop;
-    // Fallback: finalStop check for departures without trip-scan data
-    if (!d.finalStop) return !d.isMetroTunnel;
+    // V5.5.3: Default to false when no trip scan and no finalStop data.
+    // The previous !isMetroTunnel default incorrectly classified ALL non-Tunnel
+    // trains as City Loop, including evening direct-to-Flinders services.
+    // Conservative: without evidence, don't assume Loop traversal. When no trains
+    // pass the Loop filter, findMatchingDeparture's fallback (line 1239) returns
+    // all citybound trains — user sees all available services.
+    if (!d.finalStop) return false;
     for (const pid of CITY_LOOP_PLATFORM_IDS) {
       if (d.finalStop === pid || d.finalStop.endsWith(`:${pid}`) || d.finalStop.endsWith(`-${pid}`)) {
         return true;

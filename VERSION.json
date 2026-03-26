@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.5.2",
+    "version": "5.5.3",
     "name": "Commute Compute System",
     "releaseDate": "2026-03-26",
     "codename": "Turnkey Multi-State"
@@ -86,6 +86,13 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.5.3",
+      "date": "2026-03-26",
+      "changes": [
+        "Fix City Loop passesCityLoop default: change from !isMetroTunnel to false when no trip scan and no finalStop data — prevents incorrectly classifying direct-to-Flinders evening services as City Loop trains. Conservative default lets findMatchingDeparture fallback show all citybound services."
+      ]
+    },
     {
       "version": "5.5.2",
       "date": "2026-03-26",
