@@ -1,8 +1,8 @@
 {
   "system": {
-    "version": "5.4.9",
+    "version": "5.5.2",
     "name": "Commute Compute System",
-    "releaseDate": "2026-03-25",
+    "releaseDate": "2026-03-26",
     "codename": "Turnkey Multi-State"
   },
   "components": {
@@ -86,6 +86,33 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.5.2",
+      "date": "2026-03-26",
+      "changes": [
+        "City Loop time-gated soft-preference: when nearest City Loop train is >30 min later than nearest direct train, include all non-Metro-Tunnel citybound services — prevents 80+ min waits when evening services bypass the City Loop. User can alight at Flinders Street and walk to City Loop stations.",
+        "Tram coord-proximity fallback coordinates: use tram stop's actual coordinates from VIC_TRAM_STOPS_WITH_COORDS instead of home coordinates — centres the 300m search at the boarding stop, not the home address (which may be 500m+ away).",
+        "Widen coord-proximity radius to 600m when using fallback coordinates (stop not in database) — compensates for home-to-stop distance offset when stop coordinates unavailable."
+      ]
+    },
+    {
+      "version": "5.5.1",
+      "date": "2026-03-26",
+      "changes": [
+        "Merge tram cascade tiers: when coord-proximity finds < 3 departures, also run all-trips-scan and merge results — catches trips that coord-proximity missed due to unmatchable feed stop IDs, providing 3+ departures for Next: display",
+        "Extend raw feed departure padding to all transit modes (tram, bus) — previously only trains/vline. Richer Next: frequency context across all modes.",
+        "Strict City Loop filtering: remove soft-preference fallback that accepted non-City-Loop trains when City Loop services were > 20 min away. Trains that do not serve the alighting station must never be shown regardless of frequency gap."
+      ]
+    },
+    {
+      "version": "5.5.0",
+      "date": "2026-03-26",
+      "changes": [
+        "GTFS-RT feed cache with 2-minute TTL: cache successful API responses in-memory, return stale cache on transient API failures — prevents live/scheduled alternation between refreshes. Departure countdowns recalculated dynamically from cached absolute timestamps.",
+        "Remove closest-route filter from coord-proximity: return departures from ALL routes at intersection stops — provides richer Next: display with departures across multiple serving routes instead of single-route restriction",
+        "Extract tram route name from live departures: when route engine has no route number, extract from GTFS-RT departure data to prevent title flipping between named route and generic mode label"
+      ]
+    },
     {
       "version": "5.4.9",
       "date": "2026-03-25",

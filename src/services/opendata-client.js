@@ -854,6 +854,10 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
   const searchLat = targetStop?.lat ?? fallbackLat;
   const searchLon = targetStop?.lon ?? fallbackLon;
   if (!searchLat || !searchLon) return departures;
+  // V5.5.2: When using fallback coordinates (stop not in VIC_TRAM_STOPS_WITH_COORDS),
+  // the search centre is the user's home — typically 300-600m from the actual tram stop.
+  // Widen radius to 600m to compensate for the offset.
+  const usingFallbackCoords = !targetStop;
 
   // Build a lookup map of feed stop IDs → coordinates from static GTFS data
   const coordCache = {};
@@ -876,7 +880,10 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
     // V5.4.8: 300m without route filter — wide enough for intersection stops,
     // narrow enough to avoid parallel-road false matches (~300m+ away).
     // Closest-route logic at end of function disambiguates multiple routes.
-    const searchRadius = targetRouteNumber ? 500 : 300;
+    // V5.5.2: 600m when using fallback coordinates (home, not stop) to compensate
+    // for the offset between home and the actual boarding location.
+    const baseRadius = usingFallbackCoords ? 600 : 300;
+    const searchRadius = targetRouteNumber ? 500 : baseRadius;
     const candidates = [];
     for (let i = 0; i < stus.length; i++) {
       const feedStopId = String(stus[i].stopId);
