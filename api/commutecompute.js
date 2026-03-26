@@ -538,11 +538,13 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         if (allFutureDeps.length > 0) {
           nextDepartureTimesMs = allFutureDeps.slice(0, 10);
         }
-        // V5.4.7: Pad with same-direction raw feed departures for frequency context.
-        // When City Loop or route filtering reduces allDepartureTimesMs to 1-2 entries,
-        // the raw feed still has all direction-matched trains for richer "Next:" display.
-        if (nextDepartureTimesMs && nextDepartureTimesMs.length < 5 && (leg.type === 'train' || leg.type === 'vline')) {
-          const feedForMode = leg.type === 'vline' ? transitData.trains : transitData.trains;
+        // V5.5.1: Pad with raw feed departures for frequency context — all transit modes.
+        // When route/direction filtering reduces allDepartureTimesMs to 1-2 entries,
+        // the raw feed has all matched departures for richer "Next:" display.
+        if (nextDepartureTimesMs && nextDepartureTimesMs.length < 5) {
+          const feedForMode = leg.type === 'tram' ? transitData.trams :
+                              leg.type === 'bus' ? transitData.buses :
+                              transitData.trains;
           const rawDirDeps = feedForMode?.filter(d =>
             d.isLive && d.departureTimeMs > nowMs &&
             (leg.isCitybound === undefined || d.isCitybound === leg.isCitybound)
@@ -1170,8 +1172,13 @@ function filterCityLoopPreference(dirMatches) {
     // City Loop platforms. More reliable than finalStop which may be the outbound
     // terminus (past City Loop) for trains that PASS THROUGH the Loop.
     if (d.passesCityLoop !== undefined) return d.passesCityLoop;
-    // Fallback: finalStop check for departures without trip-scan data
-    if (!d.finalStop) return !d.isMetroTunnel;
+    // V5.5.3: Default to false when no trip scan and no finalStop data.
+    // The previous !isMetroTunnel default incorrectly classified ALL non-Tunnel
+    // trains as City Loop, including evening direct-to-Flinders services.
+    // Conservative: without evidence, don't assume Loop traversal. When no trains
+    // pass the Loop filter, findMatchingDeparture's fallback (line 1239) returns
+    // all citybound trains — user sees all available services.
+    if (!d.finalStop) return false;
     for (const pid of CITY_LOOP_PLATFORM_IDS) {
       if (d.finalStop === pid || d.finalStop.endsWith(`:${pid}`) || d.finalStop.endsWith(`-${pid}`)) {
         return true;
@@ -1180,20 +1187,30 @@ function filterCityLoopPreference(dirMatches) {
     return false;
   });
 
+  // V5.5.2: Time-gated soft-preference for City Loop filtering.
+  // Strict filtering is correct when Loop services are frequent — a non-Loop
+  // train genuinely cannot reach Parliament/Melbourne Central/Flagstaff.
+  // But when the nearest Loop train is >30 min later than the nearest direct
+  // train (common evenings/weekends when services bypass the Loop), forcing
+  // the user to wait 80+ min is worse than catching a direct train to Flinders
+  // Street and walking ~7 min to the City Loop station.
   if (cityLoopTrains.length > 0) {
-    // Soft preference: if nearest City Loop train is >20 min further away
-    // than nearest direct train, accept all direction-matched trains.
-    // On weekdays Loop trains run every 5-10 min (gap small, filter strict).
-    // On Sundays/evenings Loop services 30-50 min apart (gap large, direct accepted).
-    const nearestLoopMin = Math.min(...cityLoopTrains.map(d => d.minutes ?? Infinity));
-    const nearestDirectMin = Math.min(...dirMatches.map(d => d.minutes ?? Infinity));
-    if (nearestLoopMin - nearestDirectMin > 20) {
-      return dirMatches; // Direct service is far superior — accept all
+    const nonLoopNonTunnel = dirMatches.filter(d => !cityLoopTrains.includes(d) && !d.isMetroTunnel);
+    if (nonLoopNonTunnel.length > 0) {
+      const nearestLoopMs = Math.min(...cityLoopTrains.map(d => d.departureTimeMs || Infinity));
+      const nearestDirectMs = Math.min(...nonLoopNonTunnel.map(d => d.departureTimeMs || Infinity));
+      if (nearestDirectMs < Infinity && (nearestLoopMs - nearestDirectMs) > 30 * 60000) {
+        // Direct service is >30 min sooner — include all non-Metro-Tunnel trains.
+        // Destination correction (lines 500-522) updates leg to actual terminus.
+        return dirMatches.filter(d => !d.isMetroTunnel);
+      }
     }
     return cityLoopTrains;
   }
 
-  return dirMatches; // No Loop trains found — keep all direction-matched
+  // No City Loop trains in GTFS-RT feed — return empty to trigger timetable
+  // fallback rather than showing trains that don't serve the destination.
+  return [];
 }
 
 /**
@@ -2319,6 +2336,22 @@ export default async function handler(req, res) {
       }
     }
 
+    // V5.5.2: Use tram stop's actual coordinates for coord-proximity search centre.
+    // homeCoords (line 2246) may be 500m+ from the boarding stop when the user
+    // walks to a distant tram stop. Coord-proximity's 300m radius from home misses
+    // stops near the actual boarding location. The stop's own coordinates are accurate.
+    if (tramStopId && VIC_TRAM_STOPS_WITH_COORDS) {
+      const tid = String(tramStopId);
+      const tramStopRef = VIC_TRAM_STOPS_WITH_COORDS.find(s => {
+        const sid = String(s.id);
+        return sid === tid || sid === (tid.match(/(\d+)$/)?.[1]);
+      });
+      if (tramStopRef) {
+        tramApiOptions.lat = tramStopRef.lat;
+        tramApiOptions.lon = tramStopRef.lon;
+      }
+    }
+
     // V15.0: Extract train line code for route-level fallback
     const trainLeg = route?.legs?.find(l => l.type === 'train' || l.type === 'vline');
     const trainApiOptions = { ...apiOptions };
@@ -2370,6 +2403,18 @@ export default async function handler(req, res) {
     const disruptions = [...metroDisruptions, ...tramDisruptions, ...busDisruptions, ...ferryDisruptions];
 
     const transitData = { trains, trams, buses, ferries, disruptions };
+
+    // V5.5.0: Extract tram route number from live departures when not already known.
+    // Prevents title flipping between "Route 58" (live) and "Tram" (scheduled fallback).
+    // With feed caching, scheduled fallback is rare — but this ensures route name
+    // persists even when the cached feed expires and a fresh fetch temporarily fails.
+    if (!tramRouteNum && trams.length > 0) {
+      const liveRoute = trams.find(t => t.routeNumber && t.isLive)?.routeNumber;
+      if (liveRoute) {
+        tramApiOptions.routeNumber = liveRoute;
+        if (tramLeg && !tramLeg.routeNumber) tramLeg.routeNumber = liveRoute;
+      }
+    }
 
     // Determine if we actually have live transit data (from GTFS-RT, not fallback)
     // Per Section 23.6: "LIVE" indicators must reflect actual data source
