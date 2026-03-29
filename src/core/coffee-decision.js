@@ -88,9 +88,11 @@ class CoffeeDecision {
    * Check if there are major service disruptions
    */
   isDisrupted(newsText) {
-    if (!newsText) return false;
-    const badWords = ['Major Delays', 'Suspended', 'Buses replace', 'Cancellation'];
-    return badWords.some(word => newsText.includes(word));
+    if (!newsText || typeof newsText !== 'string') return false;
+    const lower = newsText.toLowerCase();
+    const badWords = ['major delays', 'suspended', 'buses replace', 'cancellation',
+                      'no service', 'significant delays', 'modified service', 'stop closure'];
+    return badWords.some(word => lower.includes(word));
   }
 
   /**

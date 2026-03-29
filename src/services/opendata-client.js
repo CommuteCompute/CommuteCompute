@@ -265,6 +265,14 @@ function decodeGtfsRt(buffer) {
  * @param {string} state - Australian state code (e.g. 'VIC', 'NSW', 'QLD'). Defaults to 'VIC'.
  * @returns {Object} - Decoded GTFS-RT FeedMessage or null
  */
+// V5.5.0: In-memory GTFS-RT feed cache (75-second TTL, reduced from 2 min in v5.5.4).
+// Prevents live→scheduled alternation when the Transport Victoria API is
+// intermittently unreachable. Departure countdowns are recalculated dynamically
+// from cached feed's absolute timestamps on each request — times stay accurate.
+// On fetch failure, returns stale cached data (better than no data).
+const feedCache = new Map();
+const FEED_CACHE_TTL_MS = 75000; // 75 seconds — balances freshness with API rate limits
+
 async function fetchGtfsRt(mode, feed, options = {}, state = 'VIC') {
   if (options.apiKey) {
     // Defensive: handle both string and { devId, apiKey } object formats
