@@ -1,6 +1,6 @@
 {
   "name": "commute-compute",
-  "version": "5.5.4",
+  "version": "5.5.5",
   "description": "Commute Compute System - Smart Transit Dashboard for e-ink displays",
   "type": "module",
   "main": "src/server.js",

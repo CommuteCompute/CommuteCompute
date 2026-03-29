@@ -447,7 +447,7 @@ All rules from previous versions have been incorporated. The canonical source is
 | `Metro API` | Doesn't exist | `GTFS-RT via OpenData` |
 | `Real-time API` | Ambiguous | `GTFS-RT Trip Updates` |
 | Hardcoded API keys | Security risk | Config token in URL |
-| Specific stop/station names in code comments | Privacy risk — may infer user address | Generic descriptions (e.g. "nearby intersection", "user's tram stop") |
+| Specific stop/station names in code comments, commits, plans, agent prompts, or memory | Privacy risk — may infer user address or commute route | Generic descriptions (e.g. "nearby intersection", "user's tram stop"). Stop IDs (numbers) acceptable. |
 | `deepSleep()` in setup() | Causes brick | State machine in loop() |
 | `esp_task_wdt_*` | Causes freezes | Remove watchdog entirely |
 | `FONT_12x16` | Rotation bug | `FONT_8x8` only |
@@ -4194,7 +4194,11 @@ When no catchable live departure exists for a transit leg, the leg remains as it
 - `isTimetableEstimate: true`
 - Subtitle: `"<StopName> • Scheduled ~<duration>min"` (never "Check timetable")
 
-### 23.7 Multi-Modal Journey Leg Construction (v1.18)
+### 23.7 Live Departure Verification (Founder Directive, 2026-03-29)
+
+Dashboard departure times MUST align with what the transport authority app shows for the same stop at the same time. Wrong departures (from a wrong line or direction leaking through filtering) are worse than showing no departures. Before any live data fix is considered complete, the dashboard output must be verified against the official transport app. A departure time that does not match the official source indicates a filtering or matching bug that must be investigated.
+
+### 23.8 Multi-Modal Journey Leg Construction (v1.18)
 
 **CommuteCompute builds journey legs supporting N transit modes with interchange walks.**
 
@@ -4514,7 +4518,7 @@ Transit leg subtitles MUST include both the origin (boarding) stop name and the 
 | **No TRMNL Cloud** | Custom firmware only — never contacts usetrmnl.com | [NO] No stock firmware |
 | **Server-Side Rendering** | All computation on server — device receives images | [NO] No client-side logic |
 | **Privacy-First** | Commute data stays on user's server | [NO] No analytics/tracking |
-| **Multi-State** | Supports all Australian states/territories | [NO] No VIC-only code |
+| **Multi-State** | Supports all Australian states/territories. VIC-specific logic (City Loop, Metro Tunnel, tram cascade) MUST be gated by `state === 'VIC'` or equivalent — never unconditional. | [NO] No ungated VIC-only code |
 | **Free-Tier** | Entire system usable for free | [NO] No required paid APIs |
 
 ### 24.2 Distribution Model

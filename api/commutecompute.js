@@ -545,11 +545,18 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
           const feedForMode = leg.type === 'tram' ? transitData.trams :
                               leg.type === 'bus' ? transitData.buses :
                               transitData.trains;
-          const rawDirDeps = feedForMode?.filter(d =>
+          let rawDirDeps = feedForMode?.filter(d =>
             d.isLive && d.departureTimeMs > nowMs &&
             (leg.isCitybound === undefined || d.isCitybound === leg.isCitybound) &&
-            (!leg.routeNumber || !d.routeNumber || d.routeNumber.toString() === leg.routeNumber.toString())
+            // Trains: filter by direction only (not route number) — multiple lines serve same direction
+            // Trams/buses: filter by route number when known
+            (leg.type === 'train' || leg.type === 'vline' || !leg.routeNumber || !d.routeNumber || d.routeNumber.toString() === leg.routeNumber.toString())
           ) || [];
+          // For trains requiring City Loop: exclude Metro Tunnel trains from padding
+          if ((leg.type === 'train' || leg.type === 'vline') && leg.requiresCityLoop && rawDirDeps.length > 0) {
+            const loopFiltered = rawDirDeps.filter(d => !d.isMetroTunnel);
+            if (loopFiltered.length > 0) rawDirDeps = loopFiltered;
+          }
           for (const d of rawDirDeps) {
             if (nextDepartureTimesMs.length >= 10) break;
             if (!nextDepartureTimesMs.includes(d.departureTimeMs)) {
@@ -1208,11 +1215,18 @@ function filterCityLoopPreference(dirMatches) {
       const nearestDirectMs = Math.min(...nonLoopNonTunnel.map(d => d.departureTimeMs || Infinity));
       if (nearestDirectMs < Infinity && (nearestLoopMs - nearestDirectMs) > 30 * 60000) {
         // Direct service is >30 min sooner — include all non-Metro-Tunnel trains.
-        // Destination correction (lines 500-522) updates leg to actual terminus.
         return dirMatches.filter(d => !d.isMetroTunnel);
       }
     }
-    return cityLoopTrains;
+    // Include ALL City Loop trains (multiple lines serve City Loop stations).
+    // Also include non-Metro-Tunnel trains departing within 10 min of nearest
+    // City Loop train — ensures interleaved services from different lines appear.
+    const nearestLoopMs = Math.min(...cityLoopTrains.map(d => d.departureTimeMs || Infinity));
+    const nearbyDirect = dirMatches.filter(d =>
+      !cityLoopTrains.includes(d) && !d.isMetroTunnel &&
+      d.departureTimeMs && (d.departureTimeMs - nearestLoopMs) < 10 * 60000
+    );
+    return [...cityLoopTrains, ...nearbyDirect].sort((a, b) => (a.departureTimeMs || 0) - (b.departureTimeMs || 0));
   }
 
   // No City Loop trains in GTFS-RT feed — return empty to trigger timetable
@@ -1271,20 +1285,35 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
     }
     // No route number filtering for trains — any line in the right direction
   } else if (leg.routeNumber) {
-    // For trams: PREFER matching route but fall back to any-route if none.
-    // Prevents wrong route (e.g. Route 78) overriding configured route (Route 58)
-    // when coord-proximity or all-trips-scan picks up trips from nearby intersections.
-    // For buses: strict filter — different routes go different places.
+    // For trams/buses: PREFER matching route but fall back to most-frequent route.
     const legRoute = parseInt(String(leg.routeNumber), 10);
-    const routeMatches = departures.filter(d => {
-      if (!d.routeNumber) return false;
-      return parseInt(String(d.routeNumber), 10) === legRoute;
-    });
-    if (routeMatches.length > 0) {
-      matchedDepartures = routeMatches;
+    if (!isNaN(legRoute)) {
+      const routeMatches = departures.filter(d => {
+        if (!d.routeNumber) return false;
+        return parseInt(String(d.routeNumber), 10) === legRoute;
+      });
+      if (routeMatches.length > 0) {
+        matchedDepartures = routeMatches;
+      }
     }
-    // Trams: if no matching route, matchedDepartures stays as ALL departures
-    // Buses: if no matching route, also stays as ALL (same fallback behaviour)
+    // If route is NaN or no matches, matchedDepartures stays as ALL departures
+  } else if (leg.type === 'tram' || leg.type === 'bus') {
+    // No route number on leg — pick the most frequent route from departures.
+    // Prevents wrong route selection when coord-proximity returns multiple routes
+    // at intersections (the nearest stop may be from a different route).
+    const routeCounts = {};
+    for (const d of departures) {
+      if (d.routeNumber) {
+        routeCounts[d.routeNumber] = (routeCounts[d.routeNumber] || 0) + 1;
+      }
+    }
+    const topRoute = Object.entries(routeCounts).sort((a, b) => b[1] - a[1])[0];
+    if (topRoute) {
+      const topRouteNum = topRoute[0];
+      matchedDepartures = departures.filter(d => d.routeNumber?.toString() === topRouteNum);
+      // Populate the leg route for display
+      if (!leg.routeNumber) leg.routeNumber = topRouteNum;
+    }
   }
 
   // Clone primary to avoid mutating shared transitData objects
@@ -2420,10 +2449,19 @@ export default async function handler(req, res) {
     // With feed caching, scheduled fallback is rare — but this ensures route name
     // persists even when the cached feed expires and a fresh fetch temporarily fails.
     if (!tramRouteNum && trams.length > 0) {
-      const liveRoute = trams.find(t => t.routeNumber && t.isLive)?.routeNumber;
+      // Pick most frequent route from live departures — more reliable than nearest-stop detection
+      // at intersections where multiple routes serve nearby stops
+      const routeCounts = {};
+      for (const t of trams) {
+        if (t.routeNumber && t.isLive) {
+          routeCounts[t.routeNumber] = (routeCounts[t.routeNumber] || 0) + 1;
+        }
+      }
+      const topRoute = Object.entries(routeCounts).sort((a, b) => b[1] - a[1])[0];
+      const liveRoute = topRoute ? topRoute[0] : trams.find(t => t.routeNumber && t.isLive)?.routeNumber;
       if (liveRoute) {
         tramApiOptions.routeNumber = liveRoute;
-        if (tramLeg && !tramLeg.routeNumber) tramLeg.routeNumber = liveRoute;
+        if (tramLeg) tramLeg.routeNumber = liveRoute;
       }
     }
 
