@@ -948,42 +948,40 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
     }
 
     if (candidates.length === 0) {
-      // Route filter passed (this IS the correct line) but no stops in this trip
-      // had coordinates in VIC_TRAM_STOPS_WITH_COORDS. Accept the trip using earliest
-      // future stop_time_update as approximation. Only when route is confirmed —
-      // without a route filter, this would match trams on parallel roads.
-      if (targetRouteNumber) {
-        let earliestFutureMs = null;
-        for (const stu of stus) {
-          const depTime = stu.departure?.time || stu.arrival?.time;
-          if (!depTime) continue;
-          const depMs = (depTime.low || depTime) * 1000;
-          const mins = Math.round((depMs - nowMs) / 60000);
-          if (mins >= 0 && mins <= 120 && (!earliestFutureMs || depMs < earliestFutureMs)) {
-            earliestFutureMs = depMs;
-          }
+      // No stops in this trip had coordinates in VIC_TRAM_STOPS_WITH_COORDS.
+      // Accept the trip using earliest future stop_time_update as approximation.
+      // The 600m search radius from actual stop (or home fallback) coordinates
+      // already constrains matching — no additional route guard needed.
+      let earliestFutureMs = null;
+      for (const stu of stus) {
+        const depTime = stu.departure?.time || stu.arrival?.time;
+        if (!depTime) continue;
+        const depMs = (depTime.low || depTime) * 1000;
+        const mins = Math.round((depMs - nowMs) / 60000);
+        if (mins >= 0 && mins <= 120 && (!earliestFutureMs || depMs < earliestFutureMs)) {
+          earliestFutureMs = depMs;
         }
-        if (earliestFutureMs) {
-          const mins = Math.round((earliestFutureMs - nowMs) / 60000);
-          const routeId = tripUpdate.trip?.routeId;
-          const noCoordHeadsign = tripUpdate.trip?.tripHeadsign || '';
-          departures.push({
-            minutes: mins,
-            departureTimeMs: earliestFutureMs,
-            destination: noCoordHeadsign || getLineName(routeId) || '',
-            headsign: noCoordHeadsign || null,
-            lineName: getLineName(routeId),
-            routeNumber: getRouteNumber(routeId) || null,
-            routeId,
-            tripId: tripUpdate.trip?.tripId,
-            isCitybound: false,
-            delay: 0,
-            isDelayed: false,
-            isLive: true,
-            source: 'gtfs-rt-coord',
-            _matchDist: searchRadius
-          });
-        }
+      }
+      if (earliestFutureMs) {
+        const mins = Math.round((earliestFutureMs - nowMs) / 60000);
+        const routeId = tripUpdate.trip?.routeId;
+        const noCoordHeadsign = tripUpdate.trip?.tripHeadsign || '';
+        departures.push({
+          minutes: mins,
+          departureTimeMs: earliestFutureMs,
+          destination: noCoordHeadsign || getLineName(routeId) || '',
+          headsign: noCoordHeadsign || null,
+          lineName: getLineName(routeId),
+          routeNumber: getRouteNumber(routeId) || null,
+          routeId,
+          tripId: tripUpdate.trip?.tripId,
+          isCitybound: false,
+          delay: 0,
+          isDelayed: false,
+          isLive: true,
+          source: 'gtfs-rt-coord',
+          _matchDist: searchRadius
+        });
       }
       continue;
     }

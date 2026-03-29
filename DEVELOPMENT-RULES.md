@@ -345,9 +345,11 @@ The system was previously known as "Commute Compute". Update any remaining refer
 - 23.4 Departure Output Schema
 - 23.5 Line Name Extraction
 - 23.6 Fallback Data Requirements
-- 23.7 Multi-Modal Journey Leg Construction (v1.18)
-- 23.8 Pre-Deployment Verification
-- 23.9 Alternative Route Detection (v1.18)
+- 23.7 Live Departure Verification (Founder Directive, 2026-03-29)
+- 23.8 Multi-Modal Journey Leg Construction (v1.18)
+- 23.9 Pre-Deployment Verification
+- 23.10 Alternative Route Detection (v1.18)
+- 23.11 GTFS-RT Source Completeness
 </details>
 
 <details>
@@ -4262,7 +4264,7 @@ Dashboard departure times MUST align with what the transport authority app shows
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-#### 23.7.1 Example: Multi-Modal Journey (Tram → Train)
+#### 23.8.1 Example: Multi-Modal Journey (Tram → Train)
 
 ```javascript
 // Home → Coffee → Tram → Train → Work (7 legs)
@@ -4284,7 +4286,7 @@ const journey = {
 };
 ```
 
-#### 23.7.2 Delay Accumulation Across Transit Legs
+#### 23.8.2 Delay Accumulation Across Transit Legs
 
 When multiple transit legs have delays, accumulate for status bar:
 
@@ -4300,7 +4302,7 @@ if (totalDelay > 0 && transitLegs.filter(l => l.isDelayed).length > 1) {
 }
 ```
 
-### 23.8 Pre-Deployment Verification
+### 23.9 Pre-Deployment Verification
 
 **Test these scenarios before ANY CommuteCompute deployment:**
 
@@ -4345,11 +4347,11 @@ import('./src/services/journey-planner.js').then(async m => {
 "
 ```
 
-### 23.9 Alternative Route Detection (MANDATORY)
+### 23.10 Alternative Route Detection (MANDATORY)
 
 **[CRITICAL]:** CommuteCompute MUST calculate multiple route alternatives and select the optimal one. Routes are engine-calculated, NEVER hardcoded.
 
-#### 23.9.1 Route Discovery Process
+#### 23.10.1 Route Discovery Process
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -4377,7 +4379,7 @@ import('./src/services/journey-planner.js').then(async m => {
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-#### 23.9.2 Route Scoring Weights
+#### 23.10.2 Route Scoring Weights
 
 | Factor | Weight | Calculation |
 |--------|--------|-------------|
@@ -4386,7 +4388,7 @@ import('./src/services/journey-planner.js').then(async m => {
 | Walking | 20% | Total walking minutes |
 | Reliability | 15% | Based on current delay/disruption status |
 
-#### 23.9.3 Multi-Modal Selection Triggers
+#### 23.10.3 Multi-Modal Selection Triggers
 
 CommuteCompute selects multi-modal route (e.g., Tram → Train) when:
 
@@ -4398,7 +4400,7 @@ CommuteCompute selects multi-modal route (e.g., Tram → Train) when:
 | User prefers specific modes | Weight those modes higher |
 | Interchange walk < maxWalkDistance | Include in alternatives |
 
-#### 23.9.4 Example: Engine-Calculated Alternatives
+#### 23.10.4 Example: Engine-Calculated Alternatives
 
 ```javascript
 // User config: Home (South Yarra) → Work (Collins St CBD)
@@ -4441,7 +4443,7 @@ const alternatives = calculateAlternatives(origin, destination, preferences);
 // Engine selects: Tram → Train (score 36) because Sandringham delay increases direct route score
 ```
 
-#### 23.9.5 Prohibition: No Hardcoded Routes
+#### 23.10.5 Prohibition: No Hardcoded Routes
 
 **[CRITICAL] FORBIDDEN:**
 ```javascript
@@ -4472,7 +4474,7 @@ const optimal = selectOptimalRoute(alternatives, {
 });
 ```
 
-#### 23.9.6 Coffee Integration with Alternatives
+#### 23.10.6 Coffee Integration with Alternatives
 
 When coffee is enabled, engine evaluates coffee insertion for EACH alternative:
 
@@ -4491,7 +4493,7 @@ for (const route of alternatives) {
 }
 ```
 
-### 23.10 GTFS-RT Source Completeness
+### 23.11 GTFS-RT Source Completeness
 
 **[CRITICAL]:** All three GTFS-RT sources (`gtfs-rt`, `gtfs-rt-route`, `gtfs-rt-broad`) MUST be included in live data detection. The `hasAnyLiveData` check in `api/commutecompute.js` must cover all tiers of the three-tier matching fallback. Missing any tier causes that mode's live data to be discarded as non-live, triggering incorrect "No Live Data" state.
 

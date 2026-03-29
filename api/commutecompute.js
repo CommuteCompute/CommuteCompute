@@ -2462,6 +2462,11 @@ export default async function handler(req, res) {
       if (liveRoute) {
         tramApiOptions.routeNumber = liveRoute;
         if (tramLeg) tramLeg.routeNumber = liveRoute;
+        // Auto-save to Redis so subsequent requests (including cold starts) have the route
+        if (!preferredTramRoute) {
+          setPreferredTramRoute(liveRoute).catch(() => {});
+          preferredTramRoute = liveRoute;
+        }
       }
     }
 

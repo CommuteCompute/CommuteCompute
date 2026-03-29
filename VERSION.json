@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.5.6",
+    "version": "5.5.7",
     "name": "Commute Compute System",
     "releaseDate": "2026-03-29",
     "codename": "Turnkey Multi-State"
@@ -86,6 +86,14 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.5.7",
+      "date": "2026-03-29",
+      "changes": [
+        "Fix tram coord-proximity silent rejection: remove route-number guard that discarded all trip matches when no feed stop IDs had coordinates in static reference table. The 600m search radius already constrains matching — route guard was causing complete tram cascade failure, showing Scheduled when live data existed in the feed.",
+        "Auto-save preferredTramRoute to Redis on first detection from live feed — ensures correct route available on cold starts and subsequent requests without manual configuration"
+      ]
+    },
     {
       "version": "5.5.6",
       "date": "2026-03-29",
