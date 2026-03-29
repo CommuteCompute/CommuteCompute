@@ -1,8 +1,8 @@
 {
   "system": {
-    "version": "5.5.3",
+    "version": "5.5.4",
     "name": "Commute Compute System",
-    "releaseDate": "2026-03-26",
+    "releaseDate": "2026-03-29",
     "codename": "Turnkey Multi-State"
   },
   "components": {
@@ -86,6 +86,23 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.5.4",
+      "date": "2026-03-29",
+      "changes": [
+        "Fix coffee decision disruption detection: calculateCoffeeDecision received Array instead of String — isDisrupted() always returned false via API path. Now constructs alert text from disruption headerText fields.",
+        "Expand MATERIAL_EFFECTS filter: add UNKNOWN_EFFECT and STOP_CLOSURE — real disruptions with GTFS default effect classification were silently dropped",
+        "Complete disruption line code map: add missing metro lines, add bus route number matching — buses and minor metro lines now receive disruption alerts",
+        "Reduce GTFS-RT feed cache TTL from 120s to 75s — halves worst-case departure staleness while respecting API rate limits",
+        "Reduce BMP Cache-Control max-age from 20s to 15s — combined with feed cache reduction, worst-case staleness drops from 2:20 to 1:30",
+        "Fix premature timetable marking: filterUnavailableTransitLegs now keeps all departures when route-specific filter returns empty but mode feed has live data — consistent with train path fallback behaviour",
+        "Fix dataSource ternary: add 'timetable' state when legs have isTimetableEstimate but API key present — previously showed 'no-data' when timetable estimates were displayed",
+        "Fix departure padding route filter: pad from raw feed filtered by route number for trams/buses — prevents wrong-route departures polluting Next: subtitle",
+        "Widen renderer departure filter from 60 to 90 minutes — supports multi-leg journeys where later stops are 50-70 min away",
+        "Add ferry to hasAnyLiveData: ferry live data now contributes to LIVE badge, isPartialLive, and dataSource detection",
+        "Coffee decision isDisrupted: add type guard, expand keywords (no service, significant delays, modified service, stop closure), case-insensitive matching"
+      ]
+    },
     {
       "version": "5.5.3",
       "date": "2026-03-26",

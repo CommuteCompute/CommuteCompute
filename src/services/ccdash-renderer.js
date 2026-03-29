@@ -1421,10 +1421,10 @@ function getLegSubtitle(leg) {
         const nowMs = Date.now();
         nextDepartures = leg.nextDepartureTimesMs
           .map(depMs => Math.max(0, Math.round((depMs - nowMs) / 60000)))
-          .filter(mins => mins >= 0 && mins <= 60);
+          .filter(mins => mins >= 0 && mins <= 90);
       } else if (leg.nextDepartures && leg.nextDepartures.length > 0) {
         // Only use pre-filtered catchable departures from screen.js
-        nextDepartures = leg.nextDepartures.filter(m => m >= 0 && m <= 60);
+        nextDepartures = leg.nextDepartures.filter(m => m >= 0 && m <= 90);
       }
       
       let parts = [];
@@ -3379,7 +3379,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
           const nowMs = Date.now();
           nextTimes = leg.nextDepartureTimesMs
             .map(depMs => Math.max(0, Math.round((depMs - nowMs) / 60000)))
-            .filter(mins => mins >= 0 && mins <= 60);
+            .filter(mins => mins >= 0 && mins <= 90);
         }
         const divertedStop = leg.divertedStop || '';
         legSubtitle = nextTimes.length > 0 
@@ -3392,7 +3392,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
           const nowMs = Date.now();
           nextTimes = leg.nextDepartureTimesMs
             .map(depMs => Math.max(0, Math.round((depMs - nowMs) / 60000)))
-            .filter(mins => mins >= 0 && mins <= 60);
+            .filter(mins => mins >= 0 && mins <= 90);
         }
         const nextStr = nextTimes.length > 0 ? ` • Next: ${nextTimes.join(', ')} min` : '';
         legSubtitle = `+${leg.delayMinutes} MIN${nextStr}`;
@@ -3487,7 +3487,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
           .filter(depMs => depMs >= arrivalAtStopMs + 60000)
           .slice(0, 3)
           .map(depMs => Math.max(0, Math.round((depMs - nowMs) / 60000)))
-          .filter(mins => mins <= 60);
+          .filter(mins => mins <= 90);
 
         if (catchableDepartures.length >= 3) {
           nextStr = `${tilde}Next: ${catchableDepartures[0]}, ${catchableDepartures[1]}, ${catchableDepartures[2]} min${liveIndicator}`;
@@ -3498,7 +3498,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
         }
       } else if (leg.nextDepartures && leg.nextDepartures.length > 0) {
         // Fallback to pre-computed nextDepartures from screen.js
-        const filtered = leg.nextDepartures.filter(m => m >= 0 && m <= 60);
+        const filtered = leg.nextDepartures.filter(m => m >= 0 && m <= 90);
         if (filtered.length >= 3) {
           nextStr = `${tilde}Next: ${filtered[0]}, ${filtered[1]}, ${filtered[2]} min${liveIndicator}`;
         } else if (filtered.length === 2) {

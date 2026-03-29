@@ -547,7 +547,8 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
                               transitData.trains;
           const rawDirDeps = feedForMode?.filter(d =>
             d.isLive && d.departureTimeMs > nowMs &&
-            (leg.isCitybound === undefined || d.isCitybound === leg.isCitybound)
+            (leg.isCitybound === undefined || d.isCitybound === leg.isCitybound) &&
+            (!leg.routeNumber || !d.routeNumber || d.routeNumber.toString() === leg.routeNumber.toString())
           ) || [];
           for (const d of rawDirDeps) {
             if (nextDepartureTimesMs.length >= 10) break;
@@ -847,7 +848,7 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
           // Only show disruptions that materially affect service timing/availability
           const MATERIAL_EFFECTS = [
             'NO_SERVICE', 'SIGNIFICANT_DELAYS', 'MODIFIED_SERVICE',
-            'REDUCED_SERVICE', 'DETOUR'
+            'REDUCED_SERVICE', 'DETOUR', 'UNKNOWN_EFFECT', 'STOP_CLOSURE'
           ];
           if (d.effect && !MATERIAL_EFFECTS.includes(d.effect)) {
             return false;
@@ -879,7 +880,8 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
             'cranbourne': 'cbe', 'glen waverley': 'glw', 'alamein': 'alm',
             'belgrave': 'bel', 'lilydale': 'lil', 'hurstbridge': 'hbe',
             'mernda': 'mer', 'craigieburn': 'crb', 'sunbury': 'sun',
-            'upfield': 'upf', 'werribee': 'wer', 'williamstown': 'wil'
+            'upfield': 'upf', 'werribee': 'wer', 'williamstown': 'wil',
+            'stony point': 'spt', 'flemington racecourse': 'fle'
           };
 
           const routeMatch = d.affectedRoutes.some(route => {
@@ -888,6 +890,11 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
             // Match tram by exact route number
             if (legRoute && leg.type === 'tram') {
               return routeUpper.includes(`-${legRoute}:`) || routeUpper.includes(`-${legRoute}-`);
+            }
+
+            // Match bus by route number
+            if (legRoute && leg.type === 'bus') {
+              return routeUpper.includes(`-${legRoute}:`) || routeUpper.includes(`-${legRoute}-`) || routeUpper.endsWith(`-${legRoute}`);
             }
 
             // Match train by GTFS line code ONLY
@@ -1433,7 +1440,11 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
         if (routeMatches.length > 0) {
           routeDepartures = routeMatches;
         } else {
-          routeDepartures = [];
+          // No route-specific matches but feed has live data for this mode.
+          // Keep all departures (consistent with train path fallback) — let
+          // findMatchingDeparture handle precise filtering downstream.
+          // Prevents premature isTimetableEstimate when feed IS active.
+          routeDepartures = departures;
         }
       }
 
@@ -2421,7 +2432,8 @@ export default async function handler(req, res) {
     const hasLiveTrainData = trains.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad' || t.source === 'gtfs-rt-scan' || t.source === 'gtfs-rt-coord') && t.isLive === true);
     const hasLiveTramData = trams.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad' || t.source === 'gtfs-rt-scan' || t.source === 'gtfs-rt-coord') && t.isLive === true);
     const hasLiveBusData = buses.some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad' || t.source === 'gtfs-rt-scan' || t.source === 'gtfs-rt-coord') && t.isLive === true);
-    const hasAnyLiveData = hasLiveTrainData || hasLiveTramData || hasLiveBusData;
+    const hasLiveFerryData = (ferries || []).some(t => (t.source === 'gtfs-rt' || t.source === 'gtfs-rt-route' || t.source === 'gtfs-rt-broad' || t.source === 'gtfs-rt-scan' || t.source === 'gtfs-rt-coord') && t.isLive === true);
+    const hasAnyLiveData = hasLiveTrainData || hasLiveTramData || hasLiveBusData || hasLiveFerryData;
 
     // =========================================================================
     // APPLY SIMULATOR OVERRIDES
@@ -2449,7 +2461,12 @@ export default async function handler(req, res) {
     }
 
     // Get coffee decision from engine
-    let coffeeDecision = engine.calculateCoffeeDecision(transitData, route?.legs || []);
+    // Build alert text string from disruptions for coffee decision disruption detection
+    const alertTextForCoffee = (transitData.disruptions || [])
+      .map(d => d.headerText || d.title || '')
+      .filter(Boolean)
+      .join(' | ');
+    let coffeeDecision = engine.calculateCoffeeDecision(transitData, alertTextForCoffee);
     
     // Check if cafe is open (hours check)
     // V13.6 FIX: Use local time for business hours check (state-aware)
@@ -2817,16 +2834,21 @@ export default async function handler(req, res) {
       isPartialLive: hasAnyLiveData && !(
         (!journeyLegs.some(l => l.type === 'train') || hasLiveTrainData) &&
         (!journeyLegs.some(l => l.type === 'tram') || hasLiveTramData) &&
-        (!journeyLegs.some(l => l.type === 'bus') || hasLiveBusData)
+        (!journeyLegs.some(l => l.type === 'bus') || hasLiveBusData) &&
+        (!journeyLegs.some(l => l.type === 'ferry') || hasLiveFerryData)
       ),
       // dataSource: reflects actual GTFS-RT feed state, not gated by time of day.
       // isTomorrowCommute is a separate flag for journey display context.
       dataSource: hasAnyLiveData
         ? ((!journeyLegs.some(l => l.type === 'train') || hasLiveTrainData) &&
            (!journeyLegs.some(l => l.type === 'tram') || hasLiveTramData) &&
-           (!journeyLegs.some(l => l.type === 'bus') || hasLiveBusData)
+           (!journeyLegs.some(l => l.type === 'bus') || hasLiveBusData) &&
+           (!journeyLegs.some(l => l.type === 'ferry') || hasLiveFerryData)
             ? 'gtfs-rt' : 'partial-live')
-        : (transitApiKey ? (isTomorrowCommute ? 'tomorrow' : 'no-data') : 'no-key'),
+        : (transitApiKey
+            ? (isTomorrowCommute ? 'tomorrow'
+               : journeyLegs.some(l => l.isTimetableEstimate) ? 'timetable' : 'no-data')
+            : 'no-key'),
       // Diagnostic: surface feed info for admin panel troubleshooting
       _liveDataDiag: {
         hasApiKey: !!transitApiKey,
@@ -3051,7 +3073,7 @@ export default async function handler(req, res) {
       // BMP format for e-ink devices (V13.6: await async render)
       const bmp = await renderFullScreenBMP(dashboardData, {}, displayDims);
       res.setHeader('Content-Type', 'application/octet-stream');
-      res.setHeader('Cache-Control', 'public, max-age=20');
+      res.setHeader('Cache-Control', 'public, max-age=15');
       res.setHeader('X-Dashboard-Timestamp', now.toISOString());
       res.setHeader('Content-Length', bmp.length);
       return res.status(200).send(bmp);
