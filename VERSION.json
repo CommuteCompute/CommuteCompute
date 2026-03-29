@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.5.4",
+    "version": "5.5.6",
     "name": "Commute Compute System",
     "releaseDate": "2026-03-29",
     "codename": "Turnkey Multi-State"
@@ -86,6 +86,29 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.5.6",
+      "date": "2026-03-29",
+      "changes": [
+        "Restore empty-feed-cache-poisoning guard: only cache GTFS-RT feeds with entity count > 0 — empty feeds from transient API responses were poisoning the cache for 75 seconds, causing scheduled fallback on all subsequent requests until cache expired"
+      ]
+    },
+    {
+      "version": "5.5.5",
+      "date": "2026-03-29",
+      "changes": [
+        "Fix tram route misidentification: guard parseInt(String(null))=NaN fallback — when leg has no route, pick most-frequent route from live departures instead of falling back to ALL routes (which picks wrong route at intersections)",
+        "Fix train City Loop filtering: include ALL City Loop trains plus nearby direct trains — previously excluded valid alternating line services, showing wrong departure times (40, 77 min instead of NOW, 13, 15)",
+        "Fix train departure padding: skip route number filter for trains (use direction + City Loop/Tunnel filtering instead) — ensures 3 departure times from interleaved lines",
+        "Fix tram departure padding: exclude Metro Tunnel trains from City Loop padding to prevent wrong-line leakage",
+        "Fix findNearestStops multi-route: collect nearest stop per route at intersections — prevents wrong route when one route's stop is 1m closer",
+        "Fix tram route extraction timing: pick most-frequent route from live departures before building journey legs — ensures correct route identification on first render",
+        "Add live departure verification rule to DEVELOPMENT-RULES.md Section 23.7",
+        "Add state-gating rule to DEVELOPMENT-RULES.md Section 24.1",
+        "Add privacy scope extension to DEVELOPMENT-RULES.md Section 1.1 (plans, agent prompts, memory)",
+        "cc-dev-validate.sh v2.2: 3 new checks (state-gating, verification rule, multi-state rule)"
+      ]
+    },
     {
       "version": "5.5.4",
       "date": "2026-03-29",

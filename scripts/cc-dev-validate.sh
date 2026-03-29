@@ -613,10 +613,39 @@ fi
 echo ""
 
 # =========================================================================
+# 15. STATE-GATING AND PRIVACY (Founder Directives, 2026-03-29)
+# =========================================================================
+section "State-Gating and Privacy Checks"
+
+# 15.1: VIC-specific City Loop/Metro Tunnel logic must be state-gated
+UNGATED_CITYLOOP=$(grep -n 'CITY_LOOP_STATIONS\|filterCityLoopPreference\|requiresCityLoop\|requiresMetroTunnel' api/commutecompute.js 2>/dev/null | grep -v 'state\|VIC\|// ' | grep -v 'const CITY_LOOP\|const METRO_TUNNEL' | wc -l | tr -d ' ')
+if [ "$UNGATED_CITYLOOP" -lt 3 ]; then
+    pass "City Loop/Metro Tunnel references appear state-gated"
+else
+    warn "Found $UNGATED_CITYLOOP City Loop/Metro Tunnel references that may not be state-gated — verify manually"
+fi
+
+# 15.2: Live departure verification rule documented
+if grep -q "23.7.*Live Departure Verification\|Live Departure Verification" DEVELOPMENT-RULES.md 2>/dev/null; then
+    pass "DEVELOPMENT-RULES.md: 23.7 live departure verification rule documented"
+else
+    fail "DEVELOPMENT-RULES.md: 23.7 live departure verification rule missing"
+fi
+
+# 15.3: Multi-state gating rule documented
+if grep -q "VIC-specific logic.*gated\|gated by.*state" DEVELOPMENT-RULES.md 2>/dev/null; then
+    pass "DEVELOPMENT-RULES.md: Multi-state gating rule documented"
+else
+    fail "DEVELOPMENT-RULES.md: Multi-state gating rule missing"
+fi
+
+echo ""
+
+# =========================================================================
 # SUMMARY
 # =========================================================================
 echo "=================================================================="
-echo "  CC-DEV VALIDATION SUMMARY v2.1"
+echo "  CC-DEV VALIDATION SUMMARY v2.2"
 echo "=================================================================="
 echo -e "  ${GREEN}PASSED:${NC}     $PASSED"
 echo -e "  ${RED}VIOLATIONS:${NC} $VIOLATIONS"

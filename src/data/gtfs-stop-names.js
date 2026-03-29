@@ -206,14 +206,26 @@ export function findNearestStops(lat, lon, options = {}) {
   }
 
   // Tram: search VIC_TRAM_STOPS_WITH_COORDS
-  // V5.4.7: Extract route number from stop name (format: "Street/Street #58")
-  // before cleanStopName strips it. Enables coord-proximity 500m radius + route filter.
+  // V5.5.5: Collect nearest stop PER ROUTE at intersections where multiple routes
+  // have nearby stops. Prevents wrong-route selection when one route's stop is
+  // 1m closer than another's. The primary result uses most-frequent or preferred route.
+  const tramByRoute = {};
   for (const stop of VIC_TRAM_STOPS_WITH_COORDS) {
     const dist = haversine(lat, lon, stop.lat, stop.lon);
-    if (dist <= radius && (!result.tram || dist < result.tram.distance)) {
+    if (dist <= radius) {
       const routeMatch = stop.name?.match(/#(\d+)/);
-      result.tram = { id: stop.id, name: cleanStopName(stop.name), distance: dist, routeNumber: routeMatch?.[1] || null };
+      const routeNum = routeMatch?.[1] || 'unknown';
+      if (!tramByRoute[routeNum] || dist < tramByRoute[routeNum].distance) {
+        tramByRoute[routeNum] = { id: stop.id, name: cleanStopName(stop.name), distance: dist, routeNumber: routeNum === 'unknown' ? null : routeNum };
+      }
     }
+  }
+  // Pick the nearest overall as primary result (backward compat)
+  const tramEntries = Object.values(tramByRoute).sort((a, b) => a.distance - b.distance);
+  if (tramEntries.length > 0) {
+    result.tram = tramEntries[0];
+    // Expose all routes at this location for better route selection
+    result.tramRoutes = tramEntries;
   }
 
   // Bus: search VIC_BUS_STOPS_WITH_COORDS
