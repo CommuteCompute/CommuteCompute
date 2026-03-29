@@ -2457,8 +2457,9 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
 
     ctx.textAlign = 'left';
     ctx.fillStyle = '#000';
-  } else if (showCafeBusynessOnly) {
-    // V13.3: Outside ±2hr window - show cafe name + busyness info
+  } else if (showCafeBusynessOnly || (!hasCoffee && !coffeeSkipped && !cafeClosed && data.coffee_decision && data.coffee_decision.includes('COFFEE'))) {
+    // Cafe busyness display — also shows coffee timing when API reports time for coffee
+    // but journey legs don't have a coffee-type leg (e.g. bypass removed it)
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 2;
     ctx.strokeRect(coffeeBoxX, coffeeBoxY, coffeeBoxW, coffeeBoxH);
@@ -2492,8 +2493,11 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
                         cafeBusyness === 'moderate' ? 'MODERATE' :
                         cafeBusyness === 'busy' ? 'BUSY' : cafeBusyness.toUpperCase();
       ctx.fillText(`OPEN + ${busyLabel}`, coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(42 * sy));
-      // Wait time
-      if (cafeWaitTime !== '--' && cafeWaitTime !== null && cafeWaitTime !== undefined) {
+      // Coffee timing or wait time
+      if (data.coffee_decision && (data.coffee_decision.includes('COFFEE') || data.coffee_decision.includes('FRIDAY'))) {
+        ctx.font = `bold ${Math.max(11, Math.round(12 * fs))}px Inter, sans-serif`;
+        ctx.fillText('TIME FOR COFFEE', coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(64 * sy));
+      } else if (cafeWaitTime !== '--' && cafeWaitTime !== null && cafeWaitTime !== undefined) {
         ctx.font = `${Math.max(11, Math.round(12 * fs))}px Inter, sans-serif`;
         ctx.fillText(`~${cafeWaitTime} min wait`, coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(64 * sy));
       }

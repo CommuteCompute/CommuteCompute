@@ -1316,6 +1316,22 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
     }
   }
 
+  // Ensure at least 3 departures for "Next: X, Y, Z min" display.
+  // When route filtering reduces to fewer than 3, supplement from the same-direction
+  // departures (different routes at the same stop still indicate service frequency).
+  if (matchedDepartures.length < 3 && matchedDepartures.length > 0 && departures.length >= 3) {
+    const existingMs = new Set(matchedDepartures.map(d => d.departureTimeMs));
+    const supplements = departures
+      .filter(d => d.departureTimeMs && !existingMs.has(d.departureTimeMs) &&
+        (leg.isCitybound === undefined || d.isCitybound === leg.isCitybound))
+      .sort((a, b) => (a.departureTimeMs || 0) - (b.departureTimeMs || 0));
+    for (const s of supplements) {
+      if (matchedDepartures.length >= 3) break;
+      matchedDepartures.push(s);
+    }
+    matchedDepartures.sort((a, b) => (a.departureTimeMs || 0) - (b.departureTimeMs || 0));
+  }
+
   // Clone primary to avoid mutating shared transitData objects
   const primary = { ...matchedDepartures[0] };
   if (primary) {
@@ -2314,7 +2330,9 @@ export default async function handler(req, res) {
     // V5.4.8: Route number for coord-proximity 500m radius + route filter.
     // Only use route engine or user preference — auto-detected route from nearest stop
     // is unreliable at intersections (picks wrong route, e.g. 129 instead of 58).
-    const tramRouteNum = tramLeg?.routeNumber || preferredTramRoute || null;
+    // Live detection runs first — preferredTramRoute is fallback ONLY when live finds nothing.
+    // Previous approach used preferredTramRoute immediately, blocking live route correction.
+    const tramRouteNum = tramLeg?.routeNumber || null;
     if (tramRouteNum) tramApiOptions.routeNumber = tramRouteNum;
     // Ensure tram leg has route number for consistent display ("Route 58" not "Tram").
     // Without this, route number only gets populated from GTFS-RT live data, causing
@@ -2448,9 +2466,9 @@ export default async function handler(req, res) {
     // Prevents title flipping between "Route 58" (live) and "Tram" (scheduled fallback).
     // With feed caching, scheduled fallback is rare — but this ensures route name
     // persists even when the cached feed expires and a fresh fetch temporarily fails.
-    if (!tramRouteNum && trams.length > 0) {
-      // Pick most frequent route from live departures — more reliable than nearest-stop detection
-      // at intersections where multiple routes serve nearby stops
+    // Always try live route detection — more reliable than saved preference at intersections.
+    // Runs regardless of tramRouteNum to catch stale saved routes from previous sessions.
+    if (trams.length > 0) {
       const routeCounts = {};
       for (const t of trams) {
         if (t.routeNumber && t.isLive) {
@@ -2462,12 +2480,17 @@ export default async function handler(req, res) {
       if (liveRoute) {
         tramApiOptions.routeNumber = liveRoute;
         if (tramLeg) tramLeg.routeNumber = liveRoute;
-        // Auto-save to Redis so subsequent requests (including cold starts) have the route
-        if (!preferredTramRoute) {
+        // Auto-save/update Redis — overwrites stale routes from previous sessions
+        if (liveRoute !== preferredTramRoute) {
           setPreferredTramRoute(liveRoute).catch(() => {});
           preferredTramRoute = liveRoute;
         }
       }
+    }
+    // Fallback: if live detection found nothing, use saved preference
+    if (!tramLeg?.routeNumber && preferredTramRoute) {
+      if (tramLeg) tramLeg.routeNumber = preferredTramRoute;
+      tramApiOptions.routeNumber = preferredTramRoute;
     }
 
     // Determine if we actually have live transit data (from GTFS-RT, not fallback)
@@ -2859,6 +2882,8 @@ export default async function handler(req, res) {
         return name.split(',')[0].trim();
       })(),
       cafe_is_open: kvPrefs?.addresses?.cafe ? cafeIsOpen : null,
+      cafe_wait_time: coffeeDecision.canGet ? (coffeeDecision.commute?.makeCoffee || 3) : null,
+      cafe_busyness: cafeIsBusy ? 'busy' : (cafeIsQuiet ? 'quiet' : 'moderate'),
       // V15.0: Transit availability notice (e.g., "TRAM USING TIMETABLE DATA")
       transit_notice: transitNotice,
       timetable_types: removedTypes.length > 0 ? removedTypes : null,
