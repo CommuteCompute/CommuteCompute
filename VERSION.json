@@ -1,8 +1,8 @@
 {
   "system": {
-    "version": "5.5.7",
+    "version": "5.5.8",
     "name": "Commute Compute System",
-    "releaseDate": "2026-03-29",
+    "releaseDate": "2026-03-30",
     "codename": "Turnkey Multi-State"
   },
   "components": {
@@ -86,6 +86,16 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.5.8",
+      "date": "2026-03-30",
+      "changes": [
+        "Fix stale preferredTramRoute priority: live detection now runs first, saved preference is fallback only. Auto-save overwrites stale routes when live detection finds a different route.",
+        "Fix departure count: supplement from same-direction departures when route filter reduces matchedDepartures below 3 — ensures 3 departure times in Next: subtitle",
+        "Fix coffee timing display: add cafe_wait_time and cafe_busyness to API response. Renderer shows TIME FOR COFFEE in busyness-only path when API reports coffee is available.",
+        "Fix auto-save overwrite: liveRoute !== preferredTramRoute triggers Redis update (previously only saved when null)"
+      ]
+    },
     {
       "version": "5.5.7",
       "date": "2026-03-29",
