@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.5.5",
+    "version": "5.5.6",
     "name": "Commute Compute System",
     "releaseDate": "2026-03-29",
     "codename": "Turnkey Multi-State"
@@ -86,6 +86,13 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.5.6",
+      "date": "2026-03-29",
+      "changes": [
+        "Restore empty-feed-cache-poisoning guard: only cache GTFS-RT feeds with entity count > 0 — empty feeds from transient API responses were poisoning the cache for 75 seconds, causing scheduled fallback on all subsequent requests until cache expired"
+      ]
+    },
     {
       "version": "5.5.5",
       "date": "2026-03-29",

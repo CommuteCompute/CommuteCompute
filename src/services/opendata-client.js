@@ -336,6 +336,13 @@ async function fetchGtfsRt(mode, feed, options = {}, state = 'VIC') {
       console.log(`[OpenData] Decoded ${entityCount} entities from ${mode}/${feed}`);
     }
 
+    // Only cache feeds with actual trip data. Empty feeds (0 entities) from
+    // transient API responses poison the cache, causing all subsequent requests
+    // to return zero departures → timetable fallback for the entire TTL window.
+    const cacheEntityCount = decoded?.entity?.length || 0;
+    if (decoded && cacheEntityCount > 0) {
+      feedCache.set(cacheKey, { data: decoded, timestamp: Date.now() });
+    }
     return decoded;
 
   } catch (error) {
