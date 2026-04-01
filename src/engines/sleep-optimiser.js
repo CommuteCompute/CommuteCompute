@@ -142,7 +142,8 @@ class SleepOptimiser {
       availableSleepHours,
       sleepAdequacy,
       displayLine,
-      secondaryLine: 'ALARM ' + alarmTime
+      // When bedtime passed, displayLine shows ALARM — secondary shows bedtime context
+      secondaryLine: displayLine.startsWith('ALARM') ? 'BED BY ' + bedtime : 'ALARM ' + alarmTime
     };
   }
 

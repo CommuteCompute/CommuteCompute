@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.5.10",
+    "version": "5.5.18",
     "name": "Commute Compute System",
     "releaseDate": "2026-03-30",
     "codename": "Turnkey Multi-State"
@@ -86,6 +86,71 @@
     }
   },
   "changelog": [
+    {
+      "version": "5.5.18",
+      "date": "2026-03-31",
+      "changes": [
+        "Fix headway projection phantom departures: mark projected departures as timetable estimates (isTimetableEstimate: true) — shows 'Scheduled ~Xmin' not false LIVE precision. Increased default headway from 8 to 12 min (trams) and 10 to 15 min (trains) for more realistic late-night estimates.",
+        "Fix tram route variant matching in subtitle padding: use numeric prefix comparison (parseInt) so route variants (e.g., 58a) match the base route (58) — previously strict string comparison excluded variant departures from 'Next:' subtitle."
+      ]
+    },
+    {
+      "version": "5.5.17",
+      "date": "2026-03-31",
+      "changes": [
+        "Fix tram route: journey-context filtering. At intersections, filter detected tram routes to those that ALSO serve the destination station area (1km radius). A route that only passes through the home intersection but doesn't go near the station is eliminated. Resolves the route flipping issue after 8 prior fix attempts (nearest-stop, frequency, Redis preference all failed).",
+        "Fix disruption matching: text-based line name fallback now runs even when affectedRoutes is present but format doesn't match line code patterns. Previously fell through to strict rejection.",
+        "Fix sleep display: when bedtime has passed, secondary line now shows bedtime context instead of duplicating alarm time."
+      ]
+    },
+    {
+      "version": "5.5.16",
+      "date": "2026-03-30",
+      "changes": [
+        "Fix tram route stability at intersections: frequency-based selection from all detected routes near user coordinates. Nearest-stop approach was unreliable (route flipped every refresh due to sub-metre distance differences). Now counts live departures per detected route — the route with most departures is the primary service, stable across refreshes.",
+        "Fix disruption matching: add text-based line name fallback when GTFS-RT alerts have no explicit affectedRoutes. Alerts mentioning the line name in title/description now match the leg. Resolves long-term timetable change alerts not showing on dashboard."
+      ]
+    },
+    {
+      "version": "5.5.15",
+      "date": "2026-03-30",
+      "changes": [
+        "Fix tram route detection: populate tramRouteNumber from coordinate-based nearest-stop detection (was always null). Use as highest priority in route selection — overrides stale Redis preferences.",
+        "Fix tram timing: only apply GTFS-RT delay offset for trains (scheduled time convention). Tram/bus feeds use predicted times (delay already included) — adding delay double-counted, inflating departure times."
+      ]
+    },
+    {
+      "version": "5.5.14",
+      "date": "2026-03-30",
+      "changes": [
+        "Fix tram route selection: engine route (from nearby stops detection) takes priority over stale Redis preference — v5.5.8 saved wrong route (86 instead of 58) which v5.5.11 locked to. Engine now overrides stale preference when it has live data.",
+        "Fix route_number property mismatch: engine used snake_case but findNearestStops returns camelCase. Now checks both forms for Redis backward compatibility."
+      ]
+    },
+    {
+      "version": "5.5.13",
+      "date": "2026-03-30",
+      "changes": [
+        "Fix delayed train timing: GTFS-RT departure.time is scheduled time — add delay offset to get actual predicted departure. Delayed trains (e.g. +22 min) were shown at their scheduled time, causing catchability filter to reject them as already departed when they were still at the station.",
+        "Fix disruption-to-leg mapping: severe mode-wide alerts (SIGNIFICANT_DELAYS, NO_SERVICE, REDUCED_SERVICE) without explicit route IDs now match all legs of that mode — previously silently dropped because affectedRoutes was empty.",
+        "Fix disruption leg state: matched disruptions now set leg state to delayed/suspended with parsed delay minutes from alert text (e.g. 'up to 15 minutes' -> +15 MIN) — enables renderer to show delay info on affected legs."
+      ]
+    },
+    {
+      "version": "5.5.12",
+      "date": "2026-03-30",
+      "changes": [
+        "Fix City Loop empty-result fallback: when no trains have confirmed passesCityLoop (GTFS-RT feed only includes upcoming stops, not full trip), treat non-Metro-Tunnel citybound trains as likely City Loop — was returning empty array causing fallback to distant trains at 55+ min instead of nearby trains at 7-18 min"
+      ]
+    },
+    {
+      "version": "5.5.11",
+      "date": "2026-03-30",
+      "changes": [
+        "Fix tram route stability: trust preferredTramRoute when it has live departures in the feed — stops route flipping between 58/72/16 at intersections where most-frequent-route was unstable between refreshes. Only auto-detect when no preference set.",
+        "Fix disruption visibility: add MINOR_DELAY and OTHER_EFFECT to MATERIAL_EFFECTS filter — minor delays (up to 15 min) and cancelled services were silently dropped and not shown on dashboard"
+      ]
+    },
     {
       "version": "5.5.10",
       "date": "2026-03-30",

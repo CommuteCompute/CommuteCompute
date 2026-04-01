@@ -549,8 +549,8 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
             d.isLive && d.departureTimeMs > nowMs &&
             (leg.isCitybound === undefined || d.isCitybound === leg.isCitybound) &&
             // Trains: filter by direction only (not route number) — multiple lines serve same direction
-            // Trams/buses: filter by route number when known
-            (leg.type === 'train' || leg.type === 'vline' || !leg.routeNumber || !d.routeNumber || d.routeNumber.toString() === leg.routeNumber.toString())
+            // Trams/buses: filter by numeric route prefix (58a matches 58)
+            (leg.type === 'train' || leg.type === 'vline' || !leg.routeNumber || !d.routeNumber || parseInt(String(d.routeNumber), 10) === parseInt(String(leg.routeNumber), 10))
           ) || [];
           // For trains requiring City Loop: exclude Metro Tunnel trains from padding
           if ((leg.type === 'train' || leg.type === 'vline') && leg.requiresCityLoop && rawDirDeps.length > 0) {
@@ -577,26 +577,28 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
             if (catchableDep?.lineName) leg.lineName = catchableDep.lineName;
           }
         } else if (liveData.allDepartureTimesMs.length > 0) {
-          // V16.0 FIX: No catchable departure in GTFS-RT feed — all returned
-          // departures are before user's arrival at this stop. Project next
-          // departure from observed headway rather than falling back to the
-          // nearest uncatchable departure (which shows stale 0 MIN data).
+          // No catchable departure in GTFS-RT feed — all departures are before
+          // user's arrival at this stop. Use the NEXT scheduled departure from the
+          // feed rather than headway projection. Headway projection creates phantom
+          // departures that don't match the transport authority app (especially
+          // late-night when feeds are sparse and default headway is arbitrary).
+          // Mark as timetable estimate since the actual departure isn't in the live feed.
           const sorted = [...new Set(liveData.allDepartureTimesMs)].sort((a, b) => a - b);
+          // Use the last known departure + observed or default headway as estimate
           let headwayMs;
           if (sorted.length >= 2) {
             const rawHeadway = (sorted[sorted.length - 1] - sorted[0]) / (sorted.length - 1);
-            // Clamp headway to 3-30 min range to avoid bunching/sparse artefacts
             headwayMs = Math.max(3 * 60000, Math.min(30 * 60000, rawHeadway));
           } else {
-            // Single departure — use mode-specific default headway
-            headwayMs = (leg.type === 'tram' ? 8 : leg.type === 'train' ? 10 : 15) * 60000;
+            headwayMs = (leg.type === 'tram' ? 12 : leg.type === 'train' ? 15 : 15) * 60000;
           }
           let projected = sorted[sorted.length - 1];
           while (projected < arrivalAtStopMs) {
             projected += headwayMs;
           }
           actualDepartureMs = projected;
-          // Include projected departure in nextDepartureTimesMs for renderer
+          // Mark as estimate — not a confirmed GTFS-RT departure
+          leg.isTimetableEstimate = true;
           const combined = [...(nextDepartureTimesMs || []), projected];
           nextDepartureTimesMs = combined.sort((a, b) => a - b).slice(0, 10);
         }
@@ -855,7 +857,8 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
           // Only show disruptions that materially affect service timing/availability
           const MATERIAL_EFFECTS = [
             'NO_SERVICE', 'SIGNIFICANT_DELAYS', 'MODIFIED_SERVICE',
-            'REDUCED_SERVICE', 'DETOUR', 'UNKNOWN_EFFECT', 'STOP_CLOSURE'
+            'REDUCED_SERVICE', 'DETOUR', 'UNKNOWN_EFFECT', 'STOP_CLOSURE',
+            'MINOR_DELAY', 'OTHER_EFFECT'
           ];
           if (d.effect && !MATERIAL_EFFECTS.includes(d.effect)) {
             return false;
@@ -868,55 +871,71 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
             return false;
           }
 
-          // V13.6 STRICT: ONLY match if disruption explicitly lists this leg's route
-          // If no affectedRoutes, DO NOT match (can't verify it affects this leg)
-          if (!d.affectedRoutes || d.affectedRoutes.length === 0) {
-            // No specific routes listed = cannot verify this leg is affected
-            // Even "severe" alerts may only affect one line, not this user's route
-            return false;
-          }
+          // Route matching: prefer explicit affectedRoutes, but allow mode-wide
+          // severe alerts (no routes listed) to match any leg of that mode.
+          // Severe effects without routes = network-wide disruption affecting all services.
+          const SEVERE_EFFECTS = ['NO_SERVICE', 'SIGNIFICANT_DELAYS', 'REDUCED_SERVICE', 'MODIFIED_SERVICE'];
+          const hasRoutes = d.affectedRoutes && d.affectedRoutes.length > 0;
 
-          // V13.6 STRICT: Only match on GTFS line codes, not partial strings
-          // GTFS route IDs: "aus:vic:vic-02-WER:" (Werribee), "aus:vic:vic-02-SHM:" (Sandringham)
-          const legRoute = leg.routeNumber?.toString() || '';
-          const legLine = leg.lineName?.toLowerCase() || '';
+          if (hasRoutes) {
+            // STRICT: Only match on GTFS line codes, not partial strings
+            // GTFS route IDs: "aus:vic:vic-02-WER:" (Werribee), "aus:vic:vic-02-SHM:" (Sandringham)
+            const legRoute = leg.routeNumber?.toString() || '';
+            const legLine = leg.lineName?.toLowerCase() || '';
 
-          // Line name to GTFS code mapping
-          const lineCodes = {
-            'sandringham': 'shm', 'frankston': 'fkn', 'pakenham': 'pkm',
-            'cranbourne': 'cbe', 'glen waverley': 'glw', 'alamein': 'alm',
-            'belgrave': 'bel', 'lilydale': 'lil', 'hurstbridge': 'hbe',
-            'mernda': 'mer', 'craigieburn': 'crb', 'sunbury': 'sun',
-            'upfield': 'upf', 'werribee': 'wer', 'williamstown': 'wil',
-            'stony point': 'spt', 'flemington racecourse': 'fle'
-          };
+            const lineCodes = {
+              'sandringham': 'shm', 'frankston': 'fkn', 'pakenham': 'pkm',
+              'cranbourne': 'cbe', 'glen waverley': 'glw', 'alamein': 'alm',
+              'belgrave': 'bel', 'lilydale': 'lil', 'hurstbridge': 'hbe',
+              'mernda': 'mer', 'craigieburn': 'crb', 'sunbury': 'sun',
+              'upfield': 'upf', 'werribee': 'wer', 'williamstown': 'wil',
+              'stony point': 'spt', 'flemington racecourse': 'fle'
+            };
 
-          const routeMatch = d.affectedRoutes.some(route => {
-            const routeUpper = route.toUpperCase();
+            const routeMatch = d.affectedRoutes.some(route => {
+              const routeUpper = route.toUpperCase();
 
-            // Match tram by exact route number
-            if (legRoute && leg.type === 'tram') {
-              return routeUpper.includes(`-${legRoute}:`) || routeUpper.includes(`-${legRoute}-`);
-            }
+              if (legRoute && leg.type === 'tram') {
+                return routeUpper.includes(`-${legRoute}:`) || routeUpper.includes(`-${legRoute}-`);
+              }
 
-            // Match bus by route number
-            if (legRoute && leg.type === 'bus') {
-              return routeUpper.includes(`-${legRoute}:`) || routeUpper.includes(`-${legRoute}-`) || routeUpper.endsWith(`-${legRoute}`);
-            }
+              if (legRoute && leg.type === 'bus') {
+                return routeUpper.includes(`-${legRoute}:`) || routeUpper.includes(`-${legRoute}-`) || routeUpper.endsWith(`-${legRoute}`);
+              }
 
-            // Match train by GTFS line code ONLY
-            if (leg.type === 'train' && legLine) {
-              const legCode = (lineCodes[legLine] || '').toUpperCase();
-              if (legCode) {
-                // Must match the line code in GTFS format: "-XXX:" or "-XXX-"
-                return routeUpper.includes(`-${legCode}:`) || routeUpper.includes(`-${legCode}-`);
+              if (leg.type === 'train' && legLine) {
+                const legCode = (lineCodes[legLine] || '').toUpperCase();
+                if (legCode) {
+                  return routeUpper.includes(`-${legCode}:`) || routeUpper.includes(`-${legCode}-`);
+                }
+              }
+
+              return false;
+            });
+            // Strict route match failed — try text-based line name as fallback.
+            // Some alerts have affectedRoutes in unexpected ID formats that don't
+            // match our line code patterns but DO mention the line name in text.
+            if (!routeMatch) {
+              const legLineFallback = leg.lineName?.toLowerCase() || '';
+              if (legLineFallback && leg.type === 'train') {
+                const alertText = ((d.headerText || '') + ' ' + (d.description || '')).toLowerCase();
+                if (!alertText.includes(legLineFallback)) return false;
+                // Text mentions this line — proceed
+              } else {
+                return false;
               }
             }
-
-            // No match - be conservative and don't show unverifiable alerts
-            return false;
-          });
-          if (!routeMatch) return false;
+          } else {
+            // No explicit routes — text-based line name matching or severe effect.
+            const legLine = leg.lineName?.toLowerCase() || '';
+            if (legLine && leg.type === 'train') {
+              const alertFullText = ((d.headerText || '') + ' ' + (d.description || '')).toLowerCase();
+              const lineNameMatch = alertFullText.includes(legLine);
+              if (!lineNameMatch && !SEVERE_EFFECTS.includes(d.effect)) return false;
+            } else if (!SEVERE_EFFECTS.includes(d.effect)) {
+              return false;
+            }
+          }
 
           // Stop-level filtering: if disruption specifies affected stops,
           // verify user's leg stops overlap (filters distant station alerts)
@@ -932,15 +951,30 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         if (matchingDisruption) {
           baseLeg.hasAlert = true;
           baseLeg.serviceAlert = sanitiseDisruptionText(matchingDisruption.headerText || matchingDisruption.description);
-          baseLeg.alertText = sanitiseDisruptionText(matchingDisruption.description || matchingDisruption.headerText);
-          // V13.6: Format as "TRAM 58 +5 MIN" or "TRAIN DELAYED"
           const routeLabel = leg.routeNumber ? `${leg.type.toUpperCase()} ${leg.routeNumber}` : leg.type.toUpperCase();
-          if (baseLeg.delayMinutes) {
-            baseLeg.alertText = `${routeLabel} +${baseLeg.delayMinutes} MIN`;
-          } else if (matchingDisruption.type === 'suspension' || matchingDisruption.type === 'cancelled') {
+
+          // Extract delay minutes from alert text (e.g., "Delays up to 15 minutes")
+          if (!baseLeg.delayMinutes) {
+            const delayMatch = (matchingDisruption.description || matchingDisruption.headerText || '')
+              .match(/(?:up\s+to|of)\s+(\d+)\s*min/i);
+            if (delayMatch) {
+              baseLeg.delayMinutes = parseInt(delayMatch[1], 10);
+            }
+          }
+
+          // Set leg state based on disruption effect
+          const delayEffects = ['MINOR_DELAY', 'SIGNIFICANT_DELAYS'];
+          if (matchingDisruption.type === 'suspension' || matchingDisruption.type === 'cancelled'
+              || matchingDisruption.effect === 'NO_SERVICE') {
             baseLeg.status = 'suspended';
             baseLeg.state = 'suspended';
             baseLeg.alertText = `${routeLabel} SUSPENDED`;
+          } else if (baseLeg.delayMinutes || delayEffects.includes(matchingDisruption.effect)) {
+            baseLeg.status = 'delayed';
+            baseLeg.state = 'delayed';
+            baseLeg.alertText = baseLeg.delayMinutes
+              ? `${routeLabel} +${baseLeg.delayMinutes} MIN`
+              : `${routeLabel} DELAYED`;
           } else {
             baseLeg.alertText = sanitiseDisruptionText(matchingDisruption.headerText) || `${routeLabel} DISRUPTED`;
           }
@@ -1229,8 +1263,15 @@ function filterCityLoopPreference(dirMatches) {
     return [...cityLoopTrains, ...nearbyDirect].sort((a, b) => (a.departureTimeMs || 0) - (b.departureTimeMs || 0));
   }
 
-  // No City Loop trains in GTFS-RT feed — return empty to trigger timetable
-  // fallback rather than showing trains that don't serve the destination.
+  // No trains with confirmed passesCityLoop in the feed. This usually means the
+  // GTFS-RT feed's stop_time_updates don't include City Loop platform IDs (feed only
+  // has upcoming stops, not the full trip). Fall back to non-Metro-Tunnel citybound
+  // trains — these are almost certainly City Loop trains (Metro Tunnel lines are the
+  // only citybound trains that DON'T serve City Loop, and they have isMetroTunnel: true).
+  const likelyCityLoop = dirMatches.filter(d => !d.isMetroTunnel);
+  if (likelyCityLoop.length > 0) {
+    return likelyCityLoop;
+  }
   return [];
 }
 
@@ -2143,6 +2184,7 @@ export default async function handler(req, res) {
     let busStopId = null;
     let ferryStopId = null;
     let detectedTramRoute = null;
+    let detectedTramRoutes = [];
     let stopDetectionSource = null;
 
     if (homeCoords || homeAddress) {
@@ -2153,6 +2195,30 @@ export default async function handler(req, res) {
       busStopId = detected.busStopId || null;
       ferryStopId = detected.ferryStopId || null;
       detectedTramRoute = detected.tramRouteNumber || null;
+      // All tram routes with stops near user (for intersection disambiguation)
+      detectedTramRoutes = detected.tramRoutes || [];
+    }
+
+    // Journey-context tram route filtering: at intersections, multiple routes have
+    // stops nearby. Filter to routes that ALSO serve the destination station area.
+    // A route that only passes through the home intersection but doesn't go near
+    // the station is not the user's commute route. Uses 1km radius around station
+    // to account for the walk between tram stop and station.
+    if (detectedTramRoutes.length > 1 && trainStopId && homeCoords) {
+      const station = VIC_METRO_STATIONS[trainStopId];
+      if (station?.lat && station?.lon) {
+        const stationNearby = findNearestStops(station.lat, station.lon, { radiusMeters: 1000 });
+        const stationRouteSet = new Set(
+          (stationNearby.tramRoutes || []).map(t => t.routeNumber).filter(Boolean)
+        );
+        if (stationRouteSet.size > 0) {
+          const journeyRoutes = detectedTramRoutes.filter(r => stationRouteSet.has(r));
+          if (journeyRoutes.length > 0) {
+            detectedTramRoutes = journeyRoutes;
+            detectedTramRoute = journeyRoutes[0];
+          }
+        }
+      }
     }
 
     // Fallback to stored Redis IDs only when coordinate detection returns nothing
@@ -2466,28 +2532,63 @@ export default async function handler(req, res) {
     // Prevents title flipping between "Route 58" (live) and "Tram" (scheduled fallback).
     // With feed caching, scheduled fallback is rare — but this ensures route name
     // persists even when the cached feed expires and a fresh fetch temporarily fails.
-    // Always try live route detection — more reliable than saved preference at intersections.
-    // Runs regardless of tramRouteNum to catch stale saved routes from previous sessions.
+    // Tram route selection: frequency-based from detected routes.
+    // At intersections, multiple routes have stops within metres — nearest-stop is
+    // unreliable (flips between routes on every refresh). Instead, count live departures
+    // per route from ALL routes detected near the user's coordinates. The route with
+    // the most departures is the user's primary service. This is stable because departure
+    // count is a service characteristic, not a distance measurement.
     if (trams.length > 0) {
-      const routeCounts = {};
-      for (const t of trams) {
-        if (t.routeNumber && t.isLive) {
-          routeCounts[t.routeNumber] = (routeCounts[t.routeNumber] || 0) + 1;
+      let selectedRoute = null;
+      // Priority 0: Frequency-based selection from all detected routes at intersection
+      if (detectedTramRoutes.length > 0) {
+        let bestRoute = null;
+        let bestCount = 0;
+        for (const route of detectedTramRoutes) {
+          const count = trams.filter(t => t.isLive && t.routeNumber?.toString() === route.toString()).length;
+          if (count > bestCount) {
+            bestCount = count;
+            bestRoute = route;
+          }
+        }
+        if (bestRoute) {
+          selectedRoute = bestRoute;
+          // Sync Redis to the frequency-winner for stable fallback
+          if (!preferredTramRoute || preferredTramRoute.toString() !== bestRoute.toString()) {
+            setPreferredTramRoute(bestRoute).catch(() => {});
+            preferredTramRoute = bestRoute;
+          }
         }
       }
-      const topRoute = Object.entries(routeCounts).sort((a, b) => b[1] - a[1])[0];
-      const liveRoute = topRoute ? topRoute[0] : trams.find(t => t.routeNumber && t.isLive)?.routeNumber;
-      if (liveRoute) {
-        tramApiOptions.routeNumber = liveRoute;
-        if (tramLeg) tramLeg.routeNumber = liveRoute;
-        // Auto-save/update Redis — overwrites stale routes from previous sessions
-        if (liveRoute !== preferredTramRoute) {
-          setPreferredTramRoute(liveRoute).catch(() => {});
-          preferredTramRoute = liveRoute;
+      // Priority 1: Route engine's planned route
+      if (!selectedRoute && tramRouteNum) {
+        const engineRouteHasData = trams.some(t => t.isLive && t.routeNumber?.toString() === tramRouteNum.toString());
+        if (engineRouteHasData) selectedRoute = tramRouteNum;
+      }
+      // Priority 2: preferredTramRoute from Redis (stable when detection unavailable)
+      if (!selectedRoute && preferredTramRoute) {
+        const prefRouteHasData = trams.some(t => t.isLive && t.routeNumber?.toString() === preferredTramRoute.toString());
+        if (prefRouteHasData) selectedRoute = preferredTramRoute;
+      }
+      // Priority 3: Most-frequent from entire feed (last resort)
+      if (!selectedRoute) {
+        const routeCounts = {};
+        for (const t of trams) {
+          if (t.routeNumber && t.isLive) routeCounts[t.routeNumber] = (routeCounts[t.routeNumber] || 0) + 1;
+        }
+        const topRoute = Object.entries(routeCounts).sort((a, b) => b[1] - a[1])[0];
+        selectedRoute = topRoute ? topRoute[0] : trams.find(t => t.routeNumber && t.isLive)?.routeNumber;
+      }
+      if (selectedRoute) {
+        tramApiOptions.routeNumber = selectedRoute;
+        if (tramLeg) tramLeg.routeNumber = selectedRoute;
+        if (!preferredTramRoute) {
+          setPreferredTramRoute(selectedRoute).catch(() => {});
+          preferredTramRoute = selectedRoute;
         }
       }
     }
-    // Fallback: if live detection found nothing, use saved preference
+    // Fallback: if nothing found in feed, use saved preference
     if (!tramLeg?.routeNumber && preferredTramRoute) {
       if (tramLeg) tramLeg.routeNumber = preferredTramRoute;
       tramApiOptions.routeNumber = preferredTramRoute;

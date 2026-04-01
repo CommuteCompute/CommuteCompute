@@ -1705,9 +1705,13 @@ export class CommuteCompute {
                        (workArea ? `${workArea} Station` : null);
 
     // Resolve tram/bus route numbers from nearby stop data for GTFS-RT matching
-    const tramRouteNumber = locations?.cafe?.nearbyStops?.tram?.route_number ||
+    // findNearestStops returns camelCase (routeNumber); check both cases for Redis compat
+    const tramRouteNumber = locations?.cafe?.nearbyStops?.tram?.routeNumber ||
+                            locations?.cafe?.nearbyStops?.tram?.route_number ||
+                            locations?.home?.nearbyStops?.tram?.routeNumber ||
                             locations?.home?.nearbyStops?.tram?.route_number || null;
-    const busRouteNumber = locations?.home?.nearbyStops?.bus?.route_number || null;
+    const busRouteNumber = locations?.home?.nearbyStops?.bus?.routeNumber ||
+                           locations?.home?.nearbyStops?.bus?.route_number || null;
     
     // =========================================================================
     // ROUTE 1: Coffee + Tram + Train (PREFERRED multi-modal pattern)
