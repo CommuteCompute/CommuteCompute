@@ -1451,7 +1451,7 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
     // routeNumber and lineName to update the leg title dynamically.
     primary.allDepartures = matchedDepartures;
     // Display-facing nextDepartures stays limited to 5 (for "Next: x, y, z min" subtitle)
-    primary.nextDepartures = matchedDepartures.slice(0, 5).map(d => d.minutes).filter(m => m !== undefined);
+    primary.nextDepartures = matchedDepartures.slice(0, 5).map(d => d.minutes).filter(m => m !== undefined).sort((a, b) => a - b);
   }
 
   return primary;
@@ -3018,7 +3018,8 @@ export default async function handler(req, res) {
       targetArrivalMins: targetMins,
       currentMins: nowMinsForLeave,
       isCommuteDay,
-      hasLiveData: hasAnyLiveData
+      hasLiveData: hasAnyLiveData,
+      isTomorrowCommute
     });
     // V5.5.18: Confidence is always calculated when live data is present.
     // Journey legs always show live GTFS-RT data regardless of commute window.
@@ -3275,7 +3276,7 @@ export default async function handler(req, res) {
           totalMinutes,
           onTime: arrivalDiff <= 5,
           diffMinutes: arrivalDiff,
-          status: arrivalDiff > 5 ? 'late' : arrivalDiff < -10 ? 'early' : 'on-time'
+          status: isTomorrowCommute ? 'tomorrow' : arrivalDiff > 5 ? 'late' : arrivalDiff < -10 ? 'early' : 'on-time'
         },
 
         // Weather (admin panel expects this shape)
