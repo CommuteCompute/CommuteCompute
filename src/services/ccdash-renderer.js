@@ -2457,7 +2457,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
 
     ctx.textAlign = 'left';
     ctx.fillStyle = '#000';
-  } else if (showCafeBusynessOnly || (!hasCoffee && !coffeeSkipped && !cafeClosed && data.coffee_decision && data.coffee_decision.includes('COFFEE'))) {
+  } else if (showCafeBusynessOnly || (!hasCoffee && !coffeeSkipped && !cafeClosed && data.coffee_decision && (data.coffee_decision === 'TIME FOR COFFEE' || data.coffee_decision === 'FRIDAY TREAT'))) {
     // Cafe busyness display — also shows coffee timing when API reports time for coffee
     // but journey legs don't have a coffee-type leg (e.g. bypass removed it)
     ctx.strokeStyle = '#000';
@@ -2494,9 +2494,12 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
                         cafeBusyness === 'busy' ? 'BUSY' : cafeBusyness.toUpperCase();
       ctx.fillText(`OPEN + ${busyLabel}`, coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(42 * sy));
       // Coffee timing or wait time
-      if (data.coffee_decision && (data.coffee_decision.includes('COFFEE') || data.coffee_decision.includes('FRIDAY'))) {
+      if (data.coffee_decision && (data.coffee_decision === 'TIME FOR COFFEE' || data.coffee_decision === 'FRIDAY TREAT')) {
         ctx.font = `bold ${Math.max(11, Math.round(12 * fs))}px Inter, sans-serif`;
         ctx.fillText('TIME FOR COFFEE', coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(64 * sy));
+      } else if (data.coffee_decision && (data.coffee_decision.includes('NO TIME') || data.coffee_decision.includes('SKIP'))) {
+        ctx.font = `bold ${Math.max(11, Math.round(12 * fs))}px Inter, sans-serif`;
+        ctx.fillText('NO TIME FOR COFFEE', coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(64 * sy));
       } else if (cafeWaitTime !== '--' && cafeWaitTime !== null && cafeWaitTime !== undefined) {
         ctx.font = `${Math.max(11, Math.round(12 * fs))}px Inter, sans-serif`;
         ctx.fillText(`~${cafeWaitTime} min wait`, coffeeBoxX + Math.round(62 * sx), coffeeBoxY + Math.round(64 * sy));
@@ -2777,9 +2780,8 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     statusText = `NOT TODAY \u2192 Next commute: ${targetArrivalDisplay}`;
   } else if (isLate) {
     // V13.2: Only show LATE if user has arrive-by time set and within commute window
-    disruptionType = 'late';
+    // No disruption badge — status text already conveys LATE info. Badge only for service disruptions.
     const lateMinutes = Math.abs(diffMins);
-    disruptionText = `LATE +${lateMinutes} min`;
     statusText = `LATE \u2192 Arrive ${calculatedArrival} (+${lateMinutes} min)`;
   } else if (isCommuteDay && !isWithinArrivalWindow) {
     // Outside commute window — show journey info without target arrival comparison
@@ -2857,21 +2859,20 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     const needsAttention = confidenceScore < 75;
     ctx.font = needsAttention ? `bold ${Math.max(11, Math.round(17 * fs))}px Inter, sans-serif` : `${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;
     // V16.0: Show confidence context, mindset, and resilience when actionable
+    // Build incrementally — prioritise core label, then context, then optional segments
     const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
-    const contextText = data.confidence_context ? ` \u2022 ${data.confidence_context}` : '';
-    const mindsetText = (!stressIsLow && data.mindset_display) ? ` \u2022 ${data.mindset_display}` : '';
-    // V16.0: Surface journey resilience from mindset engine (e.g., "RELIABLE", "AT RISK")
-    const resilienceText = data.mindset_resilience ? ` \u2022 ${data.mindset_resilience}` : '';
-    let confText = `${confLabel} (${confidenceScore}%)${contextText}${mindsetText}${resilienceText}`;
     const confMaxWidth = Math.max(Math.round(100 * sx), rightBoundary - Math.round(200 * sx));
-    // Truncate with ellipsis instead of Canvas maxWidth compression (unreadable on e-ink)
-    if (ctx.measureText(confText).width > confMaxWidth) {
-      const ellipsis = '\u2026';
-      const ellipsisW = ctx.measureText(ellipsis).width;
-      while (ctx.measureText(confText).width + ellipsisW > confMaxWidth && confText.length > 10) {
-        confText = confText.slice(0, -1);
+    let confText = `${confLabel} (${confidenceScore}%)`;
+    // Append optional segments only if they fit without truncation
+    const optionalSegments = [];
+    if (data.confidence_context) optionalSegments.push(` \u2022 ${data.confidence_context}`);
+    if (!stressIsLow && data.mindset_display) optionalSegments.push(` \u2022 ${data.mindset_display}`);
+    if (data.mindset_resilience) optionalSegments.push(` \u2022 ${data.mindset_resilience}`);
+    for (const segment of optionalSegments) {
+      const candidate = confText + segment;
+      if (ctx.measureText(candidate).width <= confMaxWidth) {
+        confText = candidate;
       }
-      confText = confText.trimEnd() + ellipsis;
     }
     ctx.fillText(confText, rightBoundary, statusBarMidY);
     const confWidth = ctx.measureText(confText).width;
