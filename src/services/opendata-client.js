@@ -446,18 +446,25 @@ export async function getDepartures(stopId, routeType, options = {}) {
     // producing times 10-20 min off (e.g. 25 min when actual is 7 min). Coordinate-
     // proximity uses actual stop coordinates for accurate departure times and must
     // run first so the inaccurate median heuristic doesn't block it.
-    // V16.0: For trams, coordinate-proximity runs BEFORE route-level.
-    // VIC tram GTFS-RT feeds use different stop IDs than static GTFS (known issue).
-    // Route-level's median-stop heuristic estimates departure at a mid-route stop,
-    // producing times 10-20 min off (e.g. 25 min when actual is 7 min). Coordinate-
-    // proximity uses actual stop coordinates for accurate departure times and must
-    // run first so the inaccurate median heuristic doesn't block it.
-    if (departures.length === 0 && feedEntityCount > 0 && mode === 'tram') {
+    // V5.6.6: Guard changed from === 0 to < 3: when Tier 1 finds 1-2 results (e.g. a
+    // just-departed tram), coord-proximity supplements with direction-filtered upcoming
+    // departures. When Tier 1 found 0, coord is still the primary source (behaviour
+    // unchanged). When Tier 1 found >= 3, coord is still skipped (behaviour unchanged).
+    if (departures.length < 3 && feedEntityCount > 0 && mode === 'tram') {
       const coordDepartures = processCoordinateProximitySearch(feed, stopId, routeType, state, options.routeNumber || null, options.lat || null, options.lon || null, options.destLat || null, options.destLon || null);
       cascadeAttempts.push({ tier: 'coord-proximity', tried: true, found: coordDepartures.length });
       if (coordDepartures.length > 0) {
-        console.log(`[OpenData] Coordinate-proximity search found ${coordDepartures.length} departures for stopId=${stopId} in ${mode} feed`);
-        coordDepartures.forEach(d => departures.push(d));
+        if (departures.length === 0) {
+          // Primary coord result — push all directly
+          coordDepartures.forEach(d => departures.push(d));
+        } else {
+          // Supplement sparse Tier 1 results — dedup merge (60s window)
+          for (const cd of coordDepartures) {
+            if (!departures.some(d => Math.abs(d.departureTimeMs - cd.departureTimeMs) < 60000)) {
+              departures.push(cd);
+            }
+          }
+        }
       }
     }
 
@@ -668,11 +675,14 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType, lineC
     const depTime = pickedStu.departure?.time || pickedStu.arrival?.time;
     if (!depTime) continue;
 
-    const depMs = (depTime.low || depTime) * 1000;
+    // Train GTFS-RT uses scheduled time + delay offset; tram/bus use predicted times.
+    // Only add delay for trains (routeType 0) to avoid double-counting for trams.
+    const delay = pickedStu.departure?.delay || pickedStu.arrival?.delay || 0;
+    const isTrainMode = routeType === 0 || routeType === '0';
+    const depMs = ((depTime.low || depTime) * 1000) + (isTrainMode ? delay * 1000 : 0);
     const minutes = Math.round((depMs - nowMs) / 60000);
 
     if (minutes >= -2 && minutes <= 120) {
-      const delay = pickedStu.departure?.delay || pickedStu.arrival?.delay || 0;
       const isDelayed = delay > 60;
       const isVIC = (state === 'VIC');
       const lineName = isVIC ? getLineName(routeId) : (tripUpdate.trip?.tripHeadsign || '');
@@ -765,11 +775,13 @@ function processAllTripsStopSearch(feed, stopId, routeType, state = 'VIC') {
       const depTime = stu.departure?.time || stu.arrival?.time;
       if (!depTime) continue;
 
-      const depMs = (depTime.low || depTime) * 1000;
+      // Train GTFS-RT uses scheduled time + delay offset; tram/bus use predicted times
+      const delay = stu.departure?.delay || stu.arrival?.delay || 0;
+      const scanIsTrainMode = routeType === 0 || routeType === '0';
+      const depMs = ((depTime.low || depTime) * 1000) + (scanIsTrainMode ? delay * 1000 : 0);
       const minutes = Math.round((depMs - nowMs) / 60000);
 
       if (minutes >= -2 && minutes <= 120) {
-        const delay = stu.departure?.delay || stu.arrival?.delay || 0;
         const isDelayed = delay > 60;
         const routeId = tripUpdate.trip?.routeId;
         const isVIC = (state === 'VIC');
@@ -913,6 +925,7 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
       if (dist < searchRadius) {
         const depTime = stus[i].departure?.time || stus[i].arrival?.time;
         if (!depTime) continue;
+        // Tram GTFS-RT uses predicted times (delay already included) — no offset needed
         const depMs = (depTime.low || depTime) * 1000;
         const mins = Math.round((depMs - nowMs) / 60000);
         if (mins >= -2 && mins <= 120) {
@@ -956,6 +969,7 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
       for (const stu of stus) {
         const depTime = stu.departure?.time || stu.arrival?.time;
         if (!depTime) continue;
+        // Tram-specific: predicted times, no delay offset needed
         const depMs = (depTime.low || depTime) * 1000;
         const mins = Math.round((depMs - nowMs) / 60000);
         if (mins >= 0 && mins <= 120 && (!earliestFutureMs || depMs < earliestFutureMs)) {
@@ -1194,15 +1208,16 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0, state = 'VIC') {
       const depTime = stu.departure?.time || stu.arrival?.time;
       if (!depTime) continue;
 
-      // Convert to milliseconds (GTFS-RT uses Unix seconds)
-      const depMs = (depTime.low || depTime) * 1000;
+      // Train GTFS-RT uses scheduled time + delay offset; tram/bus use predicted times.
+      // Only add delay for trains (routeType 0) to avoid double-counting.
+      const delay = stu.departure?.delay || stu.arrival?.delay || 0;
+      const exactIsTrainMode = routeType === 0 || routeType === '0';
+      const depMs = ((depTime.low || depTime) * 1000) + (exactIsTrainMode ? delay * 1000 : 0);
       const minutes = Math.round((depMs - nowMs) / 60000);
 
       // V15.0: Include upcoming departures (next 120 min) — wider window for low-frequency services
       // Allow -2 min for just-departed services (consistent with route-level matching)
       if (minutes >= -2 && minutes <= 120) {
-        // Get delay info
-        const delay = stu.departure?.delay || stu.arrival?.delay || 0;
         const isDelayed = delay > 60; // More than 1 minute delay
 
         // Determine destination and direction

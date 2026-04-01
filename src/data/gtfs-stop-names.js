@@ -362,7 +362,8 @@ export function detectStopIdsFromAddress(address, coords = null, state = 'VIC') 
     return {
       trainStopId: nearest.train?.id || null,
       tramStopId: nearest.tram?.id || null,
-      tramRouteNumber: null,
+      tramRouteNumber: nearest.tram?.routeNumber || null,
+      tramRoutes: nearest.tramRoutes?.map(t => t.routeNumber).filter(Boolean) || [],
       busStopId: nearest.bus?.id || null,
       detectedSuburb: null,
       stationName: nearest.train?.name || null,

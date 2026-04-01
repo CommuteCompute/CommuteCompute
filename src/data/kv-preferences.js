@@ -34,7 +34,8 @@ const KEYS = {
   DEVICE_STATUS: 'cc:device:status',  // V13.6: Device battery and status
   SETUP_COMPLETE: 'cc:setup_complete',  // Setup wizard completion flag
   STATION_OVERRIDES: 'cc:station_overrides',  // User station preference overrides
-  PREFERRED_TRAM_ROUTE: 'cc:preferred_tram_route'  // Pinned tram route number for consistency
+  PREFERRED_TRAM_ROUTE: 'cc:preferred_tram_route',  // Pinned tram route number for consistency
+  PREFERRED_TRAM_STOP: 'cc:preferred_tram_stop'    // Stop ID paired with preferred route (for stale-route detection)
 };
 
 // In-memory fallback for local development (no KV configured)
@@ -479,6 +480,24 @@ export async function setPreferredTramRoute(routeNumber) {
   return await set(KEYS.PREFERRED_TRAM_ROUTE, routeNumber);
 }
 
+/**
+ * Get the stop ID that was active when preferredTramRoute was last written.
+ * Used to detect stale route KV when the user changes their tram stop.
+ * @returns {Promise<string|null>}
+ */
+export async function getPreferredTramStop() {
+  return await get(KEYS.PREFERRED_TRAM_STOP);
+}
+
+/**
+ * Set (or clear) the stop ID paired with the preferred tram route.
+ * @param {string|null} stopId - stop ID string, or null to clear
+ * @returns {Promise<boolean>}
+ */
+export async function setPreferredTramStop(stopId) {
+  return await set(KEYS.PREFERRED_TRAM_STOP, stopId);
+}
+
 export default {
   getClient,
   getTransitApiKey,
@@ -498,5 +517,7 @@ export default {
   setStationOverrides,
   getPreferredTramRoute,
   setPreferredTramRoute,
+  getPreferredTramStop,
+  setPreferredTramStop,
   KEYS
 };
