@@ -73,7 +73,8 @@ class DepartureConfidence {
       targetArrivalMins = 0,
       currentMins = 0,
       isCommuteDay = true,
-      hasLiveData = false
+      hasLiveData = false,
+      isTomorrowCommute = false
     } = params || {};
 
     // Non-commute day: confidence is not applicable — return neutral result
@@ -110,7 +111,7 @@ class DepartureConfidence {
 
     const label = this._getLabel(score);
     const resilience = this._calcResilience(legs);
-    const context = this._generateContext({ legs, weather, disruptionImpact, weatherImpact, timeBuffer, bufferMins, hasLiveData });
+    const context = this._generateContext({ legs, weather, disruptionImpact, weatherImpact, timeBuffer, bufferMins, hasLiveData, isTomorrowCommute });
     const resilienceDetail = this._generateResilienceDetail(legs);
 
     return {
@@ -317,7 +318,7 @@ class DepartureConfidence {
     return 'UNLIKELY';
   }
 
-  _generateContext({ legs, weather, disruptionImpact, weatherImpact, timeBuffer, bufferMins, hasLiveData }) {
+  _generateContext({ legs, weather, disruptionImpact, weatherImpact, timeBuffer, bufferMins, hasLiveData, isTomorrowCommute }) {
     // Priority 1: Disruption
     if (disruptionImpact <= -40) return 'Service suspended';
     if (disruptionImpact <= -15) return 'Service delayed';
@@ -336,7 +337,8 @@ class DepartureConfidence {
     }
 
     // Priority 4: Time/frequency
-    if (bufferMins < 0) return 'Running late — no buffer';
+    // Late messaging only fires within the commute window — suppress when planning tomorrow's commute
+    if (bufferMins < 0) return isTomorrowCommute ? 'Tomorrow — live data available' : 'Running late — no buffer';
     if (bufferMins < 5) return 'Tight schedule';
     if (timeBuffer >= 25) return 'Comfortable buffer, frequent services';
     return 'On schedule';

@@ -1,9 +1,10 @@
 {
   "system": {
-    "version": "5.6.7",
+    "version": "5.6.9",
     "name": "Commute Compute System",
     "releaseDate": "2026-04-01",
-    "codename": "Turnkey Multi-State"
+    "codename": "Turnkey Multi-State",
+    "buildDate": "2026-04-01"
   },
   "components": {
     "commutecompute": {
@@ -44,7 +45,7 @@
     },
     "livedash": {
       "version": "3.1",
-      "description": "CC LiveDash™ Multi-Device Endpoint — deduplicated, imports shared config-token decoder",
+      "description": "CC LiveDash\u2122 Multi-Device Endpoint \u2014 deduplicated, imports shared config-token decoder",
       "locked": false,
       "lastUpdated": "2026-03-02"
     }
@@ -52,7 +53,7 @@
   "backend": {
     "server": {
       "version": "3.0.0",
-      "description": "Unified Vercel Serverless API — single /api/commutecompute endpoint serves JSON, PNG, and BMP. /api/screen backward-compatible via rewrite.",
+      "description": "Unified Vercel Serverless API \u2014 single /api/commutecompute endpoint serves JSON, PNG, and BMP. /api/screen backward-compatible via rewrite.",
       "lastUpdated": "2026-03-02"
     }
   },
@@ -90,8 +91,8 @@
       "version": "5.5.18",
       "date": "2026-03-31",
       "changes": [
-        "Fix headway projection phantom departures: mark projected departures as timetable estimates (isTimetableEstimate: true) — shows 'Scheduled ~Xmin' not false LIVE precision. Increased default headway from 8 to 12 min (trams) and 10 to 15 min (trains) for more realistic late-night estimates.",
-        "Fix tram route variant matching in subtitle padding: use numeric prefix comparison (parseInt) so route variants (e.g., 58a) match the base route (58) — previously strict string comparison excluded variant departures from 'Next:' subtitle."
+        "Fix headway projection phantom departures: mark projected departures as timetable estimates (isTimetableEstimate: true) \u2014 shows 'Scheduled ~Xmin' not false LIVE precision. Increased default headway from 8 to 12 min (trams) and 10 to 15 min (trains) for more realistic late-night estimates.",
+        "Fix tram route variant matching in subtitle padding: use numeric prefix comparison (parseInt) so route variants (e.g., 58a) match the base route (58) \u2014 previously strict string comparison excluded variant departures from 'Next:' subtitle."
       ]
     },
     {
@@ -107,7 +108,7 @@
       "version": "5.5.16",
       "date": "2026-03-30",
       "changes": [
-        "Fix tram route stability at intersections: frequency-based selection from all detected routes near user coordinates. Nearest-stop approach was unreliable (route flipped every refresh due to sub-metre distance differences). Now counts live departures per detected route — the route with most departures is the primary service, stable across refreshes.",
+        "Fix tram route stability at intersections: frequency-based selection from all detected routes near user coordinates. Nearest-stop approach was unreliable (route flipped every refresh due to sub-metre distance differences). Now counts live departures per detected route \u2014 the route with most departures is the primary service, stable across refreshes.",
         "Fix disruption matching: add text-based line name fallback when GTFS-RT alerts have no explicit affectedRoutes. Alerts mentioning the line name in title/description now match the leg. Resolves long-term timetable change alerts not showing on dashboard."
       ]
     },
@@ -115,15 +116,15 @@
       "version": "5.5.15",
       "date": "2026-03-30",
       "changes": [
-        "Fix tram route detection: populate tramRouteNumber from coordinate-based nearest-stop detection (was always null). Use as highest priority in route selection — overrides stale Redis preferences.",
-        "Fix tram timing: only apply GTFS-RT delay offset for trains (scheduled time convention). Tram/bus feeds use predicted times (delay already included) — adding delay double-counted, inflating departure times."
+        "Fix tram route detection: populate tramRouteNumber from coordinate-based nearest-stop detection (was always null). Use as highest priority in route selection \u2014 overrides stale Redis preferences.",
+        "Fix tram timing: only apply GTFS-RT delay offset for trains (scheduled time convention). Tram/bus feeds use predicted times (delay already included) \u2014 adding delay double-counted, inflating departure times."
       ]
     },
     {
       "version": "5.5.14",
       "date": "2026-03-30",
       "changes": [
-        "Fix tram route selection: engine route (from nearby stops detection) takes priority over stale Redis preference — v5.5.8 saved wrong route (86 instead of 58) which v5.5.11 locked to. Engine now overrides stale preference when it has live data.",
+        "Fix tram route selection: engine route (from nearby stops detection) takes priority over stale Redis preference \u2014 v5.5.8 saved wrong route (86 instead of 58) which v5.5.11 locked to. Engine now overrides stale preference when it has live data.",
         "Fix route_number property mismatch: engine used snake_case but findNearestStops returns camelCase. Now checks both forms for Redis backward compatibility."
       ]
     },
@@ -131,38 +132,38 @@
       "version": "5.5.13",
       "date": "2026-03-30",
       "changes": [
-        "Fix delayed train timing: GTFS-RT departure.time is scheduled time — add delay offset to get actual predicted departure. Delayed trains (e.g. +22 min) were shown at their scheduled time, causing catchability filter to reject them as already departed when they were still at the station.",
-        "Fix disruption-to-leg mapping: severe mode-wide alerts (SIGNIFICANT_DELAYS, NO_SERVICE, REDUCED_SERVICE) without explicit route IDs now match all legs of that mode — previously silently dropped because affectedRoutes was empty.",
-        "Fix disruption leg state: matched disruptions now set leg state to delayed/suspended with parsed delay minutes from alert text (e.g. 'up to 15 minutes' -> +15 MIN) — enables renderer to show delay info on affected legs."
+        "Fix delayed train timing: GTFS-RT departure.time is scheduled time \u2014 add delay offset to get actual predicted departure. Delayed trains (e.g. +22 min) were shown at their scheduled time, causing catchability filter to reject them as already departed when they were still at the station.",
+        "Fix disruption-to-leg mapping: severe mode-wide alerts (SIGNIFICANT_DELAYS, NO_SERVICE, REDUCED_SERVICE) without explicit route IDs now match all legs of that mode \u2014 previously silently dropped because affectedRoutes was empty.",
+        "Fix disruption leg state: matched disruptions now set leg state to delayed/suspended with parsed delay minutes from alert text (e.g. 'up to 15 minutes' -> +15 MIN) \u2014 enables renderer to show delay info on affected legs."
       ]
     },
     {
       "version": "5.5.12",
       "date": "2026-03-30",
       "changes": [
-        "Fix City Loop empty-result fallback: when no trains have confirmed passesCityLoop (GTFS-RT feed only includes upcoming stops, not full trip), treat non-Metro-Tunnel citybound trains as likely City Loop — was returning empty array causing fallback to distant trains at 55+ min instead of nearby trains at 7-18 min"
+        "Fix City Loop empty-result fallback: when no trains have confirmed passesCityLoop (GTFS-RT feed only includes upcoming stops, not full trip), treat non-Metro-Tunnel citybound trains as likely City Loop \u2014 was returning empty array causing fallback to distant trains at 55+ min instead of nearby trains at 7-18 min"
       ]
     },
     {
       "version": "5.5.11",
       "date": "2026-03-30",
       "changes": [
-        "Fix tram route stability: trust preferredTramRoute when it has live departures in the feed — stops route flipping between 58/72/16 at intersections where most-frequent-route was unstable between refreshes. Only auto-detect when no preference set.",
-        "Fix disruption visibility: add MINOR_DELAY and OTHER_EFFECT to MATERIAL_EFFECTS filter — minor delays (up to 15 min) and cancelled services were silently dropped and not shown on dashboard"
+        "Fix tram route stability: trust preferredTramRoute when it has live departures in the feed \u2014 stops route flipping between 58/72/16 at intersections where most-frequent-route was unstable between refreshes. Only auto-detect when no preference set.",
+        "Fix disruption visibility: add MINOR_DELAY and OTHER_EFFECT to MATERIAL_EFFECTS filter \u2014 minor delays (up to 15 min) and cancelled services were silently dropped and not shown on dashboard"
       ]
     },
     {
       "version": "5.5.10",
       "date": "2026-03-30",
       "changes": [
-        "Fix RENDER_ERROR: remove undefined cafeIsBusy/cafeIsQuiet variables — v5.5.8 introduced references to non-existent variables, causing ReferenceError on every render. Use coffeeDecision?.busyLevel instead."
+        "Fix RENDER_ERROR: remove undefined cafeIsBusy/cafeIsQuiet variables \u2014 v5.5.8 introduced references to non-existent variables, causing ReferenceError on every render. Use coffeeDecision?.busyLevel instead."
       ]
     },
     {
       "version": "5.5.9",
       "date": "2026-03-30",
       "changes": [
-        "Fix RENDER_ERROR after preferences reset: add optional chaining to coffeeDecision?.canGet — null coffeeDecision (no route data after reset) crashed the entire render pipeline"
+        "Fix RENDER_ERROR after preferences reset: add optional chaining to coffeeDecision?.canGet \u2014 null coffeeDecision (no route data after reset) crashed the entire render pipeline"
       ]
     },
     {
@@ -170,7 +171,7 @@
       "date": "2026-03-30",
       "changes": [
         "Fix stale preferredTramRoute priority: live detection now runs first, saved preference is fallback only. Auto-save overwrites stale routes when live detection finds a different route.",
-        "Fix departure count: supplement from same-direction departures when route filter reduces matchedDepartures below 3 — ensures 3 departure times in Next: subtitle",
+        "Fix departure count: supplement from same-direction departures when route filter reduces matchedDepartures below 3 \u2014 ensures 3 departure times in Next: subtitle",
         "Fix coffee timing display: add cafe_wait_time and cafe_busyness to API response. Renderer shows TIME FOR COFFEE in busyness-only path when API reports coffee is available.",
         "Fix auto-save overwrite: liveRoute !== preferredTramRoute triggers Redis update (previously only saved when null)"
       ]
@@ -179,27 +180,27 @@
       "version": "5.5.7",
       "date": "2026-03-29",
       "changes": [
-        "Fix tram coord-proximity silent rejection: remove route-number guard that discarded all trip matches when no feed stop IDs had coordinates in static reference table. The 600m search radius already constrains matching — route guard was causing complete tram cascade failure, showing Scheduled when live data existed in the feed.",
-        "Auto-save preferredTramRoute to Redis on first detection from live feed — ensures correct route available on cold starts and subsequent requests without manual configuration"
+        "Fix tram coord-proximity silent rejection: remove route-number guard that discarded all trip matches when no feed stop IDs had coordinates in static reference table. The 600m search radius already constrains matching \u2014 route guard was causing complete tram cascade failure, showing Scheduled when live data existed in the feed.",
+        "Auto-save preferredTramRoute to Redis on first detection from live feed \u2014 ensures correct route available on cold starts and subsequent requests without manual configuration"
       ]
     },
     {
       "version": "5.5.6",
       "date": "2026-03-29",
       "changes": [
-        "Restore empty-feed-cache-poisoning guard: only cache GTFS-RT feeds with entity count > 0 — empty feeds from transient API responses were poisoning the cache for 75 seconds, causing scheduled fallback on all subsequent requests until cache expired"
+        "Restore empty-feed-cache-poisoning guard: only cache GTFS-RT feeds with entity count > 0 \u2014 empty feeds from transient API responses were poisoning the cache for 75 seconds, causing scheduled fallback on all subsequent requests until cache expired"
       ]
     },
     {
       "version": "5.5.5",
       "date": "2026-03-29",
       "changes": [
-        "Fix tram route misidentification: guard parseInt(String(null))=NaN fallback — when leg has no route, pick most-frequent route from live departures instead of falling back to ALL routes (which picks wrong route at intersections)",
-        "Fix train City Loop filtering: include ALL City Loop trains plus nearby direct trains — previously excluded valid alternating line services, showing wrong departure times (40, 77 min instead of NOW, 13, 15)",
-        "Fix train departure padding: skip route number filter for trains (use direction + City Loop/Tunnel filtering instead) — ensures 3 departure times from interleaved lines",
+        "Fix tram route misidentification: guard parseInt(String(null))=NaN fallback \u2014 when leg has no route, pick most-frequent route from live departures instead of falling back to ALL routes (which picks wrong route at intersections)",
+        "Fix train City Loop filtering: include ALL City Loop trains plus nearby direct trains \u2014 previously excluded valid alternating line services, showing wrong departure times (40, 77 min instead of NOW, 13, 15)",
+        "Fix train departure padding: skip route number filter for trains (use direction + City Loop/Tunnel filtering instead) \u2014 ensures 3 departure times from interleaved lines",
         "Fix tram departure padding: exclude Metro Tunnel trains from City Loop padding to prevent wrong-line leakage",
-        "Fix findNearestStops multi-route: collect nearest stop per route at intersections — prevents wrong route when one route's stop is 1m closer",
-        "Fix tram route extraction timing: pick most-frequent route from live departures before building journey legs — ensures correct route identification on first render",
+        "Fix findNearestStops multi-route: collect nearest stop per route at intersections \u2014 prevents wrong route when one route's stop is 1m closer",
+        "Fix tram route extraction timing: pick most-frequent route from live departures before building journey legs \u2014 ensures correct route identification on first render",
         "Add live departure verification rule to DEVELOPMENT-RULES.md Section 23.7",
         "Add state-gating rule to DEVELOPMENT-RULES.md Section 24.1",
         "Add privacy scope extension to DEVELOPMENT-RULES.md Section 1.1 (plans, agent prompts, memory)",
@@ -210,15 +211,15 @@
       "version": "5.5.4",
       "date": "2026-03-29",
       "changes": [
-        "Fix coffee decision disruption detection: calculateCoffeeDecision received Array instead of String — isDisrupted() always returned false via API path. Now constructs alert text from disruption headerText fields.",
-        "Expand MATERIAL_EFFECTS filter: add UNKNOWN_EFFECT and STOP_CLOSURE — real disruptions with GTFS default effect classification were silently dropped",
-        "Complete disruption line code map: add missing metro lines, add bus route number matching — buses and minor metro lines now receive disruption alerts",
-        "Reduce GTFS-RT feed cache TTL from 120s to 75s — halves worst-case departure staleness while respecting API rate limits",
-        "Reduce BMP Cache-Control max-age from 20s to 15s — combined with feed cache reduction, worst-case staleness drops from 2:20 to 1:30",
-        "Fix premature timetable marking: filterUnavailableTransitLegs now keeps all departures when route-specific filter returns empty but mode feed has live data — consistent with train path fallback behaviour",
-        "Fix dataSource ternary: add 'timetable' state when legs have isTimetableEstimate but API key present — previously showed 'no-data' when timetable estimates were displayed",
-        "Fix departure padding route filter: pad from raw feed filtered by route number for trams/buses — prevents wrong-route departures polluting Next: subtitle",
-        "Widen renderer departure filter from 60 to 90 minutes — supports multi-leg journeys where later stops are 50-70 min away",
+        "Fix coffee decision disruption detection: calculateCoffeeDecision received Array instead of String \u2014 isDisrupted() always returned false via API path. Now constructs alert text from disruption headerText fields.",
+        "Expand MATERIAL_EFFECTS filter: add UNKNOWN_EFFECT and STOP_CLOSURE \u2014 real disruptions with GTFS default effect classification were silently dropped",
+        "Complete disruption line code map: add missing metro lines, add bus route number matching \u2014 buses and minor metro lines now receive disruption alerts",
+        "Reduce GTFS-RT feed cache TTL from 120s to 75s \u2014 halves worst-case departure staleness while respecting API rate limits",
+        "Reduce BMP Cache-Control max-age from 20s to 15s \u2014 combined with feed cache reduction, worst-case staleness drops from 2:20 to 1:30",
+        "Fix premature timetable marking: filterUnavailableTransitLegs now keeps all departures when route-specific filter returns empty but mode feed has live data \u2014 consistent with train path fallback behaviour",
+        "Fix dataSource ternary: add 'timetable' state when legs have isTimetableEstimate but API key present \u2014 previously showed 'no-data' when timetable estimates were displayed",
+        "Fix departure padding route filter: pad from raw feed filtered by route number for trams/buses \u2014 prevents wrong-route departures polluting Next: subtitle",
+        "Widen renderer departure filter from 60 to 90 minutes \u2014 supports multi-leg journeys where later stops are 50-70 min away",
         "Add ferry to hasAnyLiveData: ferry live data now contributes to LIVE badge, isPartialLive, and dataSource detection",
         "Coffee decision isDisrupted: add type guard, expand keywords (no service, significant delays, modified service, stop closure), case-insensitive matching"
       ]
@@ -227,24 +228,24 @@
       "version": "5.5.3",
       "date": "2026-03-26",
       "changes": [
-        "Fix City Loop passesCityLoop default: change from !isMetroTunnel to false when no trip scan and no finalStop data — prevents incorrectly classifying direct-to-Flinders evening services as City Loop trains. Conservative default lets findMatchingDeparture fallback show all citybound services."
+        "Fix City Loop passesCityLoop default: change from !isMetroTunnel to false when no trip scan and no finalStop data \u2014 prevents incorrectly classifying direct-to-Flinders evening services as City Loop trains. Conservative default lets findMatchingDeparture fallback show all citybound services."
       ]
     },
     {
       "version": "5.5.2",
       "date": "2026-03-26",
       "changes": [
-        "City Loop time-gated soft-preference: when nearest City Loop train is >30 min later than nearest direct train, include all non-Metro-Tunnel citybound services — prevents 80+ min waits when evening services bypass the City Loop. User can alight at Flinders Street and walk to City Loop stations.",
-        "Tram coord-proximity fallback coordinates: use tram stop's actual coordinates from VIC_TRAM_STOPS_WITH_COORDS instead of home coordinates — centres the 300m search at the boarding stop, not the home address (which may be 500m+ away).",
-        "Widen coord-proximity radius to 600m when using fallback coordinates (stop not in database) — compensates for home-to-stop distance offset when stop coordinates unavailable."
+        "City Loop time-gated soft-preference: when nearest City Loop train is >30 min later than nearest direct train, include all non-Metro-Tunnel citybound services \u2014 prevents 80+ min waits when evening services bypass the City Loop. User can alight at Flinders Street and walk to City Loop stations.",
+        "Tram coord-proximity fallback coordinates: use tram stop's actual coordinates from VIC_TRAM_STOPS_WITH_COORDS instead of home coordinates \u2014 centres the 300m search at the boarding stop, not the home address (which may be 500m+ away).",
+        "Widen coord-proximity radius to 600m when using fallback coordinates (stop not in database) \u2014 compensates for home-to-stop distance offset when stop coordinates unavailable."
       ]
     },
     {
       "version": "5.5.1",
       "date": "2026-03-26",
       "changes": [
-        "Merge tram cascade tiers: when coord-proximity finds < 3 departures, also run all-trips-scan and merge results — catches trips that coord-proximity missed due to unmatchable feed stop IDs, providing 3+ departures for Next: display",
-        "Extend raw feed departure padding to all transit modes (tram, bus) — previously only trains/vline. Richer Next: frequency context across all modes.",
+        "Merge tram cascade tiers: when coord-proximity finds < 3 departures, also run all-trips-scan and merge results \u2014 catches trips that coord-proximity missed due to unmatchable feed stop IDs, providing 3+ departures for Next: display",
+        "Extend raw feed departure padding to all transit modes (tram, bus) \u2014 previously only trains/vline. Richer Next: frequency context across all modes.",
         "Strict City Loop filtering: remove soft-preference fallback that accepted non-City-Loop trains when City Loop services were > 20 min away. Trains that do not serve the alighting station must never be shown regardless of frequency gap."
       ]
     },
@@ -252,8 +253,8 @@
       "version": "5.5.0",
       "date": "2026-03-26",
       "changes": [
-        "GTFS-RT feed cache with 2-minute TTL: cache successful API responses in-memory, return stale cache on transient API failures — prevents live/scheduled alternation between refreshes. Departure countdowns recalculated dynamically from cached absolute timestamps.",
-        "Remove closest-route filter from coord-proximity: return departures from ALL routes at intersection stops — provides richer Next: display with departures across multiple serving routes instead of single-route restriction",
+        "GTFS-RT feed cache with 2-minute TTL: cache successful API responses in-memory, return stale cache on transient API failures \u2014 prevents live/scheduled alternation between refreshes. Departure countdowns recalculated dynamically from cached absolute timestamps.",
+        "Remove closest-route filter from coord-proximity: return departures from ALL routes at intersection stops \u2014 provides richer Next: display with departures across multiple serving routes instead of single-route restriction",
         "Extract tram route name from live departures: when route engine has no route number, extract from GTFS-RT departure data to prevent title flipping between named route and generic mode label"
       ]
     },
@@ -261,15 +262,15 @@
       "version": "5.4.9",
       "date": "2026-03-25",
       "changes": [
-        "Coord-proximity flexible ID matching: build pre-computed lookup map with trailing-numeric extraction — resolves GTFS-RT prefixed stop IDs (e.g. aus:vic:tram-1567) never matching static bare-numeric IDs (1567). Root cause of tram live data never flowing through v5.4.5-v5.4.8",
-        "City Loop trip-scan: add passesCityLoop flag by scanning full stop sequence for City Loop platform IDs — replaces finalStop-only check which failed when citybound trains terminate past City Loop (outbound terminus). Prevents wrong line selection for City Loop destinations"
+        "Coord-proximity flexible ID matching: build pre-computed lookup map with trailing-numeric extraction \u2014 resolves GTFS-RT prefixed stop IDs (e.g. aus:vic:tram-1567) never matching static bare-numeric IDs (1567). Root cause of tram live data never flowing through v5.4.5-v5.4.8",
+        "City Loop trip-scan: add passesCityLoop flag by scanning full stop sequence for City Loop platform IDs \u2014 replaces finalStop-only check which failed when citybound trains terminate past City Loop (outbound terminus). Prevents wrong line selection for City Loop destinations"
       ]
     },
     {
       "version": "5.4.8",
       "date": "2026-03-25",
       "changes": [
-        "Revert auto-detected tram route from nearest stop name: at intersections the nearest stop may be from a different route (e.g. Route 129) than what the user rides (Route 58) — only route engine and user preference are reliable sources",
+        "Revert auto-detected tram route from nearest stop name: at intersections the nearest stop may be from a different route (e.g. Route 129) than what the user rides (Route 58) \u2014 only route engine and user preference are reliable sources",
         "Widen no-route-filter coord-proximity radius from 150m to 300m: 150m was too narrow to find tram stops at intersections, 300m gives enough reach while closest-route logic disambiguates multiple routes",
         "Revert detectStopIdsFromAddress tramRouteNumber to null: keep route extraction in findNearestStops for logging only"
       ]
@@ -278,28 +279,28 @@
       "version": "5.4.7",
       "date": "2026-03-25",
       "changes": [
-        "Tram route number extraction: extract route number from VIC_TRAM_STOPS_WITH_COORDS stop names (#NN suffix) in findNearestStops and return via detectStopIdsFromAddress — enables coord-proximity 500m radius with route filter instead of 150m without",
+        "Tram route number extraction: extract route number from VIC_TRAM_STOPS_WITH_COORDS stop names (#NN suffix) in findNearestStops and return via detectStopIdsFromAddress \u2014 enables coord-proximity 500m radius with route filter instead of 150m without",
         "Use preferredTramRoute in tramApiOptions: add user-configured preferred tram route as fallback source for coord-proximity route filtering (priority: route engine > preference > auto-detected)",
-        "Fix renderer subtitle duplication: add Scheduled startsWith check to renderer gate that appends Next: departures — prevents Scheduled ~X min and ~Next: X min showing simultaneously",
-        "Train departure padding from raw feed: merge same-direction raw feed departures into nextDepartureTimesMs when City Loop or route filtering reduces matched departures — provides richer Next: frequency context"
+        "Fix renderer subtitle duplication: add Scheduled startsWith check to renderer gate that appends Next: departures \u2014 prevents Scheduled ~X min and ~Next: X min showing simultaneously",
+        "Train departure padding from raw feed: merge same-direction raw feed departures into nextDepartureTimesMs when City Loop or route filtering reduces matched departures \u2014 provides richer Next: frequency context"
       ]
     },
     {
       "version": "5.4.6",
       "date": "2026-03-25",
       "changes": [
-        "Confidence-gated tram direction filter: require >= 3 coord stops and >= 500m geographic span before applying direction rejection — prevents false rejection when GTFS-RT/static stop ID namespace mismatch leaves sparse coordCache",
-        "Broad fallback stopId-aware matching: pass target stopId to processAnyRouteDepartures so it matches the user's actual station before falling back to earliest-future heuristic — fixes wrong departure times from mid-route stops",
+        "Confidence-gated tram direction filter: require >= 3 coord stops and >= 500m geographic span before applying direction rejection \u2014 prevents false rejection when GTFS-RT/static stop ID namespace mismatch leaves sparse coordCache",
+        "Broad fallback stopId-aware matching: pass target stopId to processAnyRouteDepartures so it matches the user's actual station before falling back to earliest-future heuristic \u2014 fixes wrong departure times from mid-route stops",
         "Timetable fallback always generates headway-based departure estimates: removes feedHadEntities guard so Scheduled subtitle shows departure countdown (8, 16, 24 min) instead of transit duration (~6min) when GTFS-RT entities exist but filtering removed all matches",
-        "Contact email separation: info@commutecompute.com for general/security/privacy enquiries, licensing@commutecompute.com for licensing only — SECURITY.md, PRIVACY.md, privacy.html, admin.html updated"
+        "Contact email separation: info@commutecompute.com for general/security/privacy enquiries, licensing@commutecompute.com for licensing only \u2014 SECURITY.md, PRIVACY.md, privacy.html, admin.html updated"
       ]
     },
     {
       "version": "5.4.5",
       "date": "2026-03-25",
       "changes": [
-        "Tram direction filter v2: use trip endpoint coordinates (first/last stops with coords in coordCache) to filter wrong-direction trams — more robust than v5.4.0 single-lookahead which failed on unmapped stops",
-        "Remove redundant Alight at subtitle: leg title already shows 'to [destination]' which implies the alighting stop — saves e-ink display space",
+        "Tram direction filter v2: use trip endpoint coordinates (first/last stops with coords in coordCache) to filter wrong-direction trams \u2014 more robust than v5.4.0 single-lookahead which failed on unmapped stops",
+        "Remove redundant Alight at subtitle: leg title already shows 'to [destination]' which implies the alighting stop \u2014 saves e-ink display space",
         "Destination coordinate passthrough restored for coord-proximity direction filtering"
       ]
     },
@@ -307,23 +308,23 @@
       "version": "5.4.4",
       "date": "2026-03-25",
       "changes": [
-        "Fix Next: departure subtitle suppression: clear stale isTimetableEstimate flag when findMatchingDeparture returns live GTFS-RT data — resolves conflict between filterUnavailableTransitLegs strict route matching and findMatchingDeparture any-route fallback",
+        "Fix Next: departure subtitle suppression: clear stale isTimetableEstimate flag when findMatchingDeparture returns live GTFS-RT data \u2014 resolves conflict between filterUnavailableTransitLegs strict route matching and findMatchingDeparture any-route fallback",
         "Fix renderer Next: rebuild on empty subtitle: allow departure time recomputation when API subtitle is empty (previously required non-empty subtitle to run rebuild block)",
-        "Update contact email: licensing@commutecompute.com for licensing enquiries, info@commutecompute.com for general contact — 13 files updated across documentation, legal, and HTML pages"
+        "Update contact email: licensing@commutecompute.com for licensing enquiries, info@commutecompute.com for general contact \u2014 13 files updated across documentation, legal, and HTML pages"
       ]
     },
     {
       "version": "5.4.3",
       "date": "2026-03-25",
       "changes": [
-        "Restore Next: departure padding for service frequency display — when fewer than 3 catchable departures exist, pad with future-from-now departures up to 3. The DEPART time box shows the actual catchable departure; Next: provides service frequency context"
+        "Restore Next: departure padding for service frequency display \u2014 when fewer than 3 catchable departures exist, pad with future-from-now departures up to 3. The DEPART time box shows the actual catchable departure; Next: provides service frequency context"
       ]
     },
     {
       "version": "5.4.2",
       "date": "2026-03-24",
       "changes": [
-        "Fix City Loop destination label: when soft-preference accepts a non-City-Loop train, use GTFS-RT headsign (actual terminus) instead of hardcoded 'City' for destination — prevents impossible route labels like a direct-to-Flinders line shown as going to a City Loop station"
+        "Fix City Loop destination label: when soft-preference accepts a non-City-Loop train, use GTFS-RT headsign (actual terminus) instead of hardcoded 'City' for destination \u2014 prevents impossible route labels like a direct-to-Flinders line shown as going to a City Loop station"
       ]
     },
     {
@@ -333,17 +334,17 @@
         "Revert tram direction filter: GTFS-RT stop ID namespace mismatch made lookahead coordinates unavailable, causing coord-proximity to return no results and trams to fall back to timetable",
         "Revert cascade < 3 threshold: mixed-tier results caused wrong routes (Route 78 instead of 58) when route-level merged with coord-proximity",
         "Revert City Loop destination label override: liveData.destination is always 'City' for citybound trains, incorrectly overriding all train destinations including Frankston-through-Loop services",
-        "Fix renderer Next: stripping: only strip and recompute when nextDepartureTimesMs is available — preserves API subtitle for timetable fallback legs"
+        "Fix renderer Next: stripping: only strip and recompute when nextDepartureTimesMs is available \u2014 preserves API subtitle for timetable fallback legs"
       ]
     },
     {
       "version": "5.4.0",
       "date": "2026-03-24",
       "changes": [
-        "Tram direction filtering: coord-proximity now filters wrong-direction trams using stop-sequence lookahead relative to destination coordinates — prevents matching opposite-direction services at shared stops",
-        "Force 3 live catchable: tram cascade continues to lower tiers when fewer than 3 departures found (with tripId dedup) — ensures 3 live departure times when service frequency supports it",
-        "Catchable-only Next display: removed uncatchable departure padding from Next: subtitle — only departures the user can physically reach are shown",
-        "Renderer catchability recomputation: renderer always recomputes Next: from absolute timestamps instead of trusting API subtitle — belt-and-suspenders against uncatchable leakage",
+        "Tram direction filtering: coord-proximity now filters wrong-direction trams using stop-sequence lookahead relative to destination coordinates \u2014 prevents matching opposite-direction services at shared stops",
+        "Force 3 live catchable: tram cascade continues to lower tiers when fewer than 3 departures found (with tripId dedup) \u2014 ensures 3 live departure times when service frequency supports it",
+        "Catchable-only Next display: removed uncatchable departure padding from Next: subtitle \u2014 only departures the user can physically reach are shown",
+        "Renderer catchability recomputation: renderer always recomputes Next: from absolute timestamps instead of trusting API subtitle \u2014 belt-and-suspenders against uncatchable leakage",
         "City Loop label accuracy: when soft-preference accepts a non-City-Loop train (late evening), destination label updated to the train's actual terminus instead of showing an unreachable City Loop station",
         "Tram destination clarity: tram alight destinations now show abbreviated station suffix (Stn) to distinguish station area from suburb name"
       ]
@@ -352,11 +353,11 @@
       "version": "5.3.9",
       "date": "2026-03-23",
       "changes": [
-        "Fix tram route identification: findMatchingDeparture now prefers configured route over any-route fallback — prevents wrong route from nearby intersections overriding the correct one",
-        "Fix train departure timing: enabled all-trips-scan for metro mode with direction detection and Metro Tunnel filtering — produces accurate stop-level times instead of broad fallback median heuristic",
-        "Fix broad fallback heuristic: use earliest future departure instead of median — median picked mid-route stops producing times 30-60 min too late",
-        "Fix 3-departure display: nextDepartures padded with future departures up to 3 when fewer are catchable — ensures renderer always shows 3 departure times",
-        "Fix train alt stop IDs: build same-name station platform IDs for metro GTFS-RT matching (same pattern as trams) — enables alt-stop cascade tier for trains",
+        "Fix tram route identification: findMatchingDeparture now prefers configured route over any-route fallback \u2014 prevents wrong route from nearby intersections overriding the correct one",
+        "Fix train departure timing: enabled all-trips-scan for metro mode with direction detection and Metro Tunnel filtering \u2014 produces accurate stop-level times instead of broad fallback median heuristic",
+        "Fix broad fallback heuristic: use earliest future departure instead of median \u2014 median picked mid-route stops producing times 30-60 min too late",
+        "Fix 3-departure display: nextDepartures padded with future departures up to 3 when fewer are catchable \u2014 ensures renderer always shows 3 departure times",
+        "Fix train alt stop IDs: build same-name station platform IDs for metro GTFS-RT matching (same pattern as trams) \u2014 enables alt-stop cascade tier for trains",
         "Fix coord-proximity destination: prefer GTFS-RT headsign over line name for tram departure destination display"
       ]
     },
@@ -364,18 +365,18 @@
       "version": "5.3.8",
       "date": "2026-03-23",
       "changes": [
-        "Fix inter-leg timing dependency: when all GTFS-RT departures are before user's calculated arrival at a stop, project next departure from observed headway instead of falling back to uncatchable nearest departure — prevents stale 0 MIN countdown and past DEPART times on downstream transit legs",
-        "Fix Next subtitle catchability: nextDepartures now filtered by arrivalAtStopMs before display — 'Next: X, Y, Z min LIVE' only shows departures the user can actually reach based on cumulative walk+transit+walk timing",
-        "Fix renderer cumulative timing: Location 1 subtitle calculation now uses journeyContribution (wait + transit) instead of minutes (countdown from NOW) for cumulative — prevents double-counting walk time to transit stops",
-        "Fix train line name from catchable departure: line/route name update from actual catchable departure now applies to all transit types (was tram-only) — prevents showing wrong line when multiple lines serve the same station"
+        "Fix inter-leg timing dependency: when all GTFS-RT departures are before user's calculated arrival at a stop, project next departure from observed headway instead of falling back to uncatchable nearest departure \u2014 prevents stale 0 MIN countdown and past DEPART times on downstream transit legs",
+        "Fix Next subtitle catchability: nextDepartures now filtered by arrivalAtStopMs before display \u2014 'Next: X, Y, Z min LIVE' only shows departures the user can actually reach based on cumulative walk+transit+walk timing",
+        "Fix renderer cumulative timing: Location 1 subtitle calculation now uses journeyContribution (wait + transit) instead of minutes (countdown from NOW) for cumulative \u2014 prevents double-counting walk time to transit stops",
+        "Fix train line name from catchable departure: line/route name update from actual catchable departure now applies to all transit types (was tram-only) \u2014 prevents showing wrong line when multiple lines serve the same station"
       ]
     },
     {
       "version": "5.3.7",
       "date": "2026-03-22",
       "changes": [
-        "Fix tram GTFS-RT stop ID mismatch: new alt-stop-id cascade tier tries GTFS_STOP_NAMES aliases and nearby stops on the same road (within 350m) — bridges gap when the user's exact stop ID doesn't appear in the feed's trip data",
-        "Aggregate alt stop ID departures across all matching stops with trip ID dedup — captures full departure set when different trips visit different stops along the same road",
+        "Fix tram GTFS-RT stop ID mismatch: new alt-stop-id cascade tier tries GTFS_STOP_NAMES aliases and nearby stops on the same road (within 350m) \u2014 bridges gap when the user's exact stop ID doesn't appear in the feed's trip data",
+        "Aggregate alt stop ID departures across all matching stops with trip ID dedup \u2014 captures full departure set when different trips visit different stops along the same road",
         "Multi-route tram support: findMatchingDeparture skips route filter for trams (user catches whichever route arrives first), dynamic route number updated from actual catchable departure",
         "Train direction filter in raw feed fallback: outbound trains no longer display as going to citybound destinations (e.g. Frankston incorrectly shown as 'to Parliament Station')",
         "Coord-proximity route-only fallback: when route filter confirms correct line but no stops have coordinates, accepts trip using earliest future stop_time_update as approximation"
@@ -385,7 +386,7 @@
       "version": "5.3.6",
       "date": "2026-03-22",
       "changes": [
-        "Fix catchable departure timing: subtitle shows ALL future live departures (Next: X, Y, Z min LIVE) while timing uses first CATCHABLE departure after user arrival — prevents uncatchable departures corrupting journey timing",
+        "Fix catchable departure timing: subtitle shows ALL future live departures (Next: X, Y, Z min LIVE) while timing uses first CATCHABLE departure after user arrival \u2014 prevents uncatchable departures corrupting journey timing",
         "Fix journey contribution cascade: downstream legs now receive correct arrivalAtStopMs because timing only uses departures the user can actually catch based on cumulative leg dependencies",
         "Fix raw feed fallback: when no catchable departure exists in GTFS-RT window, uses estimated timing instead of closest-from-NOW (which was uncatchable and corrupted arrival calculation)"
       ]
@@ -394,17 +395,17 @@
       "version": "5.3.5",
       "date": "2026-03-22",
       "changes": [
-        "Fix route number normalisation: GTFS route IDs with leading zeros (e.g. '058') now match engine route numbers ('58') — resolves tram consistently showing 'Scheduled' despite live GTFS-RT data being available",
+        "Fix route number normalisation: GTFS route IDs with leading zeros (e.g. '058') now match engine route numbers ('58') \u2014 resolves tram consistently showing 'Scheduled' despite live GTFS-RT data being available",
         "Fix catchability fallback: when live GTFS-RT data exists but no departure is catchable from the user's arrival timing, live departure times are still displayed instead of falling back to timetable",
-        "Fix timestamp clamping: valid GTFS-RT departures >180 min away no longer incorrectly set isTimetableEstimate — low-frequency services stay marked as live",
-        "Fix route matching fallback: findMatchingDeparture keeps all departures when route filter empties instead of returning null — prevents silent discard of live data"
+        "Fix timestamp clamping: valid GTFS-RT departures >180 min away no longer incorrectly set isTimetableEstimate \u2014 low-frequency services stay marked as live",
+        "Fix route matching fallback: findMatchingDeparture keeps all departures when route filter empties instead of returning null \u2014 prevents silent discard of live data"
       ]
     },
     {
       "version": "5.3.4",
       "date": "2026-03-22",
       "changes": [
-        "Fix tram GTFS-RT matching: coord-proximity search now accepts address coordinates as fallback when stop ID not in VIC_TRAM_STOPS_WITH_COORDS (e.g. stop 1567 stored as 18705) — enables live tram data that was previously falling to timetable",
+        "Fix tram GTFS-RT matching: coord-proximity search now accepts address coordinates as fallback when stop ID not in VIC_TRAM_STOPS_WITH_COORDS (e.g. stop 1567 stored as 18705) \u2014 enables live tram data that was previously falling to timetable",
         "Fix train departure catchability: findMatchingDeparture now collects ALL departure times (was limited to first 5 which could all be before user arrival, causing timetable fallback on low-frequency services)"
       ]
     },
@@ -412,7 +413,7 @@
       "version": "5.3.3",
       "date": "2026-03-22",
       "changes": [
-        "Fix City Loop filtering: shared filterCityLoopPreference() with soft-preference — when Loop services are infrequent (>20 min gap vs direct), accepts direct trains to Flinders Street instead of forcing 48-min wait for rare Loop service",
+        "Fix City Loop filtering: shared filterCityLoopPreference() with soft-preference \u2014 when Loop services are infrequent (>20 min gap vs direct), accepts direct trains to Flinders Street instead of forcing 48-min wait for rare Loop service",
         "Fix City Loop filter consistency: filterUnavailableTransitLegs now uses same finalStop-based filter as findMatchingDeparture (was using !isMetroTunnel proxy, causing filter/matcher disagreement)",
         "Fix timetable subtitle stability: 'Scheduled ~Xmin' now shows transit ride duration (stable) instead of departure countdown (volatile across renders)",
         "Fix tram GTFS-RT cascade diagnostics: cascade attempt tracking (tier, tried, found) attached to _feedInfo for diagnosing stop-ID matching failures"
@@ -422,9 +423,9 @@
       "version": "5.3.2",
       "date": "2026-03-22",
       "changes": [
-        "Fix coordinate-proximity closest-route preference: at intersections where multiple tram routes have nearby stops, only the route with the physically closest stop is matched — prevents wrong route selection",
+        "Fix coordinate-proximity closest-route preference: at intersections where multiple tram routes have nearby stops, only the route with the physically closest stop is matched \u2014 prevents wrong route selection",
         "Fix coordinate-proximity departure time accuracy: find all stops within radius with future departures and pick earliest, instead of single closest stop that may have a past departure (tram already passed it)",
-        "Fix broad fallback City Loop filtering: add finalStop to processAnyRouteDepartures() departure objects — enables correct filtering of trains that do not serve City Loop stations"
+        "Fix broad fallback City Loop filtering: add finalStop to processAnyRouteDepartures() departure objects \u2014 enables correct filtering of trains that do not serve City Loop stations"
       ]
     },
     {
@@ -454,7 +455,7 @@
         "Fix NSW lightrail mode mapping: mode 1 (tram) now routes to lightrail feed instead of silently falling back to sydneytrains",
         "Fix QLD mode completeness: modes 1 and 3 mapped to SEQ unified feed (prevents undefined fallback)",
         "Ferry live data: ferryStopId detection, getDepartures(ferryStopId, 4) call, and ferry disruption fetching for NSW/QLD",
-        "State parameter propagated through route-level and all-trips fallback functions — non-VIC departures use tripHeadsign for destination",
+        "State parameter propagated through route-level and all-trips fallback functions \u2014 non-VIC departures use tripHeadsign for destination",
         "All transit modes that have GTFS-RT feeds now produce live departure data when API key is valid"
       ]
     },
@@ -462,14 +463,14 @@
       "version": "5.2.0",
       "date": "2026-03-22",
       "changes": [
-        "TURNKEY MULTI-STATE: CommuteCompute Engine v4.1 — state-independent live data for all Australian states",
+        "TURNKEY MULTI-STATE: CommuteCompute Engine v4.1 \u2014 state-independent live data for all Australian states",
         "NSW and QLD GTFS-RT live data wired via existing STATE_API_CONFIG endpoints (Transport for NSW, TransLink SEQ)",
-        "SA/WA/TAS/NT/ACT graceful degradation — returns empty with diagnostics instead of throwing error",
+        "SA/WA/TAS/NT/ACT graceful degradation \u2014 returns empty with diagnostics instead of throwing error",
         "Expanded fallback stop data: ~200 new stops across Sydney, Brisbane, Adelaide, Perth, Hobart, Canberra, Darwin",
         "Suburb-to-stop mappings for all 7 non-VIC capital cities (Sydney 23 suburbs, Brisbane 14, Adelaide 11, Perth 11, etc.)",
         "processGtfsRtDepartures() guarded for non-VIC: Metro Tunnel and City Loop direction detection skipped outside Melbourne",
-        "getWeather() timezone parameterised — uses state-specific timezone instead of hardcoded Melbourne",
-        "getServiceAlerts() state-aware — fetches disruptions for all GTFS-RT-capable states, not just VIC",
+        "getWeather() timezone parameterised \u2014 uses state-specific timezone instead of hardcoded Melbourne",
+        "getServiceAlerts() state-aware \u2014 fetches disruptions for all GTFS-RT-capable states, not just VIC",
         "Generate script template (generate-state-reference.js) for future full GTFS reference data per state"
       ]
     },
@@ -489,7 +490,7 @@
         "STATE-AWARE LIVE DATA: opendata-client.js refactored from Victoria-only to multi-state architecture supporting VIC, NSW, QLD GTFS-RT endpoints",
         "State-aware transit API routing: fetchGtfsRt(), getDepartures(), getDisruptions() now accept state parameter and route to correct authority endpoint with correct auth headers",
         "Graceful degradation for states without GTFS-RT (SA, WA, TAS, NT, ACT): returns empty with diagnostic _feedInfo.matchMethod='no-gtfs-rt'",
-        "Fixed missing _feedInfo on null feed return in getDepartures() — previously returned bare [] without diagnostics",
+        "Fixed missing _feedInfo on null feed return in getDepartures() \u2014 previously returned bare [] without diagnostics",
         "Aligned VIC key validation headers with fetch headers: both now send dual Ocp-Apim-Subscription-Key + KeyId",
         "State-aware stop detection: detectStopIdsFromAddress() uses fallback-timetables.js for non-VIC coordinate-based nearest-stop lookup",
         "State threaded through api/commutecompute.js apiOptions to all getDepartures/getDisruptions calls"
@@ -520,17 +521,17 @@
       "version": "5.0.0",
       "date": "2026-03-02",
       "changes": [
-        "UNIFIED ENGINE: Merged api/screen.js into api/commutecompute.js — single endpoint for admin JSON, e-ink PNG/BMP, and debug diagnostics. Zero divergence between admin and device output.",
+        "UNIFIED ENGINE: Merged api/screen.js into api/commutecompute.js \u2014 single endpoint for admin JSON, e-ink PNG/BMP, and debug diagnostics. Zero divergence between admin and device output.",
         "GTFS coordinate-based stop detection: findNearestStops() searches 226 metro stations, 1637 tram stops, 4151 bus stops by proximity. Replaces suburb name matching as primary detection.",
         "Engine alighting intelligence: coordinate-based destination resolution, no hardcoded Flinders Street Station fallback. Alighting stops determined by proximity to work coordinates.",
         "Shared haversine utility (src/utils/haversine.js): single source of truth replacing 3 duplicate implementations",
-        "Shared utility extraction: time-format.js, fetch-retry.js, suburb-extract.js, config-token.js — 10 functions deduplicated across 6+ endpoint files",
+        "Shared utility extraction: time-format.js, fetch-retry.js, suburb-extract.js, config-token.js \u2014 10 functions deduplicated across 6+ endpoint files",
         "Renderer CCDash v3.0: transit countdown fix (trusts leg.minutes, 180-min sanity cap), cafe closed case-insensitive matching, confidence context line rendering, subtitle overflow protection",
         "AltTransit gate fix: only activates when ALL transit is cancelled/suspended (not on any disruption or low confidence)",
         "Walk merge name resolution: uses stopName/stationName before generic 'destination'",
         "Fullscreen/livedash endpoint deduplication: removed unused imports, shared config-token decoder",
         "Zone endpoint deduplication: 15 duplicate functions eliminated across 4 zone files",
-        "Backward-compatible vercel.json rewrite: /api/screen → /api/commutecompute (firmware devices continue to work)",
+        "Backward-compatible vercel.json rewrite: /api/screen \u2192 /api/commutecompute (firmware devices continue to work)",
         "Format detection: POST defaults to JSON (admin), GET defaults to PNG (device)",
         "GTFS reference regenerated with coordinates: VIC_METRO_STATIONS now includes lat/lon, new VIC_TRAM_STOPS_WITH_COORDS and VIC_BUS_STOPS_WITH_COORDS exports",
         "System v5.0.0, Engine v4.0, Renderer v3.0, Spec CCDashDesignV16.0 UNLOCKED"
@@ -610,7 +611,7 @@
       "version": "3.4.0",
       "date": "2026-02-06",
       "changes": [
-        "V15.0: Sleep Optimiser Engine — evening bedtime/alarm calculation",
+        "V15.0: Sleep Optimiser Engine \u2014 evening bedtime/alarm calculation",
         "V15.0: Alternative Transit Engine - rideshare/bike/scooter cost estimates",
         "V15.0: Lifestyle Mindset - commute stress scoring, walk step estimation, apparent temperature",
         "V15.0: Alt transit cost panel when all public transit cancelled",

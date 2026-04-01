@@ -459,6 +459,21 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         const workSuburb = extractSuburb(locations.work?.address);
         leg.destination.name = gtfsWorkDest || (workSuburb ? `${workSuburb} Station` : leg.destination.name);
       }
+      // V5.6.9: Re-check requiresCityLoop / requiresMetroTunnel after destination
+      // name resolution. The initial check at line 416 uses the engine's raw
+      // destination which is typically generic ("City", "Station"). After GTFS/suburb
+      // resolution above, the name is specific (e.g., "Parliament Station") and can
+      // be correctly matched against City Loop / Metro Tunnel station lists.
+      if (!leg.requiresCityLoop && !leg.requiresMetroTunnel) {
+        const resolvedDest = (leg.destination?.name || '').toLowerCase();
+        const cityLoopResolved = ['flinders', 'parliament', 'melbourne central', 'flagstaff', 'southern cross'];
+        const metroTunnelResolved = ['town hall', 'state library', 'parkville', 'arden', 'anzac'];
+        if (cityLoopResolved.some(s => resolvedDest.includes(s))) {
+          leg.requiresCityLoop = true;
+        } else if (metroTunnelResolved.some(s => resolvedDest.includes(s))) {
+          leg.requiresMetroTunnel = true;
+        }
+      }
     }
 
     // Update origin after coffee leg (we're now leaving from cafe location)
@@ -571,6 +586,11 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
               nextDepartureTimesMs.push(d.departureTimeMs);
             }
           }
+          nextDepartureTimesMs.sort((a, b) => a - b);
+        }
+        // V5.6.9: Sort unconditionally — when allDepartureTimesMs has >= 5 entries
+        // the padding branch above is skipped, leaving feed-order timestamps unsorted.
+        if (nextDepartureTimesMs && nextDepartureTimesMs.length >= 5) {
           nextDepartureTimesMs.sort((a, b) => a - b);
         }
         // Use first CATCHABLE departure for timing (minutes box, depart time, journey contribution)
@@ -845,9 +865,12 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
             if (catchable.length >= 3) break;
             if (!catchable.includes(m)) catchable.push(m);
           }
-          catchable.sort((a, b) => a - b);
         }
-        baseLeg.nextDepartures = catchable;
+        // V5.6.9: Sort unconditionally — previously only sorted inside the padding
+        // branch (catchable < 3), leaving the array unsorted when 3+ catchable
+        // departures existed. The subtitle builder sorts before display, but the
+        // raw API nextDepartures field was returned unsorted.
+        baseLeg.nextDepartures = catchable.sort((a, b) => a - b);
       }
 
       // Issue 6: Sanitise GTFS disruption jargon before user-facing display
@@ -1445,13 +1468,15 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
         depTimes.push(nowMs + (d.minutes * 60000));
       }
     }
-    primary.allDepartureTimesMs = depTimes;
+    // V5.6.9: Sort departure times — matchedDepartures order depends on feed/tier
+    // concatenation in opendata-client.js, not departure time.
+    primary.allDepartureTimesMs = depTimes.sort((a, b) => a - b);
     // Store all departure objects for route lookup — when catchability selects a
     // departure from a different route (multi-route tram), we need to find its
     // routeNumber and lineName to update the leg title dynamically.
     primary.allDepartures = matchedDepartures;
     // Display-facing nextDepartures stays limited to 5 (for "Next: x, y, z min" subtitle)
-    primary.nextDepartures = matchedDepartures.slice(0, 5).map(d => d.minutes).filter(m => m !== undefined);
+    primary.nextDepartures = matchedDepartures.slice(0, 5).map(d => d.minutes).filter(m => m !== undefined).sort((a, b) => a - b);
   }
 
   return primary;
@@ -2591,19 +2616,10 @@ export default async function handler(req, res) {
       }
     }
 
-    // V16.0: Set requiresCityLoop / requiresMetroTunnel on train leg based on destination
-    // Sandringham line terminates at Flinders Street — doesn't serve City Loop stations.
-    // Frankston/Cranbourne/Pakenham go through City Loop (Parliament, Melbourne Central, etc.)
-    const CITY_LOOP_STATIONS = ['parliament', 'melbourne central', 'flagstaff', 'southern cross'];
-    const METRO_TUNNEL_STATIONS = ['town hall', 'state library', 'parkville', 'arden', 'anzac'];
-    if (trainLeg?.destination?.name) {
-      const destLower = trainLeg.destination.name.toLowerCase();
-      if (CITY_LOOP_STATIONS.some(s => destLower.includes(s))) {
-        trainLeg.requiresCityLoop = true;
-      } else if (METRO_TUNNEL_STATIONS.some(s => destLower.includes(s))) {
-        trainLeg.requiresMetroTunnel = true;
-      }
-    }
+    // V5.6.9: Removed redundant requiresCityLoop/requiresMetroTunnel check here.
+    // This ran AFTER buildJourneyLegs() and could not influence findMatchingDeparture().
+    // The check now lives inside buildJourneyLegs() after destination name resolution,
+    // BEFORE findMatchingDeparture() runs — see V5.6.9 block near line 462.
 
     // V5.6.5: Admin-configured route override takes absolute priority over KV auto-detection.
     // KV auto-detection can lock to the wrong route when coord-proximity finds routes from
@@ -3018,7 +3034,8 @@ export default async function handler(req, res) {
       targetArrivalMins: targetMins,
       currentMins: nowMinsForLeave,
       isCommuteDay,
-      hasLiveData: hasAnyLiveData
+      hasLiveData: hasAnyLiveData,
+      isTomorrowCommute
     });
     // V5.5.18: Confidence is always calculated when live data is present.
     // Journey legs always show live GTFS-RT data regardless of commute window.
@@ -3275,7 +3292,7 @@ export default async function handler(req, res) {
           totalMinutes,
           onTime: arrivalDiff <= 5,
           diffMinutes: arrivalDiff,
-          status: arrivalDiff > 5 ? 'late' : arrivalDiff < -10 ? 'early' : 'on-time'
+          status: isTomorrowCommute ? 'tomorrow' : arrivalDiff > 5 ? 'late' : arrivalDiff < -10 ? 'early' : 'on-time'
         },
 
         // Weather (admin panel expects this shape)
