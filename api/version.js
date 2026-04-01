@@ -1,15 +1,21 @@
 /**
  * /api/version - Version Information Endpoint
- * 
+ *
  * Returns system version, component versions, and build info.
  * Used by the global system footer on all admin panel tabs.
- * 
+ *
  * Per DEVELOPMENT-RULES.md Section 7.4: Renderer version must match spec compliance.
- * 
+ *
  * Copyright (c) 2026 Angus Bergman
  * SPDX-License-Identifier: AGPL-3.0-or-later
  * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  */
+
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const versionData = require('../VERSION.json');
+
+const SYSTEM_VERSION = versionData.system?.version || '0.0.0';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -26,10 +32,10 @@ export default async function handler(req, res) {
     : '2026-01-31';
 
   res.json({
-    version: 'v5.6.7',
+    version: `v${SYSTEM_VERSION}`,
     date: buildDate,
     system: {
-      version: '5.6.7',
+      version: SYSTEM_VERSION,
       name: 'Commute Compute System',
       copyright: '© 2026 Angus Bergman',
       license: 'AGPL-3.0'
