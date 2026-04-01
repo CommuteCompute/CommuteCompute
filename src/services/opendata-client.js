@@ -446,18 +446,25 @@ export async function getDepartures(stopId, routeType, options = {}) {
     // producing times 10-20 min off (e.g. 25 min when actual is 7 min). Coordinate-
     // proximity uses actual stop coordinates for accurate departure times and must
     // run first so the inaccurate median heuristic doesn't block it.
-    // V16.0: For trams, coordinate-proximity runs BEFORE route-level.
-    // VIC tram GTFS-RT feeds use different stop IDs than static GTFS (known issue).
-    // Route-level's median-stop heuristic estimates departure at a mid-route stop,
-    // producing times 10-20 min off (e.g. 25 min when actual is 7 min). Coordinate-
-    // proximity uses actual stop coordinates for accurate departure times and must
-    // run first so the inaccurate median heuristic doesn't block it.
-    if (departures.length === 0 && feedEntityCount > 0 && mode === 'tram') {
+    // V5.6.6: Guard changed from === 0 to < 3: when Tier 1 finds 1-2 results (e.g. a
+    // just-departed tram), coord-proximity supplements with direction-filtered upcoming
+    // departures. When Tier 1 found 0, coord is still the primary source (behaviour
+    // unchanged). When Tier 1 found >= 3, coord is still skipped (behaviour unchanged).
+    if (departures.length < 3 && feedEntityCount > 0 && mode === 'tram') {
       const coordDepartures = processCoordinateProximitySearch(feed, stopId, routeType, state, options.routeNumber || null, options.lat || null, options.lon || null, options.destLat || null, options.destLon || null);
       cascadeAttempts.push({ tier: 'coord-proximity', tried: true, found: coordDepartures.length });
       if (coordDepartures.length > 0) {
-        console.log(`[OpenData] Coordinate-proximity search found ${coordDepartures.length} departures for stopId=${stopId} in ${mode} feed`);
-        coordDepartures.forEach(d => departures.push(d));
+        if (departures.length === 0) {
+          // Primary coord result — push all directly
+          coordDepartures.forEach(d => departures.push(d));
+        } else {
+          // Supplement sparse Tier 1 results — dedup merge (60s window)
+          for (const cd of coordDepartures) {
+            if (!departures.some(d => Math.abs(d.departureTimeMs - cd.departureTimeMs) < 60000)) {
+              departures.push(cd);
+            }
+          }
+        }
       }
     }
 

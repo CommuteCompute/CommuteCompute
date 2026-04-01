@@ -20,7 +20,7 @@ import CommuteCompute from '../src/engines/commute-compute.js';
 import { GTFS_STOP_NAMES, getStopNameById, cleanStopName, MELBOURNE_STOP_IDS, detectStopIdsFromAddress, findNearestStops } from '../src/data/gtfs-stop-names.js';
 import { VIC_METRO_STATIONS, VIC_TRAM_STOPS_WITH_COORDS } from '../src/data/vic/gtfs-reference.js';
 import { haversine } from '../src/utils/haversine.js';
-import { getTransitApiKey, getPreferences, getUserState, setDeviceStatus, getClient, getStationOverrides, setStationOverrides, getPreferredTramRoute, setPreferredTramRoute } from '../src/data/kv-preferences.js';
+import { getTransitApiKey, getPreferences, getUserState, setDeviceStatus, getClient, getStationOverrides, setStationOverrides, getPreferredTramRoute, setPreferredTramRoute, getPreferredTramStop, setPreferredTramStop } from '../src/data/kv-preferences.js';
 import { renderFullDashboard, renderFullScreenBMP, DISPLAY_DIMENSIONS } from '../src/services/ccdash-renderer.js';
 import { getScenario, getScenarioNames } from '../src/services/journey-scenarios.js';
 import DepartureConfidence from '../src/engines/departure-confidence.js';
@@ -2384,6 +2384,14 @@ export default async function handler(req, res) {
     // Load preferred tram route for consistent display (pinned by user)
     let preferredTramRoute = null;
     try { preferredTramRoute = await getPreferredTramRoute(); } catch (e) {}
+    // V5.6.6: Invalidate stale preferred route when the tram stop changes.
+    // preferredTramRoute is meaningless for a different stop — clear KV so auto-detection reruns.
+    const storedTramStop = await getPreferredTramStop().catch(() => null);
+    if (storedTramStop && tramStopId && String(storedTramStop) !== String(tramStopId)) {
+      preferredTramRoute = null;
+      setPreferredTramRoute(null).catch(() => {});
+      setPreferredTramStop(null).catch(() => {});
+    }
 
     // Auto-detect work-side stop IDs for train destination resolution
     let workTrainStopId = null;
@@ -2455,9 +2463,15 @@ export default async function handler(req, res) {
       tramApiOptions.lat = homeCoords.lat;
       tramApiOptions.lon = homeCoords.lon;
     }
-    // V5.4.5: Pass destination coordinates for tram direction filtering.
-    // Coord-proximity uses trip endpoint coordinates to filter wrong-direction trams.
-    if (locations.work?.lat) {
+    // V5.6.6: Direction filtering targets the next journey leg's transit stop (train boarding
+    // station), not the final work destination. Using the station coordinates is geometrically
+    // tighter (the tram must reach THAT station, not Collins St) and semantically correct per
+    // journey leg. Falls back to work coords when no metro station coordinates are available.
+    const nextLegStopCoords = VIC_METRO_STATIONS?.[trainStopId] || null;
+    if (nextLegStopCoords?.lat) {
+      tramApiOptions.destLat = nextLegStopCoords.lat;
+      tramApiOptions.destLon = nextLegStopCoords.lon;
+    } else if (locations.work?.lat) {
       tramApiOptions.destLat = locations.work.lat;
       tramApiOptions.destLon = locations.work.lon;
     }
@@ -2591,6 +2605,7 @@ export default async function handler(req, res) {
     // Sync KV to admin override when set — prevents stale auto-detected KV from conflicting
     if (tramRouteOverride && tramRouteOverride !== preferredTramRoute) {
       setPreferredTramRoute(tramRouteOverride).catch(() => {});
+      setPreferredTramStop(tramStopId).catch(() => {});
       preferredTramRoute = tramRouteOverride;
     }
 
@@ -2664,6 +2679,7 @@ export default async function handler(req, res) {
           selectedRoute = bestRoute;
           // Store to KV for persistence across calls
           setPreferredTramRoute(bestRoute).catch(() => {});
+          setPreferredTramStop(tramStopId).catch(() => {});
           preferredTramRoute = bestRoute;
         }
       }
@@ -2691,6 +2707,7 @@ export default async function handler(req, res) {
         if (tramLeg) tramLeg.routeNumber = selectedRoute;
         if (!preferredTramRoute) {
           setPreferredTramRoute(selectedRoute).catch(() => {});
+          setPreferredTramStop(tramStopId).catch(() => {});
           preferredTramRoute = selectedRoute;
         }
         // V5.6.1: Filter trams array to only the selected route's departures.
