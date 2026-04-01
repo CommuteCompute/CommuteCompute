@@ -3032,7 +3032,7 @@ export default async function handler(req, res) {
       localHour: melbourneTime.hour,
       localMinute: melbourneTime.minute
     });
-    // V15.0: Sleep Optimizer - evening mode bedtime/alarm calculation
+    // V15.0: Sleep Optimiser — evening mode bedtime/alarm calculation
     const sleepEngine = new SleepOptimiser();
     const sleepData = sleepEngine.calculate({
       targetArrivalMins: targetMins,
@@ -3197,7 +3197,7 @@ export default async function handler(req, res) {
       lifestyle_primary: lifestyle.primarySuggestion,
       lifestyle_secondary: lifestyle.secondarySuggestion,
       lifestyle_suggestions: lifestyle.suggestions,
-      // V15.0: Sleep Optimizer (evening mode)
+      // V15.0: Sleep Optimiser (evening mode)
       sleep_active: sleepData.active,
       sleep_display: sleepData.displayLine,
       sleep_secondary: sleepData.secondaryLine,

@@ -9,7 +9,7 @@
     "commutecompute": {
       "version": "4.1",
       "name": "CommuteCompute Engine",
-      "description": "Multi-state GTFS-RT support (VIC/NSW/QLD live, SA/WA/TAS/NT/ACT timetable fallback), coordinate-based stop detection (226 VIC metro + 1637 tram + 4151 bus + expanded fallback stops for all states), state-aware suburb-to-stop mappings for all capital cities, graceful no-GTFS-RT degradation, runtime line verification, Metro Tunnel citybound detection (VIC), direction-based train filtering, route-aware transit filtering, Departure Confidence, Sleep Optimizer, Alt Transit, Lifestyle Context, Mindset analysis",
+      "description": "Multi-state GTFS-RT support (VIC/NSW/QLD live, SA/WA/TAS/NT/ACT timetable fallback), coordinate-based stop detection (226 VIC metro + 1637 tram + 4151 bus + expanded fallback stops for all states), state-aware suburb-to-stop mappings for all capital cities, graceful no-GTFS-RT degradation, runtime line verification, Metro Tunnel citybound detection (VIC), direction-based train filtering, route-aware transit filtering, Departure Confidence, Sleep Optimiser, Alt Transit, Lifestyle Context, Mindset analysis",
       "locked": false,
       "lastUpdated": "2026-03-22"
     },
@@ -610,7 +610,7 @@
       "version": "3.4.0",
       "date": "2026-02-06",
       "changes": [
-        "V15.0: Sleep Optimizer Engine - evening bedtime/alarm calculation",
+        "V15.0: Sleep Optimiser Engine — evening bedtime/alarm calculation",
         "V15.0: Alternative Transit Engine - rideshare/bike/scooter cost estimates",
         "V15.0: Lifestyle Mindset - commute stress scoring, walk step estimation, apparent temperature",
         "V15.0: Alt transit cost panel when all public transit cancelled",

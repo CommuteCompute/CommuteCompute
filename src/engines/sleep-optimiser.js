@@ -1,5 +1,5 @@
 /**
- * Sleep Optimizer Engine v1.0
+ * Sleep Optimiser Engine v1.0
  * Part of the Commute Compute™ System
  *
  * Calculates optimal bedtime and alarm time based on the user's
@@ -40,7 +40,7 @@ const LATEST_BEDTIME_HOUR = 0;
 const DISPLAY_LINE_MAX = 22;
 
 // =============================================================================
-// SLEEP OPTIMIZER ENGINE
+// SLEEP OPTIMISER ENGINE
 // =============================================================================
 
 /**
@@ -152,7 +152,7 @@ class SleepOptimiser {
   // ===========================================================================
 
   /**
-   * Build inactive result when sleep optimizer is not applicable.
+   * Build inactive result when sleep optimiser is not applicable.
    * @returns {Object} Inactive sleep result
    */
   _buildInactiveResult() {
