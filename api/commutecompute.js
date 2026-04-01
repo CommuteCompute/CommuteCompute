@@ -605,10 +605,15 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
             projected += headwayMs;
           }
           actualDepartureMs = projected;
-          // Mark as estimate — not a confirmed GTFS-RT departure
-          leg.isTimetableEstimate = true;
+          // V5.6.7: GTFS-RT feed IS active — do not demote to timetable estimate.
+          // Headway projection from live data keeps isLive: true.
+          // Filter nextDepartureTimesMs to only catchable times (>= user arrival at stop)
+          // so the subtitle does not show departures the user cannot catch.
           const combined = [...(nextDepartureTimesMs || []), projected];
-          nextDepartureTimesMs = combined.sort((a, b) => a - b).slice(0, 10);
+          nextDepartureTimesMs = combined
+            .filter(ms => ms >= arrivalAtStopMs)
+            .sort((a, b) => a - b)
+            .slice(0, 10);
         }
       } else if (liveData.departureTimeMs && liveData.departureTimeMs >= arrivalAtStopMs) {
         actualDepartureMs = liveData.departureTimeMs;
@@ -1026,17 +1031,22 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     // Convert timetable nextDepartureTimesMs to nextDepartures (minutes from now)
     // when live data matching didn't run (timetable fallback path)
     if (isTransitLeg && !baseLeg.nextDepartures && baseLeg.nextDepartureTimesMs?.length > 0) {
-      baseLeg.nextDepartures = baseLeg.nextDepartureTimesMs.map(depMs =>
-        Math.round((depMs - nowMs) / 60000)
-      );
+      // V5.6.7: Sort after mapping — nextDepartureTimesMs may be unsorted when
+      // allFutureDeps.length >= 5 bypasses the padding-sort at line 574.
+      baseLeg.nextDepartures = baseLeg.nextDepartureTimesMs
+        .map(depMs => Math.round((depMs - nowMs) / 60000))
+        .sort((a, b) => a - b);
     }
 
     // Subtitle for transit legs: live GTFS-RT departures take priority over timetable.
     // If isLive is true, show "Next: x, y, z min LIVE" regardless of isTimetableEstimate
     // (which may have been set by timestamp clamping even when live data exists).
     if (isTransitLeg && baseLeg.isLive && baseLeg.nextDepartures?.length > 0) {
+      // V5.6.7: Filter to catchable departures only (>= cumulative minutes to stop),
+      // then sort ascending before slicing — fixes out-of-order "Next:" display.
       const times = baseLeg.nextDepartures
-        .filter(m => m >= 0 && m <= 120)
+        .filter(m => m >= (baseLeg.catchInMinutes || 0) && m <= 120)
+        .sort((a, b) => a - b)
         .slice(0, 3)
         .join(', ');
       if (times) {
@@ -1047,7 +1057,8 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       // nextDepartureTimesMs was populated with headway-based estimates at timetable fallback
       if (baseLeg.nextDepartures?.length > 0) {
         const times = baseLeg.nextDepartures
-          .filter(m => m >= 0 && m <= 120)
+          .filter(m => m >= (baseLeg.catchInMinutes || 0) && m <= 120)
+          .sort((a, b) => a - b)
           .slice(0, 3)
           .join(', ');
         if (times) {
