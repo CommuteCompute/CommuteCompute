@@ -1780,9 +1780,9 @@ function renderStatus(data, prefs) {
   ctx.fillText(statusText, 16, zone.h / 2);
 
   // V14.0: Confidence score (before total minutes)
-  // V16.0: Suppress confidence in TOMORROW mode — future conditions are unknowable
+  // V5.5.18: Show confidence at all times when live data produces a valid score
   const confidenceScore = data.confidence_score;
-  if (confidenceScore !== undefined && confidenceScore !== null && !data.isTomorrowCommute) {
+  if (confidenceScore !== undefined && confidenceScore !== null) {
     ctx.textAlign = 'right';
     const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
     const needsAttention = confidenceScore < 75;
@@ -2850,7 +2850,8 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
 
   // 3. Confidence score + mindset (if present) — positioned left of badge
   const confidenceScore = data.confidence_score;
-  if (confidenceScore !== undefined && confidenceScore !== null && isCommuteDay && !data.isTomorrowCommute) {
+  // V5.5.18: Show confidence at all times when a valid score exists
+  if (confidenceScore !== undefined && confidenceScore !== null) {
     ctx.textAlign = 'right';
     const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
     const needsAttention = confidenceScore < 75;

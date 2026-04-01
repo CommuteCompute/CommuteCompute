@@ -521,6 +521,14 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       }
     }
 
+    // V5.6.1: Propagate City Loop disruption override from raw departure to leg.
+    // When Fix 1 (v5.6.0) overrides a departure's destination to "Flinders Street Station",
+    // that override must reach the journey leg title. This handles LIVE departures.
+    if (leg.type === 'train' && liveData?._cityLoopOverride) {
+      leg.destinationName = liveData.destination;
+      if (leg.destination) leg.destination.name = liveData.destination;
+    }
+
     // For transit legs, find first live departure AFTER user arrives at stop
     if (isTransitLeg && liveData) {
       const hasDepTimes = liveData.allDepartureTimesMs?.length > 0;
@@ -689,6 +697,13 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       } else {
         // Genuinely no live data — timetable estimate
         leg.isTimetableEstimate = true;
+        // V5.6.1: Apply City Loop disruption override to timetable fallback legs.
+        // When live data is unavailable but City Loop is closed, the timetable
+        // destination must reflect actual routing, not scheduled routing.
+        if (leg.type === 'train' && options.cityLoopClosed && leg.requiresCityLoop) {
+          leg.destinationName = 'Flinders Street Station';
+          if (leg.destination) leg.destination.name = 'Flinders Street Station';
+        }
         const estWaitMins = 2;
         const estDepartMins = nowMins + cumulativeMinutes + estWaitMins;
         const estH = Math.floor(estDepartMins / 60) % 24;
@@ -982,6 +997,32 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       }
     }
 
+    // V5.6.1: Disruption-aware rerouting — when a train leg is suspended,
+    // attempt to find an alternate citybound train from a different line.
+    if (baseLeg.type === 'train' && baseLeg.state === 'suspended' && transitData.trains?.length > 0) {
+      const suspendedLine = baseLeg.lineName || '';
+      const altTrains = transitData.trains.filter(t =>
+        t.isLive && t.isCitybound && t.lineName !== suspendedLine &&
+        t.departureTimeMs && t.departureTimeMs >= arrivalAtStopMs
+      ).sort((a, b) => a.departureTimeMs - b.departureTimeMs);
+      if (altTrains.length > 0) {
+        const alt = altTrains[0];
+        baseLeg.state = 'diverted';
+        baseLeg.status = 'diverted';
+        baseLeg.lineName = alt.lineName;
+        baseLeg.isLive = true;
+        baseLeg.isTimetableEstimate = false;
+        baseLeg.alertText = `${suspendedLine.toUpperCase()} SUSPENDED → ${alt.lineName}`;
+        const altDestName = alt._cityLoopOverride ? alt.destination : (alt.destination || baseLeg.destinationName);
+        baseLeg.destinationName = altDestName;
+        if (baseLeg.destination) baseLeg.destination.name = altDestName;
+        actualDepartureMs = alt.departureTimeMs;
+        minutesToDeparture = Math.round((alt.departureTimeMs - nowMs) / 60000);
+        baseLeg.nextDepartures = altTrains.slice(0, 3).map(t => Math.round((t.departureTimeMs - nowMs) / 60000));
+        baseLeg.nextDepartureTimesMs = altTrains.slice(0, 3).map(t => t.departureTimeMs);
+      }
+    }
+
     // Convert timetable nextDepartureTimesMs to nextDepartures (minutes from now)
     // when live data matching didn't run (timetable fallback path)
     if (isTransitLeg && !baseLeg.nextDepartures && baseLeg.nextDepartureTimesMs?.length > 0) {
@@ -1095,7 +1136,8 @@ function buildLegTitle(leg) {
       return `Coffee at ${cafeName}`;
     }
     case 'train': {
-      const destName = leg.destination?.name || 'City';
+      // V5.5.18: Prefer GTFS-RT destination (accounts for disruption overrides)
+      const destName = leg.destinationName || leg.destination?.name || 'City';
       const line = leg.lineName || '';
       return line ? `${line} to ${destName}` : `Train to ${destName}`;
     }
@@ -1216,6 +1258,11 @@ function filterCityLoopPreference(dirMatches) {
   ]);
 
   const cityLoopTrains = dirMatches.filter(d => {
+    // V5.6.3: When City Loop is closed and departure has been overridden to
+    // Flinders Street, accept it — it's the best available option. Without this,
+    // the passesCityLoop:false override from Fix 1 causes this filter to reject
+    // ALL citybound trains, forcing timetable fallback with wrong destination.
+    if (d._cityLoopOverride) return true;
     // V5.4.9: Use trip-scan flag as primary — scans ALL stops in the trip for
     // City Loop platforms. More reliable than finalStop which may be the outbound
     // terminus (past City Loop) for trains that PASS THROUGH the Loop.
@@ -1538,13 +1585,35 @@ function filterUnavailableTransitLegs(route, transitData, walkSpeedKmPerHour = 4
       const isLastService = routeDepartures && routeDepartures.length === 1;
 
       if (!hasDepartures) {
-        // V15.0: No live GTFS-RT data — keep transit leg with timetable estimate.
-        // The leg retains its original type and duration so journey time remains
-        // accurate. The renderer shows "Scheduled ~Xmin" via isTimetableEstimate.
-        leg.dataSource = 'timetable';
-        leg.isLive = false;
-        leg.isTimetableEstimate = true;
-        removedTypes.push(leg.type);
+        // V5.6.2: Check if raw feed has GTFS-RT data for this mode.
+        // If so, populate nextDepartures from the preferred route's feed departures
+        // so the subtitle shows "Next: X min LIVE" instead of "Scheduled ~X min".
+        const rawFeed = leg.type === 'tram' ? transitData.trams :
+                       leg.type === 'bus' ? transitData.buses :
+                       leg.type === 'train' ? transitData.trains : [];
+        const feedHasLive = rawFeed?.some(d => d.isLive && d.source?.startsWith('gtfs-rt'));
+        if (feedHasLive) {
+          leg.dataSource = 'live-no-route-match';
+          leg.isLive = true;
+          leg.isTimetableEstimate = false;
+          leg.hasLiveData = true;
+          // Populate nextDepartures from preferred route in the raw feed
+          const nowMs = Date.now();
+          const prefRoute = leg.routeNumber;
+          const liveDeps = rawFeed.filter(d =>
+            d.isLive && d.departureTimeMs && d.departureTimeMs > nowMs &&
+            (!prefRoute || !d.routeNumber || d.routeNumber.toString() === prefRoute.toString())
+          ).sort((a, b) => a.departureTimeMs - b.departureTimeMs);
+          if (liveDeps.length > 0) {
+            leg.nextDepartures = liveDeps.slice(0, 3).map(d => Math.round((d.departureTimeMs - nowMs) / 60000));
+            leg.nextDepartureTimesMs = liveDeps.slice(0, 3).map(d => d.departureTimeMs);
+          }
+        } else {
+          leg.dataSource = 'timetable';
+          leg.isLive = false;
+          leg.isTimetableEstimate = true;
+          removedTypes.push(leg.type);
+        }
       } else {
         // Live data is available - mark the leg accordingly
         leg.dataSource = 'live';
@@ -2236,6 +2305,7 @@ export default async function handler(req, res) {
     const findOverride = (type) => Object.values(stationOverrides).find(o => o?.type === type);
     const trainOverride = findOverride('train');
     const tramOverride = findOverride('tram');
+    const tramRouteOverride = tramOverride?.routeNumber ? String(tramOverride.routeNumber) : null;
     const busOverride = findOverride('bus');
     if (trainOverride?.id) {
       trainStopId = trainOverride.id;
@@ -2314,8 +2384,6 @@ export default async function handler(req, res) {
     // Load preferred tram route for consistent display (pinned by user)
     let preferredTramRoute = null;
     try { preferredTramRoute = await getPreferredTramRoute(); } catch (e) {}
-
-    console.log(`[CommuteCompute] Stop detection: train=${trainStopId}, tram=${tramStopId}, bus=${busStopId}, source=${stopDetectionSource}, preferredTram=${preferredTramRoute}`);
 
     // Auto-detect work-side stop IDs for train destination resolution
     let workTrainStopId = null;
@@ -2455,7 +2523,6 @@ export default async function handler(req, res) {
         return originParts.length > 0 && originParts.every(part => nameLower.includes(part));
       });
       if (matchingEntry && matchingEntry[0] !== tramStopId) {
-        console.log(`[CommuteCompute] Tram stop re-detected from route leg: ${tramStopId} → ${matchingEntry[0]} (${matchingEntry[1]})`);
         tramStopId = matchingEntry[0];
       }
     }
@@ -2513,6 +2580,20 @@ export default async function handler(req, res) {
       }
     }
 
+    // V5.6.5: Admin-configured route override takes absolute priority over KV auto-detection.
+    // KV auto-detection can lock to the wrong route when coord-proximity finds routes from
+    // nearby parallel streets. Admin override allows user to explicitly pin the correct service.
+    // When no admin override is set, falls back to KV auto-detected route (Fix 18 behaviour).
+    const effectiveTramRoute = tramRouteOverride || preferredTramRoute;
+    if (effectiveTramRoute) {
+      tramApiOptions.routeNumber = effectiveTramRoute;
+    }
+    // Sync KV to admin override when set — prevents stale auto-detected KV from conflicting
+    if (tramRouteOverride && tramRouteOverride !== preferredTramRoute) {
+      setPreferredTramRoute(tramRouteOverride).catch(() => {});
+      preferredTramRoute = tramRouteOverride;
+    }
+
     const [trains, trams, buses, ferries, weather, metroDisruptions, tramDisruptions, busDisruptions, ferryDisruptions] = await Promise.all([
       skipLiveData ? Promise.resolve([]) : fetchWithRetry(() => getDepartures(trainStopId, 0, trainApiOptions), 'screen-train'),
       skipLiveData ? Promise.resolve([]) : fetchWithRetry(() => getDepartures(tramStopId, 1, tramApiOptions), 'screen-tram'),
@@ -2528,6 +2609,27 @@ export default async function handler(req, res) {
 
     const transitData = { trains, trams, buses, ferries, disruptions };
 
+    // V5.5.18: Detect City Loop disruption from service alerts.
+    // V5.6.1: Hoisted to outer scope so buildJourneyLegs can use it for timetable fallback.
+    const cityLoopClosed = userState === 'VIC' && disruptions.length > 0 && disruptions.some(d => {
+      const desc = (d.description || '').toLowerCase();
+      const header = (d.headerText || d.title || '').toLowerCase();
+      const text = desc + ' ' + header;
+      return (text.includes('not via the city loop') ||
+              text.includes('direct to flinders') ||
+              text.includes('not via city loop'));
+    });
+    // Apply City Loop disruption overrides to live train departures.
+    if (cityLoopClosed && trains.length > 0) {
+      for (const dep of trains) {
+        if (dep.isCitybound && dep.passesCityLoop && !dep.isMetroTunnel) {
+          dep.passesCityLoop = false;
+          dep.destination = 'Flinders Street Station';
+          dep._cityLoopOverride = true;
+        }
+      }
+    }
+
     // V5.5.0: Extract tram route number from live departures when not already known.
     // Prevents title flipping between "Route 58" (live) and "Tram" (scheduled fallback).
     // With feed caching, scheduled fallback is rare — but this ensures route name
@@ -2540,8 +2642,15 @@ export default async function handler(req, res) {
     // count is a service characteristic, not a distance measurement.
     if (trams.length > 0) {
       let selectedRoute = null;
-      // Priority 0: Frequency-based selection from all detected routes at intersection
-      if (detectedTramRoutes.length > 0) {
+      // V5.6.5: Admin override is authoritative; KV auto-detection is fallback.
+      // Admin-configured route (tramRouteOverride) always wins. When no admin override,
+      // KV-locked route is used (same non-determinism protection as before).
+      const authorityRoute = tramRouteOverride || preferredTramRoute;
+      if (authorityRoute) {
+        selectedRoute = authorityRoute;
+      }
+      // Frequency-based detection: only when no locked route or locked route unavailable
+      if (!selectedRoute && detectedTramRoutes.length > 0) {
         let bestRoute = null;
         let bestCount = 0;
         for (const route of detectedTramRoutes) {
@@ -2553,11 +2662,9 @@ export default async function handler(req, res) {
         }
         if (bestRoute) {
           selectedRoute = bestRoute;
-          // Sync Redis to the frequency-winner for stable fallback
-          if (!preferredTramRoute || preferredTramRoute.toString() !== bestRoute.toString()) {
-            setPreferredTramRoute(bestRoute).catch(() => {});
-            preferredTramRoute = bestRoute;
-          }
+          // Store to KV for persistence across calls
+          setPreferredTramRoute(bestRoute).catch(() => {});
+          preferredTramRoute = bestRoute;
         }
       }
       // Priority 1: Route engine's planned route
@@ -2585,6 +2692,20 @@ export default async function handler(req, res) {
         if (!preferredTramRoute) {
           setPreferredTramRoute(selectedRoute).catch(() => {});
           preferredTramRoute = selectedRoute;
+        }
+        // V5.6.1: Filter trams array to only the selected route's departures.
+        // Coord-proximity returns departures from many routes at the same intersection.
+        // Without filtering, findMatchingDepartures() may pick a different route's
+        // first departure on each API call, causing route flipping on the display.
+        const routeFiltered = trams.filter(t =>
+          t.routeNumber && t.routeNumber.toString() === selectedRoute.toString()
+        );
+        if (routeFiltered.length > 0) {
+          // Preserve _feedInfo metadata before replacing array contents
+          const feedInfo = trams._feedInfo;
+          trams.length = 0;
+          routeFiltered.forEach(t => trams.push(t));
+          if (feedInfo) trams._feedInfo = feedInfo;
         }
       }
     }
@@ -2776,7 +2897,7 @@ export default async function handler(req, res) {
     // Build journey legs with cumulative timing (Data Model v1.18)
     // V13.6: Pass locations for deriving proper stop/station names
     // V13.6: Pass stopIds for actual stop name lookup via GTFS_STOP_NAMES
-    const rawJourneyLegs = buildJourneyLegs(effectiveRoute, transitData, coffeeDecision, now, locations, { trainStopId, tramStopId, busStopId, workTrainStopId }, userState, preferredTramRoute, { isTomorrowCommute: earlyIsTomorrowCommute });
+    const rawJourneyLegs = buildJourneyLegs(effectiveRoute, transitData, coffeeDecision, now, locations, { trainStopId, tramStopId, busStopId, workTrainStopId }, userState, preferredTramRoute, { isTomorrowCommute: earlyIsTomorrowCommute, cityLoopClosed });
     // Section 7.5.1: Merge consecutive walk legs after ALL filtering
     const journeyLegs = mergeConsecutiveWalkLegs(rawJourneyLegs);
     const totalMinutes = calculateTotalMinutes(journeyLegs);
@@ -2871,15 +2992,9 @@ export default async function handler(req, res) {
       isCommuteDay,
       hasLiveData: hasAnyLiveData
     });
-    // Confidence is not meaningful for tomorrow's commute — suppress
-    if (isTomorrowCommute) {
-      confidence.score = null;
-      confidence.label = null;
-      confidence.context = null;
-      confidence.statusText = null;
-      confidence.resilience = null;
-      confidence.resilienceDetail = null;
-    }
+    // V5.5.18: Confidence is always calculated when live data is present.
+    // Journey legs always show live GTFS-RT data regardless of commute window.
+    // The commute window only gates the CoffeeDecision engine.
     // V14.0: Calculate Lifestyle Context Suggestions
     const lifestyleEngine = new LifestyleContext();
     const lifestyle = lifestyleEngine.calculate({
@@ -3070,13 +3185,13 @@ export default async function handler(req, res) {
       alt_transit_bike: altTransit.bike,
       alt_transit_distance_km: altTransit.distanceKm,
       alt_transit_is_peak: altTransit.isPeak,
-      // V15.0: Lifestyle Mindset — suppress in tomorrow mode (today's assessment is not meaningful)
-      mindset_stress: isTomorrowCommute ? null : mindset.stressLevel,
-      mindset_display: isTomorrowCommute ? null : mindset.stressDisplay,
-      mindset_steps: isTomorrowCommute ? null : mindset.stepsDisplay,
-      mindset_feels_like: isTomorrowCommute ? null : mindset.feelsLikeDisplay,
-      mindset_resilience: isTomorrowCommute ? null : mindset.resilienceDisplay,
-      mindset_resilience_level: isTomorrowCommute ? null : mindset.resilienceLevel,
+      // V5.5.18: Mindset always shown — commute window only gates CoffeeDecision
+      mindset_stress: mindset.stressLevel,
+      mindset_display: mindset.stressDisplay,
+      mindset_steps: mindset.stepsDisplay,
+      mindset_feels_like: mindset.feelsLikeDisplay,
+      mindset_resilience: mindset.resilienceDisplay,
+      mindset_resilience_level: mindset.resilienceLevel,
     };
 
     console.log('[CommuteCompute] _liveDataDiag:', JSON.stringify(dashboardData._liveDataDiag));

@@ -3,22 +3,26 @@
 // Part of the Commute Compute System™ — https://gitlab.com/angusbergman/commute-compute-system
 
 /**
- * CommuteCompute™ Engine v4.0
+ * CommuteCompute™ Engine v4.1
  * Part of the Commute Compute System™
  *
- * GTFS coordinate-based stop detection (226 metro + 1637 tram + 4151 bus stops),
- * runtime line verification for alighting stops, no hardcoded station fallbacks,
- * shared haversine utility, real-time multi-modal journey planning with Metro
- * Tunnel citybound detection, direction-based train filtering, route-aware transit
- * filtering, transit-to-walk conversion, suburb extraction.
+ * Multi-state GTFS-RT support (VIC/NSW/QLD live, SA/WA/TAS/NT/ACT timetable fallback),
+ * coordinate-based stop detection via haversine distance (226 VIC metro + 1637 tram +
+ * 4151 bus + expanded fallback stops for all states), findNearestStops for proximity
+ * ranking, state-aware suburb-to-stop mappings for all capital cities, graceful
+ * no-GTFS-RT degradation, runtime line verification for alighting stops, real-time
+ * multi-modal journey planning, Metro Tunnel citybound detection (VIC), direction-based
+ * train filtering, route-aware transit filtering, transit-to-walk conversion, suburb
+ * extraction, Departure Confidence scoring, Sleep Optimiser timing, Alt Transit
+ * discovery, Lifestyle Context and Mindset analysis.
  *
  * Six Interconnected Intelligence Engines:
  *   CommuteCompute™ — Core journey orchestration
  *   CoffeeDecision™ — Cafe proximity and timing analysis
- *   DepartureConfidence™ — Real-time departure reliability scoring
- *   LifestyleContext™ — Weather-aware lifestyle suggestions and Mindset analysis
- *   SleepOptimiser™ — Optimal departure time based on sleep patterns
- *   AltTransit™ — Alternative transport route discovery and recommendation
+ *   DepartureConfidence™ (Departure Confidence) — Real-time departure reliability scoring
+ *   LifestyleContext™ (Lifestyle Context) — Weather-aware lifestyle suggestions and Mindset analysis
+ *   SleepOptimiser™ (Sleep Optimiser) — Optimal departure time based on sleep patterns
+ *   AltTransit™ (Alt Transit) — Alternative transport route discovery and recommendation
  *
  * Per DEVELOPMENT-RULES.md Section 24: Single source of truth for journey calculations.
  * 
@@ -2089,6 +2093,14 @@ export class CommuteCompute {
         if (!leg.routeNumber && match.routeNumber) {
           leg.routeNumber = match.routeNumber;
         }
+        // V5.5.18: Override destination from actual GTFS-RT departure data.
+        // Ensures journey title reflects real routing (e.g. when disruptions
+        // reroute trains from City Loop stations to Flinders Street).
+        if (match.destination && leg.type === 'train') {
+          leg.destinationName = match.destination === 'City'
+            ? (match.passesCityLoop === false ? 'Flinders Street Station' : (leg.destination?.name || 'City'))
+            : match.destination;
+        }
         
         // v1.42: Calculate departTime in 12-hour format (per Dev Rules Section 12.2)
         if (match.departureTimeMs) {
@@ -2102,10 +2114,17 @@ export class CommuteCompute {
         }
       }
       
-      // v1.42: Populate nextDepartures array for "Next: X, Y min" display
-      if (modeData && modeData.length >= 2) {
-        leg.nextDepartures = modeData.slice(0, 3).map(d => d.minutes);
-        leg.nextDepartureTimesMs = modeData.slice(0, 3)
+      // V5.5.18: Populate nextDepartures with the next 3 CATCHABLE live departures.
+      // Filter to departures the user can actually catch given cumulative walk/transfer time.
+      // Uses departTimeMs (when user arrives at stop) as the catchability threshold.
+      if (modeData && modeData.length > 0) {
+        const arrivalAtStopMs = departTimeMs;
+        const catchable = modeData.filter(d =>
+          d.departureTimeMs && d.departureTimeMs >= arrivalAtStopMs
+        );
+        const nextDeps = catchable.length > 0 ? catchable.slice(0, 3) : modeData.slice(0, 3);
+        leg.nextDepartures = nextDeps.map(d => d.minutes);
+        leg.nextDepartureTimesMs = nextDeps
           .filter(d => d.departureTimeMs)
           .map(d => d.departureTimeMs);
       }
@@ -2134,17 +2153,28 @@ export class CommuteCompute {
   findMatchingDepartures(leg, departures) {
     if (!departures?.length) return [];
 
-    const matches = departures.filter(d => {
-      if (leg.routeNumber && d.routeNumber) {
-        return d.routeNumber.toString() === leg.routeNumber.toString();
-      }
-      // Departures are already segregated by mode in trains/trams/buses arrays,
-      // so match any departure if no specific route number to filter by
-      return true;
-    });
+    // V5.5.18: Route-locked matching for stability.
+    // When leg has a configured routeNumber, filter strictly by it.
+    // When leg has no routeNumber (coord-proximity results with mixed routes),
+    // lock to the first catchable departure's route for consistency within
+    // a single API call. This prevents route flipping between refreshes.
+    if (leg.routeNumber && String(leg.routeNumber).trim()) {
+      const routeMatches = departures.filter(d =>
+        d.routeNumber && d.routeNumber.toString() === leg.routeNumber.toString()
+      );
+      return routeMatches.sort((a, b) => (a.minutes || 0) - (b.minutes || 0));
+    }
 
-    // Sort by departure time
-    return matches.sort((a, b) => (a.minutes || 0) - (b.minutes || 0));
+    // No configured route — sort all by time, then lock to first departure's route
+    const sorted = [...departures].sort((a, b) => (a.minutes || 0) - (b.minutes || 0));
+    if (sorted.length > 0 && sorted[0].routeNumber) {
+      const lockedRoute = sorted[0].routeNumber.toString();
+      return sorted.filter(d =>
+        d.routeNumber && d.routeNumber.toString() === lockedRoute
+      );
+    }
+
+    return sorted;
   }
 
   /**
