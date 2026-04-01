@@ -2882,8 +2882,8 @@ export default async function handler(req, res) {
         return name.split(',')[0].trim();
       })(),
       cafe_is_open: kvPrefs?.addresses?.cafe ? cafeIsOpen : null,
-      cafe_wait_time: coffeeDecision.canGet ? (coffeeDecision.commute?.makeCoffee || 3) : null,
-      cafe_busyness: cafeIsBusy ? 'busy' : (cafeIsQuiet ? 'quiet' : 'moderate'),
+      cafe_wait_time: coffeeDecision?.canGet ? (coffeeDecision?.commute?.makeCoffee || 3) : null,
+      cafe_busyness: coffeeDecision?.busyLevel || 'quiet',
       // V15.0: Transit availability notice (e.g., "TRAM USING TIMETABLE DATA")
       transit_notice: transitNotice,
       timetable_types: removedTypes.length > 0 ? removedTypes : null,
