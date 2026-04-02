@@ -44,6 +44,32 @@ const STATE_TIMEZONES = {
   'TAS': 'Australia/Hobart', 'NT': 'Australia/Darwin'
 };
 
+// Lines that terminate at Flinders Street WITHOUT entering City Loop.
+// Used as fallback when GTFS-RT trip-scan data is unavailable.
+// These lines must be excluded from City Loop filtering to prevent showing
+// "Sandringham to Parliament" when Sandringham doesn't serve Parliament.
+const FLINDERS_ONLY_LINE_CODES = new Set([
+  'SHM',  // Sandringham
+  'ALM',  // Alamein
+  'GWY',  // Glen Waverley
+]);
+
+/**
+ * Check if a train departure likely serves City Loop stations.
+ * Uses trip-level passesCityLoop flag when available, falls back to line code mapping.
+ * @param {Object} departure - Train departure object from GTFS-RT
+ * @returns {boolean}
+ */
+function isLikelyCityLoopTrain(departure) {
+  if (departure.isMetroTunnel) return false;
+  if (departure.passesCityLoop === true) return true;
+  if (departure.passesCityLoop === false) return false;
+  // Fallback: check line code against known Flinders-only lines
+  const lineCode = departure.routeId?.match(/vic-02-([A-Z]+)/)?.[1];
+  if (lineCode && FLINDERS_ONLY_LINE_CODES.has(lineCode)) return false;
+  return true;  // Unknown line — assume City Loop (conservative for display)
+}
+
 /**
  * Get local time (as a Date object)
  * V13.6 FIX: Return actual Date object with correct timestamp
@@ -577,7 +603,7 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
           ) || [];
           // For trains requiring City Loop: exclude Metro Tunnel trains from padding
           if ((leg.type === 'train' || leg.type === 'vline') && leg.requiresCityLoop && rawDirDeps.length > 0) {
-            const loopFiltered = rawDirDeps.filter(d => !d.isMetroTunnel);
+            const loopFiltered = rawDirDeps.filter(d => isLikelyCityLoopTrain(d));
             if (loopFiltered.length > 0) rawDirDeps = loopFiltered;
           }
           for (const d of rawDirDeps) {
@@ -818,6 +844,36 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       routeNumber: leg.routeNumber || liveData?.routeNumber,
       destinationName: leg.destination?.name || null
     };
+
+    // Multi-service display: when multiple distinct lines/routes serve the same stop pair,
+    // show combined title with abbreviations for concise e-ink display
+    if (isTransitLeg && liveData?.allDepartures?.length > 0) {
+      const destName = leg.destination?.name || 'City';
+      if (leg.type === 'train' || leg.type === 'vline') {
+        // Filter to only trains that can reach the destination
+        const reachableDeps = leg.requiresCityLoop
+          ? liveData.allDepartures.filter(d => isLikelyCityLoopTrain(d))
+          : liveData.allDepartures;
+        // Trains: use line code abbreviations (FKN/CRB/PKM)
+        const distinctLines = [...new Set(reachableDeps.map(d => d.lineName).filter(Boolean))];
+        if (distinctLines.length >= 2) {
+          const abbreviations = [...new Set(
+            reachableDeps.map(d => d.routeId?.match(/vic-02-([A-Z]+)/)?.[1]).filter(Boolean)
+          )];
+          const abbrevStr = abbreviations.length > 0 ? abbreviations.join('/') : distinctLines.join('/');
+          baseLeg.title = `${abbrevStr} to ${destName}`;
+          baseLeg.lineName = abbrevStr;
+        }
+      } else if (leg.type === 'tram' || leg.type === 'bus') {
+        // Trams/buses: use route numbers (58/59 or Bus 200/201)
+        const distinctRoutes = [...new Set(liveData.allDepartures.map(d => d.routeNumber).filter(Boolean))];
+        if (distinctRoutes.length >= 2) {
+          const prefix = leg.type === 'tram' ? 'Route' : 'Bus';
+          baseLeg.title = `${prefix} ${distinctRoutes.join('/')} to ${destName}`;
+          baseLeg.routeNumber = distinctRoutes.join('/');
+        }
+      }
+    }
 
     // Handle coffee leg state based on coffee decision
     // V16.0: Coffee subtitle — renderer draws coffee icon, no [OK] text prefix
@@ -1330,7 +1386,7 @@ function filterCityLoopPreference(dirMatches) {
       const nearestDirectMs = Math.min(...nonLoopNonTunnel.map(d => d.departureTimeMs || Infinity));
       if (nearestDirectMs < Infinity && (nearestLoopMs - nearestDirectMs) > 30 * 60000) {
         // Direct service is >30 min sooner — include all non-Metro-Tunnel trains.
-        return dirMatches.filter(d => !d.isMetroTunnel);
+        return dirMatches.filter(d => isLikelyCityLoopTrain(d));
       }
     }
     // Include ALL City Loop trains (multiple lines serve City Loop stations).
@@ -1349,7 +1405,7 @@ function filterCityLoopPreference(dirMatches) {
   // has upcoming stops, not the full trip). Fall back to non-Metro-Tunnel citybound
   // trains — these are almost certainly City Loop trains (Metro Tunnel lines are the
   // only citybound trains that DON'T serve City Loop, and they have isMetroTunnel: true).
-  const likelyCityLoop = dirMatches.filter(d => !d.isMetroTunnel);
+  const likelyCityLoop = dirMatches.filter(d => isLikelyCityLoopTrain(d));
   if (likelyCityLoop.length > 0) {
     return likelyCityLoop;
   }
@@ -1445,7 +1501,8 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
     const existingMs = new Set(matchedDepartures.map(d => d.departureTimeMs));
     const supplements = departures
       .filter(d => d.departureTimeMs && !existingMs.has(d.departureTimeMs) &&
-        (leg.isCitybound === undefined || d.isCitybound === leg.isCitybound))
+        (leg.isCitybound === undefined || d.isCitybound === leg.isCitybound) &&
+        (!leg.requiresCityLoop || isLikelyCityLoopTrain(d)))
       .sort((a, b) => (a.departureTimeMs || 0) - (b.departureTimeMs || 0));
     for (const s of supplements) {
       if (matchedDepartures.length >= 3) break;
@@ -1457,20 +1514,26 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
   // Clone primary to avoid mutating shared transitData objects
   const primary = { ...matchedDepartures[0] };
   if (primary) {
-    // V16.0: Collect ALL departure times — the catchability filter in buildJourneyLegs
-    // selects the ones the user can actually catch. Previously limited to first 5, which
-    // caused timetable fallback when all 5 nearest trains departed before user arrival.
-    const depTimes = [];
+    // Collect ALL departure times from matched departures AND supplement from full
+    // direction-filtered feed. Ensures trains that passed City Loop filtering but
+    // were missed by findMatchingDeparture's initial selection still appear.
+    const depTimes = new Set();
     for (const d of matchedDepartures) {
       if (d.departureTimeMs) {
-        depTimes.push(d.departureTimeMs);
+        depTimes.add(d.departureTimeMs);
       } else if (typeof d.minutes === 'number') {
-        depTimes.push(nowMs + (d.minutes * 60000));
+        depTimes.add(nowMs + (d.minutes * 60000));
       }
     }
-    // V5.6.9: Sort departure times — matchedDepartures order depends on feed/tier
-    // concatenation in opendata-client.js, not departure time.
-    primary.allDepartureTimesMs = depTimes.sort((a, b) => a - b);
+    // Supplement from all direction-matching departures in the raw feed
+    for (const d of departures) {
+      if (!d.departureTimeMs || !d.isLive) continue;
+      if (leg.isCitybound !== undefined && d.isCitybound !== leg.isCitybound) continue;
+      if (leg.requiresCityLoop && !isLikelyCityLoopTrain(d)) continue;
+      if (leg.requiresMetroTunnel && !d.isMetroTunnel) continue;
+      depTimes.add(d.departureTimeMs);
+    }
+    primary.allDepartureTimesMs = [...depTimes].sort((a, b) => a - b);
     // Store all departure objects for route lookup — when catchability selects a
     // departure from a different route (multi-route tram), we need to find its
     // routeNumber and lineName to update the leg title dynamically.
@@ -3111,6 +3174,9 @@ export default async function handler(req, res) {
       arrive_by: displayArrival,
       _calculatedArrival: calculatedArrival,  // V13.6: Stable arrival time from journey calculation
       total_minutes: totalMinutes,
+      // Pure travel duration (walk + ride + walk) without current departure wait inflation.
+      // Used by renderer for tomorrow's leave-by calculation.
+      _journeyDurationMins: journeyLegs.filter(l => l.state !== 'skip').reduce((sum, l) => sum + (l.journeyContribution || 0), 0),
       leave_in_minutes: leaveInMinutes != null && leaveInMinutes > 0 ? leaveInMinutes : null,
       isCommuteDay,
       hasExplicitArrivalTarget: !!(kvPrefs?.journey?.arrivalTime),

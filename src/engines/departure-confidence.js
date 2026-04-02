@@ -111,7 +111,7 @@ class DepartureConfidence {
 
     const label = this._getLabel(score);
     const resilience = this._calcResilience(legs);
-    const context = this._generateContext({ legs, weather, disruptionImpact, weatherImpact, timeBuffer, bufferMins, hasLiveData, isTomorrowCommute });
+    const context = this._generateContext({ legs, weather, disruptionImpact, weatherImpact, timeBuffer, bufferMins, hasLiveData, isTomorrowCommute, currentMins });
     const resilienceDetail = this._generateResilienceDetail(legs);
 
     return {
@@ -318,8 +318,11 @@ class DepartureConfidence {
     return 'UNLIKELY';
   }
 
-  _generateContext({ legs, weather, disruptionImpact, weatherImpact, timeBuffer, bufferMins, hasLiveData, isTomorrowCommute }) {
-    // Priority 1: Disruption
+  _generateContext({ legs, weather, disruptionImpact, weatherImpact, timeBuffer, bufferMins, hasLiveData, isTomorrowCommute, currentMins }) {
+    // Context always reflects the CURRENT time of day — not gated by commute window.
+    // Only CoffeeDecision is affected by the commute window.
+
+    // Priority 1: Disruption (always shown regardless of time)
     if (disruptionImpact <= -40) return 'Service suspended';
     if (disruptionImpact <= -15) return 'Service delayed';
     if (disruptionImpact < 0) return 'Active service alert';
@@ -327,18 +330,35 @@ class DepartureConfidence {
     // Priority 2: No live data
     if (!hasLiveData) return 'No live data — timetable only';
 
-    // Priority 3: Weather
+    // Priority 3: Weather (always shown regardless of time)
     const condition = (weather?.condition || '').toLowerCase();
     if (condition.includes('storm') || condition.includes('thunder')) {
-      return bufferMins < 10 ? 'Storm forecast, tight schedule' : 'Storm forecast';
+      return 'Storm forecast';
     }
     if (weatherImpact < 0 && condition.includes('rain')) {
       return 'Rain forecast';
     }
 
-    // Priority 4: Time/frequency
-    // Late messaging only fires within the commute window — suppress when planning tomorrow's commute
-    if (bufferMins < 0) return isTomorrowCommute ? 'Tomorrow — live data available' : 'Running late — no buffer';
+    // Priority 4: Time-of-day aware service context
+    const hour = Math.floor((currentMins || 0) / 60);
+    const transitLegs = (legs || []).filter(l => l && l.type !== 'walk');
+    const allFrequent = transitLegs.every(l => (l.nextDepartures || []).length >= 3);
+
+    if (hour >= 22 || hour < 5) {
+      return transitLegs.length > 0 ? 'Late night services' : 'Limited services';
+    }
+    if (hour >= 19) {
+      return allFrequent ? 'Evening services running' : 'Evening — reduced frequency';
+    }
+    if (hour >= 10 && hour < 16) {
+      return allFrequent ? 'Off-peak services running' : 'Off-peak — reduced frequency';
+    }
+    if (hour >= 16 && hour < 19) {
+      return allFrequent ? 'Peak services running' : 'Afternoon peak';
+    }
+
+    // Morning commute hours (5am-10am): show buffer-based context
+    if (bufferMins < 0) return 'Running late — no buffer';
     if (bufferMins < 5) return 'Tight schedule';
     if (timeBuffer >= 25) return 'Comfortable buffer, frequent services';
     return 'On schedule';

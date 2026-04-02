@@ -274,6 +274,13 @@ const feedCache = new Map();
 const FEED_CACHE_TTL_MS = 75000; // 75 seconds — balances freshness with API rate limits
 
 async function fetchGtfsRt(mode, feed, options = {}, state = 'VIC') {
+  const cacheKey = `${state}-${mode}-${feed}`;
+  const cached = feedCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp < FEED_CACHE_TTL_MS)) {
+    console.log(`[OpenData] Cache hit for ${state}/${mode}/${feed} (${Math.round((Date.now() - cached.timestamp) / 1000)}s old)`);
+    return cached.data;
+  }
+
   if (options.apiKey) {
     // Defensive: handle both string and { devId, apiKey } object formats
     // Clear stale runtimeApiKey to prevent warm-invocation key caching (FIX-4)
@@ -347,6 +354,11 @@ async function fetchGtfsRt(mode, feed, options = {}, state = 'VIC') {
 
   } catch (error) {
     console.error(`[OpenData] GTFS-RT error for ${mode}/${feed}: ${error.message}`);
+    // Return stale cached data on failure — better than no data
+    if (cached?.data) {
+      console.log(`[OpenData] Returning stale cache for ${state}/${mode}/${feed} (${Math.round((Date.now() - cached.timestamp) / 1000)}s old)`);
+      return cached.data;
+    }
     throw error;
   }
 }
@@ -458,13 +470,38 @@ export async function getDepartures(stopId, routeType, options = {}) {
           // Primary coord result — push all directly
           coordDepartures.forEach(d => departures.push(d));
         } else {
-          // Supplement sparse Tier 1 results — dedup merge (60s window)
+          // Supplement sparse Tier 1 results — dedup merge (180s window).
+          // Coord-proximity estimates are derived from averaging adjacent stop times
+          // and inherently have 2-4 min drift. Use a 3-minute dedup window so coord
+          // departures that approximate an existing stop-level match are dropped.
           for (const cd of coordDepartures) {
-            if (!departures.some(d => Math.abs(d.departureTimeMs - cd.departureTimeMs) < 60000)) {
+            if (!departures.some(d => Math.abs(d.departureTimeMs - cd.departureTimeMs) < 180000)) {
               departures.push(cd);
             }
           }
         }
+      }
+    }
+
+    // V5.5.1: When coord-proximity found partial results (< 3 departures), also run
+    // all-trips-scan and merge. Coord-proximity and all-trips-scan use complementary
+    // matching: coord-proximity matches feed stop IDs → static coordinates (trailing-
+    // numeric), while all-trips-scan matches the user's stop ID → feed trip stop lists
+    // (lenient trailing-digit). Merging captures trips that one tier missed.
+    if (departures.length > 0 && departures.length < 3 && mode === 'tram' && feedEntityCount > 0) {
+      const scanDepartures = processAllTripsStopSearch(feed, stopId, routeType, state);
+      if (scanDepartures.length > 0) {
+        let merged = 0;
+        for (const sd of scanDepartures) {
+          if (!departures.some(d => Math.abs(d.departureTimeMs - sd.departureTimeMs) < 60000)) {
+            departures.push(sd);
+            merged++;
+          }
+        }
+        if (merged > 0) {
+          console.log(`[OpenData] Coord+scan merge: added ${merged} departures from all-trips-scan for ${mode} stopId=${stopId}`);
+        }
+        cascadeAttempts.push({ tier: 'coord+scan-merge', tried: true, found: scanDepartures.length, merged });
       }
     }
 
@@ -1000,16 +1037,85 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
       continue;
     }
 
-    // Pick the candidate with the earliest future departure (>= 0 min).
-    // For approaching trams, the closest stop may be one already passed (past time),
-    // but the next stop in the sequence has a future time — that's the one we want.
-    // Fall back to closest-by-distance if all candidates are slightly past.
-    const futureCandidates = candidates.filter(c => c.mins >= 0);
-    const best = futureCandidates.length > 0
-      ? futureCandidates.sort((a, b) => a.mins - b.mins || a.dist - b.dist)[0]
-      : candidates.sort((a, b) => a.dist - b.dist)[0];
+    // Bracketing interpolation: instead of picking the nearest reported stop's time,
+    // find the two stops that bracket the target geographically and interpolate.
+    // This produces times within ~1 minute of actual for non-reporting stops.
+    let best = null;
+    let interpolatedSource = false;
 
-    const delay = best.stu.departure?.delay || best.stu.arrival?.delay || 0;
+    // Resolve all STUs in this trip with coordinates for interpolation
+    const resolvedStus = stus
+      .map(stu => {
+        const feedStopId = String(stu.stopId);
+        const coords = coordCache[feedStopId] || (() => {
+          const s = lookupTramStop(feedStopId);
+          coordCache[feedStopId] = s ? { lat: s.lat, lon: s.lon } : null;
+          return coordCache[feedStopId];
+        })();
+        const depTime = stu.departure?.time || stu.arrival?.time;
+        if (!coords || !depTime) return null;
+        const depMs = (depTime.low || depTime) * 1000;
+        return { lat: coords.lat, lon: coords.lon, depMs };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.depMs - b.depMs);
+
+    if (resolvedStus.length >= 2) {
+      // Build cumulative distance along the route
+      let cumDist = 0;
+      const segments = [{ ...resolvedStus[0], cumDist: 0 }];
+      for (let i = 1; i < resolvedStus.length; i++) {
+        cumDist += haversine(resolvedStus[i-1].lat, resolvedStus[i-1].lon, resolvedStus[i].lat, resolvedStus[i].lon);
+        segments.push({ ...resolvedStus[i], cumDist });
+      }
+
+      // Project target stop onto the route's cumulative distance
+      let targetCumDist = 0;
+      let minPerpDist = Infinity;
+      for (let i = 0; i < segments.length - 1; i++) {
+        const segLen = segments[i+1].cumDist - segments[i].cumDist;
+        if (segLen < 1) continue;
+        const distFromA = haversine(segments[i].lat, segments[i].lon, searchLat, searchLon);
+        const distFromB = haversine(segments[i+1].lat, segments[i+1].lon, searchLat, searchLon);
+        const projDist = (distFromA * distFromA - distFromB * distFromB + segLen * segLen) / (2 * segLen);
+        const perpDist = Math.sqrt(Math.max(0, distFromA * distFromA - projDist * projDist));
+        if (perpDist < minPerpDist && projDist >= -50 && projDist <= segLen + 50) {
+          minPerpDist = perpDist;
+          targetCumDist = segments[i].cumDist + Math.max(0, Math.min(segLen, projDist));
+        }
+      }
+
+      // Interpolate if target projects onto route within 500m perpendicular distance
+      if (minPerpDist < 500) {
+        let before = segments[0], after = segments[segments.length - 1];
+        for (let i = 0; i < segments.length - 1; i++) {
+          if (segments[i].cumDist <= targetCumDist && segments[i+1].cumDist >= targetCumDist) {
+            before = segments[i];
+            after = segments[i+1];
+            break;
+          }
+        }
+        const segLen = after.cumDist - before.cumDist;
+        const ratio = segLen > 0 ? (targetCumDist - before.cumDist) / segLen : 0;
+        const interpMs = before.depMs + (after.depMs - before.depMs) * ratio;
+        const interpMins = Math.round((interpMs - nowMs) / 60000);
+        if (interpMins >= -2 && interpMins <= 120) {
+          best = { depMs: interpMs, mins: interpMins, dist: minPerpDist, stu: candidates[0]?.stu || stus[0] };
+          interpolatedSource = true;
+        }
+      }
+    }
+
+    // Fall back to nearest-stop selection when interpolation fails
+    if (!best) {
+      const futureCandidates = candidates.filter(c => c.mins >= 0);
+      best = futureCandidates.length > 0
+        ? futureCandidates.sort((a, b) => a.mins - b.mins || a.dist - b.dist)[0]
+        : candidates.sort((a, b) => a.dist - b.dist)[0];
+    }
+    if (!best) continue;
+
+    const delay = best.stu?.departure?.delay || best.stu?.arrival?.delay || 0;
     const routeId = tripUpdate.trip?.routeId;
     // Prefer headsign for destination — shows actual tram terminus direction
     // rather than line name which is less informative for tram route display
@@ -1027,28 +1133,16 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
       delay: Math.round(delay / 60),
       isDelayed: delay > 60,
       isLive: true,
-      source: 'gtfs-rt-coord',
+      source: interpolatedSource ? 'gtfs-rt-interpolated' : 'gtfs-rt-coord',
       _matchDist: best.dist  // Used for closest-route preference below
     });
   }
 
-  // When no route filter specified, prefer the route with the closest matched stop.
-  // At intersections where multiple tram routes have nearby stops on different
-  // roads, only the closest route's departures are kept — prevents matching a
-  // different route whose stops happen to be within the 500m search radius.
-  if (!targetRouteNumber && departures.length > 0) {
-    const routeDistances = {};
-    for (const d of departures) {
-      const rn = d.routeNumber || d.routeId || 'unknown';
-      if (!(rn in routeDistances) || d._matchDist < routeDistances[rn]) {
-        routeDistances[rn] = d._matchDist;
-      }
-    }
-    const closestRoute = Object.entries(routeDistances).sort((a, b) => a[1] - b[1])[0][0];
-    const filtered = departures.filter(d => (d.routeNumber || d.routeId || 'unknown') === closestRoute);
-    departures.length = 0;
-    filtered.forEach(d => departures.push(d));
-  }
+  // V5.5.0: Removed closest-route filter. When multiple routes serve the same
+  // intersection, ALL routes' departures are returned — provides richer "Next:"
+  // display with departures across alternating routes. The direction filter and
+  // 300m search radius already constrain results adequately. findMatchingDeparture
+  // in commutecompute.js handles route preference when the leg has a route number.
 
   // Clean up internal field before returning
   for (const d of departures) { delete d._matchDist; }
