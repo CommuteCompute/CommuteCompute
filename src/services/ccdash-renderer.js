@@ -1044,8 +1044,12 @@ function getDynamicLegZone(legIndex, totalLegs, legs = null, displayWidth = REF_
 
     const legHeight = baseUnit * legWeights[legIndex - 1];
 
-    // Clamp heights: walk max 40px (scaled), transit/coffee max 80px (scaled)
-    const maxHeight = legWeights[legIndex - 1] === 1 ? Math.round(40 * sy) : Math.round(80 * sy);
+    // Clamp heights — scale max based on leg count to avoid wasted space with few legs.
+    // 5+ legs: tight (walk 40px, transit 80px). 2-3 legs: relaxed (walk 60px, transit 120px).
+    const clampScale = legs.length <= 2 ? 1.5 : legs.length <= 3 ? 1.25 : 1.0;
+    const walkMax = Math.round(40 * clampScale * sy);
+    const transitMax = Math.round(80 * clampScale * sy);
+    const maxHeight = legWeights[legIndex - 1] === 1 ? walkMax : transitMax;
     const finalHeight = Math.min(legHeight, maxHeight);
 
     return { id: `leg${legIndex}`, x: legX, y, w: legW, h: finalHeight };
@@ -2236,7 +2240,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   
   ctx.fillStyle = '#000';
   ctx.textBaseline = 'top';
-  
+
   // v1.32: Weather box position (declared early for coffee box sizing)
   const weatherBoxX = Math.round(620 * sx);
   const weatherBoxY = Math.round(4 * sy);
@@ -2742,12 +2746,14 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     statusText = `\u26A0 ${disruptionText} \u2192 Arrive ${calculatedArrival}`;
     if (totalLegDelay > 0) statusText += ` (+${totalLegDelay} min)`;
   } else if (delayedLegCount > 0 || data.status_type === 'delay') {
-    // Service delays - V13.6: Show which service is delayed
+    // Service delays — show total accumulated delay across all delayed legs
     disruptionType = 'service';
     const delayedLeg = legsForStatus.find(l => l.status === 'delayed' || l.delayMinutes > 0);
-    const delayedService = delayedLeg?.routeNumber ? `${delayedLeg.type?.toUpperCase()} ${delayedLeg.routeNumber}` :
-                           delayedLeg?.lineName || delayedLeg?.type?.toUpperCase() || 'SERVICE';
-    disruptionText = `${delayedService} +${delayedLeg?.delayMinutes || totalLegDelay} MIN`;
+    const delayedService = delayedLegCount > 1
+      ? `${delayedLegCount} DELAYS`
+      : (delayedLeg?.routeNumber ? `${delayedLeg.type?.toUpperCase()} ${delayedLeg.routeNumber}` :
+         delayedLeg?.lineName || delayedLeg?.type?.toUpperCase() || 'SERVICE');
+    disruptionText = `+${totalLegDelay} MIN${delayedLegCount > 1 ? ' TOTAL' : ''}`;
     statusText = `\u26A0 ${delayedService} DELAYED \u2192 Arrive ${calculatedArrival}`;
     if (totalLegDelay > 0) statusText += ` (+${totalLegDelay} min)`;
   } else if (data.status_type === 'diversion' || legsForStatus.some(l => l.status === 'diverted' || l.state === 'diverted')) {
@@ -2762,8 +2768,9 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     if (delayMin > 0) statusText += ` (+${delayMin} min)`;
   } else if (data.isTomorrowCommute) {
     // V16.0: Show LEAVE BY time for tomorrow's commute (more actionable than just target)
-    // Calculate tomorrow morning's departure clock time from target minus journey duration
-    const totalMins = data.total_minutes || 0;
+    // Use pure journey duration (without current departure waits) so off-peak inflation
+    // doesn't push tomorrow's leave time earlier than necessary
+    const totalMins = data._journeyDurationMins || data.total_minutes || 0;
     const targetMinsFromMidnight = (() => {
       const [h, m] = (data.arrive_by || '9:00').split(':').map(Number);
       return h * 60 + (m || 0);
@@ -2947,7 +2954,9 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   // V13.5: Skipped legs (cafe detour when running late) are excluded from timing
   // V13.6: Transit legs show: time to reach stop + live departure time from that point
 
-  const nowMs = Date.now();
+  // Use scenario timestamp for demos so countdowns are relative to the scenario's simulated time,
+  // not the real clock. Live mode doesn't set _scenarioNowMs, so falls through to Date.now().
+  const nowMs = data._scenarioNowMs || Date.now();
   let cumulativeMinutes = 0;
   const departureCountdowns = legs.map((leg, idx) => {
     // V13.5: Skipped legs return 0 and don't contribute to cumulative time
@@ -3112,72 +3121,61 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     // v1.81 FIX: timeBoxW must match actual time box (88*scale not 72*scale)
     // v1.81 FIX: Increased padding from 2px to 4px for reliable stripe clearance
     if (isSuspended || isDiverted) {
-      const pad = Math.max(4, Math.round(4 * scale));  // v1.81: 4px min padding (was 2px)
+      const pad = Math.max(6, Math.round(6 * scale));  // Increased from 4px for reliable stripe clearance
 
-      // Use EXACT same sizes as actual element rendering
-      const numSize = Math.max(16, Math.round(24 * scale));
-      const iconSize = Math.max(20, Math.round(32 * scale));
-      const titleSize = Math.max(12, Math.round(16 * scale));
-      const subtitleSize = Math.max(10, Math.round(12 * scale));
-      const departLabelSize = Math.max(7, Math.round(9 * scale));
-      const departTimeSize = Math.max(10, Math.round(14 * scale));
-      // v1.81: Must match actual timeBoxW at line 2911
+      // Use the SAME eff* sizes as actual element rendering (defined above for this leg)
+      // Previously used hardcoded smaller values that didn't match the rendered text sizes
+      const koNumSize = effNumberSize;
+      const koIconSize = isWalkLeg ? effWalkIconSize : effTransitIconSize;
+      const koTitleSize = effTitleSize;
+      const koSubtitleSize = effSubtitleSize;
+      const koDepartLabelSize = effDepartLabelSize;
+      const koDepartTimeSize = effDepartTimeSize;
       const timeBoxW = Math.max(72, Math.round(88 * scale));
-      const departColW = ['train', 'tram', 'bus', 'vline', 'ferry'].includes(leg.type) && leg.departTime ? 55 : 0;
+      const departColW = isTransitLeg(leg.type) && leg.departTime ? 55 : 0;
 
       ctx.fillStyle = '#FFF';
 
-      // 1. Leg number knockout - exact position match
+      // Leg number and mode icon render over stripes without knockouts —
+      // only text (title/subtitle) and DEPART times get white exclusion zones.
       const numX = zone.x + 6;
-      const numY = zone.y + (zone.h - numSize) / 2;
-      ctx.fillRect(numX - pad, numY - pad, numSize + pad * 2, numSize + pad * 2);
+      const iconX = numX + koNumSize + 6;
 
-      // 2. Icon knockout - exact position match
-      const iconX = numX + numSize + 6;
-      const iconY = zone.y + (zone.h - iconSize) / 2;
-      ctx.fillRect(iconX - pad, iconY - pad, iconSize + pad * 2, iconSize + pad * 2);
-
-      // 3. Title/subtitle knockout - measured text width
-      // v1.81 FIX: Use leg.subtitle (actual rendered text) when available,
-      // not the hardcoded fallback which may be much shorter than the real subtitle
-      const textX = iconX + iconSize + 8;
-      const textBlockH = titleSize + subtitleSize + 4;  // v1.81: match actual 4px gap
+      // Title/subtitle knockout — measured at actual rendered font sizes
+      const textX = iconX + koIconSize + 8;
+      const textBlockH = koTitleSize + koSubtitleSize + 4;
       const textBlockY = zone.y + (zone.h - textBlockH) / 2;
 
       const legTitle = leg.title || getLegTitle(leg);
-      ctx.font = `bold ${titleSize}px Inter, sans-serif`;
+      ctx.font = `bold ${koTitleSize}px Inter, sans-serif`;
       const titleW = ctx.measureText(legTitle).width;
 
-      // v1.81: Use the ACTUAL subtitle that will be rendered, not a shorter fallback
       let subtitleText;
       if (leg.subtitle) {
         subtitleText = leg.subtitle;
       } else if (isSuspended) {
-        subtitleText = `SUSPENDED — ${leg.reason || leg.cancelReason || 'Service disruption'}`;
+        subtitleText = `SUSPENDED \u2014 ${leg.reason || leg.cancelReason || 'Service disruption'}`;
       } else {
         subtitleText = leg.divertedStop || 'Diverted route';
       }
-      ctx.font = `${subtitleSize}px Inter, sans-serif`;
+      ctx.font = `${koSubtitleSize}px Inter, sans-serif`;
       const subtitleW = ctx.measureText(subtitleText).width;
 
-      // v1.81: Knockout must cover full width of whichever text line is wider
-      // Also cap at stripeAreaW to not overflow into time box area
       const textW = Math.min(Math.max(titleW, subtitleW), stripeAreaW - textX + zone.x);
       ctx.fillRect(textX - pad, textBlockY - pad, textW + pad * 2, textBlockH + pad * 2);
 
-      // 4. DEPART knockout - exact position match with actual render
+      // 4. DEPART knockout — at actual rendered sizes
       if (departColW > 0) {
         const deptColCenter = zone.x + zone.w - timeBoxW - departColW - 8;
-        const deptBlockY = zone.y + (zone.h - departLabelSize - departTimeSize - 1) / 2;
+        const deptBlockY = zone.y + (zone.h - koDepartLabelSize - koDepartTimeSize - 1) / 2;
 
-        ctx.font = `bold ${departLabelSize}px Inter, sans-serif`;
+        ctx.font = `bold ${koDepartLabelSize}px Inter, sans-serif`;
         const labelW = ctx.measureText('DEPART').width;
-        ctx.font = `bold ${departTimeSize}px Inter, sans-serif`;
+        ctx.font = `bold ${koDepartTimeSize}px Inter, sans-serif`;
         const timeW = ctx.measureText(leg.departTime || '').width;
         const deptW = Math.max(labelW, timeW);
-        const deptH = departLabelSize + departTimeSize + 1;
+        const deptH = koDepartLabelSize + koDepartTimeSize + 1;
 
-        // Center knockout on text center point
         ctx.fillRect(deptColCenter - deptW / 2 - pad, deptBlockY - pad, deptW + pad * 2, deptH + pad * 2);
       }
     }
@@ -3370,12 +3368,12 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
 
     if (!legSubtitle) {
       if (isExtraTimeCoffee) {
-        legSubtitle = '[OK] EXTRA TIME -- Disruption';
+        legSubtitle = '\u2713 EXTRA TIME -- Disruption';
       } else if (isCoffeeCanGet) {
         const dayOfWeek = new Date().getDay();
-        legSubtitle = dayOfWeek === 5 ? '[OK] FRIDAY TREAT' : '[OK] TIME FOR COFFEE';
+        legSubtitle = dayOfWeek === 5 ? '\u2713 FRIDAY TREAT' : '\u2713 TIME FOR COFFEE';
       } else if (isSkippedCoffee) {
-        legSubtitle = '[X] SKIP -- Running late';
+        legSubtitle = '\u2717 SKIP -- Running late';
       } else if (isSuspended) {
         legSubtitle = `SUSPENDED — ${leg.reason || 'Service disruption'}`;
       } else if (isDiverted) {
