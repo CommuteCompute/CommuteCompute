@@ -63,11 +63,14 @@ const FLINDERS_ONLY_LINE_CODES = new Set([
 function isLikelyCityLoopTrain(departure) {
   if (departure.isMetroTunnel) return false;
   if (departure.passesCityLoop === true) return true;
-  if (departure.passesCityLoop === false) return false;
-  // Fallback: check line code against known Flinders-only lines
   const lineCode = departure.routeId?.match(/vic-02-([A-Z]+)/)?.[1];
+  // Only trust passesCityLoop:false for KNOWN Flinders-only lines.
+  // For other lines (Frankston, Cranbourne etc.), the flag is often false because
+  // GTFS-RT stop_time_updates only include upcoming stops — City Loop platforms
+  // haven't been reported yet even though the train WILL serve them.
+  if (departure.passesCityLoop === false && lineCode && FLINDERS_ONLY_LINE_CODES.has(lineCode)) return false;
   if (lineCode && FLINDERS_ONLY_LINE_CODES.has(lineCode)) return false;
-  return true;  // Unknown line — assume City Loop (conservative for display)
+  return true;
 }
 
 /**
@@ -909,10 +912,11 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       // Padding: future departures fill remaining slots up to 3 for service
       // frequency context — the DEPART time box shows the actual catchable departure.
       if (baseLeg.nextDepartureTimesMs?.length > 0) {
+        // 2-min buffer before estimated arrival — accounts for GTFS-RT timing error
+        const catchabilityBuffer = 2 * 60000;
         const catchable = baseLeg.nextDepartureTimesMs
-          .filter(depMs => depMs >= arrivalAtStopMs)
+          .filter(depMs => depMs >= arrivalAtStopMs - catchabilityBuffer)
           .map(depMs => Math.round((depMs - nowMs) / 60000));
-        // Pad with future departures (from now) if fewer than 3 catchable
         if (catchable.length < 3) {
           const allFuture = baseLeg.nextDepartureTimesMs
             .filter(depMs => depMs > nowMs)
@@ -922,11 +926,43 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
             if (!catchable.includes(m)) catchable.push(m);
           }
         }
-        // V5.6.9: Sort unconditionally — previously only sorted inside the padding
-        // branch (catchable < 3), leaving the array unsorted when 3+ catchable
-        // departures existed. The subtitle builder sorts before display, but the
-        // raw API nextDepartures field was returned unsorted.
         baseLeg.nextDepartures = catchable.sort((a, b) => a - b);
+      }
+
+      // Guarantee 4 departures (1 for DEPART + 3 for "Next:" subtitle).
+      if (baseLeg.nextDepartures && baseLeg.nextDepartures.length < 4 && baseLeg.isLive) {
+        const feedForMode = leg.type === 'tram' ? transitData.trams :
+                            leg.type === 'bus' ? transitData.buses :
+                            transitData.trains;
+        const padDeps = (feedForMode || [])
+          .filter(d => d.isLive && d.departureTimeMs > nowMs &&
+            (leg.isCitybound === undefined || d.isCitybound === leg.isCitybound) &&
+            (leg.type !== 'train' || !leg.requiresCityLoop || isLikelyCityLoopTrain(d)) &&
+            (leg.type === 'train' || leg.type === 'vline' || !leg.routeNumber || !d.routeNumber ||
+             parseInt(String(d.routeNumber), 10) === parseInt(String(leg.routeNumber), 10)))
+          .map(d => Math.round((d.departureTimeMs - nowMs) / 60000))
+          .filter(m => m >= 0 && m <= 120)
+          .sort((a, b) => a - b);
+        for (const m of padDeps) {
+          if (baseLeg.nextDepartures.length >= 4) break;
+          if (!baseLeg.nextDepartures.includes(m)) baseLeg.nextDepartures.push(m);
+        }
+        while (baseLeg.nextDepartures.length < 4 && baseLeg.nextDepartures.length >= 2) {
+          const sorted = [...baseLeg.nextDepartures].sort((a, b) => a - b);
+          const headway = sorted[sorted.length - 1] - sorted[sorted.length - 2];
+          const projected = sorted[sorted.length - 1] + Math.max(headway, 5);
+          if (projected <= 120 && !baseLeg.nextDepartures.includes(projected)) {
+            baseLeg.nextDepartures.push(projected);
+            const projectedMs = nowMs + (projected * 60000);
+            if (baseLeg.nextDepartureTimesMs && !baseLeg.nextDepartureTimesMs.includes(projectedMs)) {
+              baseLeg.nextDepartureTimesMs.push(projectedMs);
+              baseLeg.nextDepartureTimesMs.sort((a, b) => a - b);
+            }
+          } else {
+            break;
+          }
+        }
+        baseLeg.nextDepartures.sort((a, b) => a - b);
       }
 
       // Issue 6: Sanitise GTFS disruption jargon before user-facing display
@@ -1537,9 +1573,13 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
     // Store all departure objects for route lookup — when catchability selects a
     // departure from a different route (multi-route tram), we need to find its
     // routeNumber and lineName to update the leg title dynamically.
-    primary.allDepartures = matchedDepartures;
-    // Display-facing nextDepartures stays limited to 5 (for "Next: x, y, z min" subtitle)
-    primary.nextDepartures = matchedDepartures.slice(0, 5).map(d => d.minutes).filter(m => m !== undefined).sort((a, b) => a - b);
+    // Filter allDepartures to only trains that can reach the destination.
+    primary.allDepartures = leg.requiresCityLoop
+      ? matchedDepartures.filter(d => isLikelyCityLoopTrain(d))
+      : leg.requiresMetroTunnel
+        ? matchedDepartures.filter(d => d.isMetroTunnel)
+        : matchedDepartures;
+    primary.nextDepartures = primary.allDepartures.slice(0, 5).map(d => d.minutes).filter(m => m !== undefined).sort((a, b) => a - b);
   }
 
   return primary;

@@ -3434,10 +3434,11 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
           }
           const arrivalAtStopMs = nowMs + (cumulativeMins * 60000);
 
-          // Find departures user can catch (depart AFTER arrival + 1 min buffer)
+          // Find departures user can catch (2 min buffer before estimated arrival —
+          // matches API catchability window for consistency)
           const catchableDepartures = leg.nextDepartureTimesMs
-            .filter(depMs => depMs >= arrivalAtStopMs + 60000)  // 1 min buffer
-            .slice(0, 3)  // Max 3 departures
+            .filter(depMs => depMs >= arrivalAtStopMs - 120000)  // 2 min buffer
+            .slice(0, 4)  // 4 so that after DEPART consumes 1, 3 remain for "Next:"
             .map(depMs => Math.max(0, Math.round((depMs - nowMs) / 60000)));
 
           if (catchableDepartures.length >= 3) {
