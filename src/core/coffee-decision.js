@@ -163,21 +163,53 @@ class CoffeeDecision {
         };
     }
 
-    // 3. AFTER 9 AM - Standard mode (not rushing for 9am arrival)
+    // 3. AFTER 9 AM - Standard mode with target arrival check
     if (currentHour >= 9) {
+        const isFriday = (day === 5);
+
+        // If a target arrival is configured and still in the future, check whether
+        // adding a coffee stop would push arrival past the target.
+        if (this.targetArrivalMins && this.targetArrivalMins > currentTimeInMins) {
+          const tripDirect = this.commute.homeToCafe + this.commute.transitRide +
+                             this.commute.platformChange + this.commute.trainRide +
+                             this.commute.walkToWork;
+          const tripWithCoffee = tripDirect + this.commute.makeCoffee + this.commute.cafeToTransit;
+          const minsUntilArrival = this.targetArrivalMins - currentTimeInMins;
+
+          if (minsUntilArrival < tripDirect) {
+            return {
+              decision: "LATE FOR WORK",
+              subtext: `Only ${minsUntilArrival}m left! (Need ${tripDirect}m)`,
+              canGet: false,
+              urgent: true
+            };
+          }
+
+          if (minsUntilArrival < tripWithCoffee) {
+            return {
+              decision: "SKIP COFFEE",
+              subtext: `Coffee adds ${tripWithCoffee - minsUntilArrival}m past arrival.`,
+              canGet: false,
+              urgent: false
+            };
+          }
+        }
+
         if (nextTrainMin > 15) {
-          return { 
-            decision: "GET COFFEE", 
-            subtext: `Next train in ${nextTrainMin}m`, 
-            canGet: true, 
-            urgent: false 
+          return {
+            decision: isFriday ? "FRIDAY TREAT" : "GET COFFEE",
+            subtext: `Next train in ${nextTrainMin}m`,
+            canGet: true,
+            isFriday,
+            fridayTreat: isFriday,
+            urgent: false
           };
         }
-        return { 
-          decision: "RUSH IT", 
-          subtext: "Train is approaching", 
-          canGet: false, 
-          urgent: true 
+        return {
+          decision: "RUSH IT",
+          subtext: "Train is approaching",
+          canGet: false,
+          urgent: true
         };
     }
 
