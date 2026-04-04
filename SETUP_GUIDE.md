@@ -34,7 +34,7 @@ Before starting setup, gather these items:
 
 | Requirement | Description |
 |-------------|-------------|
-| Vercel account | Free tier works perfectly -- sign up at [vercel.com](https://vercel.com) |
+| Vercel account | **Pro tier required** ($20/month) -- the Hobby (free) tier cannot auto-deploy Commute Compute™ due to the number of serverless functions. See note below. |
 | TRMNL display | Or jailbroken Kindle |
 | USB-C power source | USB-C (wall adapter or USB port) for continuous always-on use. Battery operation provides several days of cable-free use — ideal for testing placement or portable scenarios. |
 | WiFi network details | Network name (SSID) and password -- must be 2.4 GHz network (5 GHz not supported) |
@@ -42,7 +42,7 @@ Before starting setup, gather these items:
 | Transport Victoria API key | Required for live departure data -- register at [opendata.transport.vic.gov.au](https://opendata.transport.vic.gov.au/). Approval may take up to 48 hours. |
 | Google Places API key | Optional -- for address autocomplete in Setup Wizard |
 
-[IMPORTANT] Your admin authentication token is shown only once during setup. Write it down or save it securely before proceeding.
+[IMPORTANT] You must set `CC_ADMIN_TOKEN` as a Vercel environment variable and redeploy **before** running the Setup Wizard (Step 1.3). This is the most common cause of API failures during first-time setup — do not skip this step.
 
 [NOTE] Keep your WiFi network details handy -- you'll need them during device provisioning (Step 4.2).
 
@@ -51,6 +51,8 @@ Before starting setup, gather these items:
 ## Step 1: Deploy to Vercel
 
 [TIME] This step takes approximately 3-5 minutes.
+
+[IMPORTANT] **Vercel Pro tier is required.** Commute Compute™ uses multiple serverless functions (API endpoints, rendering engine, GTFS-RT client, and intelligence engines) that exceed Vercel's Hobby tier function count limit. Auto-deploy will fail on the free Hobby tier. A Pro plan ($20/month) is required. Commute Compute™ is not truly free to operate at this scale — the Vercel Pro subscription is the primary ongoing hosting cost.
 
 ### 1.1 One-Click Deploy (Recommended)
 
@@ -68,6 +70,19 @@ Your server URL will be: `https://your-project-name.vercel.app`
 Open: `https://your-project-name.vercel.app/api/status`
 
 You should see a JSON response confirming the server is running.
+
+### 1.3 Set Admin Token (Required — do this before Step 3)
+
+[IMPORTANT] **You must complete this step before running the Setup Wizard. Without `CC_ADMIN_TOKEN` set, every admin API call returns an authentication error and the Setup Wizard cannot save your configuration.**
+
+1. In your Vercel dashboard, open your project and go to **Settings** → **Environment Variables**
+2. Click **Add Variable**
+3. Name: `CC_ADMIN_TOKEN`
+4. Value: create a secure passcode of your choice (at least 12 characters — treat it like a password)
+5. Click **Save**
+6. **Manually redeploy your project** — go to the **Deployments** tab, click **...** on the latest deployment, then **Redeploy**. The environment variable does not take effect until you redeploy.
+
+[IMPORTANT] Save your `CC_ADMIN_TOKEN` value somewhere secure. You will need it to access the Admin Panel. It cannot be recovered from the system.
 
 **Next:** Proceed to Step 2 to add persistent storage.
 
@@ -342,6 +357,17 @@ Access the admin panel at: `https://your-project-name.vercel.app/admin.html`
 
 ## Troubleshooting
 
+### Display static — content never updates
+
+If your display shows a fixed screen that never refreshes after initial setup (even after many minutes), the most common cause is incorrect firmware version:
+
+1. **Verify firmware version** — the device must be running CCFirm™ v8.1.0. Firmware versions earlier than v7.0 do not support BLE provisioning or the current server API protocol and will result in a permanently static display.
+2. Re-flash using the browser-based flasher at `/flasher/` (Chrome or Edge required). The flasher installs CCFirm™ v8.1.0.
+3. After reflashing, re-run WiFi and server provisioning via BLE (Step 4.2) — the firmware update resets the WiFi and server configuration.
+4. Allow 2–3 minutes after provisioning for the first dashboard load.
+
+[NOTE] If you previously flashed firmware from a source other than this project's `/flasher/`, you may have an incompatible firmware version. Always use the built-in flasher to ensure you have CCFirm™ v8.1.0.
+
 ### Display blank after flashing
 
 This is normal behaviour during initial setup:
@@ -394,7 +420,7 @@ This is normal behaviour during initial setup:
 ### Server errors
 
 1. **HTTP 500 (Internal Server Error):** Check your Redis connection. Verify that `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` environment variables are set in your Vercel project settings. Visit `/api/kv-status` to confirm `"connected": true`.
-2. **HTTP 401/403 (Unauthorised):** Verify your API token is correctly configured in the Setup Wizard or Admin Panel. Re-enter the token if necessary.
+2. **HTTP 401/403 (Unauthorised) during Setup Wizard or Admin Panel:** This almost always means `CC_ADMIN_TOKEN` is not set or the project was not redeployed after setting it. Go to Vercel → your project → Settings → Environment Variables, confirm `CC_ADMIN_TOKEN` is present, then redeploy (Deployments tab → ... → Redeploy). See Step 1.3.
 3. **Blank screen in browser:** Open your browser's developer console (F12) and check for errors. Verify that your Vercel deployment completed successfully (green checkmark in the Deployments tab).
 4. **Connection timeout:** Confirm your Vercel project is deployed and the URL is correct. Visit `/api/status` to check the server is responding. If using Render, note that free-tier instances spin down after inactivity and may take 30-60 seconds to wake.
 

@@ -35,7 +35,8 @@ const KEYS = {
   SETUP_COMPLETE: 'cc:setup_complete',  // Setup wizard completion flag
   STATION_OVERRIDES: 'cc:station_overrides',  // User station preference overrides
   PREFERRED_TRAM_ROUTE: 'cc:preferred_tram_route',  // Pinned tram route number for consistency
-  PREFERRED_TRAM_STOP: 'cc:preferred_tram_stop'    // Stop ID paired with preferred route (for stale-route detection)
+  PREFERRED_TRAM_STOP: 'cc:preferred_tram_stop',    // Stop ID paired with preferred route (for stale-route detection)
+  PREFERRED_TRAM_ROUTES: 'cc:preferred_tram_routes' // Ordered list of preferred tram route numbers (e.g. ['12', '109'])
 };
 
 // In-memory fallback for local development (no KV configured)
@@ -498,6 +499,25 @@ export async function setPreferredTramStop(stopId) {
   return await set(KEYS.PREFERRED_TRAM_STOP, stopId);
 }
 
+/**
+ * Get the ordered list of preferred tram route numbers.
+ * Routes are tried in order — first matching route is used.
+ * Returns null if not configured (fall back to nearest-stop selection).
+ * @returns {Promise<string[]|null>} e.g. ['12', '109'] or null
+ */
+export async function getPreferredTramRoutes() {
+  return await get(KEYS.PREFERRED_TRAM_ROUTES);
+}
+
+/**
+ * Set the ordered list of preferred tram route numbers.
+ * @param {string[]|null} routes - ordered route numbers, or null to clear
+ * @returns {Promise<boolean>}
+ */
+export async function setPreferredTramRoutes(routes) {
+  return await set(KEYS.PREFERRED_TRAM_ROUTES, routes);
+}
+
 export default {
   getClient,
   getTransitApiKey,
@@ -519,5 +539,7 @@ export default {
   setPreferredTramRoute,
   getPreferredTramStop,
   setPreferredTramStop,
+  getPreferredTramRoutes,
+  setPreferredTramRoutes,
   KEYS
 };

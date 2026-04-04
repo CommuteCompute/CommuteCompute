@@ -1,6 +1,6 @@
 {
   "name": "Commute Compute",
-  "version": "5.30",
+  "version": "8.10",
   "home_assistant_domain": "commute_compute",
   "funding_url": "https://gitlab.com/angusbergman/commute-compute-system",
   "new_install_prompt_erase": true,

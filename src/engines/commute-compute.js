@@ -46,7 +46,7 @@ import * as transitApi from '../services/opendata-client.js';
 import CoffeeDecision from '../core/coffee-decision.js';
 import fs from 'fs/promises';
 import path from 'path';
-import { getTransitApiKey, getGoogleApiKey } from '../data/kv-preferences.js';
+import { getTransitApiKey, getGoogleApiKey, getPreferredTramRoutes } from '../data/kv-preferences.js';
 import { getStopNameById, detectStopIdsFromAddress, findNearestStops, cleanStopName } from '../data/gtfs-stop-names.js';
 import { getAllStops } from '../data/fallback-timetables.js';
 import { haversine } from '../utils/haversine.js';
@@ -1424,7 +1424,7 @@ export class CommuteCompute {
     routes.push(...directRoutes);
     
     // Strategy 2: Multi-modal routes (tram → train, etc.)
-    const multiModalRoutes = this.findMultiModalRoutes(homeStops, workStops, allStops, locations, includeCoffee);
+    const multiModalRoutes = await this.findMultiModalRoutes(homeStops, workStops, allStops, locations, includeCoffee);
     routes.push(...multiModalRoutes);
     
     // v1.42: Sort by weighted score per Dev Rules Section 23.9.2
@@ -1521,7 +1521,7 @@ export class CommuteCompute {
   /**
    * Find multi-modal routes (e.g., tram → train)
    */
-  findMultiModalRoutes(homeStops, workStops, allStops, locations, includeCoffee) {
+  async findMultiModalRoutes(homeStops, workStops, allStops, locations, includeCoffee) {
     const routes = [];
     const trainStations = allStops.filter(s => s.route_type === 0);
     const tramStops = allStops.filter(s => s.route_type === 1);
@@ -1529,6 +1529,17 @@ export class CommuteCompute {
     const workTrains = workStops.filter(s => s.route_type === 0);
 
     if (homeTrams.length === 0 || workTrains.length === 0) return routes;
+
+    // Load user's preferred tram routes (ordered preference list, e.g. ['12', '109'])
+    let preferredTramRoutes = [];
+    try {
+      const stored = await getPreferredTramRoutes();
+      if (Array.isArray(stored) && stored.length > 0) {
+        preferredTramRoutes = stored.map(String);
+      }
+    } catch (_) {
+      // Preferences unavailable — proceed with nearest-stop fallback
+    }
 
     // Sort train stations by distance from home for intelligent interchange selection
     const homeCoords = locations?.home;
@@ -1562,7 +1573,39 @@ export class CommuteCompute {
 
       if (nearbyTrams.length === 0) continue;
 
-      const homeTram = homeTrams[0];
+      // Validate: find a home tram stop whose route actually services this interchange.
+      // The tram route must appear at BOTH the home-area stop AND the interchange stop.
+      // Without this check, the nearest home tram stop may be on a route that never
+      // reaches this interchange station (e.g. suggesting an incorrect route number).
+      const interchangeRouteNumbers = nearbyTrams
+        .map(t => String(t.route_number || ''))
+        .filter(Boolean);
+
+      let homeTram = null;
+      if (interchangeRouteNumbers.length > 0) {
+        // Find home tram stops whose route_number matches an interchange route
+        const matchingHomeTrams = homeTrams.filter(t =>
+          t.route_number && interchangeRouteNumbers.includes(String(t.route_number))
+        );
+
+        if (matchingHomeTrams.length > 0) {
+          // If the user has preferred routes configured, honour that ordering
+          if (preferredTramRoutes.length > 0) {
+            matchingHomeTrams.sort((a, b) => {
+              const aRank = preferredTramRoutes.indexOf(String(a.route_number));
+              const bRank = preferredTramRoutes.indexOf(String(b.route_number));
+              return (aRank === -1 ? 999 : aRank) - (bRank === -1 ? 999 : bRank);
+            });
+          }
+          homeTram = matchingHomeTrams[0];
+        }
+        // No home tram stop services this interchange — skip this interchange station
+        if (!homeTram) continue;
+      } else {
+        // No route number data available — fall back to nearest home tram stop
+        homeTram = homeTrams[0];
+      }
+
       const workTrain = workTrains[0];
 
       // Resolve work station name: coordinate-based (PRIMARY) → nearbyStops → GTFS lookup → suburb-derived → raw stop name
@@ -1781,17 +1824,19 @@ export class CommuteCompute {
 
     // =========================================================================
     // ROUTE 4: Tram + Train (no coffee)
-    // Pattern: Home > Walk > Tram > Train > Walk > Office
+    // Pattern: Home > Walk > Tram > Walk > Train > Walk > Office
+    // Walk segments on both ends of the tram leg reflect actual journey structure.
     // =========================================================================
     routes.push({
       id: 'tram-train',
       name: 'Tram + Train',
-      description: `Walk → Tram${tramRouteNumber ? ' ' + tramRouteNumber : ''} (${nearestTramStop || 'Tram'} → ${nearestTrainStation || 'Station'}) → Train (${nearestTrainStation || 'Station'} → ${workStation || 'Work'}) → Walk`,
+      description: `Walk → Tram${tramRouteNumber ? ' ' + tramRouteNumber : ''} (${nearestTramStop || 'Tram'} → ${nearestTrainStation || 'Station'}) → Walk → Train (${nearestTrainStation || 'Station'} → ${workStation || 'Work'}) → Walk`,
       type: 'transfer',
-      totalMinutes: 28,
+      totalMinutes: 30,
       legs: [
         { type: 'walk', to: 'tram stop', from: 'home', minutes: 4, fromHome: true, stopName: nearestTramStop },
         { type: 'tram', routeNumber: tramRouteNumber || '', origin: { name: nearestTramStop }, destination: { name: nearestTrainStation }, originStop: nearestTramStop, minutes: 10 },
+        { type: 'walk', to: 'train platform', minutes: 2, stationName: nearestTrainStation },
         { type: 'train', isCitybound: true, origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 10 },
         { type: 'walk', to: 'work', minutes: 4, workName: workAddressShort }
       ]
@@ -1799,16 +1844,19 @@ export class CommuteCompute {
     
     // =========================================================================
     // ROUTE 5: Direct tram
-    // Pattern: Home > Tram > Walk > Office
+    // Pattern: Home > Walk > Tram > Walk > Office
+    // Walk segments on both ends of the tram reflect actual journey structure
+    // (walk from home to tram stop; walk from tram stop to work).
     // =========================================================================
     routes.push({
       id: 'tram-direct',
       name: 'Tram Direct',
       description: `Walk → Tram${tramRouteNumber ? ' ' + tramRouteNumber : ''} (${nearestTramStop || 'Tram'} → ${workArea || 'CBD'}) → Walk`,
       type: 'direct',
-      totalMinutes: 20,
+      totalMinutes: 24,
       legs: [
-        { type: 'tram', routeNumber: tramRouteNumber || '', origin: { name: nearestTramStop }, destination: { name: workArea || 'CBD' }, originStop: nearestTramStop, minutes: 14, fromHome: true },
+        { type: 'walk', to: 'tram stop', from: 'home', minutes: 4, fromHome: true, stopName: nearestTramStop },
+        { type: 'tram', routeNumber: tramRouteNumber || '', origin: { name: nearestTramStop }, destination: { name: workArea || 'CBD' }, originStop: nearestTramStop, minutes: 14 },
         { type: 'walk', to: 'work', minutes: 6, workName: workAddressShort }
       ]
     });
