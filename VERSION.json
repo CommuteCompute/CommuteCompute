@@ -1,10 +1,10 @@
 {
   "system": {
-    "version": "5.6.15",
+    "version": "5.7.0",
     "name": "Commute Compute System",
-    "releaseDate": "2026-04-03",
+    "releaseDate": "2026-04-04",
     "codename": "Turnkey Multi-State",
-    "buildDate": "2026-04-03"
+    "buildDate": "2026-04-04"
   },
   "components": {
     "commutecompute": {
