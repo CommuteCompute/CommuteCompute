@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.7.1",
+    "version": "5.7.2",
     "name": "Commute Compute System",
     "releaseDate": "2026-04-05",
     "codename": "Turnkey Multi-State",
@@ -61,13 +61,15 @@
     "version": "8.1.0",
     "description": "ESP32-C3 CCFirm - BLE Provisioning + BMP Text Renderer + Battery Optimisation",
     "locked": false,
-    "lastUpdated": "2026-02-28",
+    "lastUpdated": "2026-04-05",
     "features": [
       "BLE provisioning (WiFi + server config)",
       "Pairing code display and verification",
       "BMP text rendering engine",
       "60-second refresh cycle",
-      "Zone-based partial refresh (5 zones)"
+      "Zone-based partial refresh (5 zones)",
+      "Boot screen BUSY pin hang guard (2026-04-05)",
+      "pollPairingServer DEFAULT_SERVER fallback (2026-04-05)"
     ]
   },
   "specs": {

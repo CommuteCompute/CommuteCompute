@@ -154,7 +154,7 @@ These details are relevant for firmware developers only:
 
 **Date Discovered:** 2026-04-05
 **Severity:** Medium (prevents first-time setup completion)
-**Status:** Workaround documented
+**Status:** Fixed in CCFirm v8.1.0 firmware binary update (2026-04-05) + workaround documented
 
 ### Symptoms
 
@@ -164,42 +164,64 @@ After completing Bluetooth pairing and Wi-Fi configuration through the setup wiz
 - The device appears stuck on the "Commute Compute™" logo boot screen and does not progress.
 - The browser-based firmware flasher completes but the display shows a static or blank screen.
 
-### Root Cause
+### Root Causes (Investigated 2026-04-05)
 
-The browser flasher and the manual VS Code ("Upload and Monitor All") flash path both write firmware correctly, but the device's saved Wi-Fi credentials or pairing token can be lost if the device resets its non-volatile storage (NVS) between the flash and the first successful boot. This typically happens when:
+**Root Cause 1 — Stale web flasher binary (primary cause of static screen + setup cycling)**
 
-1. The firmware is flashed with a different partition scheme than the existing one, triggering an NVS erase.
-2. The device is power-cycled before the setup wizard has finished writing credentials to NVS.
-3. A watchdog reset occurs during the Wi-Fi credential write phase.
+The web flasher at `/flasher/` previously contained a pre-built binary from the old PTV-TRMNL v5.3 era (February 2026). That binary:
+- Predates BLE provisioning (introduced in CCFirm v7.0.0)
+- Used the WiFiManager captive portal, which crashes the ESP32-C3 with `0xbaad5678`
+- Reported itself as `PTV-TRMNL/5.30` — incompatible branding and architecture
 
-### Workaround
+**Fix applied:** The web flasher now ships the current CCFirm v8.1.0 binary compiled from `firmware/.pio/build/trmnl/`. After updating, the web flasher and VS Code flash path are equivalent.
 
-**Step 1 — Confirm firmware is fully flashed**
+**Root Cause 2 — Pairing server poll with empty webhook URL**
 
-After flashing (either via browser or VS Code), wait for the serial monitor to show the boot sequence completing with a Wi-Fi connection attempt, before proceeding with the setup wizard.
+If `webhookUrl` was not yet provisioned (e.g., BLE URL delivery failed), `pollPairingServer()` constructed a URL with no host (e.g., `/api/pair/ABCDEF`) which silently failed on every poll cycle, keeping the device in the pairing screen indefinitely.
 
-**Step 2 — If stuck on logo screen after reboot**
+**Fix applied:** `pollPairingServer()` now falls back to `DEFAULT_SERVER` when `webhookUrl` is empty, allowing the pairing code path to function even if BLE URL delivery was incomplete.
 
-Hold the TRMNL reset button for 5 seconds while the logo is displayed. This forces a full NVS clear and restarts the pairing sequence. You will need to repeat the setup wizard.
+**Root Cause 3 — Boot screen hang on stuck display BUSY pin**
 
-**Step 3 — If browser flasher produces a static screen**
+After flashing older firmware (e.g., v5.3), the e-ink VCOM rail may not be properly discharged. On the next boot, `showBootScreen()` calls `refresh(REFRESH_FULL, true)` which blocks indefinitely waiting for BUSY to deassert.
 
-Use the manual VS Code / PlatformIO flash path instead:
-1. Open the `firmware/` directory in VS Code with the PlatformIO extension installed.
-2. Select "Upload and Monitor All" from the PlatformIO toolbar.
-3. Wait for the serial monitor to confirm the boot sequence before starting the setup wizard.
+**Fix applied:** `showBootScreen()` now checks the BUSY pin state before issuing the full refresh, with a 15-second timeout. If BUSY is stuck HIGH after 15 seconds, the device performs a clean restart to clear the display state.
 
-**Step 4 — If device repeatedly returns to setup screen**
+**Root Cause 4 — Setup wizard run from localhost (unreachable URL sent to device)**
 
-This indicates the pairing token is not being written to NVS. Check the following:
-- Ensure the device has a stable power supply during setup (USB-C, not battery only).
-- Confirm the setup wizard URL is correct and the Vercel deployment is live.
-- Try the setup wizard from a different browser (Chrome recommended).
-- As a last resort, reflash the firmware and repeat from Step 1.
+The Bluetooth step sends `window.location.origin + '/api/screen'` as the webhook URL. If the wizard is opened from a local development server (e.g., `http://localhost:3000`), the device saves an unreachable URL and cycles to setup on every WiFi connect.
 
-### Prevention
+**Mitigation:** The setup wizard now shows a troubleshooting note when a TRMNL device is selected, explaining that the wizard must be opened from the live Vercel deployment URL.
 
-Always allow the device 10–15 seconds after the logo appears before interacting with the setup wizard. The firmware needs time to initialise the radio stack and NVS subsystem before it can accept credentials.
+### Resolving an Affected Device
+
+**Step 1 — Re-flash with current firmware**
+
+Open the [web flasher](/flasher/) and flash. The flasher now contains the correct v8.1.0 binary. Alternatively, compile and flash from source:
+```bash
+cd firmware
+pio run -e trmnl --target upload
+```
+
+**Step 2 — Factory reset before re-running setup**
+
+Hold the button on the TRMNL device for 5 seconds at the boot logo. The display confirms "FACTORY RESET" and restarts. This clears NVS (WiFi credentials + webhook URL + pairing state).
+
+**Step 3 — Run setup wizard from Vercel URL**
+
+Open the setup wizard from your live Vercel deployment:
+```
+https://your-app.vercel.app/setup-wizard.html
+```
+Do **not** run it from `localhost`. The URL shown in your browser becomes the server URL sent to the device via Bluetooth.
+
+**Step 4 — Complete the Bluetooth step fully**
+
+In Step 1 of the wizard, after clicking "Find Device" and connecting via Bluetooth, wait for the status to confirm "Device configured!" before clicking Next. The device must receive all three credentials (SSID, password, server URL) over BLE before proceeding.
+
+**Step 5 — If device still hangs on logo after all of the above**
+
+Power the device off completely. Leave it unplugged for 60 seconds to allow the e-ink VCOM rail to discharge. Re-flash, then retry from Step 2.
 
 ---
 

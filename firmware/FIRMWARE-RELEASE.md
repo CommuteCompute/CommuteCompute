@@ -53,11 +53,37 @@ screen /dev/cu.usbmodem* 115200          # macOS
 # On Windows, use PuTTY (Serial mode, 115200 baud)
 ```
 
+### Updating the Web Flasher Binary
+
+After compiling a new firmware release, copy the compiled binaries to the public flasher directory:
+
+```bash
+cd firmware
+pio run -e trmnl   # Compile
+
+# Copy all three binaries to the web flasher
+cp .pio/build/trmnl/firmware.bin    ../public/flasher/firmware.bin
+cp .pio/build/trmnl/bootloader.bin  ../public/flasher/bootloader.bin
+cp .pio/build/trmnl/partitions.bin  ../public/flasher/partitions.bin
+
+# Verify the binary contains the correct version string
+strings ../public/flasher/firmware.bin | grep "Commute Compute v"
+```
+
+**Critical:** The web flasher binary (`public/flasher/firmware.bin`) is a **committed binary** and must be manually updated after each firmware release. It does not update automatically when source code changes. Always copy fresh binaries after compiling a release.
+
 ### Recovery
 If device is bricked, use USB flash:
 ```bash
-git checkout v7.2.1
+cd firmware
 pio run -e trmnl -t upload --upload-port /dev/cu.usbmodem*
+```
+
+For VCOM/display recovery (display stuck or corrupted state):
+```bash
+pio run -e trmnl-burnin-fix -t upload  # Clears display, no WiFi
+# After display recovers, re-flash production firmware:
+pio run -e trmnl -t upload
 ```
 
 ---
@@ -66,7 +92,8 @@ pio run -e trmnl -t upload --upload-port /dev/cu.usbmodem*
 
 | Version | Date | Status | Notes |
 |---------|------|--------|-------|
-| **8.0.0** | 2026-02-27 | [UNLOCKED] UNLOCKED | Current production. Deep sleep 60s interval, CCFirm rename. |
+| **8.1.0** | 2026-02-28 | [UNLOCKED] UNLOCKED | Current production. Battery optimisation, WiFi fast reconnect, NVS RTC cache, boot BUSY guard. Web flasher binary updated 2026-04-05. |
+| 8.0.0 | 2026-02-27 | Superseded | Battery deep sleep 60s, auto-shutdown, CCFirm rename. |
 | 7.2.0 | 2026-02-02 | Superseded | Added button handler, reduced partial count |
 | 7.1.0 | 2026-02-01 | Superseded | Redis Cloud KV, Transit API validation |
 | 7.0.0 | 2026-02-01 | Superseded | Hybrid BLE + Pairing provisioning |

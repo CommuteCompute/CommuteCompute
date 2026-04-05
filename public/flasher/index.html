@@ -243,6 +243,15 @@
     <section id="esp-panel" class="card">
       <h2>Flash CommuteCompute&#8482; Firmware (TRMNL Display / ESP32-C3)</h2>
       <p>Use Chrome, Edge, or Opera. Put the board in bootloader mode if needed, then install.</p>
+
+      <div id="fw-version-notice" style="margin-top: 14px; padding: 12px 16px; border-radius: 10px; border: 1px solid rgba(79,178,142,0.4); background: rgba(79,178,142,0.07); font-size: 0.88rem; color: var(--text-secondary);">
+        <strong style="color: var(--accent);">Firmware binary:</strong>
+        CCFirm&#8482; <span id="fw-binary-version" style="font-family: monospace; color: var(--accent); font-weight: 600;">v8.1.0</span>
+        &nbsp;&mdash;&nbsp;BLE provisioning + battery optimisation + deep sleep.
+        <br style="margin-bottom: 4px;">
+        <span style="font-size: 0.82rem; opacity: 0.8;">If the display shows static or noise after flashing, factory reset and re-flash. If issues persist, compile from source via VS&nbsp;Code + PlatformIO (<code style="color: var(--accent); font-size: 0.82rem;">pio run -e trmnl --target upload</code>).</span>
+      </div>
+
       <div style="margin-top: 16px;">
         <esp-web-install-button manifest="/flasher/manifest.json">
           <button slot="activate" class="flash-btn">Flash ESP32 Firmware</button>
@@ -254,7 +263,55 @@
         <li>After flash, open the <a href="/setup-wizard.html"><strong>Setup Wizard</strong></a> to connect your device via Bluetooth.</li>
         <li>The Setup Wizard will send your WiFi credentials and server URL to the device.</li>
         <li>Your device will connect automatically and begin displaying your dashboard.</li>
+        <li>If the device shows the setup screen again after rebooting, see <strong>Troubleshooting</strong> below.</li>
       </ol>
+    </section>
+
+    <section id="troubleshooting-panel" class="card">
+      <h2>Troubleshooting</h2>
+      <p style="margin-bottom: 12px;">Common issues and how to resolve them:</p>
+
+      <details style="margin-bottom: 10px;">
+        <summary style="cursor: pointer; font-weight: 600; color: var(--text-primary); padding: 6px 0; list-style: none; display: flex; align-items: center; gap: 8px;">
+          <span style="color: var(--warning);">&#9654;</span> Display shows static or noise after flashing
+        </summary>
+        <div style="padding: 10px 0 4px 20px; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">
+          The pre-built binary may not match your hardware revision, or a previous firmware left the display in a bad state.
+          <ol class="steps" style="margin-top: 8px;">
+            <li>Hold the button for 5 seconds at startup to factory reset, then re-flash.</li>
+            <li>If static persists, compile from source: <code style="color: var(--accent);">pio run -e trmnl --target upload</code> in the <code style="color: var(--accent);">firmware/</code> directory.</li>
+            <li>If you previously flashed an older build (pre-v7), the display VCOM may need a manual discharge cycle (power off for 60 seconds).</li>
+          </ol>
+        </div>
+      </details>
+
+      <details style="margin-bottom: 10px;">
+        <summary style="cursor: pointer; font-weight: 600; color: var(--text-primary); padding: 6px 0; list-style: none; display: flex; align-items: center; gap: 8px;">
+          <span style="color: var(--warning);">&#9654;</span> Device cycles back to setup screen after pairing
+        </summary>
+        <div style="padding: 10px 0 4px 20px; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">
+          This happens when the device has WiFi credentials but no server URL, or the server URL is unreachable.
+          <ol class="steps" style="margin-top: 8px;">
+            <li>Ensure you completed the full <a href="/setup-wizard.html">Setup Wizard</a> including the Bluetooth step, which sends the server URL to the device.</li>
+            <li>Confirm the Setup Wizard URL in your browser matches your Vercel deployment (e.g. <code style="color: var(--accent);">https://your-app.vercel.app/setup-wizard.html</code>) &mdash; running wizard from <code style="color: var(--accent);">localhost</code> will send an unreachable URL to the device.</li>
+            <li>If cycling persists, factory reset the device (hold button 5 seconds at boot) and re-run the wizard.</li>
+          </ol>
+        </div>
+      </details>
+
+      <details>
+        <summary style="cursor: pointer; font-weight: 600; color: var(--text-primary); padding: 6px 0; list-style: none; display: flex; align-items: center; gap: 8px;">
+          <span style="color: var(--warning);">&#9654;</span> Device hangs on the Commute Compute logo after reboot
+        </summary>
+        <div style="padding: 10px 0 4px 20px; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">
+          The e-ink display is waiting for BUSY to deassert. This can occur after interrupted flashing or a VCOM discharge issue.
+          <ol class="steps" style="margin-top: 8px;">
+            <li>Power the device off completely and leave it unplugged for 30&ndash;60 seconds to allow the e-ink VCOM rail to discharge.</li>
+            <li>Re-flash firmware via USB (web flasher or VS Code).</li>
+            <li>If the hang repeats consistently, flash the <code style="color: var(--accent);">trmnl-burnin-fix</code> environment from source to clear the display, then re-flash production firmware.</li>
+          </ol>
+        </div>
+      </details>
     </section>
 
     <section id="kindle-panel" class="card hidden">
@@ -275,7 +332,7 @@
       <span>CommuteCompute&#8482; <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v4.1</span></span>
       <span>CCDash&#8482; Renderer <span class="cc-footer-version-value" id="cc-footer-renderer-version">v3.2</span></span>
       <span>CCFirm&#8482; <span class="cc-footer-version-value" id="cc-footer-firmware-version">CC-FW-8.1.0</span></span>
-      <span>System <span class="cc-footer-version-value" id="cc-footer-system-version">v5.7.0</span></span>
+      <span>System <span class="cc-footer-version-value" id="cc-footer-system-version">v5.7.2</span></span>
       <span>Build <span id="cc-footer-build-date">--</span></span>
       <span id="cc-footer-update-notice"></span>
       <span>&#169; 2026 Angus Bergman | <a href="/attribution.html">Licensing</a> | <a href="/privacy.html">Privacy</a> | <a href="/legal.html">Legal</a></span>
@@ -413,7 +470,7 @@
         if (commutecompute) commutecompute.textContent = v.components?.commutecompute?.version || 'v4.1';
         if (renderer) renderer.textContent = v.components?.renderer?.version || 'v3.2';
         if (firmware) firmware.textContent = v.components?.firmware?.version || 'CC-FW-8.1.0';
-        if (sys) sys.textContent = 'v' + (v.system?.version || '5.7.0');
+        if (sys) sys.textContent = 'v' + (v.system?.version || '5.7.2');
         if (build) build.textContent = v.date || new Date().toISOString().split('T')[0];
 
         // Upstream update check (once per session)

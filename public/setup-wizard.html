@@ -702,6 +702,24 @@
                     </div>
                 </div>
 
+                <!-- Troubleshooting (TRMNL only — revealed when device selected) -->
+                <div id="trmnl-troubleshooting" style="display: none; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px;">
+                    <details>
+                        <summary style="cursor: pointer; color: #94a3b8; font-size: 13px; font-weight: 600; padding: 6px 0; list-style: none; display: flex; align-items: center; gap: 6px; user-select: none;">
+                            <svg class="icon-sm" style="color: #fbbf24;"><use href="#icon-warning"/></svg> Troubleshooting: device cycles back to setup screen
+                        </summary>
+                        <div style="padding: 12px 0 4px 4px; font-size: 12px; color: #94a3b8; line-height: 1.7;">
+                            <p style="margin-bottom: 8px;">If your device returns to the &ldquo;DEVICE SETUP&rdquo; screen after pairing, the most common causes are:</p>
+                            <ul style="padding-left: 18px; margin-bottom: 10px;">
+                                <li><strong style="color: #f1f5f9;">Wrong wizard URL</strong> &mdash; this wizard must be opened from your Vercel deployment URL (e.g. <code style="color: #4fb28e;">https://your-app.vercel.app/setup-wizard.html</code>). Running from <code>localhost</code> sends an unreachable server URL to the device.</li>
+                                <li style="margin-top: 6px;"><strong style="color: #f1f5f9;">Bluetooth step not completed</strong> &mdash; the device must receive the server URL via the Bluetooth step above before it can connect to your dashboard.</li>
+                                <li style="margin-top: 6px;"><strong style="color: #f1f5f9;">WiFi password error</strong> &mdash; after 3 failed WiFi attempts the device clears credentials. Re-run this wizard from the top.</li>
+                            </ul>
+                            <p>Use <strong style="color: #f1f5f9;">Factory Reset Device</strong> above to clear stored settings, then re-run this wizard from your Vercel URL.</p>
+                        </div>
+                    </details>
+                </div>
+
                 <div class="btn-row" style="margin-top: 20px;">
                     <button type="button" class="btn" id="step-1-next-btn">Next: Google Places API <svg class="icon-sm"><use href="#icon-arrow-right"/></svg></button>
                 </div>
@@ -990,7 +1008,7 @@
             document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v4.1';
             document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v3.2';
             document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.7.0');
+            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.7.2');
             if (v.repoUrls) checkForUpstreamUpdates(v.system?.version, v.repoUrls);
         }).catch(function(){});
     }
@@ -1266,9 +1284,11 @@
         var webOnlyInfo = document.getElementById('web-only-info');
         var kindleInfo = document.getElementById('kindle-info-panel');
 
+        var trmnlTroubleshooting = document.getElementById('trmnl-troubleshooting');
         deviceInfo.style.display = 'none';
         wifiSection.style.display = 'none';
         factoryReset.style.display = 'none';
+        if (trmnlTroubleshooting) trmnlTroubleshooting.style.display = 'none';
         webOnlyInfo.style.display = 'none';
         kindleInfo.style.display = 'none';
 
@@ -1276,6 +1296,7 @@
             deviceInfo.style.display = 'block';
             wifiSection.style.display = 'block';
             factoryReset.style.display = 'block';
+            if (trmnlTroubleshooting) trmnlTroubleshooting.style.display = 'block';
             localStorage.setItem('cc-device', device);
         } else if (device && device.startsWith('kindle')) {
             kindleInfo.style.display = 'block';
