@@ -187,11 +187,13 @@ async function getEngine() {
     // back to getHardcodedRoutes() with index 0, ignoring the user's choice.
     await journeyEngine.discoverRoutes();
 
-    // Restore user's selected route from KV preferences
-    if (kvPrefs.selectedRouteIndex !== undefined) {
-      journeyEngine.selectRoute(parseInt(kvPrefs.selectedRouteIndex));
-    } else if (kvPrefs.selectedRouteId !== undefined) {
+    // Restore user's selected route from KV preferences.
+    // Route ID is stable regardless of coffee toggle; numeric index shifts when
+    // coffee routes are added/removed and must be treated as a fallback only.
+    if (kvPrefs.selectedRouteId !== undefined) {
       journeyEngine.selectRoute(kvPrefs.selectedRouteId);
+    } else if (kvPrefs.selectedRouteIndex !== undefined) {
+      journeyEngine.selectRoute(parseInt(kvPrefs.selectedRouteIndex));
     }
 
     lastPrefsHash = prefsHash;
@@ -463,20 +465,27 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       leg.originStop = actualName;
     }
 
-    // Resolve destination names via GTFS when engine provides generic ones
-    // For tram destinations in multi-modal routes: show transfer AREA, not train station name.
-    // "Alight at South Yarra" is correct; "Alight at South Yarra Station" is misleading.
+    // Resolve destination names via GTFS when engine provides generic ones.
+    // In multi-modal (tram+train) routes, the tram alights at the transfer area
+    // near the train station — use the home-side train stop as the area name.
+    // In direct tram routes, the tram goes to the work area — use work suburb only.
+    // This keeps per-journey-type preferences independent (Bug 5 fix).
     if (leg.type === 'tram' && leg.destination) {
       const genericDestNames = ['station', 'tram stop', 'bus stop', 'platform', 'stop', 'city'];
       const isDestGeneric = (name) => !name || genericDestNames.includes(name.toLowerCase().trim());
       if (isDestGeneric(leg.destination.name)) {
-        const gtfsDest = getStopNameById(stopIds.trainStopId);
         const workSuburb = extractSuburb(locations.work?.address);
-        // V5.4.0: Abbreviate "Station" to "Stn" rather than stripping entirely.
-        // Distinguishes the station area from the suburb name (avoids confusion
-        // when user is already in the same suburb as the alighting station).
-        const areaName = gtfsDest ? gtfsDest.replace(/\s+Station$/i, ' Stn') : null;
-        leg.destination.name = areaName || workSuburb || leg.destination.name;
+        const hasTrainLeg = route.legs.some(l => l.type === 'train' || l.type === 'vline');
+        if (hasTrainLeg) {
+          // Multi-modal: tram takes user to the train transfer area.
+          // V5.4.0: Abbreviate "Station" to "Stn" (not the full station name).
+          const gtfsDest = getStopNameById(stopIds.trainStopId);
+          const areaName = gtfsDest ? gtfsDest.replace(/\s+Station$/i, ' Stn') : null;
+          leg.destination.name = areaName || workSuburb || leg.destination.name;
+        } else {
+          // Direct tram: destination is the work area, not the train station.
+          leg.destination.name = workSuburb || leg.destination.name;
+        }
       }
     }
     if (leg.type === 'train' && leg.destination) {
@@ -3193,7 +3202,7 @@ export default async function handler(req, res) {
       totalWalkMins: journeyLegs.filter(l => l.type === 'walk').reduce((sum, l) => sum + (l.minutes || 0), 0),
       disruptionCount: journeyLegs.filter(l => l.state === 'suspended' || l.state === 'cancelled' || l.hasAlert).length,
       transferCount: journeyLegs.filter(l => ['train', 'tram', 'bus', 'vline'].includes(l.type)).length,
-      confidenceScore: confidence.score,
+      confidenceScore: confidence.label !== 'N/A' ? confidence.score : null,
       maxDelayMinutes,
       hasLiveData: hasAnyLiveData
     });
@@ -3308,8 +3317,17 @@ export default async function handler(req, res) {
       battery_percent: batteryPercent,
       battery_voltage: batteryVoltage,
       device_id: deviceId,
+      // Service status combines disruption state and minor delay signal for consistent badge display.
+      // 'MINOR DELAYS' is set when mindset stress is MEDIUM (real delays detected from GTFS-RT)
+      // but no full suspension/cancellation — prevents badge saying "SERVICES OK" alongside
+      // the confidence strip saying "MINOR DELAYS" (Bug 2 fix).
+      service_status: statusType === 'disruption' ? 'DISRUPTIONS'
+        : statusType === 'delay' ? 'DELAYS'
+        : (isCommuteDay && mindset?.stressLevel === 'MEDIUM') ? 'MINOR DELAYS'
+        : 'OK',
       // V14.0: Departure Confidence Score
-      confidence_score: confidence.score,
+      // Null on non-commute days to suppress "UNLIKELY (0%)" when label is N/A (Bug 1 fix).
+      confidence_score: confidence.label !== 'N/A' ? confidence.score : null,
       confidence_label: confidence.label,
       confidence_text: confidence.statusText,
       confidence_resilience: confidence.resilience,
