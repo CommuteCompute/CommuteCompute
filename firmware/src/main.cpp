@@ -1323,7 +1323,8 @@ bool pollPairingServer() {
     HTTPClient http;
 
     // Extract base server URL from webhookUrl (strip /api/screen suffix)
-    String baseUrl = String(webhookUrl);
+    // Fall back to DEFAULT_SERVER if webhookUrl not yet provisioned
+    String baseUrl = (strlen(webhookUrl) > 0) ? String(webhookUrl) : String(DEFAULT_SERVER);
     int apiIdx = baseUrl.indexOf("/api/");
     if (apiIdx > 0) baseUrl = baseUrl.substring(0, apiIdx);
     String url = baseUrl + "/api/pair/" + String(pairingCode);
@@ -1370,6 +1371,20 @@ void initDisplay() {
 }
 
 void showBootScreen() {
+    // Guard: wait for display BUSY to deassert before issuing full refresh.
+    // A stuck BUSY pin (from prior firmware crash or VCOM discharge failure)
+    // causes refresh(REFRESH_FULL, true) to block indefinitely.
+    // Allow up to 15 seconds; if still stuck, restart once to clear state.
+    unsigned long busyStart = millis();
+    while (digitalRead(EPD_BUSY_PIN) == HIGH && millis() - busyStart < 15000) {
+        delay(100);
+    }
+    if (digitalRead(EPD_BUSY_PIN) == HIGH) {
+        Serial.println("[BOOT] Display BUSY stuck — restarting to clear state");
+        delay(500);
+        ESP.restart();
+    }
+
     bbep->fillScreen(BBEP_WHITE);
     int bootX = (SCREEN_W - LOGO_BOOT_W) / 2;
     int bootY = (SCREEN_H - LOGO_BOOT_H) / 2;
