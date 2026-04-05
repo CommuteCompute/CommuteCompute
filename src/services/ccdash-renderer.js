@@ -2170,7 +2170,10 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   // v1.33: Service status box with live/scheduled data indicator
   const serviceStatus = data.service_status || (data.disruption ? 'DISRUPTIONS' : 'OK');
   const hasDisruption = data.disruption || data.status_type === 'disruption' ||
-    serviceStatus.toUpperCase().includes('DISRUPTION') || serviceStatus.toUpperCase().includes('DELAY');
+    serviceStatus.toUpperCase().includes('DISRUPTION') || serviceStatus.toUpperCase() === 'DELAYS';
+  // Minor delays: not a full disruption but not fully OK either — keep badge consistent
+  // with mindset strip to avoid contradicting "MINOR DELAYS" in confidence text (Bug 2 fix).
+  const hasMinorDelay = !hasDisruption && serviceStatus.toUpperCase() === 'MINOR DELAYS';
   // Per Section 23.6: LIVE DATA badge reflects actual GTFS-RT feed availability.
   // When API key is set and GTFS-RT returns data, badges show LIVE regardless of time of day.
   const isLiveData = data.isLive === true || data.dataSource === 'gtfs-rt' || data.dataSource === 'partial-live';
@@ -2199,6 +2202,13 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     ctx.fillRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
     ctx.fillStyle = '#FFF';
     ctx.fillText('\u26A0 DISRUPTIONS', statusBoxX + statusTextPad, statusBoxY + statusBoxH / 2);
+  } else if (hasMinorDelay) {
+    // Outlined with dash prefix — minor delays, consistent with confidence strip
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH);
+    ctx.fillStyle = '#000';
+    ctx.fillText('\u2014 MINOR DELAYS', statusBoxX + statusTextPad, statusBoxY + statusBoxH / 2);
   } else {
     // Outlined — no disruptions, services running normally
     ctx.strokeStyle = '#000';

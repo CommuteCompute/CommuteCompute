@@ -150,4 +150,57 @@ These details are relevant for firmware developers only:
 
 ---
 
+## Setup Wizard: Device Cycling Back to Pairing Screen After Reboot
+
+**Date Discovered:** 2026-04-05
+**Severity:** Medium (prevents first-time setup completion)
+**Status:** Workaround documented
+
+### Symptoms
+
+After completing Bluetooth pairing and Wi-Fi configuration through the setup wizard, one or more of the following may occur:
+
+- The TRMNL display cycles back to the setup / pairing screen after rebooting.
+- The device appears stuck on the "Commute Compute™" logo boot screen and does not progress.
+- The browser-based firmware flasher completes but the display shows a static or blank screen.
+
+### Root Cause
+
+The browser flasher and the manual VS Code ("Upload and Monitor All") flash path both write firmware correctly, but the device's saved Wi-Fi credentials or pairing token can be lost if the device resets its non-volatile storage (NVS) between the flash and the first successful boot. This typically happens when:
+
+1. The firmware is flashed with a different partition scheme than the existing one, triggering an NVS erase.
+2. The device is power-cycled before the setup wizard has finished writing credentials to NVS.
+3. A watchdog reset occurs during the Wi-Fi credential write phase.
+
+### Workaround
+
+**Step 1 — Confirm firmware is fully flashed**
+
+After flashing (either via browser or VS Code), wait for the serial monitor to show the boot sequence completing with a Wi-Fi connection attempt, before proceeding with the setup wizard.
+
+**Step 2 — If stuck on logo screen after reboot**
+
+Hold the TRMNL reset button for 5 seconds while the logo is displayed. This forces a full NVS clear and restarts the pairing sequence. You will need to repeat the setup wizard.
+
+**Step 3 — If browser flasher produces a static screen**
+
+Use the manual VS Code / PlatformIO flash path instead:
+1. Open the `firmware/` directory in VS Code with the PlatformIO extension installed.
+2. Select "Upload and Monitor All" from the PlatformIO toolbar.
+3. Wait for the serial monitor to confirm the boot sequence before starting the setup wizard.
+
+**Step 4 — If device repeatedly returns to setup screen**
+
+This indicates the pairing token is not being written to NVS. Check the following:
+- Ensure the device has a stable power supply during setup (USB-C, not battery only).
+- Confirm the setup wizard URL is correct and the Vercel deployment is live.
+- Try the setup wizard from a different browser (Chrome recommended).
+- As a last resort, reflash the firmware and repeat from Step 1.
+
+### Prevention
+
+Always allow the device 10–15 seconds after the logo appears before interacting with the setup wizard. The firmware needs time to initialise the radio stack and NVS subsystem before it can accept credentials.
+
+---
+
 (c) 2026 Commute Compute™ System by Angus Bergman -- AGPL-3.0 Dual Licence

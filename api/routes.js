@@ -129,14 +129,24 @@ export default async function handler(req, res) {
 
     // GET - discover and return all route alternatives
     const allRoutes = await engine.discoverRoutes();
-    const primaryRoute = allRoutes[0] || null;
+
+    // Apply saved route selection so GET reflects the user's stored preference.
+    // Route ID is stable across coffee toggles; numeric index is a fallback only.
+    if (prefs.selectedRouteId !== undefined) {
+      engine.selectRoute(prefs.selectedRouteId);
+    } else if (prefs.selectedRouteIndex !== undefined) {
+      engine.selectRoute(parseInt(prefs.selectedRouteIndex));
+    }
+
+    const selectedIdx = engine.selectedRouteIndex || 0;
+    const primaryRoute = allRoutes[selectedIdx] || allRoutes[0] || null;
 
     // Format all discovered routes for display
     const alternatives = allRoutes.map((route, index) => formatRouteForDisplay(route, index));
 
     // Mark the currently selected route
     alternatives.forEach((alt, idx) => {
-      alt.isSelected = idx === 0;
+      alt.isSelected = idx === selectedIdx;
     });
 
     // Include station overrides and nearby alternatives for admin panel dropdowns
@@ -187,7 +197,7 @@ export default async function handler(req, res) {
       success: true,
       count: alternatives.length,
       totalDiscovered: allRoutes.length,
-      selectedIndex: 0,
+      selectedIndex: selectedIdx,
       selectedId: primaryRoute?.id,
       alternatives,
       stationOverrides,
