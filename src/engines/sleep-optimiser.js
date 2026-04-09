@@ -95,9 +95,14 @@ class SleepOptimiser {
     // Use localHour if provided (timezone-correct), otherwise fall back to Date.getHours()
     const currentHour = typeof localHour === 'number' ? localHour : currentTime.getHours();
     const isEveningMode = currentHour >= EVENING_MODE_HOUR || currentHour < 5;
+    // After midnight (0-4 AM): bedtime has passed, recommendation is stale
+    const isPastBedtime = currentHour >= 0 && currentHour < 5;
 
     if (!isEveningMode) {
       return this._buildInactiveResult();
+    }
+    if (isPastBedtime) {
+      return { ...this._buildInactiveResult(), active: true, displayLine: 'GET SOME REST', secondaryLine: 'Bedtime has passed', sleepAdequacy: 'INSUFFICIENT' };
     }
 
     // Clamp sleep hours to reasonable range

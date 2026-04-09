@@ -2780,7 +2780,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
                             divertedLeg?.lineName || divertedLeg?.type?.toUpperCase() || 'SERVICE';
     const delayMin = data.delay_minutes || data.delayMinutes || 0;
     disruptionText = delayMin > 0 ? `+${delayMin} min DELAY` : `${divertedService} DIVERTED`;
-    statusText = `LEAVE NOW \u2192 Arrive ${calculatedArrival}`;
+    statusText = `LEAVE NOW \u2022 Arrive ${calculatedArrival}`;
     if (delayMin > 0) statusText += ` (+${delayMin} min)`;
   } else if (data.isTomorrowCommute) {
     // V16.0: Show LEAVE BY time for tomorrow's commute (more actionable than just target)
@@ -2797,21 +2797,21 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     const leaveByH12 = leaveByH % 12 || 12;
     const leaveByAmPm = leaveByH >= 12 ? 'pm' : 'am';
     const leaveByTime = `${leaveByH12}:${String(leaveByM).padStart(2, '0')}${leaveByAmPm}`;
-    statusText = `TOMORROW \u2192 Leave by ${leaveByTime} \u2192 Arrive ${targetArrivalDisplay}`;
+    statusText = `LEAVE ${leaveByTime} tmrw \u2022 Arrive ${targetArrivalDisplay}`;
   } else if (!isCommuteDay) {
     // Non-commute day — don't show LEAVE NOW or LATE
-    statusText = `NOT TODAY \u2192 Next commute: ${targetArrivalDisplay}`;
+    statusText = `NO COMMUTE TODAY`;
   } else if (isLate) {
     // V13.2: Only show LATE if user has arrive-by time set and within commute window
     // No disruption badge — status text already conveys LATE info. Badge only for service disruptions.
     const lateMinutes = Math.abs(diffMins);
-    statusText = `LATE \u2192 Arrive ${calculatedArrival} (+${lateMinutes} min)`;
+    statusText = `LATE +${lateMinutes}min \u2022 Arrive ${calculatedArrival}`;
   } else if (isCommuteDay && !isWithinArrivalWindow) {
     // Outside commute window — show journey info without target arrival comparison
-    statusText = `LEAVE NOW \u2192 Arrive ${calculatedArrival}`;
+    statusText = `LEAVE NOW \u2022 Arrive ${calculatedArrival}`;
   } else if (hasArriveByTarget && Number.isFinite(leaveIn) && leaveIn > 1) {
     // Respect configured arrival target when user still has buffer time.
-    statusText = `LEAVE IN ${formatLeaveIn(leaveIn)} → Arrive ${targetArrivalDisplay}`;
+    statusText = `LEAVE IN ${formatLeaveIn(leaveIn)} \u2022 Arrive ${targetArrivalDisplay}`;
   } else {
     // Normal - leave now when no explicit target window remains.
     statusText = `LEAVE NOW → Arrive ${calculatedArrival}`;
@@ -2886,11 +2886,11 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
     const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
     const confMaxWidth = Math.max(Math.round(100 * sx), rightBoundary - Math.round(200 * sx));
     let confText = `${confLabel} (${confidenceScore}%)`;
-    // Append optional segments only if they fit without truncation
+    // Append concise, actionable segments — prioritise transfer count and resilience detail
     const optionalSegments = [];
-    if (data.confidence_context) optionalSegments.push(` \u2022 ${data.confidence_context}`);
+    if (data.confidence_resilience_detail) optionalSegments.push(` \u2022 ${data.confidence_resilience_detail}`);
+    else if (data.confidence_context) optionalSegments.push(` \u2022 ${data.confidence_context}`);
     if (!stressIsLow && data.mindset_display) optionalSegments.push(` \u2022 ${data.mindset_display}`);
-    if (data.mindset_resilience) optionalSegments.push(` \u2022 ${data.mindset_resilience}`);
     for (const segment of optionalSegments) {
       const candidate = confText + segment;
       if (ctx.measureText(candidate).width <= confMaxWidth) {

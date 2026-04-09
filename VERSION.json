@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.7.4",
+    "version": "5.8.0",
     "name": "Commute Compute System",
     "releaseDate": "2026-04-09",
     "codename": "Turnkey Multi-State",
@@ -272,7 +272,7 @@
       "version": "5.4.8",
       "date": "2026-03-25",
       "changes": [
-        "Revert auto-detected tram route from nearest stop name: at intersections the nearest stop may be from a different route (e.g. Route 129) than what the user rides (Route 58) \u2014 only route engine and user preference are reliable sources",
+        "Revert auto-detected tram route from nearest stop name: at intersections the nearest stop may be from a different route (e.g. an alternate route) than what the user rides (the configured tram route) \u2014 only route engine and user preference are reliable sources",
         "Widen no-route-filter coord-proximity radius from 150m to 300m: 150m was too narrow to find tram stops at intersections, 300m gives enough reach while closest-route logic disambiguates multiple routes",
         "Revert detectStopIdsFromAddress tramRouteNumber to null: keep route extraction in findNearestStops for logging only"
       ]
@@ -334,8 +334,8 @@
       "date": "2026-03-24",
       "changes": [
         "Revert tram direction filter: GTFS-RT stop ID namespace mismatch made lookahead coordinates unavailable, causing coord-proximity to return no results and trams to fall back to timetable",
-        "Revert cascade < 3 threshold: mixed-tier results caused wrong routes (Route 78 instead of 58) when route-level merged with coord-proximity",
-        "Revert City Loop destination label override: liveData.destination is always 'City' for citybound trains, incorrectly overriding all train destinations including Frankston-through-Loop services",
+        "Revert cascade < 3 threshold: mixed-tier results caused wrong routes (an alternate route instead of 58) when route-level merged with coord-proximity",
+        "Revert City Loop destination label override: liveData.destination is always 'City' for citybound trains, incorrectly overriding all train destinations including City Loop-traversing services",
         "Fix renderer Next: stripping: only strip and recompute when nextDepartureTimesMs is available \u2014 preserves API subtitle for timetable fallback legs"
       ]
     },
@@ -380,7 +380,7 @@
         "Fix tram GTFS-RT stop ID mismatch: new alt-stop-id cascade tier tries GTFS_STOP_NAMES aliases and nearby stops on the same road (within 350m) \u2014 bridges gap when the user's exact stop ID doesn't appear in the feed's trip data",
         "Aggregate alt stop ID departures across all matching stops with trip ID dedup \u2014 captures full departure set when different trips visit different stops along the same road",
         "Multi-route tram support: findMatchingDeparture skips route filter for trams (user catches whichever route arrives first), dynamic route number updated from actual catchable departure",
-        "Train direction filter in raw feed fallback: outbound trains no longer display as going to citybound destinations (e.g. Frankston incorrectly shown as 'to Parliament Station')",
+        "Train direction filter in raw feed fallback: outbound trains no longer display as going to citybound destinations (e.g. a train line incorrectly shown as 'to Parliament Station')",
         "Coord-proximity route-only fallback: when route filter confirms correct line but no stops have coordinates, accepts trip using earliest future stop_time_update as approximation"
       ]
     },
@@ -445,7 +445,7 @@
       "version": "5.3.0",
       "date": "2026-03-22",
       "changes": [
-        "CCDash Renderer v3.2: per-leg element scaling prevents overlap with 7+ journey legs, coffee leg redesign (no number bubble, no time box, coffee icon replaces [OK] text, centre-aligned label), route/line names in transit leg titles (e.g. Sandringham to Parliament, Route 19 to City)",
+        "CCDash Renderer v3.2: per-leg element scaling prevents overlap with 7+ journey legs, coffee leg redesign (no number bubble, no time box, coffee icon replaces [OK] text, centre-aligned label), route/line names in transit leg titles (e.g. a train line to a City Loop station, the tram route to City)",
         "Timetable fallback now shows 3 estimated departures with headway instead of single Scheduled ~Xmin",
         "buildLegTitle: train legs show line name, tram legs show Route N format"
       ]

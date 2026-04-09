@@ -150,6 +150,10 @@ export const STATE_CONFIG = {
   }
 };
 
+// Turnkey constants for walking and interchange calculations
+const INTERCHANGE_WALK_THRESHOLD_METRES = 300;
+const TRANSFER_WALK_MULTIPLIER = 1.2; // Station transfers include stairs, barriers, crossings
+
 /**
  * Postcode to state mapping (first digit)
  */
@@ -1556,7 +1560,7 @@ export class CommuteCompute {
       // then fall back to 300m proximity matching
       let nearbyTrams;
       if (trainStation.lat && trainStation.lon) {
-        const interchangeStops = findNearestStops(trainStation.lat, trainStation.lon, { radiusMeters: 300 });
+        const interchangeStops = findNearestStops(trainStation.lat, trainStation.lon, { radiusMeters: INTERCHANGE_WALK_THRESHOLD_METRES });
         if (interchangeStops.tram) {
           // Match the GTFS-resolved tram stop back to the allStops array for full data
           const matchedTram = tramStops.find(t => t.id === interchangeStops.tram.id) ||
@@ -1567,7 +1571,7 @@ export class CommuteCompute {
       // Fallback: 300m proximity matching from allStops data
       if (!nearbyTrams || nearbyTrams.length === 0) {
         nearbyTrams = tramStops.filter(t =>
-          this.haversineDistance(trainStation.lat, trainStation.lon, t.lat, t.lon) < 300
+          this.haversineDistance(trainStation.lat, trainStation.lon, t.lat, t.lon) < INTERCHANGE_WALK_THRESHOLD_METRES
         );
       }
 

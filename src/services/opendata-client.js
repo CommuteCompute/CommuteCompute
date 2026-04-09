@@ -934,8 +934,9 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
     // that happen to pass near the same intersection
     if (targetRouteNumber) {
       const tripRoute = getRouteNumber(tripUpdate.trip?.routeId);
-      if (!tripRoute) continue; // Skip departures with unknown route when filtering by route
-      if (normalizeRouteNumber(tripRoute) !== normalizeRouteNumber(targetRouteNumber)) continue;
+      // Only filter when both route numbers are known — include if route is unknown
+      // (coordinate-based tram matching often lacks routeId in GTFS-RT trips)
+      if (tripRoute && normalizeRouteNumber(tripRoute) !== normalizeRouteNumber(targetRouteNumber)) continue;
     }
 
     const stus = tripUpdate.stopTimeUpdate;

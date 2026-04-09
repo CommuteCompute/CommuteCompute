@@ -101,7 +101,9 @@ class DepartureConfidence {
       }
     }
 
-    const timeBuffer = this._calcTimeBuffer(bufferMins);
+    // Tomorrow commute: user has hours until departure — time buffer is maximally positive.
+    // The negative bufferMins from today's perspective is meaningless for tomorrow's journey.
+    const timeBuffer = isTomorrowCommute ? TIME_BUFFER_MAX : this._calcTimeBuffer(bufferMins);
     const serviceFrequency = this._calcServiceFrequency(legs);
     const weatherImpact = this._calcWeatherImpact(weather);
     const disruptionImpact = this._calcDisruptionImpact(legs);

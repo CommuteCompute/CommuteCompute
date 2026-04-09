@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-AU">
 <!--
     Commute Compute - Help & Documentation
     Copyright (c) 2026 Angus Bergman
@@ -643,7 +643,7 @@
         
         <main class="main">
             <h1 class="page-title">Help &amp; Documentation</h1>
-            <p class="page-subtitle">Everything you need to set up and use Commute Compute</p>
+            <p class="page-subtitle">Everything you need to set up and use Commute Compute&#8482;</p>
             
             <!-- Overview -->
             <section class="section" id="overview">
@@ -659,7 +659,7 @@
                         <div class="card">
                             <div class="card-icon">Real-Time</div>
                             <div class="card-title">Real-Time Data</div>
-                            <div class="card-desc">Live departure times updated every 20 seconds from Transport Victoria</div>
+                            <div class="card-desc">Live departure times updated every 60 seconds from Transport Victoria</div>
                         </div>
                         <div class="card">
                             <div class="card-icon">Coffee</div>
@@ -1011,7 +1011,7 @@
                 document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v4.1';
                 document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v3.2';
                 document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.7.4');
+                document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.8.0');
             })
             .catch(() => {});
     }
@@ -1041,7 +1041,7 @@
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">System</span>
-                <span class="cc-footer-version-value" id="cc-footer-system-version">v5.7.4</span>
+                <span class="cc-footer-version-value" id="cc-footer-system-version">v5.8.0</span>
             </div>
             <div class="cc-footer-version-item">
                 <span class="cc-footer-version-label">Build</span>

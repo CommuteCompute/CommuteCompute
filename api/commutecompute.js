@@ -90,6 +90,8 @@ const NIGHT_MULTIPLIER = 3;       // 10pm-6am
  */
 function getDefaultHeadway(legType, hourOfDay) {
   const base = DEFAULT_HEADWAYS[legType] || DEFAULT_HEADWAYS.bus;
+  // No train/tram services between 1-5 AM in Australian metro networks
+  if (hourOfDay >= 1 && hourOfDay < 5 && (legType === 'train' || legType === 'tram')) return null;
   if (hourOfDay >= 22 || hourOfDay < 6) return Math.round(base * NIGHT_MULTIPLIER);
   if (hourOfDay >= 20 || (hourOfDay >= 9 && hourOfDay < 16)) return Math.round(base * OFFPEAK_MULTIPLIER);
   return base;
@@ -868,6 +870,15 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       cumulativeMinutes,           // Minutes from journey start to reach this leg
       catchInMinutes: cumulativeMinutes, // Same as cumulative for clarity
       arriveTime,                  // When user arrives at this leg's start point
+      // For walk legs, calculate arrival at walk endpoint (start + duration)
+      endTime: leg.type === 'walk' ? (() => {
+        const endMins = nowMins + cumulativeMinutes + legDuration;
+        const endH = Math.floor(endMins / 60) % 24;
+        const endM = endMins % 60;
+        const endH12 = endH % 12 || 12;
+        const endAmPm = endH >= 12 ? 'pm' : 'am';
+        return `${endH12}:${String(endM).padStart(2, '0')}${endAmPm}`;
+      })() : null,
       departTime,                  // V13.6: Actual departure clock time
       nextDepartureTimesMs,        // V13.6: Catchable departures in ms (for Next: x,y,z)
       actualDepartureMs,           // V13.6: Actual departure timestamp for stable arrival calc
@@ -1030,7 +1041,11 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
           .replace(/PartCancellation/gi, 'Partial Cancellation')
           .replace(/ReducedService/gi, 'Reduced Service')
           .replace(/SignificantDelays/gi, 'Significant Delays')
-          .replace(/StopNotServiced/gi, 'Stop Not Serviced');
+          .replace(/StopNotServiced/gi, 'Stop Not Serviced')
+          .replace(/ServiceInformation/gi, 'Service Update')
+          .replace(/GeneralNotice/gi, 'Notice')
+          .replace(/RouteVariation/gi, 'Route Change')
+          .replace(/TrainReplacement/gi, 'Replacement Bus');
       };
 
       // V13.6: Apply disruption alerts ONLY if they EXPLICITLY affect this leg
@@ -2209,15 +2224,19 @@ async function handleRandomJourney(req, res, options = {}) {
       confidence_text: journey.legs.some(l => l.state === 'delayed') ? '65%' : '88%'
     };
 
+    // Check format — return JSON if requested, otherwise render PNG
+    const format = req.query?.format;
+    if (format === 'json') {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return res.status(200).json({ success: true, random: true, ...dashboardData });
+    }
+
     // Render using V13 renderer
     const pngBuffer = await renderFullDashboard(dashboardData);
 
     res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Cache-Control', 'no-cache, no-store');
-    res.setHeader('X-Journey-Origin', journey.origin);
-    res.setHeader('X-Journey-Dest', journey.destination);
-    res.setHeader('X-Journey-Legs', journey.legs.length.toString());
-    res.setHeader('X-Journey-Transit', journey.transitType);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     if (options.setupPending) res.setHeader('X-Setup-Pending', 'true');
     res.send(pngBuffer);
 
@@ -2349,7 +2368,7 @@ export default async function handler(req, res) {
     // Get user's state for timezone-aware time calculations
     const userState = await getUserState() || 'VIC';
 
-    // Get current time
+    // Get current time (or simulated time for testing)
     const now = getMelbourneTime();
     const currentTime = formatTime(now, userState);
     const melbourneTime = getMelbourneDisplayTime(now, userState);
@@ -3199,8 +3218,9 @@ export default async function handler(req, res) {
     });
     const dashboardData = {
       location: displayHome,
-      current_time: currentTime,
+      current_time: `${currentTime}${amPm}`,
       am_pm: amPm,  // V13.6: Explicit AM/PM from Melbourne time
+      timezone: STATE_TIMEZONES[userState] || 'Australia/Melbourne',
       day,
       date,
       temp: weatherData?.temp ?? '--',
@@ -3251,9 +3271,9 @@ export default async function handler(req, res) {
       })(),
       cafe_is_open: kvPrefs?.addresses?.cafe ? cafeIsOpen : null,
       cafe_wait_time: coffeeDecision?.canGet ? (coffeeDecision?.commute?.makeCoffee || 3) : null,
-      cafe_busyness: coffeeDecision?.busyLevel || 'quiet',
+      cafe_busyness: cafeIsOpen ? (coffeeDecision?.busyLevel || 'quiet') : null,
       // V15.0: Transit availability notice (e.g., "TRAM USING TIMETABLE DATA")
-      transit_notice: transitNotice,
+      transit_notice: transitNotice || (hasAnyLiveData && removedTypes.length > 0 ? `Some services using scheduled data (${removedTypes.join(', ')})` : null),
       timetable_types: removedTypes.length > 0 ? removedTypes : null,
       walk_faster_types: walkFasterTypes.length > 0 ? walkFasterTypes : null,
       // Walking constraint warning — route exceeds user's max walking distance
@@ -3303,7 +3323,9 @@ export default async function handler(req, res) {
         busMatches: buses?.filter(t => t.isLive === true).length || 0,
         trainError: trains?._feedInfo?.error || null,
         tramError: trams?._feedInfo?.error || null,
-        busError: buses?._feedInfo?.error || null
+        busError: buses?._feedInfo?.error || null,
+        // Feed staleness: seconds since GTFS-RT data was fetched
+        feed_age_seconds: Math.round((now.getTime() - (trains?._feedInfo?.fetchTime || trams?._feedInfo?.fetchTime || now.getTime())) / 1000)
       },
       // V13.6: Device battery status (from TRMNL device request)
       battery_percent: batteryPercent,
@@ -3411,8 +3433,8 @@ export default async function handler(req, res) {
           leaveNow: currentTime + amPm,
           arriveAt: arriveAtJson,
           totalMinutes,
-          onTime: arrivalDiff <= 5,
-          diffMinutes: arrivalDiff,
+          onTime: isTomorrowCommute ? null : arrivalDiff <= 5,
+          diffMinutes: isTomorrowCommute ? null : arrivalDiff,
           status: isTomorrowCommute ? 'tomorrow' : arrivalDiff > 5 ? 'late' : arrivalDiff < -10 ? 'early' : 'on-time',
           statusContext: isTomorrowCommute ? 'Showing live services if you left now' : null
         },
@@ -3513,13 +3535,17 @@ export default async function handler(req, res) {
         }))
       };
       res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       return res.status(200).json(jsonResponse);
     }
 
     // Resolve device display dimensions from KV preferences
     const deviceModel = kvPrefs?.deviceModel || 'trmnl-og';
     const displayDims = DISPLAY_DIMENSIONS[deviceModel] || DISPLAY_DIMENSIONS['trmnl-og'];
+
+    if (format && format !== 'bmp' && format !== 'json' && format !== 'png') {
+      return res.status(400).json({ error: `Unsupported format: ${format}`, supported: ['json', 'bmp', 'png'] });
+    }
 
     if (format === 'bmp') {
       // BMP format for e-ink devices (V13.6: await async render)
@@ -3538,7 +3564,7 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('X-Dashboard-Timestamp', now.toISOString());
-    res.setHeader('X-Route-Name', (route?.name || 'default').replace(/[^\x20-\x7E]/g, '-'));
+    res.setHeader('X-Image-Description', `Commute dashboard: ${journeyLegs.length} legs, ${dashboardData.total_minutes || 0} min journey, ${dashboardData.confidence_label || ''} (${dashboardData.confidence_score || 0}%)`);
     res.setHeader('Content-Length', png.length);
 
     return res.status(200).send(png);

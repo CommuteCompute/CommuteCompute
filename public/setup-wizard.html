@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-AU">
 <!--
     Commute Compute Setup Wizard - Intelligent Configuration
     Version: 3.0 (Rebuilt for firmware pairing protocol compliance)
@@ -1008,7 +1008,7 @@
             document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v4.1';
             document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v3.2';
             document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.7.4');
+            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.8.0');
             if (v.repoUrls) checkForUpstreamUpdates(v.system?.version, v.repoUrls);
         }).catch(function(){});
     }
