@@ -934,7 +934,8 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
     // that happen to pass near the same intersection
     if (targetRouteNumber) {
       const tripRoute = getRouteNumber(tripUpdate.trip?.routeId);
-      if (tripRoute && normalizeRouteNumber(tripRoute) !== normalizeRouteNumber(targetRouteNumber)) continue;
+      if (!tripRoute) continue; // Skip departures with unknown route when filtering by route
+      if (normalizeRouteNumber(tripRoute) !== normalizeRouteNumber(targetRouteNumber)) continue;
     }
 
     const stus = tripUpdate.stopTimeUpdate;

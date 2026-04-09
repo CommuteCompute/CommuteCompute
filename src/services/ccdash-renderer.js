@@ -1317,11 +1317,17 @@ function getLegTitle(leg) {
       const tramDest = getDestName();
       const tramLabel = leg.routeNumber ? `Route ${leg.routeNumber}` : (leg.lineName || 'Tram');
       return `${tramLabel} to ${tramDest}`;
-    case 'train':
-      // V16.0: Show line name in title (e.g. "Sandringham to Parliament Station")
-      const trainDest = getDestName();
-      const trainLine = leg.lineName || '';
-      return trainLine ? `${trainLine} to ${trainDest}` : `Train to ${trainDest}`;
+    case 'train': {
+      // Format: "<LineName> Line to <Destination>" — strip "Station" suffix from dest
+      // e.g. "Frankston Line to Parliament" not "Train to Parliament Station"
+      const trainDestRaw = getDestName();
+      const trainDest = trainDestRaw.replace(/\s*Station\s*$/i, '');
+      const rawLineName = leg.lineName || leg.routeName || '';
+      const lineTitle = rawLineName
+        ? (rawLineName.toLowerCase().includes('line') ? rawLineName : `${rawLineName} Line`)
+        : 'Train';
+      return `${lineTitle} to ${trainDest}`;
+    }
     case 'bus':
       if (leg.isReplacement) {
         return 'Rail Replacement Bus';
@@ -2901,7 +2907,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   ctx.fillStyle = '#FFF';
   ctx.font = `bold ${Math.max(11, Math.round(13 * fs))}px Inter, sans-serif`;
   const statusTextX = Math.round(16 * sx);
-  const statusMaxWidth = Math.max(Math.round(80 * sx), rightBoundary - statusTextX - Math.round(8 * sx));
+  const statusMaxWidth = Math.max(Math.round(120 * sx), rightBoundary - statusTextX - Math.round(8 * sx));
   if (ctx.measureText(statusText).width > statusMaxWidth) {
     const ellipsis = '\u2026';
     const ellipsisW = ctx.measureText(ellipsis).width;
@@ -3011,7 +3017,7 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
       const isPM = cleanDepartTime.toLowerCase().includes('pm') && h !== 12;
       const isAM = cleanDepartTime.toLowerCase().includes('am') && h === 12;
       const hour24 = isPM ? h + 12 : (isAM ? 0 : h);
-      const now = new Date();
+      const now = new Date(nowMs);
       const departMs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour24, m).getTime();
       const minsUntilDepart = Math.max(0, Math.round((departMs - nowMs) / 60000));
       cumulativeMinutes += (leg.journeyContribution || leg.minutes || leg.durationMinutes || 0);

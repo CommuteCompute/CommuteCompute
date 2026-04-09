@@ -456,6 +456,27 @@ All rules from previous versions have been incorporated. The canonical source is
 | `while(true)` blocking | Causes freeze | State machine pattern |
 | `console.log('PTV API...')` | Forbidden in logs | Use `Transport API` or similar |
 
+### 1.1b No Hardcoded Values — Turnkey Compliance
+
+**[CRITICAL] MANDATORY: All code must be turnkey and location-agnostic.**
+
+All code changes, commit messages, branch names, and documentation must work for ANY user regardless of their configured routes, leg counts, transit modes, or geographic location. No hardcoded values that assume a specific user's commute.
+
+| Forbidden Pattern | Reason | Use Instead |
+|-------------------|--------|-------------|
+| Hardcoded stop IDs in logic (e.g. `stopId === 19338`) | Assumes specific user location | Configuration-driven via preferences |
+| Hardcoded route numbers in logic (e.g. `routeNumber === '58'`) | Assumes specific route | Dynamic from GTFS-RT feed |
+| Hardcoded station names in logic (e.g. `=== 'South Yarra'`) | Assumes specific user | GTFS lookup or configuration |
+| Hardcoded headway intervals (e.g. `const headway = 8`) | Ignores time-of-day variation | `getDefaultHeadway()` or `DEFAULT_HEADWAYS` constant |
+| Hardcoded departure counts (e.g. `if (deps.length < 3)`) | May not suit all services | Use configurable thresholds or named constants |
+| Hardcoded coordinates (lat/lng) in logic | Assumes specific location | Calculated from user's configured addresses |
+| Specific route/stop/station names in commit messages | Leaks user commute details | Generic descriptions: "the tram route", "the transit stop" |
+| Specific route/stop/station names in code comments | May confuse other users | Generic: "the user's configured stop" |
+
+**Exceptions:** Constants that define system-wide infrastructure (e.g. `CITY_LOOP_PLATFORM_IDS`, `METRO_TUNNEL_LINE_CODES`, `FLINDERS_ONLY_LINE_CODES`) are acceptable — these are Melbourne infrastructure, not user-specific values. `DEFAULT_HEADWAYS` constants with documented rationale are acceptable.
+
+**Audit enforcement:** The compliance audit checks for hardcoded stop IDs, route numbers, and station names in logic paths. Named constants in dedicated constant blocks are exempt.
+
 ### 1.2 Legacy PTV API Prohibition
 
 **[WARNING] ABSOLUTE PROHIBITION**: Never reference legacy PTV APIs.

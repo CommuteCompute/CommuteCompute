@@ -10,6 +10,10 @@
  * Per Section 3.4: API keys from KV storage only
  */
 
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const versionData = require('../VERSION.json');
+
 import { getTransitApiKey, getClient } from '../src/data/kv-preferences.js';
 
 // Health check using KV storage per Zero-Config (Section 3.1)
@@ -36,7 +40,7 @@ export default async function handler(req, res) {
   res.status(200).json({
     status: 'ok',
     timestamp: new Date(now).toISOString(),
-    version: '5.0.0',
+    version: versionData.system?.version || '0.0.0',
     node: process.version,
     uptime: process.uptime(),
     memory: {

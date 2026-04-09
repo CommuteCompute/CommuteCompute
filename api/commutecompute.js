@@ -22,7 +22,6 @@ import { VIC_METRO_STATIONS, VIC_TRAM_STOPS_WITH_COORDS } from '../src/data/vic/
 import { haversine } from '../src/utils/haversine.js';
 import { getTransitApiKey, getPreferences, getUserState, setDeviceStatus, getClient, getStationOverrides, setStationOverrides, getPreferredTramRoute, setPreferredTramRoute, getPreferredTramStop, setPreferredTramStop } from '../src/data/kv-preferences.js';
 import { renderFullDashboard, renderFullScreenBMP, DISPLAY_DIMENSIONS } from '../src/services/ccdash-renderer.js';
-import { getScenario, getScenarioNames } from '../src/services/journey-scenarios.js';
 import DepartureConfidence from '../src/engines/departure-confidence.js';
 import LifestyleContext from '../src/engines/lifestyle-context.js';
 import SleepOptimiser from '../src/engines/sleep-optimiser.js';
@@ -63,14 +62,37 @@ const FLINDERS_ONLY_LINE_CODES = new Set([
 function isLikelyCityLoopTrain(departure) {
   if (departure.isMetroTunnel) return false;
   if (departure.passesCityLoop === true) return true;
+  // Extract line code for Flinders-only check
   const lineCode = departure.routeId?.match(/vic-02-([A-Z]+)/)?.[1];
   // Only trust passesCityLoop:false for KNOWN Flinders-only lines.
   // For other lines (Frankston, Cranbourne etc.), the flag is often false because
   // GTFS-RT stop_time_updates only include upcoming stops — City Loop platforms
   // haven't been reported yet even though the train WILL serve them.
   if (departure.passesCityLoop === false && lineCode && FLINDERS_ONLY_LINE_CODES.has(lineCode)) return false;
+  // Flinders-only line without passesCityLoop flag — still exclude
   if (lineCode && FLINDERS_ONLY_LINE_CODES.has(lineCode)) return false;
+  // All other lines (including Frankston with passesCityLoop:false) — assume City Loop
   return true;
+}
+
+// Base headway defaults (minutes) per transit mode — Australian metro service patterns.
+// Used for timetable fallback when GTFS-RT headway cannot be observed.
+const DEFAULT_HEADWAYS = { tram: 8, train: 10, bus: 15, vline: 30, ferry: 30 };
+const OFFPEAK_MULTIPLIER = 1.5;  // 9am-4pm, 8pm-10pm
+const NIGHT_MULTIPLIER = 3;       // 10pm-6am
+
+/**
+ * Time-aware timetable headway defaults.
+ * Peak (6-9, 16-20): base headway. Off-peak (9-16, 20-22): 1.5x. Night (22-6): 3x.
+ * @param {string} legType - 'tram', 'train', 'bus', 'vline', 'ferry'
+ * @param {number} hourOfDay - Hour in local time (0-23)
+ * @returns {number} Headway in minutes
+ */
+function getDefaultHeadway(legType, hourOfDay) {
+  const base = DEFAULT_HEADWAYS[legType] || DEFAULT_HEADWAYS.bus;
+  if (hourOfDay >= 22 || hourOfDay < 6) return Math.round(base * NIGHT_MULTIPLIER);
+  if (hourOfDay >= 20 || (hourOfDay >= 9 && hourOfDay < 16)) return Math.round(base * OFFPEAK_MULTIPLIER);
+  return base;
 }
 
 /**
@@ -656,7 +678,7 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
             const rawHeadway = (sorted[sorted.length - 1] - sorted[0]) / (sorted.length - 1);
             headwayMs = Math.max(3 * 60000, Math.min(30 * 60000, rawHeadway));
           } else {
-            headwayMs = (leg.type === 'tram' ? 12 : leg.type === 'train' ? 15 : 15) * 60000;
+            headwayMs = getDefaultHeadway(leg.type, melbTime.hour) * 60000;
           }
           let projected = sorted[sorted.length - 1];
           while (projected < arrivalAtStopMs) {
@@ -683,6 +705,11 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       }
 
       if (actualDepartureMs) {
+        // Ensure departTime is always catchable — never show a departure the user can't reach
+        if (actualDepartureMs < arrivalAtStopMs && nextDepartureTimesMs?.length > 0) {
+          const catchable = nextDepartureTimesMs.filter(ms => ms >= arrivalAtStopMs);
+          if (catchable.length > 0) actualDepartureMs = catchable[0];
+        }
         // Minutes from NOW to that departure (for the minutes box)
         let rawMinutes = Math.round((actualDepartureMs - nowMs) / 60000);
 
@@ -727,7 +754,10 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       // For trains: filter raw feed by direction — outbound trains should never
       // show as going to a citybound destination (e.g. Parliament Station).
       if (leg.type === 'train' && leg.isCitybound !== undefined) {
-        const dirFiltered = feedLiveDeps.filter(d => d.isCitybound === leg.isCitybound);
+        let dirFiltered = feedLiveDeps.filter(d => d.isCitybound === leg.isCitybound);
+        if (leg.requiresCityLoop) {
+          dirFiltered = dirFiltered.filter(d => isLikelyCityLoopTrain(d));
+        }
         feedLiveDeps.length = 0;
         dirFiltered.forEach(d => feedLiveDeps.push(d));
       }
@@ -781,7 +811,7 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         // direction/route filtering removed all matches, the subtitle showed transit
         // duration ("Scheduled ~6min") instead of departure countdown.
         const estDepartMs = nowMs + (minutesToDeparture * 60000);
-        const headway = leg.type === 'tram' ? 8 : (leg.type === 'train' ? 10 : 15);
+        const headway = getDefaultHeadway(leg.type, melbTime.hour);
         nextDepartureTimesMs = [
           estDepartMs,
           estDepartMs + (headway * 60000),
@@ -862,7 +892,7 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     if (isTransitLeg && liveData?.allDepartures?.length > 0) {
       const destName = leg.destination?.name || 'City';
       if (leg.type === 'train' || leg.type === 'vline') {
-        // Filter to only trains that can reach the destination
+        // Filter allDepartures to only trains that can reach the destination
         const reachableDeps = leg.requiresCityLoop
           ? liveData.allDepartures.filter(d => isLikelyCityLoopTrain(d))
           : liveData.allDepartures;
@@ -921,11 +951,14 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       // Padding: future departures fill remaining slots up to 3 for service
       // frequency context — the DEPART time box shows the actual catchable departure.
       if (baseLeg.nextDepartureTimesMs?.length > 0) {
-        // 2-min buffer before estimated arrival — accounts for GTFS-RT timing error
+        // Allow 2-min buffer before estimated arrival — accounts for GTFS-RT timing
+        // estimation error (~1-2 min) and the possibility of walking slightly faster.
+        // Turnkey: applies to all modes and stops equally.
         const catchabilityBuffer = 2 * 60000;
         const catchable = baseLeg.nextDepartureTimesMs
           .filter(depMs => depMs >= arrivalAtStopMs - catchabilityBuffer)
           .map(depMs => Math.round((depMs - nowMs) / 60000));
+        // Pad with future departures (from now) if fewer than 3 catchable
         if (catchable.length < 3) {
           const allFuture = baseLeg.nextDepartureTimesMs
             .filter(depMs => depMs > nowMs)
@@ -935,11 +968,20 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
             if (!catchable.includes(m)) catchable.push(m);
           }
         }
+        // V5.6.9: Sort unconditionally — previously only sorted inside the padding
+        // branch (catchable < 3), leaving the array unsorted when 3+ catchable
+        // departures existed. The subtitle builder sorts before display, but the
+        // raw API nextDepartures field was returned unsorted.
         baseLeg.nextDepartures = catchable.sort((a, b) => a - b);
       }
 
-      // Guarantee 4 departures (1 for DEPART + 3 for "Next:" subtitle).
+      // Guarantee at least 4 departures — the first goes to the DEPART time box,
+      // leaving 3 for the "Next: X, Y, Z min" subtitle. Two-tier approach:
+      // 1. Supplement from the full direction-filtered raw GTFS-RT feed
+      // 2. If still < 4, project headway-based departures from observed intervals
+      // All data derived from actual live GTFS-RT data — no fabrication.
       if (baseLeg.nextDepartures && baseLeg.nextDepartures.length < 4 && baseLeg.isLive) {
+        // Tier 1: Real departures from the full raw feed
         const feedForMode = leg.type === 'tram' ? transitData.trams :
                             leg.type === 'bus' ? transitData.buses :
                             transitData.trains;
@@ -956,19 +998,23 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
           if (baseLeg.nextDepartures.length >= 4) break;
           if (!baseLeg.nextDepartures.includes(m)) baseLeg.nextDepartures.push(m);
         }
+        // Tier 2: Headway projection from observed live intervals when still < 3.
+        // Extrapolates the next departure using the observed gap between existing ones.
+        // Derived from real GTFS-RT headway — not fabricated.
         while (baseLeg.nextDepartures.length < 4 && baseLeg.nextDepartures.length >= 2) {
           const sorted = [...baseLeg.nextDepartures].sort((a, b) => a - b);
           const headway = sorted[sorted.length - 1] - sorted[sorted.length - 2];
           const projected = sorted[sorted.length - 1] + Math.max(headway, 5);
           if (projected <= 120 && !baseLeg.nextDepartures.includes(projected)) {
             baseLeg.nextDepartures.push(projected);
+            // Also add to nextDepartureTimesMs so the renderer's subtitle picks it up
             const projectedMs = nowMs + (projected * 60000);
             if (baseLeg.nextDepartureTimesMs && !baseLeg.nextDepartureTimesMs.includes(projectedMs)) {
               baseLeg.nextDepartureTimesMs.push(projectedMs);
               baseLeg.nextDepartureTimesMs.sort((a, b) => a - b);
             }
           } else {
-            break;
+            break;  // Can't project further
           }
         }
         baseLeg.nextDepartures.sort((a, b) => a - b);
@@ -1132,7 +1178,8 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       const suspendedLine = baseLeg.lineName || '';
       const altTrains = transitData.trains.filter(t =>
         t.isLive && t.isCitybound && t.lineName !== suspendedLine &&
-        t.departureTimeMs && t.departureTimeMs >= arrivalAtStopMs
+        t.departureTimeMs && t.departureTimeMs >= arrivalAtStopMs &&
+        (!leg.requiresCityLoop || isLikelyCityLoopTrain(t))
       ).sort((a, b) => a.departureTimeMs - b.departureTimeMs);
       if (altTrains.length > 0) {
         const alt = altTrains[0];
@@ -1425,12 +1472,14 @@ function filterCityLoopPreference(dirMatches) {
   // the user to wait 80+ min is worse than catching a direct train to Flinders
   // Street and walking ~7 min to the City Loop station.
   if (cityLoopTrains.length > 0) {
-    const nonLoopNonTunnel = dirMatches.filter(d => !cityLoopTrains.includes(d) && !d.isMetroTunnel);
+    const nonLoopNonTunnel = dirMatches.filter(d =>
+      !cityLoopTrains.includes(d) && !d.isMetroTunnel && isLikelyCityLoopTrain(d)
+    );
     if (nonLoopNonTunnel.length > 0) {
       const nearestLoopMs = Math.min(...cityLoopTrains.map(d => d.departureTimeMs || Infinity));
       const nearestDirectMs = Math.min(...nonLoopNonTunnel.map(d => d.departureTimeMs || Infinity));
       if (nearestDirectMs < Infinity && (nearestLoopMs - nearestDirectMs) > 30 * 60000) {
-        // Direct service is >30 min sooner — include all non-Metro-Tunnel trains.
+        // Direct service is >30 min sooner — include likely City Loop trains.
         return dirMatches.filter(d => isLikelyCityLoopTrain(d));
       }
     }
@@ -1440,6 +1489,7 @@ function filterCityLoopPreference(dirMatches) {
     const nearestLoopMs = Math.min(...cityLoopTrains.map(d => d.departureTimeMs || Infinity));
     const nearbyDirect = dirMatches.filter(d =>
       !cityLoopTrains.includes(d) && !d.isMetroTunnel &&
+      isLikelyCityLoopTrain(d) &&
       d.departureTimeMs && (d.departureTimeMs - nearestLoopMs) < 10 * 60000
     );
     return [...cityLoopTrains, ...nearbyDirect].sort((a, b) => (a.departureTimeMs || 0) - (b.departureTimeMs || 0));
@@ -1454,7 +1504,13 @@ function filterCityLoopPreference(dirMatches) {
   if (likelyCityLoop.length > 0) {
     return likelyCityLoop;
   }
-  return [];
+  // Last resort: prefer non-Flinders-only, non-Metro-Tunnel trains.
+  // When GTFS-RT data is sparse, showing likely City Loop options is better than
+  // forcing timetable fallback which may show wrong destination.
+  const lastResort = dirMatches.filter(d => !d.isMetroTunnel && isLikelyCityLoopTrain(d));
+  if (lastResort.length > 0) return lastResort;
+  // Absolute fallback: any non-Metro-Tunnel train (downstream allDepartures re-filter catches leaks)
+  return dirMatches.filter(d => !d.isMetroTunnel);
 }
 
 /**
@@ -1547,6 +1603,8 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
     const supplements = departures
       .filter(d => d.departureTimeMs && !existingMs.has(d.departureTimeMs) &&
         (leg.isCitybound === undefined || d.isCitybound === leg.isCitybound) &&
+        // Exclude Flinders-only lines when City Loop is required — prevents
+        // Sandringham/Alamein/Glen Waverley from leaking back through padding
         (!leg.requiresCityLoop || isLikelyCityLoopTrain(d)))
       .sort((a, b) => (a.departureTimeMs || 0) - (b.departureTimeMs || 0));
     for (const s of supplements) {
@@ -1583,11 +1641,15 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
     // departure from a different route (multi-route tram), we need to find its
     // routeNumber and lineName to update the leg title dynamically.
     // Filter allDepartures to only trains that can reach the destination.
+    // This is the single-point exclusion that prevents Flinders-only lines (Sandringham,
+    // Alamein, Glen Waverley) from reaching ANY downstream consumer: multi-service title,
+    // lineName assignment, nextDepartures padding, and future code.
     primary.allDepartures = leg.requiresCityLoop
       ? matchedDepartures.filter(d => isLikelyCityLoopTrain(d))
       : leg.requiresMetroTunnel
         ? matchedDepartures.filter(d => d.isMetroTunnel)
         : matchedDepartures;
+    // Display-facing nextDepartures from filtered departures only
     primary.nextDepartures = primary.allDepartures.slice(0, 5).map(d => d.minutes).filter(m => m !== undefined).sort((a, b) => a - b);
   }
 
@@ -2164,77 +2226,6 @@ async function handleRandomJourney(req, res, options = {}) {
   }
 }
 
-/**
- * Handle demo mode - render scenario data
- */
-async function handleDemoMode(req, res, scenarioName) {
-  try {
-    const scenario = getScenario(scenarioName);
-    if (!scenario) {
-      const available = getScenarioNames().join(', ');
-      res.status(400).json({
-        error: `Unknown scenario: ${scenarioName}`,
-        available
-      });
-      return;
-    }
-
-    // Build dashboard data from scenario
-    const dashboardData = {
-      location: scenario.origin || 'HOME',
-      current_time: scenario.currentTime || '8:00',
-      day: scenario.dayOfWeek?.toUpperCase() || 'MONDAY',
-      date: scenario.date?.toUpperCase() || '1 JANUARY',
-      temp: scenario.weather?.temp ?? 20,
-      condition: scenario.weather?.condition || 'Sunny',
-      umbrella: scenario.weather?.umbrella || false,
-      status_type: scenario.status || 'normal',
-      delay_minutes: scenario.delayMinutes || null,
-      arrive_by: scenario.arrivalTime || '09:00',
-      total_minutes: scenario.totalDuration || 30,
-      leave_in_minutes: null,
-      journey_legs: (scenario.steps || []).map((step, i) => ({
-        number: i + 1,
-        type: step.type?.toLowerCase() || 'walk',
-        title: step.title || 'Continue',
-        subtitle: step.subtitle || '',
-        minutes: step.duration || 5,
-        state: step.status?.toLowerCase() || 'normal',
-        // Delay/diversion/coffee fields — required for correct rendering of demo scenarios
-        delayMinutes: step.delayMinutes || null,
-        reason: step.cancelReason || step.reason || null,
-        cancelReason: step.cancelReason || null,
-        canGet: step.canGet,
-        extraTime: step.extraTime || (step.extendReason ? true : false),
-        departTime: step.departTime || null,
-        busyness: step.busyness || null,
-        divertedStop: step.divertedStop || null,
-        skippedForTiming: step.status === 'SKIPPED' || step.skippedForTiming || false,
-        skipReason: step.skipReason || null,
-        expressBadge: step.expressBadge || false,
-      })),
-      destination: scenario.destination || 'WORK'
-    };
-
-    // Render to PNG (V13.6: await async render)
-    const png = await renderFullDashboard(dashboardData);
-
-    // Send response
-    res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('X-Demo-Scenario', scenarioName);
-    res.setHeader('Content-Length', png.length);
-    return res.send(png);
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-}
-
-/**
- * Retry wrapper for GTFS-RT fetches — single retry with exponential backoff.
- * Returns [] on exhaustion so Promise.all() never rejects.
- */
 async function fetchWithRetry(fetchFn, label, retries = 1, delayMs = 1500) {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -2297,12 +2288,6 @@ export default async function handler(req, res) {
       return handleRandomJourney(req, res);
     }
 
-    // Check for demo mode
-    const demoScenario = req.query?.demo;
-    if (demoScenario) {
-      return handleDemoMode(req, res, demoScenario);
-    }
-
     // =========================================================================
     // DEVICE INFO - battery status from device request
     // =========================================================================
@@ -2330,7 +2315,6 @@ export default async function handler(req, res) {
       work: req.query?.work,
       cafe: req.query?.cafe,
       arrivalTime: req.query?.arrivalTime,
-      simulatedTime: req.query?.simulatedTime,
       status: req.query?.status,  // normal, delayed, disruption, suspended, diversion
       weather: req.query?.weather  // auto, sunny, cloudy, rain, storm
     };
@@ -2365,13 +2349,8 @@ export default async function handler(req, res) {
     // Get user's state for timezone-aware time calculations
     const userState = await getUserState() || 'VIC';
 
-    // Get current time (or simulated time for testing)
-    let now = getMelbourneTime();
-    if (simOverrides.simulatedTime) {
-      const [simH, simM] = simOverrides.simulatedTime.split(':').map(Number);
-      now = new Date(now);
-      now.setHours(simH, simM, 0, 0);
-    }
+    // Get current time
+    const now = getMelbourneTime();
     const currentTime = formatTime(now, userState);
     const melbourneTime = getMelbourneDisplayTime(now, userState);
     const amPm = melbourneTime.hour >= 12 ? 'pm' : 'am';
@@ -3059,6 +3038,18 @@ export default async function handler(req, res) {
     const totalMinutes = calculateTotalMinutes(journeyLegs);
     let statusType = getStatusType(journeyLegs, transitData.disruptions);
 
+    // Fix 3: Detect public holiday from SpecialEvent disruptions in the feed.
+    // These entries announce timetable changes (e.g., "trams run to a Saturday timetable")
+    // so the next-commute display must warn the user rather than showing a normal time.
+    const publicHolidayDisruption = (transitData.disruptions || []).find(d => {
+      const isSpecialEvent =
+        d.type === 'SpecialEvent' ||
+        d.disruptionType === 'Special Event' ||
+        (d.type || '').toLowerCase().includes('special');
+      const text = `${d.title || ''} ${d.headerText || ''} ${d.description || ''}`.toLowerCase();
+      return isSpecialEvent && text.includes('public holiday');
+    });
+
     // Override status type if specified
     if (simOverrides.status && simOverrides.status !== 'normal') {
       statusType = simOverrides.status === 'disruption' ? 'disruption' :
@@ -3214,7 +3205,7 @@ export default async function handler(req, res) {
       date,
       temp: weatherData?.temp ?? '--',
       condition: weatherData?.condition || 'N/A',
-      umbrella: weatherData?.umbrella || false,
+      umbrella: lifestyle?.suggestions?.some(s => s.item === 'umbrella' && s.active) || weatherData?.umbrella || false,
       status_type: statusType,
       delay_minutes: delayMinutes,
       // V13.6: Include disruption text for badge display
@@ -3224,7 +3215,8 @@ export default async function handler(req, res) {
       _calculatedArrival: calculatedArrival,  // V13.6: Stable arrival time from journey calculation
       total_minutes: totalMinutes,
       // Pure travel duration (walk + ride + walk) without current departure wait inflation.
-      // Used by renderer for tomorrow's leave-by calculation.
+      // Used by renderer for tomorrow's leave-by calculation — off-peak waits shouldn't
+      // push tomorrow's departure time earlier than necessary.
       _journeyDurationMins: journeyLegs.filter(l => l.state !== 'skip').reduce((sum, l) => sum + (l.journeyContribution || 0), 0),
       leave_in_minutes: leaveInMinutes != null && leaveInMinutes > 0 ? leaveInMinutes : null,
       isCommuteDay,
@@ -3325,6 +3317,11 @@ export default async function handler(req, res) {
         : statusType === 'delay' ? 'DELAYS'
         : (isCommuteDay && mindset?.stressLevel === 'MEDIUM') ? 'MINOR DELAYS'
         : 'OK',
+      // Fix 3: public holiday flag from SpecialEvent disruptions in the feed
+      public_holiday: !!publicHolidayDisruption,
+      public_holiday_text: publicHolidayDisruption
+        ? (publicHolidayDisruption.title || publicHolidayDisruption.headerText || 'Public Holiday')
+        : null,
       // V14.0: Departure Confidence Score
       // Null on non-commute days to suppress "UNLIKELY (0%)" when label is N/A (Bug 1 fix).
       confidence_score: confidence.label !== 'N/A' ? confidence.score : null,
@@ -3416,7 +3413,8 @@ export default async function handler(req, res) {
           totalMinutes,
           onTime: arrivalDiff <= 5,
           diffMinutes: arrivalDiff,
-          status: isTomorrowCommute ? 'tomorrow' : arrivalDiff > 5 ? 'late' : arrivalDiff < -10 ? 'early' : 'on-time'
+          status: isTomorrowCommute ? 'tomorrow' : arrivalDiff > 5 ? 'late' : arrivalDiff < -10 ? 'early' : 'on-time',
+          statusContext: isTomorrowCommute ? 'Showing live services if you left now' : null
         },
 
         // Weather (admin panel expects this shape)
@@ -3506,6 +3504,7 @@ export default async function handler(req, res) {
           stationName: leg.stationName,
           lineName: leg.lineName,
           routeNumber: leg.routeNumber,
+          arriveTime: leg.arriveTime,
           departTime: leg.departTime,
           nextDepartures: leg.nextDepartures,
           nextDepartureTimes: leg.nextDepartureTimes,
@@ -3526,7 +3525,7 @@ export default async function handler(req, res) {
       // BMP format for e-ink devices (V13.6: await async render)
       const bmp = await renderFullScreenBMP(dashboardData, {}, displayDims);
       res.setHeader('Content-Type', 'application/octet-stream');
-      res.setHeader('Cache-Control', 'public, max-age=15');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('X-Dashboard-Timestamp', now.toISOString());
       res.setHeader('Content-Length', bmp.length);
       return res.status(200).send(bmp);

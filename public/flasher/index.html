@@ -293,7 +293,7 @@
           This happens when the device has WiFi credentials but no server URL, or the server URL is unreachable.
           <ol class="steps" style="margin-top: 8px;">
             <li>Ensure you completed the full <a href="/setup-wizard.html">Setup Wizard</a> including the Bluetooth step, which sends the server URL to the device.</li>
-            <li>Confirm the Setup Wizard URL in your browser matches your Vercel deployment (e.g. <code style="color: var(--accent);">https://your-app.vercel.app/setup-wizard.html</code>) &mdash; running wizard from <code style="color: var(--accent);">localhost</code> will send an unreachable URL to the device.</li>
+            <li>Confirm the Setup Wizard URL in your browser matches your Vercel deployment (e.g. <code style="color: var(--accent);">https://your-deployment.vercel.app/setup-wizard.html</code>) &mdash; running wizard from <code style="color: var(--accent);">localhost</code> will send an unreachable URL to the device.</li>
             <li>If cycling persists, factory reset the device (hold button 5 seconds at boot) and re-run the wizard.</li>
           </ol>
         </div>
@@ -332,7 +332,7 @@
       <span>CommuteCompute&#8482; <span class="cc-footer-version-value" id="cc-footer-commutecompute-version">v4.1</span></span>
       <span>CCDash&#8482; Renderer <span class="cc-footer-version-value" id="cc-footer-renderer-version">v3.2</span></span>
       <span>CCFirm&#8482; <span class="cc-footer-version-value" id="cc-footer-firmware-version">CC-FW-8.1.0</span></span>
-      <span>System <span class="cc-footer-version-value" id="cc-footer-system-version">v5.7.2</span></span>
+      <span>System <span class="cc-footer-version-value" id="cc-footer-system-version">v5.7.4</span></span>
       <span>Build <span id="cc-footer-build-date">--</span></span>
       <span id="cc-footer-update-notice"></span>
       <span>&#169; 2026 Angus Bergman | <a href="/attribution.html">Licensing</a> | <a href="/privacy.html">Privacy</a> | <a href="/legal.html">Legal</a></span>
@@ -470,7 +470,7 @@
         if (commutecompute) commutecompute.textContent = v.components?.commutecompute?.version || 'v4.1';
         if (renderer) renderer.textContent = v.components?.renderer?.version || 'v3.2';
         if (firmware) firmware.textContent = v.components?.firmware?.version || 'CC-FW-8.1.0';
-        if (sys) sys.textContent = 'v' + (v.system?.version || '5.7.2');
+        if (sys) sys.textContent = 'v' + (v.system?.version || '5.7.4');
         if (build) build.textContent = v.date || new Date().toISOString().split('T')[0];
 
         // Upstream update check (once per session)

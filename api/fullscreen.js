@@ -125,7 +125,7 @@ export default async function handler(req, res) {
     
     res.setHeader('Content-Type', 'image/bmp');
     res.setHeader('Content-Length', bmpData.length);
-    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     return res.status(200).send(bmpData);
     
   } catch (error) {

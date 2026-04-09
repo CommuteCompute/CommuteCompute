@@ -170,7 +170,7 @@ export default async function handler(req, res) {
 
       res.setHeader('Content-Type', 'application/octet-stream');
       res.setHeader('Content-Length', bmpBuffer.length);
-      res.setHeader('Cache-Control', 'public, max-age=20');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       return res.send(bmpBuffer);
     }
 
@@ -178,7 +178,7 @@ export default async function handler(req, res) {
     const imageBuffer = await liveDash.render({ format: 'png' });
 
     res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Cache-Control', 'public, max-age=20');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     return res.send(imageBuffer);
 
   } catch (error) {

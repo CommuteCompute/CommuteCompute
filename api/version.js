@@ -17,6 +17,7 @@ const versionData = require('../VERSION.json');
 
 const SYSTEM_VERSION = versionData.system?.version || '0.0.0';
 const comp = versionData.components || {};
+const fw = versionData.firmware || comp.firmware || {};
 const specs = versionData.specs || {};
 
 export default async function handler(req, res) {
@@ -61,11 +62,11 @@ export default async function handler(req, res) {
       },
       setupWizard: { version: `v${comp.setupWizard?.version || '0.0'}`, locked: comp.setupWizard?.locked ?? false },
       livedash: { version: `v${comp.livedash?.version || '0.0'}`, locked: comp.livedash?.locked ?? false },
-      admin: { version: `v${comp.admin?.version || '0.0'}`, locked: comp.admin?.locked ?? false },
+      admin: { version: `v${comp.adminPanel?.version || '0.0'}`, locked: comp.adminPanel?.locked ?? false },
       firmware: {
-        version: comp.firmware?.version || 'CC-FW-0.0.0',
-        locked: comp.firmware?.locked ?? false,
-        description: comp.firmware?.description || ''
+        version: fw.version ? `CC-FW-${fw.version}` : 'CC-FW-0.0.0',
+        locked: fw.locked ?? false,
+        description: fw.description || ''
       }
     },
     specs: {

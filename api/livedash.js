@@ -193,7 +193,7 @@ export default async function handler(req, res) {
     });
     
     res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Cache-Control', 'public, max-age=30');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('X-Device', device);
     res.setHeader('X-Dimensions', `${DEVICE_CONFIGS[device].width}x${DEVICE_CONFIGS[device].height}`);
     
