@@ -369,6 +369,21 @@ if (fs.existsSync(fwVersionFile)) {
 }
 
 // ============================================================================
+// S13: api/health.js — dynamic version from VERSION.json
+// ============================================================================
+console.log('\\n\\x1b[36m--- S13: api/health.js ---\\x1b[0m');
+const healthFile = path.join(REPO, 'api', 'health.js');
+if (fs.existsSync(healthFile)) {
+    // Verify health.js reads from VERSION.json (not hardcoded)
+    const healthContent = fs.readFileSync(healthFile, 'utf8');
+    if (healthContent.includes("require('../VERSION.json')") || healthContent.includes('versionData.system')) {
+        console.log('  \\x1b[32mOK\\x1b[0m api/health.js reads version from VERSION.json');
+    } else {
+        console.log('  \\x1b[31mWARN\\x1b[0m api/health.js may have hardcoded version');
+    }
+}
+
+// ============================================================================
 // SUMMARY
 // ============================================================================
 console.log('');

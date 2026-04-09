@@ -179,6 +179,69 @@ else
     pass "No legacy PTV API URLs"
 fi
 
+# ---------- Section 1.1b: Turnkey Compliance (No Hardcoded Values) ----------
+section "SECTION 1.1b: TURNKEY COMPLIANCE"
+
+subsection "1.1b.1 No hardcoded stop IDs in logic"
+HARDCODED_STOPS=$(grep -rn 'stopId.*===.*[0-9]\{4,\}\|stop_id.*===.*[0-9]\{4,\}' api/ src/ --include="*.js" 2>/dev/null \
+  | grep -v "CITY_LOOP\|METRO_TUNNEL\|FLINDERS_ONLY\|const.*=.*new Set\|PLATFORM_IDS\|STOP_IDS\|\/\/" | head -5 || true)
+if [ -n "$HARDCODED_STOPS" ]; then
+    fail "Hardcoded stop IDs in logic (use named constants):"
+    echo "$HARDCODED_STOPS"
+else
+    pass "No hardcoded stop IDs in logic paths"
+fi
+
+subsection "1.1b.2 No hardcoded route numbers in logic"
+# Checks for route numbers hardcoded in comparisons (e.g. routeNumber === '58')
+# Exempt: query params, constants, parsing utilities
+HARDCODED_ROUTES=$(grep -rn "routeNumber.*===.*['\"][0-9]\{2,\}\|routeId.*===.*['\"][0-9]" api/ src/ --include="*.js" 2>/dev/null \
+  | grep -v "const\|normalize\|parseInt\|getRouteNumber\|query\|test\|spec\|\/\/" | head -5 || true)
+if [ -n "$HARDCODED_ROUTES" ]; then
+    fail "Hardcoded route numbers in logic:"
+    echo "$HARDCODED_ROUTES"
+else
+    pass "No hardcoded route numbers in logic"
+fi
+
+subsection "1.1b.3 No hardcoded station names in logic comparisons"
+# Checks for station names in === comparisons only (not in display strings, subtitles, or constant arrays)
+HARDCODED_STATIONS=$(grep -rn "===.*['\"]South Yarra\|===.*['\"]Flinders St\|===.*['\"]Parliament\|===.*['\"]Richmond\|===.*['\"]Melbourne Central" api/ src/ --include="*.js" 2>/dev/null \
+  | grep -v "cityLoopStations\|metroTunnelStations\|const.*=.*\[\|subtitle\|title\|name.*:\|destination\|passesCityLoop\|\/\/" | head -5 || true)
+if [ -n "$HARDCODED_STATIONS" ]; then
+    fail "Hardcoded station names in logic:"
+    echo "$HARDCODED_STATIONS"
+else
+    pass "No hardcoded station names in comparisons"
+fi
+
+subsection "1.1b.4 No hardcoded headway intervals"
+HARDCODED_HEADWAYS=$(grep -rn "headway.*= [0-9]\+\b\|freq.*= [0-9]\+\b" api/ src/ --include="*.js" 2>/dev/null \
+  | grep -v "DEFAULT_HEADWAYS\|getDefaultHeadway\|OFFPEAK_MULTIPLIER\|NIGHT_MULTIPLIER\|const.*DEFAULT\|\/\/" | head -5 || true)
+if [ -n "$HARDCODED_HEADWAYS" ]; then
+    fail "Hardcoded headway intervals (use DEFAULT_HEADWAYS/getDefaultHeadway):"
+    echo "$HARDCODED_HEADWAYS"
+else
+    pass "No hardcoded headway intervals"
+fi
+
+subsection "1.1b.5 No hardcoded coordinates in logic"
+HARDCODED_COORDS=$(grep -rn "lat.*=.*-3[0-9]\.\|lng.*=.*14[0-9]\.\|longitude.*=.*14[0-9]\." api/ src/ --include="*.js" 2>/dev/null \
+  | grep -v "const\|config\|VIC_\|STOPS_WITH_COORDS\|haversine\|test\|\/\/" | head -5 || true)
+if [ -n "$HARDCODED_COORDS" ]; then
+    fail "Hardcoded coordinates in logic:"
+    echo "$HARDCODED_COORDS"
+else
+    pass "No hardcoded coordinates in logic paths"
+fi
+
+subsection "1.1b.6 Headway constants architecture present"
+if grep -q "DEFAULT_HEADWAYS\|getDefaultHeadway" api/commutecompute.js 2>/dev/null; then
+    pass "DEFAULT_HEADWAYS and getDefaultHeadway() present in commutecompute.js"
+else
+    fail "Missing DEFAULT_HEADWAYS constant or getDefaultHeadway() function"
+fi
+
 # ---------- Section 2: TRMNL Prohibition ----------
 section "SECTION 2: TRMNL/USETRMNL PROHIBITION"
 
