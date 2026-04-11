@@ -52,6 +52,31 @@ import { getAllStops } from '../data/fallback-timetables.js';
 import { haversine } from '../utils/haversine.js';
 
 // =============================================================================
+// INTERNAL HELPERS (file scope, not exported)
+// =============================================================================
+
+/**
+ * v5.8.1: Return true if two location strings refer to the same place, with
+ * tolerance for "Station"/"Stop"/"Platform" suffixes, trailing punctuation,
+ * and whitespace variance. Used to suppress the redundant walk-to-work leg
+ * when a transit terminus IS the workplace (e.g. user's work = "Flinders
+ * Street Station" and the train leg ends at "Flinders Street Station").
+ */
+function isSameLocation(stopName, workName) {
+  if (!stopName || !workName) return false;
+  const norm = (s) => String(s)
+    .toLowerCase()
+    .replace(/[,.]/g, '')
+    .replace(/\b(station|stn|stop|platform)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const a = norm(stopName);
+  const b = norm(workName);
+  if (!a || !b) return false;
+  return a === b || a.includes(b) || b.includes(a);
+}
+
+// =============================================================================
 // STATE CONFIGURATION
 // =============================================================================
 
@@ -1503,12 +1528,15 @@ export class CommuteCompute {
       totalMinutes += transitTime;
       
       // v1.19: Include work name for display
-      const workName = locations?.work?.name || 
-                      locations?.work?.address?.split(',')[0]?.trim() || 
+      const workName = locations?.work?.name ||
+                      locations?.work?.address?.split(',')[0]?.trim() ||
                       'Office';
-      legs.push({ type: 'walk', to: 'work', minutes: walkFromStop, workName });
-      totalMinutes += walkFromStop;
-      
+      // v5.8.1: Suppress the redundant walk-to-work leg when the transit
+      // terminus IS the workplace (see isSameLocation() at top of file).
+      const walkFromStopFinal = isSameLocation(workStop?.name, workName) ? 0 : walkFromStop;
+      legs.push({ type: 'walk', to: 'work', minutes: walkFromStopFinal, workName });
+      totalMinutes += walkFromStopFinal;
+
       routes.push({
         id: `direct-${modeName.toLowerCase()}-${homeStop.route_number || 'main'}`,
         name: `${modeName}${homeStop.route_number ? ' ' + homeStop.route_number : ''} Direct`,
@@ -1632,9 +1660,17 @@ export class CommuteCompute {
       const walkToTrain = 2;
       const trainTime = this.estimateTransitTime(trainStation, workTrain);
       const walkToWork = Math.ceil(workTrain.distance / 80);
-      
-      const totalMinutes = walkToCafe + coffeeTime + walkToTram + tramTime + walkToTrain + trainTime + walkToWork;
-      
+
+      // v5.8.1: Compute workName early so the walk-to-work leg can be suppressed
+      // before totalMinutes is summed. When the train terminus IS the workplace,
+      // walkToWorkFinal collapses to 0 minutes (see isSameLocation at top of file).
+      const workName = locations?.work?.name ||
+                      locations?.work?.address?.split(',')[0]?.trim() ||
+                      'Office';
+      const walkToWorkFinal = isSameLocation(resolvedWorkStation, workName) ? 0 : walkToWork;
+
+      const totalMinutes = walkToCafe + coffeeTime + walkToTram + tramTime + walkToTrain + trainTime + walkToWorkFinal;
+
       if (totalMinutes > 45) continue;
       
       const legs = [];
@@ -1670,12 +1706,9 @@ export class CommuteCompute {
         originStation: trainStation.name,
         minutes: trainTime
       });
-      // v1.19: Include work name for display
-      const workName = locations?.work?.name || 
-                      locations?.work?.address?.split(',')[0]?.trim() || 
-                      'Office';
-      legs.push({ type: 'walk', to: 'work', minutes: walkToWork, workName });
-      
+      // v5.8.1: workName and walkToWorkFinal computed above so totalMinutes is accurate.
+      legs.push({ type: 'walk', to: 'work', minutes: walkToWorkFinal, workName });
+
       routes.push({
         id: `multi-tram-train-${trainStation.name.replace(/\s+/g, '-').toLowerCase()}`,
         name: `Tram → ${trainStation.name} → Train`,

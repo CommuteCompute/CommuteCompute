@@ -719,7 +719,10 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType, lineC
     const depMs = ((depTime.low || depTime) * 1000) + (isTrainMode ? delay * 1000 : 0);
     const minutes = Math.round((depMs - nowMs) / 60000);
 
-    if (minutes >= -2 && minutes <= 120) {
+    // v5.8.1: Drop past departures at source. The previous `>= -2` tolerance
+    // allowed ghosts (minutes: -1/-2) to reach raw.transit.trains. Users can't
+    // board past services.
+    if (minutes > 0 && minutes <= 120) {
       const isDelayed = delay > 60;
       const isVIC = (state === 'VIC');
       const lineName = isVIC ? getLineName(routeId) : (tripUpdate.trip?.tripHeadsign || '');
@@ -818,7 +821,8 @@ function processAllTripsStopSearch(feed, stopId, routeType, state = 'VIC') {
       const depMs = ((depTime.low || depTime) * 1000) + (scanIsTrainMode ? delay * 1000 : 0);
       const minutes = Math.round((depMs - nowMs) / 60000);
 
-      if (minutes >= -2 && minutes <= 120) {
+      // v5.8.1: Drop past departures at source (see note in route-level matching path).
+      if (minutes > 0 && minutes <= 120) {
         const isDelayed = delay > 60;
         const routeId = tripUpdate.trip?.routeId;
         const isVIC = (state === 'VIC');
@@ -1197,7 +1201,8 @@ function processAnyRouteDepartures(feed, targetStopId = null) {
           if (!depTime) continue;
           const depMs = (depTime.low || depTime) * 1000;
           const minutes = Math.round((depMs - nowMs) / 60000);
-          if (minutes >= -2 && minutes <= 120) {
+          // v5.8.1: Drop past departures at source (see route-level matching path).
+          if (minutes > 0 && minutes <= 120) {
             picked = { stu, depMs, minutes };
             break;
           }
@@ -1311,9 +1316,11 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0, state = 'VIC') {
       const depMs = ((depTime.low || depTime) * 1000) + (exactIsTrainMode ? delay * 1000 : 0);
       const minutes = Math.round((depMs - nowMs) / 60000);
 
-      // V15.0: Include upcoming departures (next 120 min) — wider window for low-frequency services
-      // Allow -2 min for just-departed services (consistent with route-level matching)
-      if (minutes >= -2 && minutes <= 120) {
+      // V15.0: Include upcoming departures (next 120 min) — wider window for low-frequency services.
+      // v5.8.1: Past departures (minutes <= 0) dropped at source — the main processor
+      // writes raw `minutes` at line 1355 without defensive clamping, so negative values
+      // were reaching data.raw.transit.trains and surfacing as "-1 min" in the UI.
+      if (minutes > 0 && minutes <= 120) {
         const isDelayed = delay > 60; // More than 1 minute delay
 
         // Determine destination and direction
@@ -1456,26 +1463,42 @@ export async function getWeather(lat = MELBOURNE_LAT, lon = MELBOURNE_LON, timez
     if (!res.ok) throw new Error('Weather API error');
     const data = await res.json();
 
-    // Weather code mapping
+    // Weather code mapping (WMO 4677 codes emitted by Open-Meteo)
+    // v5.8.1: Expanded to cover freezing drizzle (56/57), freezing rain (66/67),
+    // snow grains (77), and snow showers (85/86) — previously these unmapped codes
+    // fell through to the 'Unknown' fallback and leaked the literal string to the UI.
     const codes = {
       0: 'Clear', 1: 'Mostly Clear', 2: 'Partly Cloudy', 3: 'Cloudy',
       45: 'Foggy', 48: 'Foggy',
       51: 'Drizzle', 53: 'Drizzle', 55: 'Drizzle',
+      56: 'Freezing Drizzle', 57: 'Freezing Drizzle',
       61: 'Rain', 63: 'Rain', 65: 'Heavy Rain',
+      66: 'Freezing Rain', 67: 'Freezing Rain',
       71: 'Snow', 73: 'Snow', 75: 'Heavy Snow',
+      77: 'Snow Grains',
       80: 'Showers', 81: 'Showers', 82: 'Heavy Showers',
+      85: 'Snow Showers', 86: 'Snow Showers',
       95: 'Storm', 96: 'Storm', 99: 'Storm'
     };
 
     const weatherCode = data.current?.weather_code;
-    const condition = codes[weatherCode] || 'Unknown';
+    // v5.8.1: Fallback changed from 'Unknown' to 'Overcast' — a user-neutral cloudy
+    // label that doesn't match `rainyConditions`, so an unmapped code never triggers
+    // a false umbrella flag and never leaks the debug string 'Unknown' to the UI.
+    const condition = codes[weatherCode] || 'Overcast';
     const precipitation = data.current?.precipitation || 0;
     const humidity = data.current?.relative_humidity_2m ?? null;
     const windSpeed = data.current?.wind_speed_10m ?? null;
     const uvIndex = data.current?.uv_index ?? null;
 
-    // Determine if umbrella needed (current conditions)
-    const rainyConditions = ['Rain', 'Heavy Rain', 'Drizzle', 'Showers', 'Heavy Showers', 'Storm'];
+    // Determine if umbrella needed (current conditions).
+    // v5.8.1: Freezing rain and freezing drizzle added so the umbrella flag fires
+    // correctly for the newly-mapped WMO codes (66/67 and 56/57). Snow labels remain
+    // excluded — umbrella is for rain, not snow.
+    const rainyConditions = [
+      'Rain', 'Heavy Rain', 'Drizzle', 'Showers', 'Heavy Showers',
+      'Freezing Rain', 'Freezing Drizzle', 'Storm'
+    ];
     const umbrella = rainyConditions.includes(condition) || precipitation > 0;
 
     // Build hourly forecast for the rest of the day (equipment planning)
@@ -1496,7 +1519,8 @@ export async function getWeather(lat = MELBOURNE_LAT, lon = MELBOURNE_LON, timez
     for (let i = 0; i < hourlyTimes.length; i++) {
       const forecastHour = new Date(hourlyTimes[i]).getHours();
       if (forecastHour >= nowHour) {
-        const hCondition = codes[hourlyWeatherCodes[i]] || 'Unknown';
+        // v5.8.1: Match the current-condition fallback (line 1488) — 'Overcast' not 'Unknown'.
+        const hCondition = codes[hourlyWeatherCodes[i]] || 'Overcast';
         dayForecast.push({
           hour: forecastHour,
           temp: Math.round(hourlyTemp[i] ?? 0),

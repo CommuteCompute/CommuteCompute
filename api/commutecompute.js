@@ -3054,6 +3054,29 @@ export default async function handler(req, res) {
     const rawJourneyLegs = buildJourneyLegs(effectiveRoute, transitData, coffeeDecision, now, locations, { trainStopId, tramStopId, busStopId, workTrainStopId }, userState, preferredTramRoute, { isTomorrowCommute: earlyIsTomorrowCommute, cityLoopClosed });
     // Section 7.5.1: Merge consecutive walk legs after ALL filtering
     const journeyLegs = mergeConsecutiveWalkLegs(rawJourneyLegs);
+
+    // v5.8.1: Filter raw transit arrays to the user's commute direction so
+    // downstream consumers of `raw.transit` (admin Live Data panel fallback,
+    // debug card, DepartureConfidence) never see opposite-direction services.
+    // Mirrors the per-leg direction predicate already used by the "Next:"
+    // subtitle builder (see lines 633-639). Also filters `departureTimeMs > now`
+    // as belt-and-braces so any residual past departure is stripped.
+    const nowMsRawFilter = now.getTime();
+    const trainDirLeg = journeyLegs.find(l => l.type === 'train' || l.type === 'vline');
+    const tramDirLeg  = journeyLegs.find(l => l.type === 'tram');
+    const busDirLeg   = journeyLegs.find(l => l.type === 'bus');
+    const applyDirFilter = (arr, leg) => {
+      if (!Array.isArray(arr) || arr.length === 0) return arr;
+      if (!leg || leg.isCitybound === undefined) return arr;
+      return arr.filter(d =>
+        d.departureTimeMs > nowMsRawFilter &&
+        (d.isCitybound === undefined || d.isCitybound === leg.isCitybound)
+      );
+    };
+    transitData.trains = applyDirFilter(transitData.trains, trainDirLeg);
+    transitData.trams  = applyDirFilter(transitData.trams,  tramDirLeg);
+    transitData.buses  = applyDirFilter(transitData.buses,  busDirLeg);
+
     const totalMinutes = calculateTotalMinutes(journeyLegs);
     let statusType = getStatusType(journeyLegs, transitData.disruptions);
 
@@ -3436,7 +3459,7 @@ export default async function handler(req, res) {
           onTime: isTomorrowCommute ? null : arrivalDiff <= 5,
           diffMinutes: isTomorrowCommute ? null : arrivalDiff,
           status: isTomorrowCommute ? 'tomorrow' : arrivalDiff > 5 ? 'late' : arrivalDiff < -10 ? 'early' : 'on-time',
-          statusContext: isTomorrowCommute ? 'Showing live services if you left now' : null
+          statusContext: isTomorrowCommute ? 'Tomorrow — services shown are live' : null
         },
 
         // Weather (admin panel expects this shape)
