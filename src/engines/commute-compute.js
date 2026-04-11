@@ -1648,10 +1648,15 @@ export class CommuteCompute {
       const workDetected = detectStopIdsFromAddress(locations?.work?.address);
       const workArea = locations?.work?.suburb ||
                       locations?.work?.address?.split(',')[1]?.trim() || null;
+      // v5.8.2 (N2-guard): prefer the real workTrain.name over a suburb-derived
+      // fabrication. Previously `${workArea} Station` was chosen whenever
+      // `workArea` was truthy, which produced placeholder names like
+      // "Craigieburn VIC 3064 Station" instead of the actual station name.
       const resolvedWorkStation = workStopsByCoord.train?.name ||
                                  locations?.work?.nearbyStops?.train?.name ||
                                  getStopNameById(workDetected?.trainStopId) ||
-                                 (workArea ? `${workArea} Station` : workTrain.name);
+                                 workTrain?.name ||
+                                 null;
 
       const walkToCafe = includeCoffee ? 3 : 0;
       const coffeeTime = includeCoffee ? 4 : 0;
@@ -1773,20 +1778,24 @@ export class CommuteCompute {
     const homeDetected = detectStopIdsFromAddress(locations?.home?.address);
     const workDetected = detectStopIdsFromAddress(locations?.work?.address);
 
-    // Use coordinate-based stops as PRIMARY, then nearbyStops config, then GTFS address lookup, then suburb-derived
+    // v5.8.2 (N2-guard): Use coordinate-based stops as PRIMARY, then nearbyStops
+    // config, then GTFS address lookup. Previously fell through to a suburb-
+    // derived placeholder (e.g. "Craigieburn Tram Stop") when all real lookups
+    // failed — those placeholders cascaded into impossible route templates.
+    // Return null instead; N14-guard below skips templates that need a null stop.
     const nearestTramStop = homeStopsByCoord.tram?.name ||
                            locations?.cafe?.nearbyStops?.tram?.name ||
                            locations?.home?.nearbyStops?.tram?.name ||
                            getStopNameById(homeDetected.tramStopId) ||
-                           (homeArea ? `${homeArea} Tram Stop` : null);
+                           null;
     const nearestTrainStation = homeStopsByCoord.train?.name ||
                                locations?.home?.nearbyStops?.train?.name ||
                                getStopNameById(homeDetected.trainStopId) ||
-                               (homeArea ? `${homeArea} Station` : null);
+                               null;
     const workStation = workStopsByCoord.train?.name ||
                        locations?.work?.nearbyStops?.train?.name ||
                        getStopNameById(workDetected.trainStopId) ||
-                       (workArea ? `${workArea} Station` : null);
+                       null;
 
     // Resolve tram/bus route numbers from nearby stop data for GTFS-RT matching
     // findNearestStops returns camelCase (routeNumber); check both cases for Redis compat
@@ -1797,16 +1806,23 @@ export class CommuteCompute {
     const busRouteNumber = locations?.home?.nearbyStops?.bus?.routeNumber ||
                            locations?.home?.nearbyStops?.bus?.route_number || null;
     
+    // v5.8.2 (N14-guard): each hardcoded route template below is wrapped in a
+    // mode-availability guard. Routes that require a stop which N2-guard
+    // resolved to null are skipped entirely rather than pushed with fabricated
+    // placeholders. This removes the visible symptoms of impossible direct
+    // connections (e.g. "Train Craigieburn Station → Sandringham Station")
+    // from the alternatives list.
+
     // =========================================================================
     // ROUTE 1: Coffee + Tram + Train (PREFERRED multi-modal pattern)
     // Pattern: Home > Coffee > Tram > Train > Walk > Office
     // This is the most common Melbourne commute with transfer
     // =========================================================================
-    if (includeCoffee) {
+    if (includeCoffee && nearestTramStop && nearestTrainStation && workStation) {
       routes.push({
         id: 'coffee-tram-train',
         name: 'Coffee + Tram + Train',
-        description: `Walk → Coffee → Tram${tramRouteNumber ? ' ' + tramRouteNumber : ''} (${nearestTramStop || 'Tram'} → ${nearestTrainStation || 'Station'}) → Train (${nearestTrainStation || 'Station'} → ${workStation || 'Work'}) → Walk`,
+        description: `Walk → Coffee → Tram${tramRouteNumber ? ' ' + tramRouteNumber : ''} (${nearestTramStop} → ${nearestTrainStation}) → Train (${nearestTrainStation} → ${workStation}) → Walk`,
         type: 'preferred',
         totalMinutes: 35,
         legs: [
@@ -1820,16 +1836,16 @@ export class CommuteCompute {
         ]
       });
     }
-    
+
     // =========================================================================
     // ROUTE 2: Coffee + Train only
     // Pattern: Home > Walk > Coffee > Walk > Train > Walk > Office
     // =========================================================================
-    if (includeCoffee) {
+    if (includeCoffee && nearestTrainStation && workStation) {
       routes.push({
         id: 'coffee-train',
         name: 'Coffee + Train',
-        description: `Walk → Coffee → Train (${nearestTrainStation || 'Station'} → ${workStation || 'Work'}) → Walk`,
+        description: `Walk → Coffee → Train (${nearestTrainStation} → ${workStation}) → Walk`,
         type: 'standard',
         totalMinutes: 30,
         legs: [
@@ -1841,80 +1857,89 @@ export class CommuteCompute {
         ]
       });
     }
-    
+
     // =========================================================================
     // ROUTE 3: Direct train (no coffee)
     // Pattern: Home > Walk > Train > Walk > Office
     // =========================================================================
-    routes.push({
-      id: 'train-direct',
-      name: 'Train Direct',
-      description: `Walk → Train (${nearestTrainStation || 'Station'} → ${workStation || 'Work'}) → Walk`,
-      type: 'direct',
-      totalMinutes: 22,
-      legs: [
-        { type: 'walk', to: 'station', from: 'home', minutes: 7, fromHome: true, stationName: nearestTrainStation },
-        { type: 'train', isCitybound: true, origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 10 },
-        { type: 'walk', to: 'work', minutes: 5, workName: workAddressShort }
-      ]
-    });
+    if (nearestTrainStation && workStation) {
+      routes.push({
+        id: 'train-direct',
+        name: 'Train Direct',
+        description: `Walk → Train (${nearestTrainStation} → ${workStation}) → Walk`,
+        type: 'direct',
+        totalMinutes: 22,
+        legs: [
+          { type: 'walk', to: 'station', from: 'home', minutes: 7, fromHome: true, stationName: nearestTrainStation },
+          { type: 'train', isCitybound: true, origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 10 },
+          { type: 'walk', to: 'work', minutes: 5, workName: workAddressShort }
+        ]
+      });
+    }
 
     // =========================================================================
     // ROUTE 4: Tram + Train (no coffee)
     // Pattern: Home > Walk > Tram > Walk > Train > Walk > Office
     // Walk segments on both ends of the tram leg reflect actual journey structure.
     // =========================================================================
-    routes.push({
-      id: 'tram-train',
-      name: 'Tram + Train',
-      description: `Walk → Tram${tramRouteNumber ? ' ' + tramRouteNumber : ''} (${nearestTramStop || 'Tram'} → ${nearestTrainStation || 'Station'}) → Walk → Train (${nearestTrainStation || 'Station'} → ${workStation || 'Work'}) → Walk`,
-      type: 'transfer',
-      totalMinutes: 30,
-      legs: [
-        { type: 'walk', to: 'tram stop', from: 'home', minutes: 4, fromHome: true, stopName: nearestTramStop },
-        { type: 'tram', routeNumber: tramRouteNumber || '', origin: { name: nearestTramStop }, destination: { name: nearestTrainStation }, originStop: nearestTramStop, minutes: 10 },
-        { type: 'walk', to: 'train platform', minutes: 2, stationName: nearestTrainStation },
-        { type: 'train', isCitybound: true, origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 10 },
-        { type: 'walk', to: 'work', minutes: 4, workName: workAddressShort }
-      ]
-    });
-    
+    if (nearestTramStop && nearestTrainStation && workStation) {
+      routes.push({
+        id: 'tram-train',
+        name: 'Tram + Train',
+        description: `Walk → Tram${tramRouteNumber ? ' ' + tramRouteNumber : ''} (${nearestTramStop} → ${nearestTrainStation}) → Walk → Train (${nearestTrainStation} → ${workStation}) → Walk`,
+        type: 'transfer',
+        totalMinutes: 30,
+        legs: [
+          { type: 'walk', to: 'tram stop', from: 'home', minutes: 4, fromHome: true, stopName: nearestTramStop },
+          { type: 'tram', routeNumber: tramRouteNumber || '', origin: { name: nearestTramStop }, destination: { name: nearestTrainStation }, originStop: nearestTramStop, minutes: 10 },
+          { type: 'walk', to: 'train platform', minutes: 2, stationName: nearestTrainStation },
+          { type: 'train', isCitybound: true, origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 10 },
+          { type: 'walk', to: 'work', minutes: 4, workName: workAddressShort }
+        ]
+      });
+    }
+
     // =========================================================================
     // ROUTE 5: Direct tram
     // Pattern: Home > Walk > Tram > Walk > Office
     // Walk segments on both ends of the tram reflect actual journey structure
     // (walk from home to tram stop; walk from tram stop to work).
     // =========================================================================
-    routes.push({
-      id: 'tram-direct',
-      name: 'Tram Direct',
-      description: `Walk → Tram${tramRouteNumber ? ' ' + tramRouteNumber : ''} (${nearestTramStop || 'Tram'} → ${workArea || 'CBD'}) → Walk`,
-      type: 'direct',
-      totalMinutes: 24,
-      legs: [
-        { type: 'walk', to: 'tram stop', from: 'home', minutes: 4, fromHome: true, stopName: nearestTramStop },
-        { type: 'tram', routeNumber: tramRouteNumber || '', origin: { name: nearestTramStop }, destination: { name: workArea || 'CBD' }, originStop: nearestTramStop, minutes: 14 },
-        { type: 'walk', to: 'work', minutes: 6, workName: workAddressShort }
-      ]
-    });
-    
+    if (nearestTramStop) {
+      routes.push({
+        id: 'tram-direct',
+        name: 'Tram Direct',
+        description: `Walk → Tram${tramRouteNumber ? ' ' + tramRouteNumber : ''} (${nearestTramStop} → ${workArea || 'CBD'}) → Walk`,
+        type: 'direct',
+        totalMinutes: 24,
+        legs: [
+          { type: 'walk', to: 'tram stop', from: 'home', minutes: 4, fromHome: true, stopName: nearestTramStop },
+          { type: 'tram', routeNumber: tramRouteNumber || '', origin: { name: nearestTramStop }, destination: { name: workArea || 'CBD' }, originStop: nearestTramStop, minutes: 14 },
+          { type: 'walk', to: 'work', minutes: 6, workName: workAddressShort }
+        ]
+      });
+    }
+
     // =========================================================================
     // ROUTE 6: Bus alternative
     // Pattern: Home > Walk > Bus > Walk > Office
+    // Only offered when a real bus route number is available from nearbyStops.
     // =========================================================================
-    routes.push({
-      id: 'bus-direct',
-      name: 'Bus Alternative',
-      description: `Walk → Bus${busRouteNumber ? ' ' + busRouteNumber : ''} (${homeArea || 'Home'} → ${workAddressShort || workArea || 'CBD'}) → Walk`,
-      type: 'alternative',
-      totalMinutes: 30,
-      legs: [
-        { type: 'walk', to: 'bus stop', from: 'home', minutes: 4, fromHome: true },
-        { type: 'bus', routeNumber: busRouteNumber || '', origin: { name: homeArea || 'Home' }, destination: { name: workAddressShort || workArea || 'CBD' }, originStop: homeArea || 'Home', minutes: 20 },
-        { type: 'walk', to: 'work', minutes: 6, workName: workAddressShort }
-      ]
-    });
-    
+    if (busRouteNumber) {
+      routes.push({
+        id: 'bus-direct',
+        name: 'Bus Alternative',
+        description: `Walk → Bus ${busRouteNumber} (${homeArea || 'Home'} → ${workAddressShort || workArea || 'CBD'}) → Walk`,
+        type: 'alternative',
+        totalMinutes: 30,
+        legs: [
+          { type: 'walk', to: 'bus stop', from: 'home', minutes: 4, fromHome: true },
+          { type: 'bus', routeNumber: busRouteNumber, origin: { name: homeArea || 'Home' }, destination: { name: workAddressShort || workArea || 'CBD' }, originStop: homeArea || 'Home', minutes: 20 },
+          { type: 'walk', to: 'work', minutes: 6, workName: workAddressShort }
+        ]
+      });
+    }
+
     return routes;
   }
 

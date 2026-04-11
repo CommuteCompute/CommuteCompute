@@ -21,7 +21,13 @@ const ALL_KEYS = [
   'cc:preferences',
   'cc:state',
   'cc-profiles',
-  'cc:setup_complete'
+  'cc:setup_complete',
+  // v5.8.2 (C4-reset): Include override KV keys so factory reset actually clears
+  // them. Previously these stuck across resets and silently overrode auto-detected
+  // stops for subsequent home addresses.
+  'cc:station_overrides',
+  'cc:preferred_tram_route',
+  'cc:preferred_tram_stop'
 ];
 
 export default async function handler(req, res) {

@@ -69,6 +69,32 @@ export function getStopNameById(stopId) {
 }
 
 /**
+ * v5.8.2 (C4-gate): Look up coordinates for a stop ID across all three
+ * Victorian GTFS datasets. Returns { lat, lon } or null if unknown. Used by
+ * the override distance gate in api/commutecompute.js to reject station
+ * overrides whose resolved stop is too far from the current home address.
+ */
+export function getStopCoordsById(stopId) {
+  if (!stopId) return null;
+  const id = String(stopId);
+  // Train: 3-letter station codes (e.g. 'SYR', 'FSS')
+  if (VIC_METRO_STATIONS[id]?.lat != null && VIC_METRO_STATIONS[id]?.lon != null) {
+    return { lat: VIC_METRO_STATIONS[id].lat, lon: VIC_METRO_STATIONS[id].lon };
+  }
+  // Tram: numeric stop IDs in coord-enriched dataset
+  const tramStop = VIC_TRAM_STOPS_WITH_COORDS.find(s => String(s.id) === id);
+  if (tramStop?.lat != null && tramStop?.lon != null) {
+    return { lat: tramStop.lat, lon: tramStop.lon };
+  }
+  // Bus: numeric stop IDs in coord-enriched dataset
+  const busStop = VIC_BUS_STOPS_WITH_COORDS.find(s => String(s.id) === id);
+  if (busStop?.lat != null && busStop?.lon != null) {
+    return { lat: busStop.lat, lon: busStop.lon };
+  }
+  return null;
+}
+
+/**
  * Melbourne suburb to station/stop mapping
  * Per DEVELOPMENT-RULES Section 23.1.1 - Auto-detect stop IDs from address
  *

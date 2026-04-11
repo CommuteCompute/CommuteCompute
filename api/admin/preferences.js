@@ -7,7 +7,7 @@
  * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  */
 
-import { getPreferences, setPreferences, getUserState, setUserState, getTransitApiKey, getGoogleApiKey } from '../../src/data/kv-preferences.js';
+import { getPreferences, setPreferences, getUserState, setUserState, getTransitApiKey, getGoogleApiKey, setStationOverrides, setPreferredTramRoute, setPreferredTramStop } from '../../src/data/kv-preferences.js';
 import { requireAuth, setAdminCorsHeaders } from '../../src/utils/auth-middleware.js';
 
 /**
@@ -263,6 +263,23 @@ async function handlePost(req, res) {
     }
 
     await setPreferences(updated);
+
+    // v5.8.2 (C4-clear): Clear stale station overrides when Home or Work changes.
+    // Overrides are keyed by leg index and cached independently of the address
+    // pipeline — without this clear they persist forever and silently override
+    // auto-detected stops even when the user has moved house or changed workplace.
+    // Cafe changes do NOT trigger the clear (cafe doesn't affect station overrides).
+    if (field === 'home' || field === 'work') {
+      try {
+        await Promise.all([
+          setStationOverrides({}),
+          setPreferredTramRoute(null),
+          setPreferredTramStop(null)
+        ]);
+      } catch (clearErr) {
+        console.warn('[preferences] Failed to clear station overrides on ' + field + ' change: ' + clearErr.message);
+      }
+    }
 
     return res.json({
       success: true,

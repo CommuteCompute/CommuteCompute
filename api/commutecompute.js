@@ -17,7 +17,7 @@
 
 import { getDepartures, getDisruptions, getWeather, METRO_LINE_NAMES } from '../src/services/opendata-client.js';
 import CommuteCompute from '../src/engines/commute-compute.js';
-import { GTFS_STOP_NAMES, getStopNameById, cleanStopName, MELBOURNE_STOP_IDS, detectStopIdsFromAddress, findNearestStops } from '../src/data/gtfs-stop-names.js';
+import { GTFS_STOP_NAMES, getStopNameById, getStopCoordsById, cleanStopName, MELBOURNE_STOP_IDS, detectStopIdsFromAddress, findNearestStops } from '../src/data/gtfs-stop-names.js';
 import { VIC_METRO_STATIONS, VIC_TRAM_STOPS_WITH_COORDS } from '../src/data/vic/gtfs-reference.js';
 import { haversine } from '../src/utils/haversine.js';
 import { getTransitApiKey, getPreferences, getUserState, setDeviceStatus, getClient, getStationOverrides, setStationOverrides, getPreferredTramRoute, setPreferredTramRoute, getPreferredTramStop, setPreferredTramStop } from '../src/data/kv-preferences.js';
@@ -52,6 +52,27 @@ const FLINDERS_ONLY_LINE_CODES = new Set([
   'ALM',  // Alamein
   'GWY',  // Glen Waverley
 ]);
+
+/**
+ * v5.8.2 (H8-corrective): file-scope helper. Returns true if two location
+ * strings refer to the same place, with tolerance for "Station"/"Stop"/
+ * "Platform" suffixes, trailing punctuation, and whitespace variance. Used
+ * to suppress the redundant walk-to-work leg when the transit terminus IS
+ * the workplace. Mirrors src/engines/commute-compute.js:58-78 — keep in sync.
+ */
+function isSameLocation(stopName, workName) {
+  if (!stopName || !workName) return false;
+  const norm = (s) => String(s)
+    .toLowerCase()
+    .replace(/[,.]/g, '')
+    .replace(/\b(station|stn|stop|platform)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const a = norm(stopName);
+  const b = norm(workName);
+  if (!a || !b) return false;
+  return a === b || a.includes(b) || b.includes(a);
+}
 
 /**
  * Check if a train departure likely serves City Loop stations.
@@ -380,7 +401,33 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     // Cap walk legs at 30 min — engine can return inflated values at certain times
     const isWalkLeg = leg.type === 'walk';
     const rawDuration = leg.minutes || leg.durationMinutes || 0;
-    const legDuration = isWalkLeg ? Math.min(rawDuration + 2, 30) : rawDuration;
+    let legDuration = isWalkLeg ? Math.min(rawDuration + 2, 30) : rawDuration;
+
+    // v5.8.2 (H8-corrective): suppress the redundant walk-to-work leg when the
+    // preceding transit terminus IS the workplace. Applied at the public-leg
+    // transformation layer so it catches every route producer (findDirectRoutes,
+    // findMultiModalRoutes, getHardcodedRoutes, and any future callers). The
+    // v5.8.1 version was scoped to the engine's findDirect/findMultiModal
+    // branches only and did not cover getHardcodedRoutes, so station-as-work
+    // configurations still showed a phantom walk leg.
+    if (isWalkLeg && leg.to === 'work') {
+      for (let j = i - 1; j >= 0; j--) {
+        const prev = route.legs[j];
+        if (!prev) break;
+        if (prev.type === 'walk') continue;
+        if (prev.type === 'train' || prev.type === 'tram' || prev.type === 'bus' || prev.type === 'vline') {
+          const prevDestName = prev.destination?.name || prev.destinationName || null;
+          const workName = leg.workName ||
+                           locations?.work?.name ||
+                           locations?.work?.address?.split(',')[0]?.trim() ||
+                           null;
+          if (isSameLocation(prevDestName, workName)) {
+            legDuration = 0;
+          }
+        }
+        break;
+      }
+    }
 
     // V13.6: Track origin transitions based on walk leg destinations
     // Walk TO cafe means we're now at cafe; walk FROM cafe to transit means use cafe suburb
@@ -397,8 +444,13 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     // V13.6: Determine which location to derive stop names from
     // Per CommuteCompute pattern: link to nearest origin (home or cafe)
     const originSuburb = currentOrigin === 'cafe' && cafeSuburb ? cafeSuburb : homeSuburb;
-    const derivedTramStop = originSuburb ? `${originSuburb} Tram Stop` : null;
-    const derivedStation = originSuburb ? `${originSuburb} Station` : null;
+    // v5.8.2 (N2-guard): suburb-derived fabrication removed. Stop names now
+    // return null when GTFS and CommuteCompute lookups both fail, instead of
+    // placeholder strings like "South Yarra Tram Stop" or "Craigieburn Station"
+    // that don't refer to any real stop. Downstream consumers handle null by
+    // leaving the stop name unset rather than rendering a fabrication.
+    const derivedTramStop = null;
+    const derivedStation = null;
 
     // V13.6: Walk leg destinations - show where we're walking TO
     // Priority: 1) GTFS lookup by stopId, 2) suburb-derived fallback
@@ -422,7 +474,8 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
 
       const gtfsName = getStopNameById(stopIds.tramStopId);        // 1) GTFS lookup (most reliable)
       const commuteComputeName = leg.origin?.name;                    // 2) CommuteCompute provided
-      const suburbName = stopSuburb ? `${stopSuburb} Tram Stop` : null; // 3) Suburb-derived
+      // v5.8.2 (N2-guard): suburb-derived fabrication removed.
+      const suburbName = null;                                       // 3) no fabrication
 
       // Use first non-generic name, or null if all generic
       const actualName = gtfsName ||
@@ -444,7 +497,8 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
 
       const gtfsName = getStopNameById(stopIds.trainStopId);       // 1) GTFS lookup (most reliable)
       const commuteComputeName = leg.origin?.name;                    // 2) CommuteCompute provided
-      const suburbName = stopSuburb ? `${stopSuburb} Station` : null; // 3) Suburb-derived
+      // v5.8.2 (N2-guard): suburb-derived fabrication removed.
+      const suburbName = null;                                       // 3) no fabrication
 
       // Use first non-generic name, or null if all generic
       const actualName = gtfsName ||
@@ -482,7 +536,8 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
       const isGeneric = (name) => !name || genericNames.includes(name.toLowerCase().trim());
       const gtfsName = getStopNameById(stopIds.busStopId);
       const commuteComputeName = leg.origin?.name;
-      const suburbName = stopSuburb ? `${stopSuburb} Bus Stop` : null;
+      // v5.8.2 (N2-guard): suburb-derived fabrication removed.
+      const suburbName = null;
       const actualName = gtfsName ||
         (!isGeneric(commuteComputeName) ? commuteComputeName : null) ||
         suburbName || commuteComputeName || null;
@@ -2449,10 +2504,34 @@ export default async function handler(req, res) {
     let stationOverrides = {};
     try { stationOverrides = await getStationOverrides() || {}; } catch (e) {}
     const findOverride = (type) => Object.values(stationOverrides).find(o => o?.type === type);
-    const trainOverride = findOverride('train');
-    const tramOverride = findOverride('tram');
+
+    // v5.8.2 (C4-gate): Distance gate. An override whose resolved stop is more
+    // than 5 km from the current home coordinates is almost certainly stale
+    // from a previous address. Ignore it and fall through to auto-detection.
+    // This is defence-in-depth against C4 override trap even when the KV clear
+    // in api/admin/preferences.js hasn't propagated yet. Unknown stop IDs pass
+    // through the gate (default-allow) to avoid blocking legitimate overrides
+    // that use stop IDs outside our 6014-stop dataset.
+    const OVERRIDE_MAX_KM = 5;
+    const homeLatForGate = locations?.home?.lat;
+    const homeLonForGate = locations?.home?.lon;
+    const overrideIsNearHome = (override) => {
+      if (!override?.id) return false;
+      if (homeLatForGate == null || homeLonForGate == null) return true;
+      const stopInfo = getStopCoordsById(override.id);
+      if (!stopInfo?.lat || !stopInfo?.lon) return true;
+      const km = haversine(homeLatForGate, homeLonForGate, stopInfo.lat, stopInfo.lon) / 1000;
+      return km <= OVERRIDE_MAX_KM;
+    };
+
+    const rawTrainOverride = findOverride('train');
+    const rawTramOverride = findOverride('tram');
+    const rawBusOverride = findOverride('bus');
+    const trainOverride = overrideIsNearHome(rawTrainOverride) ? rawTrainOverride : null;
+    const tramOverride = overrideIsNearHome(rawTramOverride) ? rawTramOverride : null;
+    const busOverride = overrideIsNearHome(rawBusOverride) ? rawBusOverride : null;
     const tramRouteOverride = tramOverride?.routeNumber ? String(tramOverride.routeNumber) : null;
-    const busOverride = findOverride('bus');
+
     if (trainOverride?.id) {
       trainStopId = trainOverride.id;
       stopDetectionSource = 'user-override';
@@ -3055,22 +3134,35 @@ export default async function handler(req, res) {
     // Section 7.5.1: Merge consecutive walk legs after ALL filtering
     const journeyLegs = mergeConsecutiveWalkLegs(rawJourneyLegs);
 
-    // v5.8.1: Filter raw transit arrays to the user's commute direction so
-    // downstream consumers of `raw.transit` (admin Live Data panel fallback,
-    // debug card, DepartureConfidence) never see opposite-direction services.
-    // Mirrors the per-leg direction predicate already used by the "Next:"
-    // subtitle builder (see lines 633-639). Also filters `departureTimeMs > now`
-    // as belt-and-braces so any residual past departure is stripped.
+    // v5.8.2 (C1-corrective): Filter raw transit arrays to the user's commute
+    // direction so downstream consumers of `raw.transit` never see opposite-
+    // direction services. The v5.8.1 version relied on `leg.isCitybound` being
+    // present on the merged leg, but that field is set on the internal leg
+    // (line 463) and NOT copied to the public leg object at line 899 (only
+    // `destinationName` is copied). The v5.8.1 filter was a silent no-op.
+    // This version derives `isCitybound` from `leg.destinationName` using the
+    // same city-stations list that populates the flag upstream. Also filters
+    // `departureTimeMs > now` as belt-and-braces against C3 regression.
     const nowMsRawFilter = now.getTime();
     const trainDirLeg = journeyLegs.find(l => l.type === 'train' || l.type === 'vline');
     const tramDirLeg  = journeyLegs.find(l => l.type === 'tram');
     const busDirLeg   = journeyLegs.find(l => l.type === 'bus');
+    // Mirrors api/commutecompute.js:460-462 — keep in sync.
+    const cityStationsForFilter = ['flinders', 'parliament', 'melbourne central', 'flagstaff',
+      'southern cross', 'town hall', 'state library', 'parkville', 'arden', 'anzac', 'city'];
+    const deriveCitybound = (leg) => {
+      if (!leg) return undefined;
+      const destName = (leg.destinationName || leg.destination?.name || '').toLowerCase();
+      if (!destName) return undefined;
+      return cityStationsForFilter.some(s => destName.includes(s));
+    };
     const applyDirFilter = (arr, leg) => {
       if (!Array.isArray(arr) || arr.length === 0) return arr;
-      if (!leg || leg.isCitybound === undefined) return arr;
+      const legCitybound = deriveCitybound(leg);
+      if (legCitybound === undefined) return arr;
       return arr.filter(d =>
         d.departureTimeMs > nowMsRawFilter &&
-        (d.isCitybound === undefined || d.isCitybound === leg.isCitybound)
+        (d.isCitybound === undefined || d.isCitybound === legCitybound)
       );
     };
     transitData.trains = applyDirFilter(transitData.trains, trainDirLeg);
