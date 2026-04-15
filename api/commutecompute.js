@@ -1480,23 +1480,31 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
             // Strict route match failed — try text-based line name as fallback.
             // Some alerts have affectedRoutes in unexpected ID formats that don't
             // match our line code patterns but DO mention the line name in text.
+            // v5.11.0: Also match City Loop/Flinders Street keywords for train legs —
+            // network disruptions (e.g. "trains run direct to Flinders Street, not via
+            // the City Loop") affect all citybound train lines but don't name each line.
             if (!routeMatch) {
               const legLineFallback = leg.lineName?.toLowerCase() || '';
               if (legLineFallback && leg.type === 'train') {
                 const alertText = ((d.headerText || '') + ' ' + (d.description || '')).toLowerCase();
-                if (!alertText.includes(legLineFallback)) return false;
-                // Text mentions this line — proceed
+                const mentionsLine = alertText.includes(legLineFallback);
+                const cityLoopKeywords = ['city loop', 'not via the city', 'direct to flinders', 'direct to and from flinders'];
+                const mentionsCityLoop = cityLoopKeywords.some(kw => alertText.includes(kw));
+                if (!mentionsLine && !mentionsCityLoop) return false;
+                // Text mentions this line or a City Loop disruption — proceed
               } else {
                 return false;
               }
             }
           } else {
-            // No explicit routes — text-based line name matching or severe effect.
+            // No explicit routes — text-based line name matching, City Loop keyword, or severe effect.
             const legLine = leg.lineName?.toLowerCase() || '';
             if (legLine && leg.type === 'train') {
               const alertFullText = ((d.headerText || '') + ' ' + (d.description || '')).toLowerCase();
               const lineNameMatch = alertFullText.includes(legLine);
-              if (!lineNameMatch && !SEVERE_EFFECTS.includes(d.effect)) return false;
+              const cityLoopKws = ['city loop', 'not via the city', 'direct to flinders', 'direct to and from flinders'];
+              const cityLoopMatch = cityLoopKws.some(kw => alertFullText.includes(kw));
+              if (!lineNameMatch && !cityLoopMatch && !SEVERE_EFFECTS.includes(d.effect)) return false;
             } else if (!SEVERE_EFFECTS.includes(d.effect)) {
               return false;
             }
@@ -4181,10 +4189,39 @@ export default async function handler(req, res) {
       ...(tramStopId ? [tramStopId] : []),
       ...(busStopId ? [busStopId] : [])
     ]);
+    // v5.11.0: Also match disruptions by route ID, line name text, and City Loop keywords.
+    // Previously only matched by affectedStops — Frankston line City Loop disruptions were
+    // dropped because they don't list individual platform stop IDs.
+    const userLineName = preferredTrainLine?.toLowerCase() || '';
+    const userTramRoute = effectiveTramRoute || detectedTramRoute || '';
+    const userLineCode = userLineName ? ({
+      'sandringham': 'SHM', 'frankston': 'FKN', 'pakenham': 'PKM',
+      'cranbourne': 'CBE', 'glen waverley': 'GLW', 'alamein': 'ALM',
+      'belgrave': 'BEL', 'lilydale': 'LIL', 'hurstbridge': 'HBE',
+      'mernda': 'MER', 'craigieburn': 'CRB', 'sunbury': 'SUN',
+      'upfield': 'UPF', 'werribee': 'WER', 'williamstown': 'WIL',
+      'stony point': 'SPT', 'flemington racecourse': 'FLE'
+    }[userLineName] || '') : '';
+    const cityLoopKeywords = ['city loop', 'not via the city', 'direct to flinders', 'direct to and from flinders'];
+
     const routeFilteredDisruptions = (disruptions || [])
       .filter(d => {
         if (!d.affectedRoutes?.length && !d.affectedStops?.length) return true;
         if (d.affectedStops?.some(s => userStopIds.has(s))) return true;
+        // v5.11.0: Match by route ID against user's configured line/route
+        if (d.affectedRoutes?.length > 0) {
+          const routeHit = d.affectedRoutes.some(r => {
+            const ru = r.toUpperCase();
+            if (userLineCode && (ru.includes(`-${userLineCode}:`) || ru.includes(`-${userLineCode}-`))) return true;
+            if (userTramRoute && (ru.includes(`-${userTramRoute}:`) || ru.includes(`-${userTramRoute}-`))) return true;
+            return false;
+          });
+          if (routeHit) return true;
+        }
+        // v5.11.0: Match by text — line name or City Loop keywords
+        const alertText = ((d.headerText || '') + ' ' + (d.description || '') + ' ' + (d.title || '')).toLowerCase();
+        if (userLineName && alertText.includes(userLineName)) return true;
+        if (cityLoopKeywords.some(kw => alertText.includes(kw))) return true;
         return false;
       })
       .map(d => ({

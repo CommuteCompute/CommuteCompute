@@ -1,5 +1,5 @@
 /**
- * CCDash™ Renderer v3.2
+ * CCDash™ Renderer v3.3
  * Part of the Commute Compute System™
  *
  * Copyright (c) 2026 Angus Bergman
@@ -1088,6 +1088,43 @@ function mergeConsecutiveWalkLegs(legs) {
     merged.push(current);
   }
   return merged;
+}
+
+/**
+ * v5.11.0: Collapse walk-faster transit legs into direct walks.
+ * When a transit leg has walkFasterFlag=true AND is sandwiched between walk legs,
+ * merge all three into a single walk to the final destination (the station).
+ * The API marks legs but preserves them (Section 23.14). The renderer decides.
+ */
+function collapseWalkFasterLegs(legs) {
+  const result = [];
+  for (let i = 0; i < legs.length; i++) {
+    const leg = legs[i];
+    // Check: walk + walkFaster-transit + walk pattern
+    if (leg.type === 'walk' && i + 2 < legs.length) {
+      const transit = legs[i + 1];
+      const walkAfter = legs[i + 2];
+      if (transit.walkFasterFlag && walkAfter.type === 'walk') {
+        // Merge into single walk to the final walk's destination
+        const totalMins = (leg.minutes || 0) + (walkAfter.minutes || 0);
+        const dest = walkAfter.stopName || walkAfter.stationName || walkAfter.to || 'station';
+        result.push({
+          ...leg,
+          minutes: totalMins,
+          durationMinutes: totalMins,
+          title: `Walk to ${dest}`,
+          subtitle: `${totalMins} min walk`,
+          to: dest,
+          stopName: walkAfter.stopName || leg.stopName,
+          stationName: walkAfter.stationName || leg.stationName,
+        });
+        i += 2; // Skip the transit and second walk
+        continue;
+      }
+    }
+    result.push(leg);
+  }
+  return result;
 }
 
 /**
@@ -2861,23 +2898,36 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   // V5.5.18: Show confidence at all times when a valid score exists
   if (confidenceScore !== undefined && confidenceScore !== null) {
     ctx.textAlign = 'right';
-    const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
-    const needsAttention = confidenceScore < 75;
-    ctx.font = needsAttention ? `bold ${Math.max(11, Math.round(17 * fs))}px Inter, sans-serif` : `${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;
-    // V16.0: Show confidence context, mindset, and resilience when actionable
-    // Build incrementally — prioritise core label, then context, then optional segments
-    const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
-    const confMaxWidth = Math.max(Math.round(100 * sx), rightBoundary - Math.round(200 * sx));
-    let confText = `${confLabel} (${confidenceScore}%)`;
-    // Append concise, actionable segments — prioritise transfer count and resilience detail
-    const optionalSegments = [];
-    if (data.confidence_resilience_detail) optionalSegments.push(` \u2022 ${data.confidence_resilience_detail}`);
-    else if (data.confidence_context) optionalSegments.push(` \u2022 ${data.confidence_context}`);
-    if (!stressIsLow && data.mindset_display) optionalSegments.push(` \u2022 ${data.mindset_display}`);
-    for (const segment of optionalSegments) {
-      const candidate = confText + segment;
-      if (ctx.measureText(candidate).width <= confMaxWidth) {
-        confText = candidate;
+    // v5.11.0: In tomorrow mode, suppress urgency labels (AT RISK / UNLIKELY) —
+    // confidence scoring is meaningless 12+ hours out. Show journey summary instead.
+    // Section 12.5: outside 120-min window, don't evaluate against target arrival.
+    const isTomorrow = data.isTomorrowCommute;
+    let confText;
+    if (isTomorrow) {
+      // Tomorrow: show transfer count + context without urgency label
+      const transferCount = (data.journey_legs || []).filter(l => ['train', 'tram', 'bus', 'vline'].includes(l.type)).length;
+      const transferLabel = transferCount === 1 ? '1 transfer' : transferCount > 1 ? `${transferCount} transfers` : 'direct';
+      confText = transferLabel;
+      if (data.confidence_context) confText += ` \u2022 ${data.confidence_context}`;
+      ctx.font = `${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;
+    } else {
+      const confLabel = confidenceScore >= 75 ? 'ON TIME' : confidenceScore >= 50 ? 'AT RISK' : 'UNLIKELY';
+      const needsAttention = confidenceScore < 75;
+      ctx.font = needsAttention ? `bold ${Math.max(11, Math.round(17 * fs))}px Inter, sans-serif` : `${Math.max(11, Math.round(16 * fs))}px Inter, sans-serif`;
+      confText = `${confLabel} (${confidenceScore}%)`;
+      // V16.0: Show confidence context, mindset, and resilience when actionable
+      // Build incrementally — prioritise core label, then context, then optional segments
+      const stressIsLow = !data.mindset_stress || data.mindset_stress === 'LOW';
+      const optionalSegments = [];
+      if (data.confidence_resilience_detail) optionalSegments.push(` \u2022 ${data.confidence_resilience_detail}`);
+      else if (data.confidence_context) optionalSegments.push(` \u2022 ${data.confidence_context}`);
+      if (!stressIsLow && data.mindset_display) optionalSegments.push(` \u2022 ${data.mindset_display}`);
+      const confMaxWidth = Math.max(Math.round(100 * sx), rightBoundary - Math.round(200 * sx));
+      for (const segment of optionalSegments) {
+        const candidate = confText + segment;
+        if (ctx.measureText(candidate).width <= confMaxWidth) {
+          confText = candidate;
+        }
       }
     }
     ctx.fillText(confText, rightBoundary, statusBarMidY);
@@ -2920,6 +2970,11 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   if (!isWithinArrivalWindow) {
     legs = legs.filter(l => l.type !== 'coffee');
   }
+
+  // v5.11.0: Collapse transit legs flagged walk-faster into direct walks.
+  // When the API marks a tram/bus as slower than walking, merge the
+  // walk+transit+walk pattern into a single walk to the station.
+  legs = collapseWalkFasterLegs(legs);
 
   // Section 7.5.1: Defensive merge — no consecutive walk legs ever
   legs = mergeConsecutiveWalkLegs(legs);

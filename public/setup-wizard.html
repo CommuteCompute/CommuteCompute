@@ -881,6 +881,15 @@
                     </div>
                 </div>
 
+                <!-- Preferred Tram Route -->
+                <div class="form-group" id="cc-tram-route-group">
+                    <label for="cc-preferred-tram-route" class="form-label">Preferred Tram Route (Optional)</label>
+                    <input type="text" id="cc-preferred-tram-route" class="form-input" placeholder="e.g. 58 (leave blank for any route)" autocomplete="off" inputmode="numeric" maxlength="4">
+                    <p style="color: #94a3b8; font-size: 12px; margin-top: 4px;">
+                        If your tram stop serves multiple routes, specify which route you catch. Leave blank to show the next departing tram regardless of route.
+                    </p>
+                </div>
+
                 <!-- Journey Preferences -->
                 <div class="form-group">
                     <label for="arrival-time" class="form-label">Arrival Time at Work</label>
@@ -1005,10 +1014,10 @@
 
     function loadFooterVersions() {
         fetch('/api/version').then(function(r){return r.json();}).then(function(v) {
-            document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v4.1';
-            document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v3.2';
+            document.getElementById('cc-footer-commutecompute-version').textContent = v.components?.commutecompute?.version || 'v4.2';
+            document.getElementById('cc-footer-renderer-version').textContent = v.components?.renderer?.version || 'v3.3';
             document.getElementById('cc-footer-build-date').textContent = v.date || new Date().toISOString().split('T')[0];
-            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.10.2');
+            document.getElementById('cc-footer-system-version').textContent = 'v' + (v.system?.version || '5.11.0');
             if (v.repoUrls) checkForUpstreamUpdates(v.system?.version, v.repoUrls);
         }).catch(function(){});
     }
@@ -1816,7 +1825,8 @@
                 device: selectedDevice,
                 trainStopId: document.getElementById('train-stop-id')?.value?.trim() || result.detectedStops?.trainStopId || null,
                 tramStopId: document.getElementById('tram-stop-id')?.value?.trim() || result.detectedStops?.tramStopId || null,
-                busStopId: document.getElementById('bus-stop-id')?.value?.trim() || result.detectedStops?.busStopId || null
+                busStopId: document.getElementById('bus-stop-id')?.value?.trim() || result.detectedStops?.busStopId || null,
+                preferredTramRoute: document.getElementById('cc-preferred-tram-route')?.value?.trim() || null
             };
 
             localStorage.setItem('cc-config', JSON.stringify(fullConfig));
@@ -1838,6 +1848,14 @@
                 var syncResult = await syncResponse.json();
                 if (syncResult.success) {
                     syncSuccess = true;
+                    // Persist preferred tram route to dedicated KV key (non-blocking)
+                    var tramRouteVal = fullConfig.preferredTramRoute;
+                    if (tramRouteVal !== undefined) {
+                        fetch(baseUrl + '/api/routes', {
+                            method: 'POST', headers: getAuthHeaders(),
+                            body: JSON.stringify({ preferredTramRoute: tramRouteVal || null })
+                        }).catch(function() {});
+                    }
                 } else {
                     syncError = syncResult.error || 'Server returned failure';
                     if (syncResult.saved?.transitVerifyFailed) {

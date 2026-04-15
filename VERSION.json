@@ -1,6 +1,6 @@
 {
   "system": {
-    "version": "5.10.2",
+    "version": "5.11.0",
     "name": "Commute Compute System",
     "releaseDate": "2026-04-15",
     "codename": "Turnkey Multi-State",
@@ -8,14 +8,14 @@
   },
   "components": {
     "commutecompute": {
-      "version": "4.1",
+      "version": "4.2",
       "name": "CommuteCompute Engine",
       "description": "Multi-state GTFS-RT support (VIC/NSW/QLD live, SA/WA/TAS/NT/ACT timetable fallback), coordinate-based stop detection (226 VIC metro + 1637 tram + 4151 bus + expanded fallback stops for all states), state-aware suburb-to-stop mappings for all capital cities, graceful no-GTFS-RT degradation, runtime line verification, Metro Tunnel citybound detection (VIC), direction-based train filtering, route-aware transit filtering, Departure Confidence, Sleep Optimiser, Alt Transit, Lifestyle Context, Mindset analysis",
       "locked": false,
       "lastUpdated": "2026-03-22"
     },
     "renderer": {
-      "version": "3.2",
+      "version": "3.3",
       "name": "CCDash Renderer",
       "spec": "CCDashDesignV16.0",
       "description": "V16.0 spec-compliant rendering with per-leg element scaling (prevents overlap with 7+ legs), coffee leg redesign (no number bubble, no time box, coffee icon replaces [OK], centre-aligned text), route/line names in transit titles, transit countdown fix, cafe closed case-insensitive matching, confidence context line rendering, subtitle overflow protection, lifestyle obligation styling, suburb locations, unified cafe closed/skipped rendering, diversion status bar",
@@ -23,14 +23,14 @@
       "lastUpdated": "2026-03-22"
     },
     "adminPanel": {
-      "version": "6.0.0",
+      "version": "6.1.0",
       "file": "admin.html",
       "description": "Admin Panel unified with single /api/commutecompute endpoint (no separate screen.js), KV-persisting address edits, geocoding, Places API autocomplete, dynamic version loading, alt transit data, TRMNL-free branding",
       "locked": false,
       "lastUpdated": "2026-03-02"
     },
     "setupWizard": {
-      "version": "2.0.0",
+      "version": "2.1.0",
       "file": "setup-wizard.html",
       "description": "Initial Setup Wizard with BLE Provisioning",
       "locked": false,
