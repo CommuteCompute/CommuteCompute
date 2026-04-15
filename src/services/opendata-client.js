@@ -277,7 +277,7 @@ async function fetchGtfsRt(mode, feed, options = {}, state = 'VIC') {
   const cacheKey = `${state}-${mode}-${feed}`;
   const cached = feedCache.get(cacheKey);
   if (cached && (Date.now() - cached.timestamp < FEED_CACHE_TTL_MS)) {
-    console.log(`[OpenData] Cache hit for ${state}/${mode}/${feed} (${Math.round((Date.now() - cached.timestamp) / 1000)}s old)`);
+    // v5.9.1 (U9 / Section 1.1): diagnostic console.log removed
     return cached.data;
   }
 
@@ -307,7 +307,7 @@ async function fetchGtfsRt(mode, feed, options = {}, state = 'VIC') {
   const url = `${stateConfig.baseUrl}/${mode}/${feed}`;
 
   try {
-    console.log(`[OpenData] Fetching GTFS-RT: ${state}/${mode}/${feed}`);
+    // v5.9.1 (U9 / Section 1.1): diagnostic console.log removed
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
     const response = await fetch(url, {
@@ -331,8 +331,7 @@ async function fetchGtfsRt(mode, feed, options = {}, state = 'VIC') {
 
     // Get response as ArrayBuffer for Protobuf decoding
     const buffer = await response.arrayBuffer();
-    console.log(`[OpenData] Received ${buffer.byteLength} bytes for ${mode}/${feed}`);
-
+    // v5.9.1 (U9 / Section 1.1): diagnostic console.log removed
     // Decode Protobuf
     const decoded = decodeGtfsRt(buffer);
 
@@ -340,7 +339,7 @@ async function fetchGtfsRt(mode, feed, options = {}, state = 'VIC') {
       console.error(`[OpenData] Protobuf decode returned null for ${mode}/${feed} (${buffer.byteLength} bytes)`);
     } else {
       const entityCount = decoded.entity?.length || 0;
-      console.log(`[OpenData] Decoded ${entityCount} entities from ${mode}/${feed}`);
+      // v5.9.1 (U9 / Section 1.1): diagnostic console.log removed
     }
 
     // Only cache feeds with actual trip data. Empty feeds (0 entities) from
@@ -356,7 +355,7 @@ async function fetchGtfsRt(mode, feed, options = {}, state = 'VIC') {
     console.error(`[OpenData] GTFS-RT error for ${mode}/${feed}: ${error.message}`);
     // Return stale cached data on failure — better than no data
     if (cached?.data) {
-      console.log(`[OpenData] Returning stale cache for ${state}/${mode}/${feed} (${Math.round((Date.now() - cached.timestamp) / 1000)}s old)`);
+      // v5.9.1 (U9 / Section 1.1): diagnostic console.log removed
       return cached.data;
     }
     throw error;
@@ -405,6 +404,13 @@ export async function getDepartures(stopId, routeType, options = {}) {
 
     // Process GTFS-RT TripUpdates - try stop-level match first
     const departures = processGtfsRtDepartures(feed, stopId, routeType, state);
+    // v5.9.5 (AA2): capture T1's exact-match count BEFORE any later tier
+    // pushes additional departures. The stop-level cascade entry must
+    // report ONLY T1's count, not the conflated T1+T2 total (which the
+    // v5.9.3/v5.9.4 unshift at line ~588 was doing). See
+    // DEVELOPMENT-RULES.md §23.15 (v5.9.5 update) for the rationale and
+    // tests/test-tram-cascade-selection.js for the accounting invariant.
+    const t1ExactMatchCount = departures.length;
 
     // V15.0: Attach diagnostic info for debugging GTFS-RT feed coverage
     const feedEntityCount = feed.entity?.length || 0;
@@ -447,90 +453,143 @@ export async function getDepartures(stopId, routeType, options = {}) {
         }
       }
       if (departures.length > 0) {
-        console.log(`[OpenData] Alt stop IDs matched ${departures.length} departures from ${altMatches.length} stops for stopId=${stopId} in ${mode} feed`);
+        // v5.9.1 (U9 / Section 1.1): diagnostic console.log removed
       }
       cascadeAttempts.push({ tier: 'alt-stop-id', tried: true, altsTried: options.altStopIds.length, matched: altMatches.length > 0 ? altMatches : null, found: departures.length });
     }
 
-    // V16.0: For trams, coordinate-proximity runs BEFORE route-level.
-    // VIC tram GTFS-RT feeds use different stop IDs than static GTFS (known issue).
-    // Route-level's median-stop heuristic estimates departure at a mid-route stop,
-    // producing times 10-20 min off (e.g. 25 min when actual is 7 min). Coordinate-
-    // proximity uses actual stop coordinates for accurate departure times and must
-    // run first so the inaccurate median heuristic doesn't block it.
-    // V5.6.6: Guard changed from === 0 to < 3: when Tier 1 finds 1-2 results (e.g. a
-    // just-departed tram), coord-proximity supplements with direction-filtered upcoming
-    // departures. When Tier 1 found 0, coord is still the primary source (behaviour
-    // unchanged). When Tier 1 found >= 3, coord is still skipped (behaviour unchanged).
-    if (departures.length < 3 && feedEntityCount > 0 && mode === 'tram') {
-      const coordDepartures = processCoordinateProximitySearch(feed, stopId, routeType, state, options.routeNumber || null, options.lat || null, options.lon || null, options.destLat || null, options.destLon || null);
-      cascadeAttempts.push({ tier: 'coord-proximity', tried: true, found: coordDepartures.length });
-      if (coordDepartures.length > 0) {
-        if (departures.length === 0) {
-          // Primary coord result — push all directly
-          coordDepartures.forEach(d => departures.push(d));
-        } else {
-          // Supplement sparse Tier 1 results — dedup merge (180s window).
-          // Coord-proximity estimates are derived from averaging adjacent stop times
-          // and inherently have 2-4 min drift. Use a 3-minute dedup window so coord
-          // departures that approximate an existing stop-level match are dropped.
-          for (const cd of coordDepartures) {
-            if (!departures.some(d => Math.abs(d.departureTimeMs - cd.departureTimeMs) < 180000)) {
-              departures.push(cd);
-            }
-          }
-        }
-      }
-    }
+    // v5.9.2 (X2): Identity-first cascade reorganisation.
+    // The old cascade ran coord-proximity (300 m fuzzy) before all-trips-scan,
+    // short-circuiting on 3+ results. That produced hits from parallel routes
+    // because coord-proximity returns ANY tram within 300 m regardless of route.
+    //
+    // New order for trams:
+    //   T1: exact stop-id match (processGtfsRtDepartures) — already above
+    //   T2: alt stop IDs (processGtfsRtDepartures via altStopIds) — already above
+    //   T3: all-trips lenient-numeric scan (processAllTripsStopSearch) — moved HERE
+    //   T4: coord-identity match (processCoordIdentityMatch, 15 m) — NEW
+    //   T5: route-level fallback (processRouteLevelDepartures) — when routeNumber known
+    //   T6: coord-proximity 300 m — LAST RESORT, only when T1-T5 all empty
+    //
+    // Source hierarchy (high → low confidence):
+    //   gtfs-rt               (exact stop-id match)
+    //   gtfs-rt-scan          (lenient trailing-numeric)
+    //   gtfs-rt-coord-identity (NEW — static coords within 15 m of target)
+    //   gtfs-rt-route         (route-level median heuristic)
+    //   gtfs-rt-coord         (300 m proximity, LOW confidence)
 
-    // V5.5.1: When coord-proximity found partial results (< 3 departures), also run
-    // all-trips-scan and merge. Coord-proximity and all-trips-scan use complementary
-    // matching: coord-proximity matches feed stop IDs → static coordinates (trailing-
-    // numeric), while all-trips-scan matches the user's stop ID → feed trip stop lists
-    // (lenient trailing-digit). Merging captures trips that one tier missed.
-    if (departures.length > 0 && departures.length < 3 && mode === 'tram' && feedEntityCount > 0) {
+    // T3: All-trips scan with lenient trailing-numeric matching.
+    // Runs for ALL modes (not just trams). Produces stop-level accuracy.
+    if (departures.length === 0 && feedEntityCount > 0) {
       const scanDepartures = processAllTripsStopSearch(feed, stopId, routeType, state);
+      cascadeAttempts.push({ tier: 'all-trips-scan', tried: true, found: scanDepartures.length });
       if (scanDepartures.length > 0) {
-        let merged = 0;
-        for (const sd of scanDepartures) {
-          if (!departures.some(d => Math.abs(d.departureTimeMs - sd.departureTimeMs) < 60000)) {
-            departures.push(sd);
-            merged++;
-          }
-        }
-        if (merged > 0) {
-          console.log(`[OpenData] Coord+scan merge: added ${merged} departures from all-trips-scan for ${mode} stopId=${stopId}`);
-        }
-        cascadeAttempts.push({ tier: 'coord+scan-merge', tried: true, found: scanDepartures.length, merged });
+        scanDepartures.forEach(d => departures.push(d));
       }
     }
 
-    // V15.0: Route-level fallback when stop-level match fails.
+    // T4: Coord-identity match (trams only, named-constant radius).
+    // Bridges the feed/static stop-id namespace gap by comparing static
+    // coordinates. A feed stop whose static coords are within the identity
+    // radius of the target IS the target stop, just with a different ID — so
+    // its tripUpdates are authoritative matches. This resolves cases where
+    // the feed uses IDs that don't match the static dataset entries.
+    //
+    // Radius rationale (v5.9.3 — measured on VIC_TRAM_STOPS_WITH_COORDS):
+    //   - Paired inbound/outbound platforms of the same physical stop can sit
+    //     up to ~25 m apart across the Melbourne tram network (wide-road
+    //     crossings). The previous v5.9.2 value of 15 m was too tight and
+    //     the tier was inert whenever the feed used the outbound platform ID.
+    //   - Same-route adjacent stops on the same street are always >150 m apart.
+    //   - Parallel-street neighbours (the closest false-match class) are
+    //     always >200 m away (measured at 258 m for the tightest case).
+    //   - TRAM_COORD_IDENTITY_RADIUS_METRES = 40 m therefore catches the
+    //     paired-platform case (25 m + 15 m margin) while rejecting any
+    //     neighbour (210 m+ safety margin).
+    //
+    // Runs regardless of previous tiers' findings because coord-identity is
+    // COMPLEMENTARY to T1/T3 — different feeds may use different ID formats
+    // and we want to catch trips that slipped through both. Dedup by trip ID
+    // so the same tram is never counted twice.
+    if (feedEntityCount > 0 && mode === 'tram') {
+      const coordsForStop = options.lat && options.lon
+        ? { lat: options.lat, lon: options.lon }
+        : lookupTramStop(String(stopId));
+      if (coordsForStop?.lat && coordsForStop?.lon) {
+        // v5.9.5 (AA3): collect the tripIds that T1 and/or T2 already
+        // matched, and pass them to coord-identity as knownMatchedTripIds.
+        // This lets T4 record a cross-tier divergence report: for each
+        // trip T1/T2 matched, T4 notes whether it also matched AND (if
+        // not) the rejection reason. §23.15 requires this symmetry —
+        // the coord-identity tier should find the same trips stop-level
+        // found, and any divergence is a flag worth surfacing.
+        const knownMatchedTripIds = new Set(
+          departures.map(d => d.tripId).filter(Boolean)
+        );
+        const identityResult = processCoordIdentityMatch(
+          feed,
+          coordsForStop.lat,
+          coordsForStop.lon,
+          routeType,
+          {
+            identityRadiusMetres: options.identityRadiusMetres ?? TRAM_COORD_IDENTITY_RADIUS_METRES,
+            targetRouteNumber: options.routeNumber || null,
+            knownMatchedTripIds
+          }
+        );
+        cascadeAttempts.push({
+          tier: 'coord-identity',
+          tried: true,
+          found: identityResult.departures.length,
+          feedStopIdsResolved: identityResult.feedStopIdsResolved,
+          matchedTripCount: identityResult.matchedTripCount,
+          radiusMetres: options.identityRadiusMetres ?? TRAM_COORD_IDENTITY_RADIUS_METRES,
+          // v5.9.4 (Z4): diagnostic fields for post-deploy investigation
+          sampleLookups: identityResult.sampleLookups,
+          totalUniqueFeedStopIds: identityResult.totalUniqueFeedStopIds,
+          // v5.9.5 (AA3): divergence report (null when no knownMatchedTripIds)
+          divergenceReport: identityResult.divergenceReport
+        });
+        // Merge into departures with trip-id dedup (identity results may
+        // overlap with T1/T3 matches from the same tram).
+        const seenTripIds = new Set(departures.map(d => d.tripId).filter(Boolean));
+        for (const d of identityResult.departures) {
+          if (d.tripId && seenTripIds.has(d.tripId)) continue;
+          if (d.tripId) seenTripIds.add(d.tripId);
+          departures.push(d);
+        }
+      }
+    }
+
+    // T5: Route-level fallback when stop-level / scan / identity all failed.
     // When the GTFS-RT feed has entities but none match the stop ID, search by
     // route number or line code. Works for all modes (tram, bus, train).
-    // For trams, this only runs if coordinate-proximity (above) found nothing.
     if (departures.length === 0 && feedEntityCount > 0 && (options.routeNumber || options.lineCode)) {
       const routeFallbackDepartures = processRouteLevelDepartures(
         feed, stopId, options.routeNumber, routeType, options.lineCode, state
       );
       cascadeAttempts.push({ tier: 'route-level', tried: true, found: routeFallbackDepartures.length });
       if (routeFallbackDepartures.length > 0) {
-        console.log(`[OpenData] Route-level fallback found ${routeFallbackDepartures.length} departures for ${options.routeNumber || options.lineCode} (stopId=${stopId} not matched directly)`);
-        // Copy results to departures array (preserving array identity for _feedInfo)
         routeFallbackDepartures.forEach(d => departures.push(d));
       }
     }
 
-    // All-trips scan — searches ALL trips for the exact stop ID with lenient matching.
-    // Produces accurate stop-level departure times (unlike broad fallback's heuristic).
-    // Now runs for ALL modes including metro — previously excluded metro, causing trains
-    // to fall through to broad fallback's inaccurate heuristic.
-    if (departures.length === 0 && feedEntityCount > 0) {
-      const scanDepartures = processAllTripsStopSearch(feed, stopId, routeType, state);
-      cascadeAttempts.push({ tier: 'all-trips-scan', tried: true, found: scanDepartures.length });
-      if (scanDepartures.length > 0) {
-        console.log(`[OpenData] All-trips stop search found ${scanDepartures.length} departures for stopId=${stopId} in ${mode} feed`);
-        scanDepartures.forEach(d => departures.push(d));
+    // T6: Coord-proximity 300 m — LAST RESORT.
+    // Only fires when every identity-based tier (T1-T5) returned nothing.
+    // This means either the configured stop is unknown to the static dataset
+    // or the feed uses completely non-resolvable ID formats. The 300 m radius
+    // may pull in routes from parallel streets — a warning is surfaced in
+    // _liveDataDiag.tramRouteSelectionConfidence when this tier is the source.
+    if (departures.length === 0 && feedEntityCount > 0 && mode === 'tram') {
+      const coordDepartures = processCoordinateProximitySearch(
+        feed, stopId, routeType, state,
+        options.routeNumber || null,
+        options.lat || null, options.lon || null,
+        options.destLat || null, options.destLon || null
+      );
+      cascadeAttempts.push({ tier: 'coord-proximity', tried: true, found: coordDepartures.length });
+      if (coordDepartures.length > 0) {
+        coordDepartures.forEach(d => departures.push(d));
       }
     }
 
@@ -540,14 +599,21 @@ export async function getDepartures(stopId, routeType, options = {}) {
       const broadDepartures = processAnyRouteDepartures(feed, stopId);
       cascadeAttempts.push({ tier: 'broad-fallback', tried: true, found: broadDepartures.length });
       if (broadDepartures.length > 0) {
-        console.log(`[OpenData] Broad fallback: ${broadDepartures.length} departures from mixed routes in ${mode} feed (stopId=${stopId})`);
         broadDepartures.forEach(d => departures.push(d));
       }
     }
 
-    // Record stop-level attempt (always the first tier tried)
+    // Record stop-level attempt (always the first tier tried).
+    // v5.9.5 (AA2): report ONLY T1's exact-match count. v5.9.3/v5.9.4
+    // reported `departures.length` when the first element was
+    // `source === 'gtfs-rt'` — but T2 alt-stop-id also produces items
+    // with that same source, so the stop-level entry silently
+    // conflated T1 and T2 results. T2 has its own `alt-stop-id` cascade
+    // entry; one tier = one count. See DEVELOPMENT-RULES.md §23.15
+    // (v5.9.5 update) and tests/test-tram-cascade-selection.js for the
+    // accounting invariant.
     if (feedEntityCount > 0) {
-      cascadeAttempts.unshift({ tier: 'stop-level', tried: true, found: departures.length > 0 && departures[0]?.source === 'gtfs-rt' ? departures.length : 0 });
+      cascadeAttempts.unshift({ tier: 'stop-level', tried: true, found: t1ExactMatchCount });
     }
 
     departures._feedInfo = {
@@ -560,20 +626,23 @@ export async function getDepartures(stopId, routeType, options = {}) {
       mode,
       state,
       cascadeAttempts,
-      matchMethod: departures.length > 0 && departures[0]?.source === 'gtfs-rt-coord'
-        ? 'coord-proximity' : departures.length > 0 && departures[0]?.source === 'gtfs-rt-scan'
-        ? 'all-trips-scan' : departures.length > 0 && departures[0]?.source === 'gtfs-rt-route'
-        ? 'route-level' : departures.length > 0 && departures[0]?.source === 'gtfs-rt-broad'
-        ? 'broad-fallback' : departures.length > 0 ? 'stop-level' : 'none'
+      matchMethod: departures.length === 0
+        ? 'none'
+        : departures[0]?.source === 'gtfs-rt-coord-identity' ? 'coord-identity'
+        : departures[0]?.source === 'gtfs-rt-coord' ? 'coord-proximity'
+        : departures[0]?.source === 'gtfs-rt-scan' ? 'all-trips-scan'
+        : departures[0]?.source === 'gtfs-rt-route' ? 'route-level'
+        : departures[0]?.source === 'gtfs-rt-broad' ? 'broad-fallback'
+        : 'stop-level'
     };
 
     if (departures.length === 0) {
-      console.log(`[OpenData] No matching departures for stopId=${stopId} in ${mode} feed (${feedEntityCount} entities, ${routeIds.size} routes). Sample IDs: [${[...sampleIds].slice(0, 5).join(', ')}]. Routes: [${[...routeIds].slice(0, 5).join(', ')}]`);
+      // v5.9.1 (U9 / Section 1.1): diagnostic console.log removed
       // V13.6 FIX: Per Section 23.6 - return empty array, not mock data
       return departures;
     }
 
-    console.log(`[OpenData] Found ${departures.length} departures for stopId=${stopId} (${mode})`);
+    // v5.9.1 (U9 / Section 1.1): diagnostic console.log removed
     return departures;
 
   } catch (error) {
@@ -727,11 +796,24 @@ function processRouteLevelDepartures(feed, stopId, routeNumber, routeType, lineC
       const isVIC = (state === 'VIC');
       const lineName = isVIC ? getLineName(routeId) : (tripUpdate.trip?.tripHeadsign || '');
       const finalStop = stus[stus.length - 1]?.stopId || '';
+      // v5.9.0 (T4 + T10 / B4): Mode-specific destination ordering.
+      //   Trains — line name is the semantically meaningful identifier
+      //            (the line code). Fall back to headsign.
+      //   Trams/buses — tripHeadsign carries the actual directional end
+      //                 (a suburb terminus name). Fall back to lineName.
+      // The old `lineName || headsign || ''` order produced a route number as
+      // the tram destination for every tram, hiding the real direction.
+      // Applied to ALL states (VIC path first, other states fall through
+      // since their lineName was already a headsign at line 728).
+      const tripHeadsign = tripUpdate.trip?.tripHeadsign || '';
+      const destination = isTrainMode
+        ? (lineName || tripHeadsign || '')
+        : (tripHeadsign || lineName || '');
 
       departures.push({
         minutes: Math.max(0, minutes),
         departureTimeMs: depMs,
-        destination: lineName || tripUpdate.trip?.tripHeadsign || '',
+        destination,
         lineName,
         routeNumber: extractedRoute || getRouteNumber(routeId) || null,
         routeId,
@@ -849,10 +931,19 @@ function processAllTripsStopSearch(feed, stopId, routeType, state = 'VIC') {
           );
         }) : false;
 
+        // v5.9.0 (T4 + T10 / B4): mode-specific destination ordering.
+        // Trains use line name; trams/buses use tripHeadsign.
+        const scanIsTrainMode = routeType === 0 || routeType === '0';
+        const scanTripHeadsign = tripUpdate.trip?.tripHeadsign || '';
+        const scanDestination = scanIsCitybound
+          ? 'City'
+          : (scanIsTrainMode
+              ? (lineName || scanTripHeadsign || '')
+              : (scanTripHeadsign || lineName || ''));
         departures.push({
           minutes: Math.max(0, minutes),
           departureTimeMs: depMs,
-          destination: scanIsCitybound ? 'City' : (lineName || tripUpdate.trip?.tripHeadsign || ''),
+          destination: scanDestination,
           lineName,
           routeNumber: getRouteNumber(routeId) || null,
           routeId,
@@ -896,25 +987,354 @@ function processAllTripsStopSearch(feed, stopId, routeType, state = 'VIC') {
  * @param {string|null} targetRouteNumber - If set, only match trips on this route
  * @returns {Array} - Departure objects from coordinate-matched trips
  */
+// v5.9.2 (X1): Module-level tram stop lookup extracted from
+// processCoordinateProximitySearch so it can be shared with the new
+// processCoordIdentityMatch function. Memoised once per module load.
+// GTFS-RT tram feeds use prefixed IDs (e.g. "aus:vic:tram-1567") while
+// VIC_TRAM_STOPS_WITH_COORDS uses bare numerics ("1567"). Exact === match
+// always fails. Map by both exact ID and trailing numeric for prefix tolerance.
+const _tramStopByIdCache = (() => {
+  const map = {};
+  for (const s of VIC_TRAM_STOPS_WITH_COORDS) {
+    map[s.id] = s;
+  }
+  return map;
+})();
+
+function lookupTramStop(idStr) {
+  if (_tramStopByIdCache[idStr]) return _tramStopByIdCache[idStr];
+  const numeric = String(idStr).match(/(\d+)$/)?.[1];
+  if (numeric && _tramStopByIdCache[numeric]) return _tramStopByIdCache[numeric];
+  return null;
+}
+
+/**
+ * v5.9.3 (Y1): Melbourne tram coord-identity radius — universal constant.
+ *
+ * This is the radius used by processCoordIdentityMatch when resolving feed
+ * stop IDs back to a user's configured tram stop via haversine against the
+ * static VIC_TRAM_STOPS_WITH_COORDS coordinates.
+ *
+ * Value: 40 metres. Measured rationale (not heuristic):
+ *
+ *   - Inbound/outbound directional pairs of the same physical tram stop on
+ *     wide-road crossings sit up to ~25 m apart in the static GTFS dataset.
+ *     Measured directly across the VIC_TRAM_STOPS_WITH_COORDS dataset.
+ *     The v5.9.2 assumption of 5-15 m was wrong for any two-direction stop
+ *     on a wide road — the coord-identity tier was silently inert for such
+ *     stops, forcing the cascade to fall through to 300 m coord-proximity.
+ *
+ *   - Adjacent stops on parallel streets (the closest false-match class)
+ *     are always more than 200 m away. Same-route adjacent stops on the
+ *     same street are at least 150 m apart. 40 m therefore has a ~110 m
+ *     safety margin before any false match.
+ *
+ *   - 40 m catches the paired-platform case with a ~15 m safety margin
+ *     (25 m worst case + 15 m buffer = 40 m).
+ *
+ * This is a universal physical property of the Melbourne tram network —
+ * NOT a per-user value, NOT a hardcoded stop ID, NOT assumed for a
+ * specific route. Any user at any VIC tram stop benefits from the widened
+ * threshold because the measurement holds network-wide.
+ *
+ * Per DEVELOPMENT-RULES.md §13.3 (No Magic Numbers), this is declared as a
+ * named module-level constant with documented rationale. Per §23.15, this
+ * constant is the canonical identity threshold for the tram cascade.
+ */
+export const TRAM_COORD_IDENTITY_RADIUS_METRES = 40;
+
+/**
+ * v5.9.2 (X1) + v5.9.3 (Y1) + v5.9.4 (Z1/Z4) + v5.9.5 (AA1/AA3):
+ * processCoordIdentityMatch — architectural bridge for the feed/static
+ * stop-id namespace mismatch.
+ *
+ * This function answers the question "which tripUpdates in the current feed
+ * actually touch the user's physical stop" WITHOUT relying on exact stop-id
+ * equality. It does so by looking up each feed stop id's STATIC coordinates
+ * and comparing them against the target stop's coordinates with a tight
+ * identity radius (default TRAM_COORD_IDENTITY_RADIUS_METRES = 40 m).
+ *
+ * Why coordinate identity works: when the feed uses a different stop ID
+ * than the static dataset for the same physical platform, the two entries
+ * resolve to within ~25 m of each other (the paired-platform distance on
+ * Melbourne trams). So a haversine match within the identity radius means
+ * "same physical platform, just a different ID format in the feed".
+ *
+ * This replaces the coord-proximity 300 m fuzzy search as the primary
+ * identity-resolution mechanism. The 300 m search remains as a last-resort
+ * tier for genuinely unknown stops outside the static dataset.
+ *
+ * v5.9.4 (Z1) — NO ROUTE PRE-FILTER: the function MUST scan every feed
+ * trip entity regardless of any pre-guessed route number. The purpose of
+ * the identity tier is to DISCOVER which route is physically at the user's
+ * stop from the live feed — pre-filtering by a caller-supplied route
+ * defeats the entire tier. v5.9.3 had an `if (targetRouteNumber) continue`
+ * pre-filter that caused the tier to return zero matches whenever the
+ * engine's upstream route guess was wrong or when a previously-poisoned
+ * KV value contributed an incorrect route preference. A caller-supplied
+ * `targetRouteNumber` is now used ONLY as a distance tie-break preference
+ * — never as an exclusion.
+ *
+ * v5.9.4 (Z4) — DIAGNOSTIC TELEMETRY: the function collects the first 20
+ * unique feed stop IDs it encounters across all trips and records, for
+ * each, whether the lookup resolved and at what distance. Pure observable
+ * data surfaced via `_liveDataDiag`.
+ *
+ * v5.9.5 (AA1) — NEAREST-WINS depTIME VALIDATION: the inner stu loop
+ * validates `stu.departure.time || stu.arrival.time` AND the 120-minute
+ * forward window BEFORE running the nearest-wins comparison. Previously
+ * the loop picked `matchedStu` on distance alone and then bailed on the
+ * whole trip if `matchedStu` had no/past/too-far depTime — silently
+ * losing any other valid stus within the same trip that were within the
+ * radius. `processGtfsRtDepartures` uses per-stu validation (see its
+ * inner loop), so the two tiers are now aligned on identical semantics
+ * and produce consistent results on the same feed. This closes the
+ * divergence class surfaced by v5.9.4 live verification where T2
+ * alt-stop-id matched a feed stop but T4 coord-identity returned zero.
+ *
+ * v5.9.5 (AA3) — CROSS-TIER DIVERGENCE TELEMETRY: when the caller
+ * supplies `knownMatchedTripIds` (a Set of trip IDs already matched by
+ * T1/T2), the function records a `divergenceReport.byTrip[]` entry for
+ * each such trip noting whether T4 also matched it and, if not, the
+ * rejection reason (`not-seen`, `lookup-failed`, `out-of-radius`,
+ * `no-dep-time`, `past-time`, `beyond-window`). This lets
+ * `/cc-deploy-verify` and the admin panel diagnose any residual
+ * divergence in a single deploy cycle. Rejection reasons
+ * `no-dep-time` and `past-time` are legitimate stu-level edge cases;
+ * `lookup-failed` and `out-of-radius` are BLOCKING regressions per
+ * DEVELOPMENT-RULES.md §23.15 (v5.9.5 update).
+ *
+ * @param {Object} feed - Decoded GTFS-RT FeedMessage
+ * @param {number} targetLat - User's configured tram stop latitude
+ * @param {number} targetLon - User's configured tram stop longitude
+ * @param {number} routeType - 1 for tram (other modes not yet supported)
+ * @param {Object} options - { identityRadiusMetres=40, targetRouteNumber=null, knownMatchedTripIds=null }
+ * @returns {{ departures: Array, feedStopIdsResolved: Array<string>, matchedTripCount: number, sampleLookups: Array, totalUniqueFeedStopIds: number, divergenceReport: Object|null }}
+ */
+export function processCoordIdentityMatch(feed, targetLat, targetLon, routeType = 1, options = {}) {
+  const nowMs = getNowMs();
+  const result = {
+    departures: [],
+    feedStopIdsResolved: [],
+    matchedTripCount: 0,
+    // v5.9.4 (Z4): diagnostic fields
+    sampleLookups: [],
+    totalUniqueFeedStopIds: 0,
+    // v5.9.5 (AA3): cross-tier divergence report (null when caller didn't supply knownMatchedTripIds)
+    divergenceReport: null
+  };
+  if (!feed?.entity || routeType !== 1) return result;
+  if (targetLat == null || targetLon == null) return result;
+
+  const radiusMetres = options.identityRadiusMetres ?? TRAM_COORD_IDENTITY_RADIUS_METRES;
+  // v5.9.4 (Z1): targetRouteNumber is a TIE-BREAK preference only, NEVER
+  // a filter. See function JSDoc for rationale.
+  const tieBreakRouteNumber = options.targetRouteNumber || null;
+  const feedStopIdsResolvedSet = new Set();
+
+  // v5.9.4 (Z4): diagnostic sample-lookups accumulator. Deduplicated by
+  // feedStopId so a stop appearing on many trips only contributes once.
+  const SAMPLE_LOOKUP_CAP = 20;
+  const seenFeedStopIds = new Set();
+  const sampleLookupsArr = [];
+
+  // v5.9.5 (AA3): track which known-matched trip IDs T4 observed and
+  // whether it matched them. `divergenceByTripId` maps tripId → rejection
+  // reason array (or ['matched'] on success). Only populated when the
+  // caller supplies knownMatchedTripIds.
+  const knownMatchedTripIds = options.knownMatchedTripIds instanceof Set
+    ? options.knownMatchedTripIds
+    : null;
+  const divergenceByTripId = knownMatchedTripIds ? new Map() : null;
+  if (divergenceByTripId) {
+    for (const tid of knownMatchedTripIds) {
+      divergenceByTripId.set(tid, { reasons: ['not-seen'], nearestStu: null });
+    }
+  }
+
+  for (const entity of feed.entity) {
+    const tripUpdate = entity.tripUpdate;
+    if (!tripUpdate?.stopTimeUpdate?.length) continue;
+
+    // v5.9.4 (Z1): NO route pre-filter. Every trip entity is scanned.
+    const tripRoute = getRouteNumber(tripUpdate.trip?.routeId) || null;
+    const tripMatchesTieBreak = tieBreakRouteNumber && tripRoute &&
+      normalizeRouteNumber(tripRoute) === normalizeRouteNumber(tieBreakRouteNumber);
+
+    const currentTripId = tripUpdate.trip?.tripId || null;
+    // v5.9.5 (AA3): if this is a known-matched trip, track its rejection
+    // reasons as we iterate. Start with an empty reasons array.
+    const trackDivergence = divergenceByTripId && currentTripId && divergenceByTripId.has(currentTripId);
+    const divergenceReasonsForTrip = trackDivergence ? new Set() : null;
+    let nearestStuForTrip = trackDivergence ? { feedStopId: null, dist: Infinity } : null;
+
+    // Scan the trip's stop sequence for a stop whose static coordinates
+    // are within the tight identity radius of the target AND whose departure
+    // time is valid (present, future, within 120 min). Nearest qualifying
+    // within radius wins; on distance tie, prefer the route-number tie-break.
+    //
+    // v5.9.5 (AA1): depTime validation happens BEFORE nearest-wins selection
+    // so an invalid stu cannot block later valid stus in the same trip.
+    let matchedStu = null;
+    let matchedFeedStopId = null;
+    let matchedDist = Infinity;
+    let matchedIsTieBreak = false;
+    let matchedDepMs = null;
+    let matchedMins = null;
+    for (const stu of tripUpdate.stopTimeUpdate) {
+      const feedStopId = String(stu.stopId || '');
+      if (!feedStopId) continue;
+      const coords = lookupTramStop(feedStopId);
+
+      // v5.9.4 (Z4): record sample lookup diagnostics for the first
+      // SAMPLE_LOOKUP_CAP unique feed stop IDs, whether or not they
+      // produced a match. The lookup result is captured verbatim.
+      if (!seenFeedStopIds.has(feedStopId)) {
+        seenFeedStopIds.add(feedStopId);
+        if (sampleLookupsArr.length < SAMPLE_LOOKUP_CAP) {
+          const sResolvedExact = coords ? !!_tramStopByIdCache[feedStopId] : false;
+          const sResolvedViaNumeric = coords ? !sResolvedExact : false;
+          const sDistanceToTargetM = coords?.lat && coords?.lon
+            ? Math.round(haversine(targetLat, targetLon, coords.lat, coords.lon) * 10) / 10
+            : null;
+          sampleLookupsArr.push({
+            feedStopId,
+            resolvedExact: sResolvedExact,
+            resolvedViaNumeric: sResolvedViaNumeric,
+            lookupLat: coords?.lat ?? null,
+            lookupLon: coords?.lon ?? null,
+            distanceToTargetM: sDistanceToTargetM
+          });
+        }
+      }
+
+      if (!coords?.lat || !coords?.lon) {
+        if (trackDivergence) divergenceReasonsForTrip.add('lookup-failed');
+        continue;
+      }
+      const dist = haversine(targetLat, targetLon, coords.lat, coords.lon);
+
+      // v5.9.5 (AA3): track nearest stu overall for divergence reporting,
+      // even if outside radius.
+      if (trackDivergence && dist < nearestStuForTrip.dist) {
+        nearestStuForTrip = { feedStopId, dist: Math.round(dist * 10) / 10 };
+      }
+
+      if (dist > radiusMetres) {
+        if (trackDivergence) divergenceReasonsForTrip.add('out-of-radius');
+        continue;
+      }
+
+      // v5.9.5 (AA1): validate depTime and time window BEFORE the nearest-
+      // wins comparison. A stu with missing/past/too-far depTime MUST NOT
+      // block later valid stus in the same trip. This aligns the function
+      // with processGtfsRtDepartures's per-stu validation semantics.
+      const depTime = stu.departure?.time || stu.arrival?.time;
+      if (!depTime) {
+        if (trackDivergence) divergenceReasonsForTrip.add('no-dep-time');
+        continue;
+      }
+      const depMs = (depTime.low || depTime) * 1000;
+      const mins = Math.round((depMs - nowMs) / 60000);
+      if (mins <= 0) {
+        if (trackDivergence) divergenceReasonsForTrip.add('past-time');
+        continue;
+      }
+      if (mins > 120) {
+        if (trackDivergence) divergenceReasonsForTrip.add('beyond-window');
+        continue;
+      }
+
+      // Nearer always wins; on exact tie, tie-break by route preference
+      if (dist < matchedDist || (dist === matchedDist && tripMatchesTieBreak && !matchedIsTieBreak)) {
+        matchedStu = stu;
+        matchedFeedStopId = feedStopId;
+        matchedDist = dist;
+        matchedIsTieBreak = tripMatchesTieBreak;
+        matchedDepMs = depMs;
+        matchedMins = mins;
+      }
+    }
+
+    // v5.9.5 (AA3): finalise divergence report for this trip if tracked
+    if (trackDivergence) {
+      const reasonsArr = matchedStu ? ['matched'] : Array.from(divergenceReasonsForTrip);
+      divergenceByTripId.set(currentTripId, {
+        reasons: reasonsArr.length > 0 ? reasonsArr : ['not-seen'],
+        nearestStu: nearestStuForTrip.feedStopId
+          ? { feedStopId: nearestStuForTrip.feedStopId, distance: nearestStuForTrip.dist }
+          : null
+      });
+    }
+
+    if (!matchedStu) continue;
+
+    // v5.9.5 (AA1): depTime / mins already validated inside the inner loop —
+    // use the cached matchedDepMs and matchedMins directly. No re-computation.
+    feedStopIdsResolvedSet.add(matchedFeedStopId);
+    result.matchedTripCount++;
+
+    const routeId = tripUpdate.trip?.routeId;
+    const tripHeadsign = tripUpdate.trip?.tripHeadsign || '';
+    const delay = matchedStu.departure?.delay || matchedStu.arrival?.delay || 0;
+
+    result.departures.push({
+      minutes: Math.max(0, matchedMins),
+      departureTimeMs: matchedDepMs,
+      destination: tripHeadsign || '', // v5.9.1 U8: empty when no headsign — formatter falls back to 'City'
+      headsign: tripHeadsign || null,
+      lineName: getLineName(routeId),
+      routeNumber: getRouteNumber(routeId) || null,
+      routeId,
+      tripId: tripUpdate.trip?.tripId,
+      isCitybound: false,
+      delay: Math.round(delay / 60),
+      isDelayed: delay > 60,
+      isLive: true,
+      source: 'gtfs-rt-coord-identity', // v5.9.2 (X1): new high-confidence source
+      stopIdResolved: matchedFeedStopId,
+      _identityDistM: Math.round(matchedDist * 10) / 10
+    });
+  }
+
+  // Sort by soonest departure
+  result.departures.sort((a, b) => a.minutes - b.minutes);
+  result.feedStopIdsResolved = Array.from(feedStopIdsResolvedSet);
+  // v5.9.4 (Z4): expose the diagnostic fields on the result
+  result.sampleLookups = sampleLookupsArr;
+  result.totalUniqueFeedStopIds = seenFeedStopIds.size;
+
+  // v5.9.5 (AA3): assemble divergence report when caller supplied known
+  // matched trip IDs. The report has shape:
+  //   { knownTripsCount, byTrip: [{ tripId, matched, rejectionReasons, nearestStu }] }
+  if (divergenceByTripId) {
+    const byTrip = [];
+    for (const [tripId, info] of divergenceByTripId.entries()) {
+      const matched = info.reasons.length === 1 && info.reasons[0] === 'matched';
+      byTrip.push({
+        tripId,
+        matched,
+        rejectionReasons: matched ? [] : info.reasons,
+        nearestStu: info.nearestStu
+      });
+    }
+    result.divergenceReport = {
+      knownTripsCount: knownMatchedTripIds.size,
+      byTrip
+    };
+  }
+
+  // Cap at 10 (same as other tiers)
+  result.departures = result.departures.slice(0, 10);
+  return result;
+}
+
 function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC', targetRouteNumber = null, fallbackLat = null, fallbackLon = null, destLat = null, destLon = null) {
   const nowMs = getNowMs();
   const departures = [];
   if (!feed?.entity || state !== 'VIC' || routeType !== 1) return departures;
 
-  // V5.4.9: Pre-compute lookup map for flexible stop ID matching.
-  // GTFS-RT tram feeds use prefixed IDs (e.g. "aus:vic:tram-1567") while
-  // VIC_TRAM_STOPS_WITH_COORDS uses bare numerics ("1567"). Exact === match
-  // always fails. Map by both exact ID and trailing numeric for prefix tolerance.
-  const tramStopById = {};
-  for (const s of VIC_TRAM_STOPS_WITH_COORDS) {
-    tramStopById[s.id] = s;
-  }
-  function lookupTramStop(idStr) {
-    if (tramStopById[idStr]) return tramStopById[idStr];
-    const numeric = idStr.match(/(\d+)$/)?.[1];
-    if (numeric && tramStopById[numeric]) return tramStopById[numeric];
-    return null;
-  }
+  // v5.9.2 (X1): lookupTramStop is now module-level (see above).
 
   // Find target stop coordinates from static GTFS data
   const stopIdStr = String(stopId);
@@ -945,15 +1365,16 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
 
     const stus = tripUpdate.stopTimeUpdate;
 
-    // Find ALL stops within radius that have valid departure times.
-    // When a route number is specified, use 500m (same route, wider search).
-    // V5.4.8: 300m without route filter — wide enough for intersection stops,
-    // narrow enough to avoid parallel-road false matches (~300m+ away).
-    // Closest-route logic at end of function disambiguates multiple routes.
+    // v5.9.0 (T3 / B3): Cap the search radius regardless of targetRouteNumber.
+    // The v5.4.8 widening to 500 m for route-filtered searches allowed departures
+    // from nearby-but-wrong physical stops (e.g. a parallel-street stop served
+    // by the same route number) to leak into the result set. The 500 m was a
+    // heuristic for fallback-coords usage and should never exceed baseRadius.
     // V5.5.2: 600m when using fallback coordinates (home, not stop) to compensate
     // for the offset between home and the actual boarding location.
-    const baseRadius = usingFallbackCoords ? 600 : 300;
-    const searchRadius = targetRouteNumber ? 500 : baseRadius;
+    // V5.4.8: 300m stop-centred — wide enough for intersection stops, narrow
+    // enough to avoid parallel-road false matches.
+    const searchRadius = usingFallbackCoords ? 600 : 300;
     const candidates = [];
     for (let i = 0; i < stus.length; i++) {
       const feedStopId = String(stus[i].stopId);
@@ -971,8 +1392,12 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
         // Tram GTFS-RT uses predicted times (delay already included) — no offset needed
         const depMs = (depTime.low || depTime) * 1000;
         const mins = Math.round((depMs - nowMs) / 60000);
-        if (mins >= -2 && mins <= 120) {
-          candidates.push({ stu: stus[i], dist, depMs, mins });
+        // v5.9.0 (T9 / B14): Plug the 5th past-departure path. v5.8.1 C3 fixed
+        // 4 predicates but missed this coord-proximity loop. Align to `> 0`.
+        if (mins > 0 && mins <= 120) {
+          // T3: preserve the physical stop ID so downstream code can audit
+          // which stop each tram came from (closes B11).
+          candidates.push({ stu: stus[i], dist, depMs, mins, stopIdResolved: feedStopId });
         }
       }
     }
@@ -1023,10 +1448,16 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
         const mins = Math.round((earliestFutureMs - nowMs) / 60000);
         const routeId = tripUpdate.trip?.routeId;
         const noCoordHeadsign = tripUpdate.trip?.tripHeadsign || '';
+        // v5.9.1 (U8): When the GTFS-RT feed omits tripHeadsign for a tram
+        // trip, the prior fallback to getLineName(routeId) returned "Route N"
+        // as the destination — which caused the rendered leg title to read
+        // "Route N to Route N" (tautological). Drop destination to empty so
+        // the shared formatter falls back to its default ("City") instead.
+        // Keep lineName populated below for internal uses.
         departures.push({
           minutes: mins,
           departureTimeMs: earliestFutureMs,
-          destination: noCoordHeadsign || getLineName(routeId) || '',
+          destination: noCoordHeadsign || '',
           headsign: noCoordHeadsign || null,
           lineName: getLineName(routeId),
           routeNumber: getRouteNumber(routeId) || null,
@@ -1037,6 +1468,7 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
           isDelayed: false,
           isLive: true,
           source: 'gtfs-rt-coord',
+          stopIdResolved: null, // no matched stop with coords in this branch
           _matchDist: searchRadius
         });
       }
@@ -1124,12 +1556,15 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
     const delay = best.stu?.departure?.delay || best.stu?.arrival?.delay || 0;
     const routeId = tripUpdate.trip?.routeId;
     // Prefer headsign for destination — shows actual tram terminus direction
-    // rather than line name which is less informative for tram route display
+    // rather than line name which is less informative for tram route display.
+    // v5.9.1 (U8): When headsign is absent, drop destination to empty rather
+    // than falling back to getLineName (which returns "Route N" for trams and
+    // produces tautological "Route N to Route N" titles in the renderer).
     const tripHeadsign = tripUpdate.trip?.tripHeadsign || '';
     departures.push({
       minutes: Math.max(0, best.mins),
       departureTimeMs: best.depMs,
-      destination: tripHeadsign || getLineName(routeId) || '',
+      destination: tripHeadsign || '',
       headsign: tripHeadsign || null,
       lineName: getLineName(routeId),
       routeNumber: getRouteNumber(routeId) || null,
@@ -1140,6 +1575,7 @@ function processCoordinateProximitySearch(feed, stopId, routeType, state = 'VIC'
       isDelayed: delay > 60,
       isLive: true,
       source: interpolatedSource ? 'gtfs-rt-interpolated' : 'gtfs-rt-coord',
+      stopIdResolved: best.stu?.stopId ? String(best.stu.stopId) : null,
       _matchDist: best.dist  // Used for closest-route preference below
     });
   }
@@ -1293,8 +1729,7 @@ function processGtfsRtDepartures(feed, stopId, routeType = 0, state = 'VIC') {
       }
     }
   }
-  console.log(`[OpenData] Looking for stopId=${stopIdStr} (routeType=${routeType}). Sample stop IDs in feed: [${[...sampleStopIds].join(', ')}]`);
-
+  // v5.9.1 (U9 / Section 1.1): diagnostic console.log removed
   // V15.0: Uses shared matchesStopId() for flexible stop ID matching across all modes
 
   for (const entity of feed.entity) {

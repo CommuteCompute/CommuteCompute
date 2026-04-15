@@ -7,8 +7,28 @@
  * Dual-licensed under AGPL-3.0 and commercial terms — see LICENSE
  */
 
-import { getPreferences, setPreferences, getUserState, setUserState, getTransitApiKey, getGoogleApiKey, setStationOverrides, setPreferredTramRoute, setPreferredTramStop } from '../../src/data/kv-preferences.js';
+import { getPreferences, setPreferences, getUserState, setUserState, getTransitApiKey, getGoogleApiKey, setStationOverrides, setPreferredTramRoute, setPreferredTramStop, setPreferredTrainLine, setPreferredTrainStation } from '../../src/data/kv-preferences.js';
 import { requireAuth, setAdminCorsHeaders } from '../../src/utils/auth-middleware.js';
+import crypto from 'node:crypto';
+
+// v5.9.9 (EE1): address hash helper duplicated from api/commutecompute.js's
+// private `_addressHash` — same algorithm (SHA1 of the lowercased, trimmed,
+// whitespace-normalised address, first 12 hex chars). The duplication is
+// intentional: importing a private helper from a sibling hot-path serverless
+// handler would couple the admin endpoint to commute compute loader internals.
+// When the inline helper in api/commutecompute.js is modified in a future
+// cycle, this duplicate MUST be updated in lock-step. See DEVELOPMENT-RULES.md
+// §23.16 for the full invariant and the rationale behind the direct-entry
+// escape hatch that relies on this shared hash format.
+function _canonicaliseAddressForHash(address) {
+  if (!address || typeof address !== 'string') return '';
+  return address.toLowerCase().trim().replace(/\s+/g, ' ');
+}
+function _addressHashForCanonical(address) {
+  const canonical = _canonicaliseAddressForHash(address);
+  if (!canonical) return '';
+  return crypto.createHash('sha1').update(canonical).digest('hex').slice(0, 12);
+}
 
 /**
  * Decode config token back to preferences
@@ -218,7 +238,14 @@ export default async function handler(req, res) {
 async function handlePost(req, res) {
   try {
     const body = req.body || {};
-    const { field, value } = body;
+    // v5.9.9 (EE1): also accept optional direct-entry lat/lon on the POST
+    // body. When both are valid finite numbers in range, the handler skips
+    // the server-side geocoder entirely and writes the caller-supplied
+    // coord verbatim. This is the escape hatch for environments where the
+    // geocoder cascade is non-operative (e.g. the Vercel serverless IP
+    // range being blocked or rate-limited by the free-tier providers —
+    // see DEVELOPMENT-RULES.md §23.16).
+    const { field, value, lat, lon } = body;
 
     if (!field) {
       return res.status(400).json({ success: false, error: 'Missing field parameter' });
@@ -235,12 +262,43 @@ async function handlePost(req, res) {
     if (!updated.locations) updated.locations = {};
 
     if (['home', 'work', 'cafe'].includes(field)) {
-      // Address change — geocode to get coordinates and suburb
+      // Address change — either geocode to get coordinates OR use the
+      // caller-supplied direct coord when the request body includes
+      // valid lat/lon numbers (v5.9.9 EE1 escape hatch).
       updated.addresses[field] = value || '';
       if (value) {
-        const location = await geocodeAddress(value, googleKey);
-        if (location) {
-          updated.locations[field] = location;
+        const numericLat = Number(lat);
+        const numericLon = Number(lon);
+        const hasDirectCoord =
+          lat != null && lon != null &&
+          Number.isFinite(numericLat) && Number.isFinite(numericLon) &&
+          Math.abs(numericLat) <= 90 && Math.abs(numericLon) <= 180;
+        if (hasDirectCoord) {
+          // v5.9.9 (EE1): direct-entry escape hatch. Caller provided a
+          // pre-computed coord (typically pasted from a mapping service
+          // via the admin panel lat/lon inputs added in EE2). Skip the
+          // geocoder entirely and pre-compute the v5.9.8 address hash
+          // so the DD1 fast path triggers immediately on subsequent
+          // reads — no runtime geocoder dependency at all.
+          updated.locations[field] = {
+            address: value,
+            name: value.split(',')[0],
+            lat: numericLat,
+            lon: numericLon,
+            suburb: null,
+            source: 'direct-entry',
+            _addressHash: _addressHashForCanonical(value)
+          };
+        } else {
+          const location = await geocodeAddress(value, googleKey);
+          if (location) {
+            // v5.9.9 (EE1): also write the v5.9.8 address hash on the
+            // geocoder path so DD1's fast-path cache hit works for
+            // successful geocodes too. Without this, DD1 would re-run
+            // the (potentially broken) geocoder on every subsequent
+            // request even after a successful write.
+            updated.locations[field] = { ...location, _addressHash: _addressHashForCanonical(value) };
+          }
         }
       } else {
         updated.locations[field] = null;
@@ -264,17 +322,19 @@ async function handlePost(req, res) {
 
     await setPreferences(updated);
 
-    // v5.8.2 (C4-clear): Clear stale station overrides when Home or Work changes.
-    // Overrides are keyed by leg index and cached independently of the address
-    // pipeline — without this clear they persist forever and silently override
-    // auto-detected stops even when the user has moved house or changed workplace.
-    // Cafe changes do NOT trigger the clear (cafe doesn't affect station overrides).
+    // v5.8.2 (C4-clear) + v5.9.0 (T6): Clear stale station overrides and stability
+    // locks when Home or Work changes. Overrides and locks are keyed by leg index
+    // or paired with a stop ID — without this clear they persist forever and
+    // silently override auto-detected stops even when the user has moved.
+    // Cafe changes do NOT trigger the clear (cafe doesn't affect stop/line locks).
     if (field === 'home' || field === 'work') {
       try {
         await Promise.all([
           setStationOverrides({}),
           setPreferredTramRoute(null),
-          setPreferredTramStop(null)
+          setPreferredTramStop(null),
+          setPreferredTrainLine(null),
+          setPreferredTrainStation(null)
         ]);
       } catch (clearErr) {
         console.warn('[preferences] Failed to clear station overrides on ' + field + ' change: ' + clearErr.message);

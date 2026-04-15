@@ -27,7 +27,10 @@ const ALL_KEYS = [
   // stops for subsequent home addresses.
   'cc:station_overrides',
   'cc:preferred_tram_route',
-  'cc:preferred_tram_stop'
+  'cc:preferred_tram_stop',
+  // v5.9.0 (T6 / B8): train-line stability lock keys — reset with everything else
+  'cc:preferred_train_line',
+  'cc:preferred_train_station'
 ];
 
 export default async function handler(req, res) {

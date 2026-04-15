@@ -17,11 +17,13 @@
 
 import { getDepartures, getDisruptions, getWeather, METRO_LINE_NAMES } from '../src/services/opendata-client.js';
 import CommuteCompute from '../src/engines/commute-compute.js';
-import { GTFS_STOP_NAMES, getStopNameById, getStopCoordsById, cleanStopName, MELBOURNE_STOP_IDS, detectStopIdsFromAddress, findNearestStops } from '../src/data/gtfs-stop-names.js';
+import { GTFS_STOP_NAMES, getStopNameById, getStopCoordsById, cleanStopName, MELBOURNE_STOP_IDS, detectStopIdsFromAddress, findNearestStops, findNearestStopsMultiple, lookupMetroStationCoords, findNearestTramStopNearCoords } from '../src/data/gtfs-stop-names.js';
 import { VIC_METRO_STATIONS, VIC_TRAM_STOPS_WITH_COORDS } from '../src/data/vic/gtfs-reference.js';
 import { haversine } from '../src/utils/haversine.js';
-import { getTransitApiKey, getPreferences, getUserState, setDeviceStatus, getClient, getStationOverrides, setStationOverrides, getPreferredTramRoute, setPreferredTramRoute, getPreferredTramStop, setPreferredTramStop } from '../src/data/kv-preferences.js';
+import { getTransitApiKey, getPreferences, setPreferences, getUserState, setDeviceStatus, getClient, getStationOverrides, setStationOverrides, getPreferredTramRoute, setPreferredTramRoute, getPreferredTramStop, setPreferredTramStop, getPreferredTrainLine, setPreferredTrainLine, getPreferredTrainStation, setPreferredTrainStation, getV591MigrationDone, setV591MigrationDone, getV594MigrationDone, setV594MigrationDone, getV596MigrationDone, setV596MigrationDone, getV598HomeCoordMigrationDone, setV598HomeCoordMigrationDone } from '../src/data/kv-preferences.js';
 import { renderFullDashboard, renderFullScreenBMP, DISPLAY_DIMENSIONS } from '../src/services/ccdash-renderer.js';
+import { formatLegTitle } from '../src/services/leg-title-formatter.js';
+import { getScenario, getScenarioNames } from '../src/services/journey-scenarios.js';
 import DepartureConfidence from '../src/engines/departure-confidence.js';
 import LifestyleContext from '../src/engines/lifestyle-context.js';
 import SleepOptimiser from '../src/engines/sleep-optimiser.js';
@@ -52,6 +54,26 @@ const FLINDERS_ONLY_LINE_CODES = new Set([
   'ALM',  // Alamein
   'GWY',  // Glen Waverley
 ]);
+
+/**
+ * v5.10.2: File-scope GTFS disruption label sanitiser. Converts raw GTFS-RT
+ * cause/effect enum values to user-friendly language. Used by both
+ * buildJourneyLegs (inner scope) and response assembly (outer scope).
+ */
+function sanitiseDisruptionLabel(text) {
+  if (!text) return text;
+  return text
+    .replace(/PlannedOccupation/gi, 'Planned Works')
+    .replace(/UnplannedOccupation/gi, 'Service Disruption')
+    .replace(/PartCancellation/gi, 'Partial Cancellation')
+    .replace(/ReducedService/gi, 'Reduced Service')
+    .replace(/SignificantDelays/gi, 'Significant Delays')
+    .replace(/StopNotServiced/gi, 'Stop Not Serviced')
+    .replace(/ServiceInformation/gi, 'Service Update')
+    .replace(/GeneralNotice/gi, 'Notice')
+    .replace(/RouteVariation/gi, 'Route Change')
+    .replace(/TrainReplacement/gi, 'Replacement Bus');
+}
 
 /**
  * v5.8.2 (H8-corrective): file-scope helper. Returns true if two location
@@ -190,13 +212,262 @@ function formatDateParts(date, state) {
   };
 }
 
+// v5.9.8 (DD1 / DD4): Home coordinate freshness invariant.
+//
+// Every downstream consumer of the stored home coordinate — the nearest-stop
+// finder, the tram cascade target-coord resolver, the dynamic-route engine's
+// walk-leg computation, and every diagnostic helper — reads
+// `kvPrefs.locations.home.lat/lon` directly. The pre-v5.9.8 write path (Setup
+// Wizard, admin panel edits, manual pin drags) could persist a coord that did
+// not match the stored `home.address`. Any drift silently poisoned downstream
+// logic: the nearest-stop finder picks the wrong boarding station, and the
+// cascade compares feed stops against the wrong target coord (outside the
+// identity-tier radius).
+//
+// The v5.9.8 DD1 + DD4 fix stores a short hash of the canonicalised address
+// alongside the coord. On each request:
+//   - If the hash is missing (pre-v5.9.8 legacy state, or first request after
+//     an address change), re-geocode `home.address` and overwrite the stored
+//     lat/lon with the fresh value. This is the one-off DD4 migration wipe.
+//   - If the hash matches the current address, trust the stored coord (free
+//     fast path; no network call).
+//   - If the hash mismatches, re-geocode (DD1 defensive path for future
+//     address changes that bypass Setup Wizard re-geocoding).
+//
+// Sanity guards:
+//   - If the geocoder times out, errors, or returns an empty result, fall
+//     back to the stored coord and emit a skip reason in telemetry. The
+//     request never aborts on a geocoding failure.
+//   - If the fresh geocoder result is more than HOME_COORD_REJECT_THRESHOLD_M
+//     from the stored coord, the fresh result is treated as a vendor
+//     misresolve and the stored coord is kept. This guards against a
+//     free-tier geocoder confusing the address with a same-named suburb in
+//     another city.
+//   - If the fresh geocoder result is within HOME_COORD_DRIFT_THRESHOLD_M of
+//     the stored coord, the stored coord is preserved (avoiding lat/lon
+//     churn from vendor jitter); only the address hash is refreshed.
+//
+// Telemetry:
+//   - `_liveDataDiag.homeCoordFreshness` surfaces the source ('cached',
+//     'geocode-fresh', 'geocode-drift-corrected', 'geocode-rejected',
+//     'geocode-failed', 'no-address', 'geocode-empty'), drift distance when
+//     applicable, and which coord was ultimately used. This field is the
+//     primary evidence a deployment verification pass reads to confirm DD1
+//     executed.
+
+const HOME_COORD_DRIFT_THRESHOLD_M = 75;   // below this: trust stored, refresh hash only
+const HOME_COORD_REJECT_THRESHOLD_M = 2000; // above this: reject fresh as vendor misresolve
+const HOME_COORD_GEOCODE_TIMEOUT_MS = 5000;
+
+// In-memory cache for the per-serverless-instance warm path. Key is the
+// canonicalised address; value is { coord, hash, timestamp } for successful
+// geocodes or { failed: true, timestamp } for failure memoisation (v5.9.9
+// EE3). This avoids re-hitting the free-tier geocoder when the same address
+// is resolved twice within a short window across cold-start reuses, and
+// prevents thrashing the geocoder endpoint on a known-broken environment
+// where every attempt adds ~5 s of latency and every failed request
+// compounds rate-limiting against Nominatim's free OSM infrastructure.
+const _freshHomeCoordMemoryCache = new Map();
+const _freshHomeCoordMemoryTtlMs = 10 * 60 * 1000; // 10 min for success entries
+const _freshHomeCoordFailureTtlMs = 60 * 1000;      // 60 s for failure entries — v5.9.9 (EE3)
+
+// v5.9.9 (EE3): diagnostic counter — number of NEW failures recorded since
+// the serverless instance warmed up. Does NOT increment when the cache
+// serves an already-recorded failure; only increments on the transition
+// from "attempted the geocoder" to "stored the failure verdict". Diagnostic
+// only; surfaced on _liveDataDiag.homeCoordFreshnessFailureCount so
+// operators can see whether the broken-environment cache is actively
+// suppressing geocoder thrashing.
+let _freshHomeCoordFailureCount = 0;
+
+function _canonicaliseAddress(address) {
+  if (!address || typeof address !== 'string') return '';
+  return address.toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
+function _addressHash(address) {
+  const canonical = _canonicaliseAddress(address);
+  if (!canonical) return '';
+  return crypto.createHash('sha1').update(canonical).digest('hex').slice(0, 12);
+}
+
+async function _runGeocodeWithTimeout(address, timeoutMs) {
+  // Serverless-safe lazy import so the geocoding service module is only
+  // loaded when the migration or drift path actually needs to run. Keeps
+  // cold-start import cost down on the warm fast path.
+  const { default: GeocodingService } = await import('../src/services/geocoding-service.js');
+  const service = new GeocodingService({});
+  return await Promise.race([
+    service.geocode(address, { country: 'AU' }),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('geocode-timeout')), timeoutMs))
+  ]);
+}
+
+/**
+ * v5.9.8 (DD1 + DD4): Return a fresh-verified home coord object given the
+ * KV preferences. May mutate KV (via setPreferences) when the stored coord
+ * is stale or missing an address hash. Always returns SOMETHING sensible
+ * so the caller can proceed — the request never aborts on geocoding failure.
+ *
+ * @param {Object} kvPrefs - raw preferences object from getPreferences()
+ * @param {Object} diag - optional telemetry object; freshness source is
+ *   written to `diag.homeCoordFreshness` if provided
+ * @returns {Promise<{kvPrefs: Object, home: {address, lat, lon, _addressHash}|null}>}
+ */
+async function ensureFreshHomeCoords(kvPrefs, diag) {
+  const diagOut = diag || {};
+  const home = kvPrefs?.locations?.home;
+  const address = home?.address || kvPrefs?.addresses?.home || null;
+
+  // Guard 1: no address at all — nothing to verify against
+  if (!address) {
+    diagOut.homeCoordFreshness = { source: 'no-address' };
+    return { kvPrefs, home: home || null };
+  }
+
+  const storedLat = home?.lat != null ? Number(home.lat) : null;
+  const storedLon = home?.lon != null ? Number(home.lon) : null;
+  const storedCoord = (storedLat != null && storedLon != null) ? { lat: storedLat, lon: storedLon } : null;
+  const freshHash = _addressHash(address);
+  const storedHash = home?._addressHash || null;
+
+  // Fast path: hash matches and a coord is stored → trust it
+  if (storedHash && storedHash === freshHash && storedCoord) {
+    diagOut.homeCoordFreshness = { source: 'cached-hash-match' };
+    return {
+      kvPrefs,
+      home: { ...home, lat: storedCoord.lat, lon: storedCoord.lon, _addressHash: storedHash }
+    };
+  }
+
+  // Memory cache check — avoid hitting the free-tier geocoder on repeat
+  // requests within the same serverless instance warm window. Two distinct
+  // entry shapes:
+  //   { coord, hash, timestamp }        — successful fresh geocode (10 min TTL)
+  //   { failed: true, timestamp }       — v5.9.9 (EE3) failure memoisation
+  //                                       (60 s TTL) used to suppress repeat
+  //                                       geocoder calls against a known-
+  //                                       broken environment.
+  const canonical = _canonicaliseAddress(address);
+  const memoryEntry = _freshHomeCoordMemoryCache.get(canonical);
+  if (memoryEntry) {
+    // v5.9.9 (EE3): failure memoisation short-circuit
+    if (memoryEntry.failed === true && (Date.now() - memoryEntry.timestamp) < _freshHomeCoordFailureTtlMs) {
+      diagOut.homeCoordFreshness = {
+        source: 'memory-cache-failed',
+        reason: memoryEntry.reason || 'unknown'
+      };
+      return { kvPrefs, home: home || null };
+    }
+    // Success entry short-circuit
+    if (memoryEntry.coord && (Date.now() - memoryEntry.timestamp) < _freshHomeCoordMemoryTtlMs) {
+      diagOut.homeCoordFreshness = { source: 'memory-cache' };
+      const mergedHome = { ...home, lat: memoryEntry.coord.lat, lon: memoryEntry.coord.lon, _addressHash: memoryEntry.hash };
+      // Persist to KV if the stored value differs from the cached fresh value
+      if (!storedHash || storedHash !== memoryEntry.hash) {
+        const updated = { ...kvPrefs, locations: { ...(kvPrefs.locations || {}), home: mergedHome } };
+        setPreferences(updated).catch(() => {});
+        return { kvPrefs: updated, home: mergedHome };
+      }
+      return { kvPrefs, home: mergedHome };
+    }
+  }
+
+  // Slow path: run the geocoder
+  let fresh = null;
+  try {
+    fresh = await _runGeocodeWithTimeout(address, HOME_COORD_GEOCODE_TIMEOUT_MS);
+  } catch (err) {
+    const errMsg = (err && err.message) || 'unknown';
+    diagOut.homeCoordFreshness = { source: 'geocode-failed', error: errMsg };
+    // v5.9.9 (EE3): record the failure so subsequent requests within the
+    // 60 s TTL short-circuit to the memory-cache-failed branch above.
+    _freshHomeCoordMemoryCache.set(canonical, {
+      failed: true,
+      reason: errMsg,
+      timestamp: Date.now()
+    });
+    _freshHomeCoordFailureCount += 1;
+    return { kvPrefs, home: home || null };
+  }
+
+  if (!fresh || fresh.lat == null || fresh.lon == null) {
+    diagOut.homeCoordFreshness = { source: 'geocode-empty' };
+    // v5.9.9 (EE3): also memoise empty responses — they indicate the
+    // geocoder ran but resolved nothing for this address, which is just
+    // as wasteful to repeat as an outright error.
+    _freshHomeCoordMemoryCache.set(canonical, {
+      failed: true,
+      reason: 'geocode-empty',
+      timestamp: Date.now()
+    });
+    _freshHomeCoordFailureCount += 1;
+    return { kvPrefs, home: home || null };
+  }
+
+  // Sanity guard: reject fresh if it's absurdly far from stored
+  if (storedCoord) {
+    const drift = haversine(storedCoord.lat, storedCoord.lon, fresh.lat, fresh.lon);
+    if (drift > HOME_COORD_REJECT_THRESHOLD_M) {
+      diagOut.homeCoordFreshness = {
+        source: 'geocode-rejected-too-far',
+        driftMetres: Math.round(drift)
+      };
+      return { kvPrefs, home: home || null };
+    }
+    if (drift <= HOME_COORD_DRIFT_THRESHOLD_M) {
+      // Vendor jitter — keep stored coord but refresh the hash and memory cache
+      diagOut.homeCoordFreshness = {
+        source: 'cached-drift-ok',
+        driftMetres: Math.round(drift)
+      };
+      _freshHomeCoordMemoryCache.set(canonical, {
+        coord: storedCoord,
+        hash: freshHash,
+        timestamp: Date.now()
+      });
+      const updatedHome = { ...home, lat: storedCoord.lat, lon: storedCoord.lon, _addressHash: freshHash };
+      const updated = { ...kvPrefs, locations: { ...(kvPrefs.locations || {}), home: updatedHome } };
+      setPreferences(updated).catch(() => {});
+      return { kvPrefs: updated, home: updatedHome };
+    }
+    // Drift exceeds jitter threshold — corrective overwrite
+    diagOut.homeCoordFreshness = {
+      source: 'geocode-drift-corrected',
+      driftMetres: Math.round(drift)
+    };
+  } else {
+    diagOut.homeCoordFreshness = { source: 'geocode-first' };
+  }
+
+  const freshCoord = { lat: Number(fresh.lat), lon: Number(fresh.lon) };
+  _freshHomeCoordMemoryCache.set(canonical, {
+    coord: freshCoord,
+    hash: freshHash,
+    timestamp: Date.now()
+  });
+  const updatedHome = { ...(home || {}), address, lat: freshCoord.lat, lon: freshCoord.lon, _addressHash: freshHash };
+  const updated = { ...kvPrefs, locations: { ...(kvPrefs.locations || {}), home: updatedHome } };
+  setPreferences(updated).catch(() => {});
+  return { kvPrefs: updated, home: updatedHome };
+}
+
 /**
  * Initialize the Smart Journey Engine with KV preferences
  * Per Zero-Config: preferences come from Redis (synced from Setup Wizard)
  */
-async function getEngine() {
+async function getEngine(freshnessDiag) {
   // Load preferences from KV storage
-  const kvPrefs = await getPreferences();
+  let kvPrefs = await getPreferences();
+  // v5.9.8 (DD1 + DD4): verify the stored home coord still matches the
+  // stored address via a freshness check keyed by an address hash. See the
+  // block comment near ensureFreshHomeCoords for the full rationale.
+  try {
+    const result = await ensureFreshHomeCoords(kvPrefs, freshnessDiag);
+    kvPrefs = result.kvPrefs;
+  } catch (_e) {
+    // Non-fatal — proceed with whatever kvPrefs we have
+  }
   const state = await getUserState();
   const transitKey = await getTransitApiKey();
 
@@ -722,35 +993,31 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
             if (catchableDep?.lineName) leg.lineName = catchableDep.lineName;
           }
         } else if (liveData.allDepartureTimesMs.length > 0) {
-          // No catchable departure in GTFS-RT feed — all departures are before
-          // user's arrival at this stop. Use the NEXT scheduled departure from the
-          // feed rather than headway projection. Headway projection creates phantom
-          // departures that don't match the transport authority app (especially
-          // late-night when feeds are sparse and default headway is arbitrary).
-          // Mark as timetable estimate since the actual departure isn't in the live feed.
-          const sorted = [...new Set(liveData.allDepartureTimesMs)].sort((a, b) => a - b);
-          // Use the last known departure + observed or default headway as estimate
-          let headwayMs;
-          if (sorted.length >= 2) {
-            const rawHeadway = (sorted[sorted.length - 1] - sorted[0]) / (sorted.length - 1);
-            headwayMs = Math.max(3 * 60000, Math.min(30 * 60000, rawHeadway));
-          } else {
-            headwayMs = getDefaultHeadway(leg.type, melbTime.hour) * 60000;
-          }
-          let projected = sorted[sorted.length - 1];
-          while (projected < arrivalAtStopMs) {
-            projected += headwayMs;
-          }
-          actualDepartureMs = projected;
-          // V5.6.7: GTFS-RT feed IS active — do not demote to timetable estimate.
-          // Headway projection from live data keeps isLive: true.
-          // Filter nextDepartureTimesMs to only catchable times (>= user arrival at stop)
-          // so the subtitle does not show departures the user cannot catch.
-          const combined = [...(nextDepartureTimesMs || []), projected];
-          nextDepartureTimesMs = combined
-            .filter(ms => ms >= arrivalAtStopMs)
-            .sort((a, b) => a - b)
-            .slice(0, 10);
+          // v5.9.6 (BB2): No catchable departure in the GTFS-RT feed — every
+          // known live departure is BEFORE the user's arrival at this stop.
+          // The pre-v5.9.6 branch extrapolated a projected departure using
+          // observed-or-default headway and marked the leg as isLive. That
+          // fabricated a value that did not match the transport authority's
+          // own departure boards and violated §23.6 "isLive: true only from
+          // GTFS-RT matches". v5.9.6 removes the projection entirely: if no
+          // catchable departure exists in the current cache window, we do
+          // NOT manufacture one. The leg carries no actualDepartureMs from
+          // this branch and falls through to the existing timetable-
+          // fallback path (search for isTimetableEstimate below), which
+          // correctly labels the subtitle "Scheduled ~Xmin" instead of the
+          // over-inclusive "Next: N min LIVE" display.
+          //
+          // This implements DEVELOPMENT-RULES.md §23.6 "nextDepartures
+          // truthfulness invariant" (v5.9.6 BB2 update). The parallel
+          // timetable-fallback path downstream will still produce a
+          // displayable leg — just with honest labelling.
+          //
+          // No behaviour change for the common case where at least one
+          // catchable departure exists — that branch returns actualDepartureMs
+          // from the first catchable entry without touching this block.
+          nextDepartureTimesMs = nextDepartureTimesMs
+            ? nextDepartureTimesMs.filter(ms => ms >= arrivalAtStopMs)
+            : [];
         }
       } else if (liveData.departureTimeMs && liveData.departureTimeMs >= arrivalAtStopMs) {
         actualDepartureMs = liveData.departureTimeMs;
@@ -787,9 +1054,24 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         departTime = `${departH12}:${departMelb.minute.toString().padStart(2, '0')}${departAmPm}`;
 
       } else if (liveData.minutes !== undefined) {
-        // Fallback: use minutes from live data (already from now)
+        // Fallback: use minutes from live data (already from now).
+        //
+        // v5.9.7 (CC1): prefer the raw feed's `departureTimeMs` when it is
+        // present on the live-data object. The pre-v5.9.7 reconstruction
+        // `nowMs + (liveData.minutes * 60000)` loses sub-minute precision
+        // because `liveData.minutes` was computed earlier via
+        // `Math.round((depMs - nowMs) / 60000)`, so the round-trip back
+        // through the fallback produces a value up to ~30 s away from the
+        // real feed millisecond. On the common live-data path the raw
+        // timestamp is always populated; the nowMs-plus-minutes path only
+        // runs when the raw timestamp is genuinely absent (non-live
+        // timetable edge case). v5.9.6 swarm Agent C identified this
+        // artefact as a cosmetic non-blocking follow-up — see
+        // DEVELOPMENT-RULES.md §23.6 (v5.9.7 CC1 update).
         minutesToDeparture = liveData.minutes;
-        const departMs = nowMs + (liveData.minutes * 60000);
+        const departMs = liveData.departureTimeMs != null
+          ? liveData.departureTimeMs
+          : (nowMs + (liveData.minutes * 60000));
         // V13.6 FIX: Format departure as local clock time (state-aware)
         const departDate = new Date(departMs);
         const departMelb = getMelbourneDisplayTime(departDate, state);
@@ -1011,48 +1293,69 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
         baseLeg.subtitle = `+${baseLeg.delayMinutes} MIN • ${baseLeg.subtitle}`;
       }
 
-      // V5.4.0: Calculate "Next: x, y, z" from CATCHABLE departures only.
-      // Calculate "Next: x, y, z" from catchable departures, padded to 3.
-      // Primary: departures after user arrives at stop (catchable).
-      // Padding: future departures fill remaining slots up to 3 for service
-      // frequency context — the DEPART time box shows the actual catchable departure.
+      // V5.4.0 + v5.9.7 (CC2): Calculate "Next: x, y, z" from CATCHABLE
+      // departures only. A "catchable" entry is a departure whose time
+      // is at or after the user's arrival-at-stop, allowing a 2-minute
+      // buffer for GTFS-RT timing estimation error and walking-speed
+      // variation. This filter is applied at the array construction
+      // site, not just the subtitle — so downstream consumers that read
+      // `leg.nextDepartures` directly (renderer, firmware, telemetry,
+      // admin diagnostics) see the same catchable-filtered list as the
+      // subtitle renders.
+      //
+      // v5.9.7 (CC2): the pre-v5.9.7 code padded `catchable` with
+      // "from now" entries (filtered only by `depMs > nowMs`, NOT by
+      // arrival-at-stop) when fewer than 3 catchable entries existed.
+      // That exposed uncatchable entries on `leg.nextDepartures` even
+      // though the subtitle constructor downstream re-filtered them out.
+      // The v5.9.6 swarm Agent D surfaced the resulting inconsistency
+      // on a train leg. v5.9.7 CC2 removes the padding: if fewer than
+      // 3 catchable entries exist, fewer are shown — consistent with
+      // the BB2 "nextDepartures truthfulness" invariant. The additive
+      // `allNextDeparturesMs` field below preserves the full forward-
+      // window list for telemetry consumers only; rendered output MUST
+      // read `nextDepartures`, not `allNextDeparturesMs`. See
+      // DEVELOPMENT-RULES.md §23.6 "catchability filter invariant"
+      // (v5.9.7 CC2 update).
       if (baseLeg.nextDepartureTimesMs?.length > 0) {
-        // Allow 2-min buffer before estimated arrival — accounts for GTFS-RT timing
-        // estimation error (~1-2 min) and the possibility of walking slightly faster.
-        // Turnkey: applies to all modes and stops equally.
         const catchabilityBuffer = 2 * 60000;
         const catchable = baseLeg.nextDepartureTimesMs
           .filter(depMs => depMs >= arrivalAtStopMs - catchabilityBuffer)
           .map(depMs => Math.round((depMs - nowMs) / 60000));
-        // Pad with future departures (from now) if fewer than 3 catchable
-        if (catchable.length < 3) {
-          const allFuture = baseLeg.nextDepartureTimesMs
-            .filter(depMs => depMs > nowMs)
-            .map(depMs => Math.round((depMs - nowMs) / 60000));
-          for (const m of allFuture) {
-            if (catchable.length >= 3) break;
-            if (!catchable.includes(m)) catchable.push(m);
-          }
-        }
-        // V5.6.9: Sort unconditionally — previously only sorted inside the padding
-        // branch (catchable < 3), leaving the array unsorted when 3+ catchable
-        // departures existed. The subtitle builder sorts before display, but the
-        // raw API nextDepartures field was returned unsorted.
+        // V5.6.9: Sort unconditionally — the subtitle builder sorts
+        // before display, but the raw API `nextDepartures` field was
+        // returned unsorted in earlier cycles when the catchable list
+        // came through un-padded.
         baseLeg.nextDepartures = catchable.sort((a, b) => a - b);
+        // v5.9.7 (CC2): additive telemetry field — full forward-window
+        // list (catchable + uncatchable) for diagnostic consumers that
+        // need visibility into what the raw feed looked like. Not used
+        // for display.
+        baseLeg.allNextDeparturesMs = [...baseLeg.nextDepartureTimesMs].sort((a, b) => a - b);
       }
 
-      // Guarantee at least 4 departures — the first goes to the DEPART time box,
-      // leaving 3 for the "Next: X, Y, Z min" subtitle. Two-tier approach:
-      // 1. Supplement from the full direction-filtered raw GTFS-RT feed
-      // 2. If still < 4, project headway-based departures from observed intervals
-      // All data derived from actual live GTFS-RT data — no fabrication.
+      // v5.9.7 (CC2): Supplement from the direction/route-filtered raw
+      // GTFS-RT feed when fewer than 4 catchable entries exist. The
+      // supplement entries MUST pass the same arrival-at-stop
+      // catchability filter that the primary array construction uses
+      // (see the `catchabilityBuffer` above). Pre-v5.9.7 this block
+      // mapped `d.departureTimeMs - nowMs` directly without the
+      // catchability filter, so it could push uncatchables into
+      // `nextDepartures`. v5.9.7 CC2 adds the missing filter so the
+      // supplement is consistent with the main construction above.
+      //
+      // v5.9.6 (BB2) remains in force: no headway extrapolation —
+      // all supplement entries come from real feed entries only.
       if (baseLeg.nextDepartures && baseLeg.nextDepartures.length < 4 && baseLeg.isLive) {
-        // Tier 1: Real departures from the full raw feed
+        const catchabilityBuffer = 2 * 60000;
         const feedForMode = leg.type === 'tram' ? transitData.trams :
                             leg.type === 'bus' ? transitData.buses :
                             transitData.trains;
         const padDeps = (feedForMode || [])
           .filter(d => d.isLive && d.departureTimeMs > nowMs &&
+            // v5.9.7 (CC2): apply catchability filter to the supplement
+            // source entries so uncatchables can't leak into the array.
+            d.departureTimeMs >= arrivalAtStopMs - catchabilityBuffer &&
             (leg.isCitybound === undefined || d.isCitybound === leg.isCitybound) &&
             (leg.type !== 'train' || !leg.requiresCityLoop || isLikelyCityLoopTrain(d)) &&
             (leg.type === 'train' || leg.type === 'vline' || !leg.routeNumber || !d.routeNumber ||
@@ -1064,25 +1367,27 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
           if (baseLeg.nextDepartures.length >= 4) break;
           if (!baseLeg.nextDepartures.includes(m)) baseLeg.nextDepartures.push(m);
         }
-        // Tier 2: Headway projection from observed live intervals when still < 3.
-        // Extrapolates the next departure using the observed gap between existing ones.
-        // Derived from real GTFS-RT headway — not fabricated.
-        while (baseLeg.nextDepartures.length < 4 && baseLeg.nextDepartures.length >= 2) {
-          const sorted = [...baseLeg.nextDepartures].sort((a, b) => a - b);
-          const headway = sorted[sorted.length - 1] - sorted[sorted.length - 2];
-          const projected = sorted[sorted.length - 1] + Math.max(headway, 5);
-          if (projected <= 120 && !baseLeg.nextDepartures.includes(projected)) {
-            baseLeg.nextDepartures.push(projected);
-            // Also add to nextDepartureTimesMs so the renderer's subtitle picks it up
-            const projectedMs = nowMs + (projected * 60000);
-            if (baseLeg.nextDepartureTimesMs && !baseLeg.nextDepartureTimesMs.includes(projectedMs)) {
-              baseLeg.nextDepartureTimesMs.push(projectedMs);
-              baseLeg.nextDepartureTimesMs.sort((a, b) => a - b);
-            }
-          } else {
-            break;  // Can't project further
-          }
-        }
+        // v5.9.6 (BB2): headway extrapolation REMOVED.
+        //
+        // Pre-v5.9.6 behaviour: a loop ran "while nextDepartures.length < 4"
+        // that projected a future departure by adding the observed headway
+        // to the last known entry, pushed it into both `nextDepartures` and
+        // `nextDepartureTimesMs`, and allowed the leg's `isLive` flag to
+        // keep propagating the "LIVE" label to the subtitle. Live v5.9.5
+        // verification confirmed this produced subtitles like
+        // "Next: 24, 44, 64 min LIVE" where only 24 min was a real GTFS-RT
+        // match — 44 and 64 were projected (1,188,819 ms deltas from the
+        // last real feed entry, clearly computed not observed).
+        //
+        // This violated DEVELOPMENT-RULES.md §23.6 "`isLive: true` only
+        // from GTFS-RT matches". v5.9.6 BB2 removes the projection entirely
+        // and adds the rule formally to §23.6 as "nextDepartures
+        // truthfulness invariant". If the live feed has fewer than four
+        // catchable departures, the subtitle shows fewer entries — we do
+        // NOT fabricate additional ones. A leg with zero catchable live
+        // entries falls through to the timetable-fallback path elsewhere,
+        // which correctly labels the subtitle "Scheduled ~Xmin" rather
+        // than "LIVE".
         baseLeg.nextDepartures.sort((a, b) => a - b);
       }
 
@@ -1334,78 +1639,64 @@ function buildJourneyLegs(route, transitData, coffeeDecision, currentTime, locat
     }
   }
 
+  // v5.9.0 (T13 / N16): Tomorrow-commute disambiguation on rendered times.
+  // When the current cycle is showing tomorrow's commute (the user has
+  // already missed today's target arrival), every departTime in the leg
+  // list refers to a time tomorrow — NOT today. Append a +1 marker so
+  // the rendered AM/PM time is unambiguous ("7:45am+1" reads as
+  // "7:45am tomorrow"). The affix is stripped by the renderer if the
+  // v5.10.1: Removed "+1" tomorrow suffix from departure times.
+  // The user glances at the panel for live departure times — "tomorrow"
+  // context is not relevant. Forward-looking info is limited to disruption
+  // alerts (e.g. scheduled works after 6pm affecting the route).
+
+  // v5.9.0: Leg interdependency chain validation.
+  // Each transit leg's boarding location must connect to the previous leg's
+  // alighting location, and its alighting location must connect to the next
+  // leg's boarding location. Walk legs bridge the gaps; transit legs must
+  // have stops that match what the adjacent walk legs reference.
+  for (let i = 1; i < legs.length; i++) {
+    const prev = legs[i - 1];
+    const curr = legs[i];
+    // Validate walk → transit connections: the walk leg's destination
+    // should reference the same stop as the transit leg's boarding point
+    if (prev.type === 'walk' && (curr.type === 'tram' || curr.type === 'train' || curr.type === 'bus')) {
+      const walkDest = prev.stopName || prev.stationName || prev.destinationName || '';
+      const transitOrigin = curr.stopName || curr.origin?.name || '';
+      if (walkDest && transitOrigin && walkDest !== transitOrigin) {
+        // Align walk destination to match the transit leg's actual boarding point
+        prev.stopName = transitOrigin;
+        prev.stationName = transitOrigin;
+        prev.destinationName = transitOrigin;
+        if (prev.title) prev.title = `Walk to ${transitOrigin}`;
+      }
+    }
+    // Validate transit → walk connections: the transit leg's alighting point
+    // should be referenced by the subsequent walk leg's origin
+    if ((prev.type === 'tram' || prev.type === 'train' || prev.type === 'bus') && curr.type === 'walk') {
+      const transitDest = prev.destination?.name || prev.destinationName || '';
+      const walkOrigin = curr.stationName || curr.stopName || '';
+      if (transitDest && walkOrigin && transitDest !== walkOrigin) {
+        // Align walk origin to match where the transit leg actually drops off
+        curr.stationName = transitDest;
+        curr.stopName = transitDest;
+      }
+    }
+  }
+
   return legs;
 }
 
 /**
- * Build leg title with actual location names (v1.18 fix)
+ * Build leg title with actual location names.
+ *
+ * v5.9.0 (T11): Thin wrapper around the shared formatLegTitle module.
+ * See src/services/leg-title-formatter.js for the canonical implementation.
+ * Kept as a function here so existing call sites at line 920 etc. don't
+ * change.
  */
 function buildLegTitle(leg) {
-  // Capitalize first letter helper
-  const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
-
-  // Extract short name from address (e.g., "Norman South Yarra, Toorak Road" → "Norman")
-  const extractName = (location) => {
-    if (!location) return null;
-    // If it has a name field, use it
-    if (location.name) return location.name;
-    // If it's a string address, extract first part before comma
-    if (typeof location === 'string') {
-      const parts = location.split(',');
-      return parts[0]?.trim() || location;
-    }
-    // If it has address field, extract name from it
-    if (location.address) {
-      const parts = location.address.split(',');
-      return parts[0]?.trim() || location.address;
-    }
-    return null;
-  };
-
-  switch (leg.type) {
-    case 'walk': {
-      const dest = leg.to || leg.destination?.name;
-      // Use actual destination name if available
-      if (leg.destinationName) return `Walk to ${leg.destinationName}`;
-      if (dest === 'cafe' && leg.cafeName) return `Walk to ${leg.cafeName}`;
-      if (dest === 'cafe') return 'Walk to Cafe';
-      if (dest === 'work') return `Walk to ${leg.workName || 'Office'}`;
-      if (dest?.toLowerCase() === 'tram stop' && leg.stopName) return `Walk to ${leg.stopName}`;
-      if ((dest?.toLowerCase() === 'train platform' || dest?.toLowerCase() === 'station') && leg.stationName) return `Walk to ${leg.stationName}`;
-      if (dest?.toLowerCase() === 'tram stop') return 'Walk to Tram Stop';
-      if (dest?.toLowerCase() === 'train platform' || dest?.toLowerCase() === 'station') return `Walk to ${leg.stationName || 'Station'}`;
-      // Use stationName/stopName if available before falling back to generic dest
-      if (leg.stationName) return `Walk to ${leg.stationName}`;
-      if (leg.stopName) return `Walk to ${cleanStopName(leg.stopName)}`;
-      return `Walk to ${cap(dest) || 'Station'}`;
-    }
-    case 'coffee': {
-      // Extract cafe name from location data
-      const cafeName = extractName(leg.location) ||
-                       leg.cafeName ||
-                       leg.name ||
-                       'Cafe';
-      return `Coffee at ${cafeName}`;
-    }
-    case 'train': {
-      // V5.5.18: Prefer GTFS-RT destination (accounts for disruption overrides)
-      const destName = leg.destinationName || leg.destination?.name || 'City';
-      const line = leg.lineName || '';
-      return line ? `${line} to ${destName}` : `Train to ${destName}`;
-    }
-    case 'tram': {
-      const num = leg.routeNumber ? `Route ${leg.routeNumber}` : (leg.lineName || 'Tram');
-      const destName = leg.destination?.name || 'City';
-      return `${num} to ${destName}`;
-    }
-    case 'bus': {
-      const num = leg.routeNumber ? `Bus ${leg.routeNumber}` : 'Bus';
-      const destName = leg.destination?.name || 'City';
-      return `${num} to ${destName}`;
-    }
-    default:
-      return leg.title || 'Continue';
-  }
+  return formatLegTitle(leg);
 }
 
 /**
@@ -1622,13 +1913,31 @@ function findMatchingDeparture(leg, transitData, nowMs = Date.now()) {
       if (dirMatches.length > 0) {
         matchedDepartures = dirMatches;
       } else {
-        // Accept any citybound train rather than returning null —
-        // trains are running through different tunnel, not "not running"
+        // v5.9.0 (T12 / N15): Terminus-station direction semantics.
+        // The previous fallback re-applied the same direction filter,
+        // which was a no-op — if the primary filter returned 0 it always
+        // returned 0 the second time. The real problem: leg.isCitybound
+        // is derived from the destName heuristic (matches a city-station
+        // token or not). When home station is a terminus, ALL trains at
+        // that station travel in one direction regardless of destName,
+        // and the heuristic can produce a direction that disagrees with
+        // the live feed.
+        // Correct fallback: invert the direction and retry. If the
+        // inverted direction matches live data, trust the live feed
+        // over the destName heuristic. If neither direction produces a
+        // match, return null as before.
         const allDir = departures.filter(d => d.isCitybound === leg.isCitybound);
         if (allDir.length > 0) {
           matchedDepartures = allDir;
         } else {
-          return null;
+          const invertedDir = departures.filter(d => d.isCitybound === !leg.isCitybound);
+          if (invertedDir.length > 0) {
+            matchedDepartures = invertedDir;
+            // Also correct the leg flag so the filter downstream is consistent
+            leg.isCitybound = !leg.isCitybound;
+          } else {
+            return null;
+          }
         }
       }
     }
@@ -2396,9 +2705,13 @@ export default async function handler(req, res) {
 
     // Initialize engine and get route (need state before time formatting)
     // Issue 1: Wrap engine invocation in try/catch to prevent crash on tight constraints
+    // v5.9.8 (DD1 + DD4): pass a freshness diagnostic object into getEngine
+    // so the home coord drift-check source is captured and later surfaced
+    // on `_liveDataDiag.homeCoordFreshness`.
     let engine, route, locations, config;
+    const homeCoordFreshnessDiag = {};
     try {
-      engine = await getEngine();
+      engine = await getEngine(homeCoordFreshnessDiag);
       route = engine.getSelectedRoute();
       locations = engine.getLocations();
       config = engine.journeyConfig;
@@ -2491,9 +2804,22 @@ export default async function handler(req, res) {
       }
     }
 
-    // Fallback to stored Redis IDs only when coordinate detection returns nothing
-    if (!trainStopId) trainStopId = kvPrefs?.trainStopId || null;
-    if (!tramStopId) tramStopId = kvPrefs?.tramStopId || null;
+    // Honour explicit user-configured stop IDs from Transit Stop IDs section.
+    // Coordinate detection picks the physically closest stop, but user may
+    // deliberately choose a different station when the distance difference
+    // is marginal. User intent takes priority over auto-detection.
+    if (kvPrefs?.trainStopId && kvPrefs.trainStopId !== trainStopId) {
+      trainStopId = kvPrefs.trainStopId;
+      stopDetectionSource = 'user-configured';
+    } else if (!trainStopId) {
+      trainStopId = kvPrefs?.trainStopId || null;
+    }
+    if (kvPrefs?.tramStopId && kvPrefs.tramStopId !== tramStopId) {
+      tramStopId = kvPrefs.tramStopId;
+      if (!stopDetectionSource) stopDetectionSource = 'user-configured';
+    } else if (!tramStopId) {
+      tramStopId = kvPrefs?.tramStopId || null;
+    }
     if (!busStopId) busStopId = kvPrefs?.busStopId || null;
     if (!ferryStopId) ferryStopId = kvPrefs?.ferryStopId || null;
     if (!stopDetectionSource && (trainStopId || tramStopId)) stopDetectionSource = 'stored';
@@ -2543,15 +2869,35 @@ export default async function handler(req, res) {
       busStopId = busOverride.id;
     }
 
+    // v5.9.6 (BB1): Resolve the train override's representative coordinates
+    // and the closest tram stop to those coordinates. These values cascade
+    // through the leg-patch block below so that walk-leg durations, walk-leg
+    // titles, and the tram alighting stop all honour the override consistently.
+    // Pre-v5.9.6 behaviour patched only the name fields, leaving walk
+    // durations computed against the stale home-nearest train station
+    // coordinates. See DEVELOPMENT-RULES.md §23.15 "Station override cascade
+    // invariant" for the full rule. Turnkey across every VIC metro station
+    // present in VIC_METRO_STATIONS — no hardcoded codes or names.
+    const trainOverrideCoords = trainOverride?.id
+      ? lookupMetroStationCoords(trainOverride.id)
+      : null;
+    const nearestTramStopToOverride = trainOverrideCoords
+      ? findNearestTramStopNearCoords(trainOverrideCoords.lat, trainOverrideCoords.lon, { maxRadiusMetres: 800 })
+      : null;
+
     // Apply station override names to route template legs for correct display
     // Route templates use coordinate-based nearest stations, but user may have
     // explicitly selected a different station via Station Preferences
     if (route?.legs && (trainOverride?.id || tramOverride?.id)) {
       const overrideTrainName = trainOverride?.name || getStopNameById(trainStopId);
       const overrideTramName = tramOverride?.name || getStopNameById(tramStopId);
+      // v5.9.6 (BB1): walking speed constant per DEVELOPMENT-RULES §23.13
+      // allowlist — Victorian DoT default, used only for re-computing walk
+      // legs after an override coordinate cascade. No route-specific tuning.
+      const WALK_SPEED_M_PER_MIN = 80;
 
       // Deep-copy legs to avoid mutating engine's cached route objects
-      route = { ...route, legs: route.legs.map(leg => {
+      const patchedLegs = route.legs.map(leg => {
         const l = { ...leg };
         if (l.origin) l.origin = { ...l.origin };
         if (l.destination) l.destination = { ...l.destination };
@@ -2559,14 +2905,30 @@ export default async function handler(req, res) {
         if (l.type === 'train' && overrideTrainName) {
           if (l.origin) l.origin.name = overrideTrainName;
           l.originStation = overrideTrainName;
+          // v5.9.6 (BB1): honour override coordinates on the train leg's
+          // origin so downstream walk-leg recomputation uses the correct
+          // target. Preserve existing origin shape when coords absent.
+          if (trainOverrideCoords && l.origin) {
+            l.origin.lat = trainOverrideCoords.lat;
+            l.origin.lon = trainOverrideCoords.lon;
+          }
         }
         if (l.type === 'tram') {
           if (overrideTramName && l.origin) l.origin.name = overrideTramName;
           // Tram destination in multi-modal routes: show transfer AREA, not train station name.
-          // "Tram to South Yarra" (area) is correct; "Tram to South Yarra Station" is misleading
-          // because the tram doesn't go to the train station — user alights at a tram stop nearby.
+          // v5.9.6 (BB1): when a train-side override is active, re-select the
+          // tram alighting stop to the closest tram stop to the override's
+          // coordinates. The original "show train station area" label stays
+          // consistent — the tram destination name is the stripped station
+          // name — but the underlying alighting coordinates and stop ID are
+          // updated so the subsequent walk leg is measured accurately.
           if (overrideTrainName && l.destination) {
             l.destination.name = overrideTrainName.replace(/\s+Station$/i, '');
+          }
+          if (nearestTramStopToOverride && l.destination) {
+            l.destination.id = nearestTramStopToOverride.id;
+            l.destination.lat = nearestTramStopToOverride.lat;
+            l.destination.lon = nearestTramStopToOverride.lon;
           }
         }
         if (l.type === 'walk') {
@@ -2576,7 +2938,78 @@ export default async function handler(req, res) {
           }
         }
         return l;
-      })};
+      });
+
+      // v5.9.6 (BB1): second pass — now that leg origins/destinations have
+      // been patched with override coordinates, re-compute walk-leg
+      // durations and titles where the walk borders a train-override'd
+      // transit leg. This fixes:
+      //   - Bug A: walk-leg title stale after override (walks between tram
+      //     and train still showed the old station name)
+      //   - Bug B: walk-leg duration not recalculated from the override
+      //     coordinates (user saw "10 min walk to auto-detected station"
+      //     instead of the real distance to the overridden station)
+      // The recomputation uses the named walking-speed constant per §23.13.
+      if (trainOverrideCoords) {
+        for (let i = 0; i < patchedLegs.length; i++) {
+          const leg = patchedLegs[i];
+          if (leg.type !== 'walk') continue;
+          const nextLeg = patchedLegs[i + 1];
+          const prevLeg = patchedLegs[i - 1];
+
+          // Walk leg immediately preceding a train leg: terminates at the
+          // train station. Recompute from walk-origin to train override.
+          if (nextLeg?.type === 'train') {
+            // Effective walk origin: if the walk follows a tram leg and the
+            // tram's alighting coordinates have been updated to the
+            // nearest-to-override stop, use those coordinates. Otherwise
+            // fall back to the walk leg's stored origin.
+            let originLat = leg.origin?.lat;
+            let originLon = leg.origin?.lon;
+            if (prevLeg?.type === 'tram' && nearestTramStopToOverride) {
+              originLat = nearestTramStopToOverride.lat;
+              originLon = nearestTramStopToOverride.lon;
+            }
+            if (originLat != null && originLon != null) {
+              const metres = haversine(originLat, originLon, trainOverrideCoords.lat, trainOverrideCoords.lon);
+              const mins = Math.max(1, Math.ceil(metres / WALK_SPEED_M_PER_MIN));
+              leg.minutes = mins;
+              leg.durationMinutes = mins;
+              leg.subtitle = `${mins} min walk`;
+            }
+            // Update title to the override's station name unconditionally
+            if (overrideTrainName) {
+              leg.title = `Walk to ${overrideTrainName}`;
+              leg.stationName = overrideTrainName;
+              leg.destinationName = overrideTrainName;
+              if (leg.destination) {
+                leg.destination = {
+                  ...leg.destination,
+                  name: overrideTrainName,
+                  lat: trainOverrideCoords.lat,
+                  lon: trainOverrideCoords.lon
+                };
+              }
+            }
+          }
+
+          // Walk leg immediately following a train leg: originates at the
+          // train station. Recompute from train override to walk destination.
+          if (prevLeg?.type === 'train') {
+            const destLat = leg.destination?.lat;
+            const destLon = leg.destination?.lon;
+            if (destLat != null && destLon != null) {
+              const metres = haversine(trainOverrideCoords.lat, trainOverrideCoords.lon, destLat, destLon);
+              const mins = Math.max(1, Math.ceil(metres / WALK_SPEED_M_PER_MIN));
+              leg.minutes = mins;
+              leg.durationMinutes = mins;
+              leg.subtitle = `${mins} min walk`;
+            }
+          }
+        }
+      }
+
+      route = { ...route, legs: patchedLegs };
     }
 
     // Always rebuild route description using detected stop IDs.
@@ -2606,16 +3039,125 @@ export default async function handler(req, res) {
       }).join(' → ');
     }
 
+    // v5.9.1 (U4): One-off stale-preference wipe migration.
+    // v5.9.0's T2 live-gated invalidation was not sufficient to clear the
+    // stale preferredTramRoute values that accumulated during testing: the
+    // coord-proximity search at 300m returned live departures for the stale
+    // route (at some nearby parallel-street stop), so `hasLiveForRoute`
+    // passed and the stale value survived. This one-shot wipe clears every
+    // preference key the first time a v5.9.1+ request runs, then sets a
+    // marker so subsequent requests skip the block. Users observe a single
+    // re-detection on their next dashboard load.
+    try {
+      const migrationDone = await getV591MigrationDone().catch(() => false);
+      if (!migrationDone) {
+        await Promise.all([
+          setPreferredTramRoute(null),
+          setPreferredTramStop(null),
+          setPreferredTrainLine(null),
+          setPreferredTrainStation(null)
+        ]);
+        await setV591MigrationDone();
+      }
+    } catch (migrationErr) {
+      // Non-fatal — if the migration write fails, subsequent requests will
+      // retry. Do not block the API request on a migration failure.
+    }
+
+    // v5.9.4 (Z3): One-off tram-preference wipe migration.
+    // v5.9.3 shipped a naive KV write-once guard that only checked whether
+    // the stored preference was empty. On a cold-start request where the
+    // feed had no stop-level match for the user's tram stop (e.g. the first
+    // request immediately after a deploy), the cascade fell through to the
+    // route-level heuristic tier, the frequency-detection branch picked a
+    // non-stop-level winner, and the guard persisted that value to an
+    // empty KV. Any value already stored by a v5.9.3 deploy is therefore
+    // suspect and must be cleared once. The v5.9.4 corrective guard
+    // (Z2) prevents recurrence by also gating on stop-level confidence.
+    // Only the tram keys are wiped — train preferences were not affected
+    // and user-controlled station overrides are preserved.
+    try {
+      const v594MigrationDone = await getV594MigrationDone().catch(() => false);
+      if (!v594MigrationDone) {
+        await Promise.all([
+          setPreferredTramRoute(null),
+          setPreferredTramStop(null)
+        ]);
+        await setV594MigrationDone();
+      }
+    } catch (v594MigrationErr) {
+      // Non-fatal — if the migration write fails, subsequent requests will
+      // retry. Do not block the API request on a migration failure.
+    }
+
+    // v5.9.6 (BB4): One-off train-preference wipe migration. Symmetric
+    // with v5.9.4 Z3 but for train keys. The v5.9.0-through-v5.9.5 train
+    // cascade wrote `cc:preferred_train_line` / `cc:preferred_train_station`
+    // whenever a dominant-line count existed in the live feed, with no
+    // stop-level source gate. Any previously-stored train preference is
+    // therefore suspect — it may have been persisted from a broad-fallback
+    // (`gtfs-rt-broad`) or route-level dominant-line count that does not
+    // reflect a true stop-level match. Live v5.9.5 station-override verification
+    // confirmed the stored `preferredTrainLine` diverged from the displayed
+    // line, indicating KV drift. On first v5.9.6+ request, wipe the two
+    // train keys and set the v596 migration flag. The v5.9.6 BB3 stop-level
+    // gate in the train cascade prevents recurrence. Only train keys are
+    // wiped; tram keys are already guarded by v5.9.4 Z2 and station
+    // overrides are preserved.
+    try {
+      const v596MigrationDone = await getV596MigrationDone().catch(() => false);
+      if (!v596MigrationDone) {
+        await Promise.all([
+          setPreferredTrainLine(null),
+          setPreferredTrainStation(null)
+        ]);
+        await setV596MigrationDone();
+      }
+    } catch (v596MigrationErr) {
+      // Non-fatal — subsequent requests retry. Do not block the API request.
+    }
+
     // Load preferred tram route for consistent display (pinned by user)
     let preferredTramRoute = null;
     try { preferredTramRoute = await getPreferredTramRoute(); } catch (e) {}
-    // V5.6.6: Invalidate stale preferred route when the tram stop changes.
-    // preferredTramRoute is meaningless for a different stop — clear KV so auto-detection reruns.
+    // v5.9.0 (T2 / B2): Strengthened invalidation. A preferredTramRoute is
+    // only meaningful when paired with a preferredTramStop at the SAME stop
+    // the engine is currently using. Any of the following make it stale:
+    //   (a) no storedTramStop paired with the route (e.g. set by a legacy
+    //       path that never paired the stop)
+    //   (b) storedTramStop differs from the current engine tramStopId
+    //   (c) storedTramStop present but current tramStopId is null
+    // In any of these cases, drop the preference AND wipe the KV entry so
+    // the next API call runs a clean detection pass.
     const storedTramStop = await getPreferredTramStop().catch(() => null);
-    if (storedTramStop && tramStopId && String(storedTramStop) !== String(tramStopId)) {
+    const prefRouteIsStale = preferredTramRoute && (
+      !storedTramStop ||
+      !tramStopId ||
+      String(storedTramStop) !== String(tramStopId)
+    );
+    if (prefRouteIsStale) {
       preferredTramRoute = null;
       setPreferredTramRoute(null).catch(() => {});
       setPreferredTramStop(null).catch(() => {});
+    }
+
+    // v5.9.0 (T6 / B8): Preferred train line stability lock.
+    // Mirrors the tram lock. The train leg title flipped between the detected line name
+    // and a generic "Train" label on consecutive renders because there was no
+    // equivalent train-line cache. The lock stores { line, station } in KV
+    // and is invalidated using the same staleness rules as the tram lock.
+    let preferredTrainLine = null;
+    try { preferredTrainLine = await getPreferredTrainLine(); } catch (e) {}
+    const storedTrainStation = await getPreferredTrainStation().catch(() => null);
+    const prefLineIsStale = preferredTrainLine && (
+      !storedTrainStation ||
+      !trainStopId ||
+      String(storedTrainStation) !== String(trainStopId)
+    );
+    if (prefLineIsStale) {
+      preferredTrainLine = null;
+      setPreferredTrainLine(null).catch(() => {});
+      setPreferredTrainStation(null).catch(() => {});
     }
 
     // Auto-detect work-side stop IDs for train destination resolution
@@ -2662,17 +3204,22 @@ export default async function handler(req, res) {
     // and to verify the API connection is working.
     const skipLiveData = !apiKeyStr;
 
-    if (apiKeyStr) {
-      console.log(`[CommuteCompute] API key present (${apiKeyStr.substring(0, 8)}...), cafeMode=${cafeMode}, isTomorrow=${earlyIsTomorrowCommute}`);
-    }
-
-    if (skipLiveData) {
-      console.warn('[CommuteCompute] Live data skipped — no transit API key in Redis');
-    }
-
-    if (earlyIsTomorrowCommute) {
-      console.log('[CommuteCompute] Tomorrow commute mode — journey display uses timetable estimates');
-    }
+    // v5.9.1 (U9 / Section 1.1): Removed console.log diagnostic lines.
+    // The previous line that logged `apiKeyStr.substring(0, 8)` was a
+    // partial API key leak to Vercel request logs — SECURITY VIOLATION.
+    // Equivalent diagnostics are now written to the structured KV log
+    // via setDeviceStatus where they stay scoped to the operator's own
+    // KV namespace instead of the Vercel log stream.
+    try {
+      if (typeof setDeviceStatus === 'function') {
+        setDeviceStatus({
+          apiKeyPresent: !!apiKeyStr,
+          cafeMode,
+          isTomorrowCommute: earlyIsTomorrowCommute,
+          skipLiveData
+        }).catch(() => {});
+      }
+    } catch (e) { /* non-fatal */ }
 
     // V15.0: Extract tram/bus route numbers from journey legs for GTFS-RT route-level matching
     // When stop-level matching fails (common for trams), route-level matching can find live data
@@ -2766,11 +3313,34 @@ export default async function handler(req, res) {
       }
     }
 
-    // V5.5.2: Use tram stop's actual coordinates for coord-proximity search centre.
-    // homeCoords (line 2246) may be 500m+ from the boarding stop when the user
-    // walks to a distant tram stop. Coord-proximity's 300m radius from home misses
-    // stops near the actual boarding location. The stop's own coordinates are accurate.
+    // V5.5.2 + v5.9.8 (DD2): Use the locked tram stop's actual coordinates
+    // for the cascade target-coord comparison. The stored home coord may be
+    // 100+ m from the boarding stop when the user walks to a tram stop that
+    // is not the nearest-by-absolute-distance, so the identity-tier 40 m
+    // radius misses every feed stop if the cascade target is left at
+    // homeCoords. The stop's own coordinates from the static dataset are
+    // accurate. The v5.9.8 DD2 hardening adds:
+    //   1. Structured telemetry on every path so the admin panel and
+    //      post-deploy verification can distinguish "lookup succeeded" from
+    //      "lookup silently failed and we kept homeCoords".
+    //   2. A nearest-stop-helper fallback (v5.9.6 BB1's
+    //      findNearestTramStopNearCoords) when the exact-id dataset lookup
+    //      fails — the target then becomes the coord of the nearest tram
+    //      stop to the fresh-corrected home coord, which is a better
+    //      approximation than homeCoords for the cascade comparison.
+    //   3. A last-resort fallback that preserves existing behaviour (use
+    //      homeCoords) while emitting a distinct telemetry reason so the
+    //      difference between "we tried" and "we didn't try" is visible.
+    const tramStopCoordOverrideDiag = {
+      attempted: false,
+      tramStopId: tramStopId ? String(tramStopId) : null,
+      resolved: false,
+      fallbackUsed: null,
+      resolvedLat: null,
+      resolvedLon: null
+    };
     if (tramStopId && VIC_TRAM_STOPS_WITH_COORDS) {
+      tramStopCoordOverrideDiag.attempted = true;
       const tid = String(tramStopId);
       const tramStopRef = VIC_TRAM_STOPS_WITH_COORDS.find(s => {
         const sid = String(s.id);
@@ -2779,6 +3349,32 @@ export default async function handler(req, res) {
       if (tramStopRef) {
         tramApiOptions.lat = tramStopRef.lat;
         tramApiOptions.lon = tramStopRef.lon;
+        tramStopCoordOverrideDiag.resolved = true;
+        tramStopCoordOverrideDiag.resolvedLat = Number(tramStopRef.lat.toFixed(6));
+        tramStopCoordOverrideDiag.resolvedLon = Number(tramStopRef.lon.toFixed(6));
+      } else if (homeCoords?.lat && homeCoords?.lon) {
+        // Exact-id lookup failed. Fall back to nearest-tram-stop-by-coord
+        // from the (fresh-corrected) home coord so the cascade target is at
+        // least on a real tram stop rather than an arbitrary residential
+        // coordinate.
+        try {
+          const nearby = findNearestTramStopNearCoords(homeCoords.lat, homeCoords.lon, { radiusMeters: 1000 });
+          if (nearby?.lat && nearby?.lon) {
+            tramApiOptions.lat = nearby.lat;
+            tramApiOptions.lon = nearby.lon;
+            tramStopCoordOverrideDiag.fallbackUsed = 'nearest-stop-helper';
+            tramStopCoordOverrideDiag.resolvedLat = Number(nearby.lat.toFixed(6));
+            tramStopCoordOverrideDiag.resolvedLon = Number(nearby.lon.toFixed(6));
+          } else {
+            tramStopCoordOverrideDiag.fallbackUsed = 'home-coords-last-resort';
+            tramStopCoordOverrideDiag.resolvedLat = Number(homeCoords.lat.toFixed(6));
+            tramStopCoordOverrideDiag.resolvedLon = Number(homeCoords.lon.toFixed(6));
+          }
+        } catch (_e) {
+          tramStopCoordOverrideDiag.fallbackUsed = 'home-coords-last-resort';
+        }
+      } else {
+        tramStopCoordOverrideDiag.fallbackUsed = 'no-home-coords-available';
       }
     }
 
@@ -2840,6 +3436,123 @@ export default async function handler(req, res) {
 
     const transitData = { trains, trams, buses, ferries, disruptions };
 
+    // v5.9.0 (T6 / B8): Train-line stability lock — apply after train fetch.
+    // Priority cascade (mirrors the tram lock at lines ~3260+ but simpler
+    // because trains don't have the multi-route-at-intersection problem):
+    //   P1: live-detected dominant line at the current trainStopId
+    //   P2: preferredTrainLine from KV (only if live data contains at least
+    //       one matching departure on that line at the current station)
+    //   P3: trainLeg.lineName as it was set by the route engine
+    //   P4: null (buildLegTitle falls back to generic "Train")
+    //
+    // v5.9.6 (BB3): TRAIN CASCADE STOP-LEVEL GATE. Mirror the v5.9.4 Z2
+    // tram gate for train KV writes. A dominant-line winner is only
+    // persisted to KV when at least one of its departures has a source
+    // in the stop-level set. Broad-fallback (`gtfs-rt-broad`) and route-
+    // level (`gtfs-rt-route`) matches MAY drive the current request's
+    // displayed line but MUST NOT touch KV — otherwise a cold-start
+    // cycle where the exact-stop feed has no entries can poison
+    // `cc:preferred_train_line` with a line that isn't actually at the
+    // user's station. This closes Bug E from the v5.9.5 station-override
+    // verification and mirrors the v5.9.4 Z2 tram gate semantics.
+    // See DEVELOPMENT-RULES.md §23.15 "Train cascade stop-level gate".
+    const TRAIN_STOP_LEVEL_SOURCES = new Set([
+      'gtfs-rt',              // exact stop-id match via matchesStopId
+      'gtfs-rt-scan',         // lenient trailing-numeric scan
+      'gtfs-rt-coord-identity' // coord-identity bridge (tram-side, kept for symmetry)
+    ]);
+    if (trainStopId && trains && trains.length > 0) {
+      const liveLineCounts = {};
+      for (const t of trains) {
+        const ln = t.lineName || t.destination;
+        if (ln && t.isLive) liveLineCounts[ln] = (liveLineCounts[ln] || 0) + 1;
+      }
+      const liveEntries = Object.entries(liveLineCounts).sort((a, b) => b[1] - a[1]);
+      const dominantLiveLine = liveEntries[0]?.[0] || null;
+
+      // v5.9.6 (BB3): check whether the dominant live line is backed by a
+      // stop-level source before permitting the KV write. Equivalent to
+      // the tram Z2 `bestIsStopLevel` computation.
+      let dominantLineIsStopLevel = false;
+      if (dominantLiveLine) {
+        dominantLineIsStopLevel = trains.some(t =>
+          t.isLive &&
+          (t.lineName === dominantLiveLine || t.destination === dominantLiveLine) &&
+          TRAIN_STOP_LEVEL_SOURCES.has(t.source)
+        );
+      }
+
+      let selectedTrainLine = null;
+      if (dominantLiveLine) {
+        selectedTrainLine = dominantLiveLine;
+        // v5.9.6 (BB3): only persist when backed by a stop-level source
+        // AND the KV was empty entering this request. Symmetric with
+        // v5.9.4 Z2 tram write-once gate.
+        if (!preferredTrainLine && dominantLineIsStopLevel) {
+          setPreferredTrainLine(dominantLiveLine).catch(() => {});
+          setPreferredTrainStation(trainStopId).catch(() => {});
+          preferredTrainLine = dominantLiveLine;
+        }
+      } else if (preferredTrainLine) {
+        // Only trust the stored lock if it still appears in live data
+        const lockHasData = trains.some(t => t.isLive && (t.lineName === preferredTrainLine || t.destination === preferredTrainLine));
+        if (lockHasData) selectedTrainLine = preferredTrainLine;
+      }
+      if (selectedTrainLine && trainLeg) {
+        // v5.9.0: Line-station validation. When the route engine set a line
+        // name that doesn't match ANY live departure at the detected station,
+        // override it with the actual dominant line. This prevents mismatches
+        // when the station changes (e.g. address change detects a station on
+        // a different line group) but the engine still holds a stale line.
+        if (trainLeg.lineName && trainLeg.lineName !== selectedTrainLine) {
+          const engineLineHasDepartures = trains.some(t =>
+            t.isLive && (t.lineName === trainLeg.lineName || t.destination === trainLeg.lineName)
+          );
+          if (!engineLineHasDepartures) {
+            trainLeg.lineName = selectedTrainLine;
+          }
+        } else if (!trainLeg.lineName) {
+          trainLeg.lineName = selectedTrainLine;
+        }
+      }
+      // v5.10.1: Destination reachability validation. The selected train line
+      // must serve the WORK-SIDE station (alighting point), not just the
+      // boarding station. Lines in FLINDERS_ONLY_LINE_CODES terminate before
+      // the City Loop and cannot reach City Loop stations.
+      const CITY_LOOP_STATION_CODES = new Set(['PAR', 'MCE', 'FGS']);
+      const workRequiresCityLoop = CITY_LOOP_STATION_CODES.has(workTrainStopId);
+      if (workRequiresCityLoop && selectedTrainLine && trainLeg) {
+        const selCode = Object.entries(METRO_LINE_NAMES)
+          .find(([, name]) => name === selectedTrainLine)?.[0];
+        if (selCode && FLINDERS_ONLY_LINE_CODES.has(selCode)) {
+          const reachableDeps = trains.filter(t => {
+            if (!t.isLive) return false;
+            const dc = Object.entries(METRO_LINE_NAMES)
+              .find(([, n]) => n === t.lineName || n === t.destination)?.[0];
+            return dc && !FLINDERS_ONLY_LINE_CODES.has(dc);
+          });
+          if (reachableDeps.length > 0) {
+            const counts = {};
+            for (const t of reachableDeps) {
+              const ln = t.lineName || t.destination;
+              if (ln) counts[ln] = (counts[ln] || 0) + 1;
+            }
+            const best = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+            selectedTrainLine = best[0]?.[0] || selectedTrainLine;
+            trainLeg.lineName = selectedTrainLine;
+          } else {
+            // No departures reach City Loop — use the shared terminus
+            const fallback = getStopNameById('FSS') || VIC_METRO_STATIONS.FSS?.name || 'City';
+            const dest = fallback.replace(/\s+Station$/i, '');
+            if (trainLeg.destination) trainLeg.destination.name = dest;
+            trainLeg.destinationName = dest;
+          }
+        }
+      }
+    } else if (trainLeg && !trainLeg.lineName && preferredTrainLine) {
+      trainLeg.lineName = preferredTrainLine;
+    }
+
     // V5.5.18: Detect City Loop disruption from service alerts.
     // V5.6.1: Hoisted to outer scope so buildJourneyLegs can use it for timetable fallback.
     const cityLoopClosed = userState === 'VIC' && disruptions.length > 0 && disruptions.some(d => {
@@ -2873,43 +3586,148 @@ export default async function handler(req, res) {
     // count is a service characteristic, not a distance measurement.
     if (trams.length > 0) {
       let selectedRoute = null;
-      // V5.6.5: Admin override is authoritative; KV auto-detection is fallback.
-      // Admin-configured route (tramRouteOverride) always wins. When no admin override,
-      // KV-locked route is used (same non-determinism protection as before).
-      const authorityRoute = tramRouteOverride || preferredTramRoute;
-      if (authorityRoute) {
-        selectedRoute = authorityRoute;
+      let selectionBranch = null;
+      // v5.9.0 (T2 / B1) + v5.9.1 (U7 / CR-4): Priority cascade for tram route
+      // selection with stop-level preference.
+      //
+      // The v5.8.2 authority short-circuit (`tramRouteOverride || preferredTramRoute`)
+      // trusted stored state WITHOUT verifying the stored route had live departures
+      // at the CURRENT stop. v5.9.0 added a live-departure gate — necessary but not
+      // sufficient, because the coord-proximity fallback search returns departures
+      // for routes that only pass NEAR the stop (via parallel streets) but do not
+      // actually serve it per the GTFS static data.
+      //
+      // v5.9.1 tightens the gate: routes with at least one STOP-LEVEL match
+      // (source is 'gtfs-rt' or 'gtfs-rt-route' — the exact stop_id appeared
+      // in the trip's stop_time_update list) are always preferred over routes
+      // that only appear via 'gtfs-rt-coord'. A stop-level match is direct
+      // evidence from the live feed that the route actually serves the stop;
+      // a coord-proximity-only match is circumstantial. When BOTH kinds exist,
+      // the stop-level routes win. When NEITHER kind is available (stop-level
+      // feed data absent for the user's stop), we fall back to the v5.9.0
+      // behaviour and note the low-confidence state in _liveDataDiag.
+      //
+      // Cascade:
+      //   P1: tramRouteOverride (admin) — wins only if live data has a
+      //       stop-level match, OR if no stop-level matches exist for any
+      //       route at this stop (cannot be stricter than the data allows).
+      //   P2: preferredTramRoute (KV) — same rule as P1.
+      //   P3: Frequency-detected among routes with stop-level matches.
+      //   P4: Frequency-detected among detectedTramRoutes (any source).
+      //   P5: Engine-planned route if live data present.
+      //   P6: Feed-majority last resort.
+      // v5.9.2 (X4): coord-identity is a high-confidence stop-level source
+      // because a coordinate match within the named identity radius is
+      // deterministic "same physical stop, different feed ID". Added to the
+      // stop-level set alongside the exact-id and lenient-scan sources.
+      // Coord-proximity (300 m) remains EXCLUDED because its 300 m radius
+      // catches parallel-street routes.
+      //
+      // v5.9.3 (Y2): 'gtfs-rt-route' REMOVED from the stop-level set.
+      // processRouteLevelDepartures is a median-stop heuristic used when the
+      // exact stop ID is absent from a trip's sequence — its timing error is
+      // 10–20 min (see opendata-client.js comments at processRouteLevelDepartures).
+      // Treating it as stop-level evidence caused frequency detection in v5.9.2
+      // to misidentify heuristic matches as confirmed identity, which in turn
+      // let transient cascade failures overwrite a previously-correct KV entry.
+      // Route-level is now correctly classified as coord-tier confidence.
+      const STOP_LEVEL_SOURCES = new Set(['gtfs-rt', 'gtfs-rt-scan', 'gtfs-rt-broad', 'gtfs-rt-coord-identity']);
+      const hasLiveForRoute = (rn) => trams.some(t => t.isLive && t.routeNumber?.toString() === rn.toString());
+      const hasStopLevelForRoute = (rn) => trams.some(t =>
+        t.isLive &&
+        t.routeNumber?.toString() === rn.toString() &&
+        STOP_LEVEL_SOURCES.has(t.source)
+      );
+      const anyStopLevelInFeed = trams.some(t => t.isLive && STOP_LEVEL_SOURCES.has(t.source));
+      // When no stop-level matches exist at all, the whole feed is coord-
+      // proximity-based, which means we cannot enforce the stronger gate.
+      // In that case preferStopLevel is false and the cascade falls back to
+      // the v5.9.0 behaviour.
+      const preferStopLevel = anyStopLevelInFeed;
+      const passesGate = (rn) => preferStopLevel ? hasStopLevelForRoute(rn) : hasLiveForRoute(rn);
+
+      if (tramRouteOverride && passesGate(tramRouteOverride)) {
+        selectedRoute = tramRouteOverride;
+        selectionBranch = preferStopLevel ? 'admin-override-stop-level' : 'admin-override-coord';
       }
-      // Frequency-based detection: only when no locked route or locked route unavailable
+      if (!selectedRoute && preferredTramRoute && passesGate(preferredTramRoute)) {
+        selectedRoute = preferredTramRoute;
+        selectionBranch = preferStopLevel ? 'kv-preferred-stop-level' : 'kv-preferred-coord';
+      }
       if (!selectedRoute && detectedTramRoutes.length > 0) {
+        // U7: frequency detection across detectedTramRoutes, prioritising
+        // routes with stop-level matches when available.
         let bestRoute = null;
         let bestCount = 0;
+        let bestIsStopLevel = false;
         for (const route of detectedTramRoutes) {
-          const count = trams.filter(t => t.isLive && t.routeNumber?.toString() === route.toString()).length;
-          if (count > bestCount) {
-            bestCount = count;
+          const stopLevelCount = trams.filter(t =>
+            t.isLive &&
+            t.routeNumber?.toString() === route.toString() &&
+            STOP_LEVEL_SOURCES.has(t.source)
+          ).length;
+          const totalCount = trams.filter(t => t.isLive && t.routeNumber?.toString() === route.toString()).length;
+          // Prefer stop-level matches outright when they exist
+          if (stopLevelCount > 0 && !bestIsStopLevel) {
             bestRoute = route;
+            bestCount = stopLevelCount;
+            bestIsStopLevel = true;
+          } else if (stopLevelCount > 0 && stopLevelCount > bestCount) {
+            bestRoute = route;
+            bestCount = stopLevelCount;
+            bestIsStopLevel = true;
+          } else if (!bestIsStopLevel && totalCount > bestCount) {
+            bestRoute = route;
+            bestCount = totalCount;
           }
         }
         if (bestRoute) {
           selectedRoute = bestRoute;
-          // Store to KV for persistence across calls
-          setPreferredTramRoute(bestRoute).catch(() => {});
-          setPreferredTramStop(tramStopId).catch(() => {});
+          selectionBranch = bestIsStopLevel ? 'frequency-detected-stop-level' : 'frequency-detected-coord';
+          // v5.9.3 (Y3): KV WRITE-ONCE GUARD.
+          // Only persist the frequency-detected route to KV when the KV was
+          // empty entering this request. Once populated, the stored preference
+          // MUST NOT be overwritten by subsequent frequency-detection runs —
+          // a transient single-cycle cascade failure (e.g. identity tier
+          // temporarily failing because the feed refreshed between stops)
+          // must not permanently corrupt the stored state.
+          //
+          // The stored KV value legitimately changes only via:
+          //   - v5.8.2 C4-clear in api/admin/preferences.js on address change
+          //   - v5.9.1 U4 one-off migration wipe (consumed)
+          //   - Explicit admin override via setStationOverrides
+          //
+          // Cross-reference: the v5.9.2 X4 cascade still runs passesGate on
+          // every request. If the gate fails for the stored route in a given
+          // cycle, the cascade falls through without overwriting KV — the
+          // existing preference is preserved for the next cycle (30 s cache
+          // TTL per §11.1), giving the coord-identity tier another chance.
+          //
+          // The in-memory preferredTramRoute variable is still updated so
+          // the current-request logic can use it; only the KV persist is
+          // gated.
+          //
+          // v5.9.4 (Z2): KV write gated on BOTH "KV empty" AND "stop-level
+          // confident" (bestIsStopLevel === true). A cold-start request
+          // where the feed has no stop-level match at all (e.g. the first
+          // request immediately after a deploy, before the feed cache warms)
+          // can see the cascade fall all the way through to route-level
+          // heuristic, select a route via P3 frequency-detect, and — in
+          // v5.9.3 — poison the empty KV with that coord-tier result. Only
+          // stop-level-confident results may be persisted. Coord-tier and
+          // route-level wins may drive the current request's selectedRoute
+          // but must not touch KV. See DEVELOPMENT-RULES.md §23.15.
+          if (!preferredTramRoute && bestIsStopLevel) {
+            setPreferredTramRoute(bestRoute).catch(() => {});
+            setPreferredTramStop(tramStopId).catch(() => {});
+          }
           preferredTramRoute = bestRoute;
         }
       }
-      // Priority 1: Route engine's planned route
-      if (!selectedRoute && tramRouteNum) {
-        const engineRouteHasData = trams.some(t => t.isLive && t.routeNumber?.toString() === tramRouteNum.toString());
-        if (engineRouteHasData) selectedRoute = tramRouteNum;
+      if (!selectedRoute && tramRouteNum && passesGate(tramRouteNum)) {
+        selectedRoute = tramRouteNum;
+        selectionBranch = preferStopLevel ? 'engine-planned-stop-level' : 'engine-planned-coord';
       }
-      // Priority 2: preferredTramRoute from Redis (stable when detection unavailable)
-      if (!selectedRoute && preferredTramRoute) {
-        const prefRouteHasData = trams.some(t => t.isLive && t.routeNumber?.toString() === preferredTramRoute.toString());
-        if (prefRouteHasData) selectedRoute = preferredTramRoute;
-      }
-      // Priority 3: Most-frequent from entire feed (last resort)
       if (!selectedRoute) {
         const routeCounts = {};
         for (const t of trams) {
@@ -2917,11 +3735,36 @@ export default async function handler(req, res) {
         }
         const topRoute = Object.entries(routeCounts).sort((a, b) => b[1] - a[1])[0];
         selectedRoute = topRoute ? topRoute[0] : trams.find(t => t.routeNumber && t.isLive)?.routeNumber;
+        if (selectedRoute) selectionBranch = 'feed-majority';
       }
+      // v5.9.1 (U7) + v5.9.0 (T2 audit line): expose selection branch AND
+      // stop-level vs coord-proximity confidence in the structured KV log.
+      // setDeviceStatus is the structured-logging path — never console.log
+      // per Section 1.1.
+      try {
+        if (selectionBranch && typeof setDeviceStatus === 'function') {
+          setDeviceStatus({
+            tramRouteSelectionBranch: selectionBranch,
+            tramRouteSelected: selectedRoute,
+            tramRouteSelectionConfidence: preferStopLevel ? 'stop-level' : 'coord-proximity-only'
+          }).catch(() => {});
+        }
+      } catch (e) { /* non-fatal */ }
       if (selectedRoute) {
         tramApiOptions.routeNumber = selectedRoute;
         if (tramLeg) tramLeg.routeNumber = selectedRoute;
-        if (!preferredTramRoute) {
+        // v5.9.4 (Z2): mirror the frequency-detect write-once guard.
+        // Only persist to KV when the selectedRoute is backed by at least
+        // one stop-level-confident tram entry. Derived inline from the
+        // live trams array since bestIsStopLevel is out of scope here.
+        // Coord-tier / route-level wins drive the current request only.
+        // See DEVELOPMENT-RULES.md §23.15 (v5.9.4 update).
+        const selectedIsStopLevel = trams.some(t =>
+          t.isLive &&
+          t.routeNumber?.toString() === selectedRoute.toString() &&
+          STOP_LEVEL_SOURCES.has(t.source)
+        );
+        if (!preferredTramRoute && selectedIsStopLevel) {
           setPreferredTramRoute(selectedRoute).catch(() => {});
           setPreferredTramStop(tramStopId).catch(() => {});
           preferredTramRoute = selectedRoute;
@@ -3331,6 +4174,27 @@ export default async function handler(req, res) {
       maxDelayMinutes,
       hasLiveData: hasAnyLiveData
     });
+    // v5.10.2: Compute route-filtered disruptions BEFORE response object so the
+    // disruption boolean flag, confidence score, and services badge all react.
+    const userStopIds = new Set([
+      ...(trainStopId ? (VIC_METRO_STATIONS[trainStopId]?.platforms || []) : []),
+      ...(tramStopId ? [tramStopId] : []),
+      ...(busStopId ? [busStopId] : [])
+    ]);
+    const routeFilteredDisruptions = (disruptions || [])
+      .filter(d => {
+        if (!d.affectedRoutes?.length && !d.affectedStops?.length) return true;
+        if (d.affectedStops?.some(s => userStopIds.has(s))) return true;
+        return false;
+      })
+      .map(d => ({
+        title: sanitiseDisruptionLabel(d.title || d.headerText || 'Alert'),
+        description: sanitiseDisruptionLabel((d.description || '').substring(0, 300)),
+        effect: d.effect,
+        mode: d.mode
+      }));
+    const hasActiveDisruptions = routeFilteredDisruptions.length > 0;
+
     const dashboardData = {
       location: displayHome,
       current_time: `${currentTime}${amPm}`,
@@ -3343,8 +4207,9 @@ export default async function handler(req, res) {
       umbrella: lifestyle?.suggestions?.some(s => s.item === 'umbrella' && s.active) || weatherData?.umbrella || false,
       status_type: statusType,
       delay_minutes: delayMinutes,
-      // V13.6: Include disruption text for badge display
-      disruption: statusType === 'disruption' || statusType === 'delay',
+      // v5.10.2: disruption flag reflects BOTH journey-level status AND active
+      // route-filtered disruptions. The header services badge reads this flag.
+      disruption: statusType === 'disruption' || statusType === 'delay' || hasActiveDisruptions,
       disruption_text,
       arrive_by: displayArrival,
       _calculatedArrival: calculatedArrival,  // V13.6: Stable arrival time from journey calculation
@@ -3379,9 +4244,12 @@ export default async function handler(req, res) {
       })(),
       // Cafe status — independent of commute window. Shows open/closed and cafe name.
       cafe_name: (() => {
+        // Prefer user's configured cafe address (their chosen name) over geocoded result.
+        // Google Places geocoding may resolve to a different nearby venue.
+        const userCafe = kvPrefs?.addresses?.cafe;
+        if (userCafe) return userCafe.split(',')[0].trim();
         const name = kvPrefs?.locations?.cafe?.name || kvPrefs?.cafe?.name || null;
         if (!name) return null;
-        // Extract short name (first part before comma)
         return name.split(',')[0].trim();
       })(),
       cafe_is_open: kvPrefs?.addresses?.cafe ? cafeIsOpen : null,
@@ -3439,6 +4307,140 @@ export default async function handler(req, res) {
         trainError: trains?._feedInfo?.error || null,
         tramError: trams?._feedInfo?.error || null,
         busError: buses?._feedInfo?.error || null,
+        // v5.9.0 (T7 / B9): Expose the raw home coords and top-3 candidate
+        // stations (with computed distances) so drift between what the
+        // nearest-stop comparison actually returns and what an independent
+        // reviewer would expect is immediately visible from the admin
+        // panel diagnostics. This field has previously exposed cases where
+        // a closer station was picked over an inner suburban alternative
+        // for a configured home address, making the cause reproducible and
+        // independently verifiable without re-running the engine.
+        homeCoords: (locations?.home?.lat && locations?.home?.lon)
+          ? { lat: Number(locations.home.lat.toFixed(6)), lon: Number(locations.home.lon.toFixed(6)) }
+          : null,
+        // v5.9.8 (DD1 + DD4): home coordinate freshness verdict. See
+        // ensureFreshHomeCoords() for the full semantics of the possible
+        // `source` values. This field is the primary evidence a deployment
+        // verification pass reads to confirm DD1 ran on the request and
+        // which code path (cache hit, drift-corrected overwrite, vendor
+        // misresolve rejection, timeout fallback) was taken.
+        homeCoordFreshness: homeCoordFreshnessDiag.homeCoordFreshness || { source: 'not-run' },
+        // v5.9.9 (EE3): running count of NEW geocoder failures recorded
+        // by the memory-cache failure memoisation path since this
+        // serverless instance warmed up. Increments only on the
+        // transition from "attempted" to "stored failure verdict";
+        // repeated cache-hits of a previously-stored failure do NOT
+        // increment. A non-zero value here combined with a
+        // homeCoordFreshness.source === 'memory-cache-failed' verdict
+        // indicates the failure cache is actively suppressing
+        // geocoder thrashing against a broken environment — this is
+        // expected and healthy, not a regression.
+        homeCoordFreshnessFailureCount: _freshHomeCoordFailureCount,
+        // v5.9.8 (DD2): tram stop coord override result. See the hardening
+        // block near the cascade call site. The `resolved` flag is true
+        // only when the exact dataset lookup succeeded; `fallbackUsed`
+        // distinguishes between nearest-stop-helper, home-coord last-resort,
+        // and no-home-coords cases so any future 0-match cascade failure
+        // is immediately diagnosable from the admin panel.
+        tramStopCoordOverride: (typeof tramStopCoordOverrideDiag !== 'undefined') ? tramStopCoordOverrideDiag : { attempted: false },
+        nearestTrainCandidates: (locations?.home?.lat && locations?.home?.lon)
+          ? (findNearestStopsMultiple(locations.home.lat, locations.home.lon, { count: 3 }).train || [])
+              .map(s => ({ id: s.id, name: s.name, distanceM: s.distance }))
+          : null,
+        nearestTramCandidates: (locations?.home?.lat && locations?.home?.lon)
+          ? (findNearestStopsMultiple(locations.home.lat, locations.home.lon, { count: 3 }).tram || [])
+              .map(s => ({ id: s.id, name: s.name, distanceM: s.distance }))
+          : null,
+        preferredTrainLine: preferredTrainLine || null,
+        tramSelectionBranch: null, // populated by T2 audit line via setDeviceStatus
+        // v5.9.2 (X5): derive tramRouteSelectionConfidence from the actual
+        // match tier that returned the selected route's departures, read
+        // directly from the live trams array. This replaces the v5.9.1
+        // placeholder that was populated via setDeviceStatus.
+        //
+        // Confidence ladder (high → low):
+        //   exact-stop-id   — source 'gtfs-rt'
+        //   lenient-scan    — source 'gtfs-rt-scan'
+        //   coord-identity  — source 'gtfs-rt-coord-identity' (v5.9.2 NEW)
+        //   route-level     — source 'gtfs-rt-route'
+        //   coord-proximity-only — source 'gtfs-rt-coord' (LOW confidence,
+        //                         300 m radius may pick wrong route)
+        //
+        // When there are no live trams, confidence is null.
+        tramRouteSelectionConfidence: (() => {
+          const liveTrams = (trams || []).filter(t => t.isLive);
+          if (liveTrams.length === 0) return null;
+          const sources = new Set(liveTrams.map(t => t.source));
+          if (sources.has('gtfs-rt')) return 'exact-stop-id';
+          if (sources.has('gtfs-rt-scan')) return 'lenient-scan';
+          if (sources.has('gtfs-rt-coord-identity')) return 'coord-identity';
+          if (sources.has('gtfs-rt-route')) return 'route-level';
+          if (sources.has('gtfs-rt-coord')) return 'coord-proximity-only';
+          return null;
+        })(),
+        // v5.9.2 (X5): Which cascade tier the tram feed actually used.
+        // Reads directly from the _feedInfo.matchMethod emitted by
+        // getDepartures. Never null when tram data is present.
+        tramMatchTier: trams?._feedInfo?.matchMethod || null,
+        // v5.9.2 (X5): Empirical list of feed stop IDs that resolved to
+        // static coordinates within the identity radius. Proves which feed
+        // IDs actually reference the user's physical stop — observable data,
+        // not a hardcoded mapping. Useful for diagnosis and cross-reference
+        // against TramTracker.
+        tramFeedStopIdsResolved: (() => {
+          const cascade = trams?._feedInfo?.cascadeAttempts || [];
+          const identity = cascade.find(a => a.tier === 'coord-identity');
+          return identity?.feedStopIdsResolved || [];
+        })(),
+        // v5.9.3 (Y4): Reads from the live cascade attempt; propagates the
+        // v5.9.3 widened radius (TRAM_COORD_IDENTITY_RADIUS_METRES = 40)
+        // automatically because the call site in opendata-client.js attaches
+        // the actual radiusMetres used into the cascadeAttempts entry.
+        tramIdentityRadiusMetresUsed: (() => {
+          const cascade = trams?._feedInfo?.cascadeAttempts || [];
+          const identity = cascade.find(a => a.tier === 'coord-identity');
+          return identity?.radiusMetres ?? null;
+        })(),
+        // v5.9.4 (Z4): Coord-identity diagnostic telemetry. Exposes the
+        // sample-lookup table the tier collected for the first N unique
+        // feed stop IDs, the total number of unique feed stop IDs seen,
+        // and the matched trip count. Use this to diagnose why the tier
+        // returned empty in a given cycle — e.g. "the feed uses a stop ID
+        // namespace that lookupTramStop doesn't resolve" (all sampleLookups
+        // have distanceToTargetM=null) vs "the lookups succeed but none
+        // are within the radius" (distances populated but all > radius).
+        // Pure observable data — no hardcoded identifiers.
+        tramCoordIdentityDebug: (() => {
+          const cascade = trams?._feedInfo?.cascadeAttempts || [];
+          const identity = cascade.find(a => a.tier === 'coord-identity');
+          if (!identity) return null;
+          return {
+            totalUniqueFeedStopIds: identity.totalUniqueFeedStopIds ?? null,
+            matchedCount: identity.matchedTripCount ?? 0,
+            radiusMetres: identity.radiusMetres ?? null,
+            sampleLookups: identity.sampleLookups || [],
+            // v5.9.5 (AA3): Cross-tier divergence report. When populated,
+            // byTrip[] contains one entry per trip that T1/T2 matched; if
+            // any entry has matched === false with rejectionReasons
+            // containing 'lookup-failed' or 'out-of-radius', that's a
+            // BLOCKING regression per §23.15 (v5.9.5 update). Reasons
+            // 'no-dep-time' and 'past-time' are legitimate stu-level
+            // edge cases. null when no knownMatchedTripIds were supplied.
+            divergenceReport: identity.divergenceReport ?? null
+          };
+        })(),
+        // v5.9.3 (Y4): Full cascade tier breakdown for diagnostics and the
+        // admin panel Resolved Inputs display. Pure observable data read
+        // from the v5.9.2 X2 cascadeAttempts — no hardcoded stops, routes,
+        // or station names. Each entry has shape
+        //   { tier, tried, found, ...tier-specific-extras }
+        // where tier is one of: exact-id | alt-ids | lenient-scan |
+        // coord-identity | route-level | coord-proximity. This lets the
+        // admin panel surface which tier actually produced the selected
+        // tram departures for the current cycle, and lets /cc-deploy-verify
+        // Agent A assert that the coord-identity tier is returning live
+        // matches across consecutive cache refreshes.
+        tramCascadeAttempts: trams?._feedInfo?.cascadeAttempts || [],
         // Feed staleness: seconds since GTFS-RT data was fetched
         feed_age_seconds: Math.round((now.getTime() - (trains?._feedInfo?.fetchTime || trams?._feedInfo?.fetchTime || now.getTime())) / 1000)
       },
@@ -3497,7 +4499,11 @@ export default async function handler(req, res) {
       mindset_resilience_level: mindset.resilienceLevel,
     };
 
-    console.log('[CommuteCompute] _liveDataDiag:', JSON.stringify(dashboardData._liveDataDiag));
+    // v5.9.1 (U9 / Section 1.1): Removed console.log of _liveDataDiag —
+    // the diagnostic is already present in the JSON response under
+    // `_liveDataDiag` and is consumed by the admin panel's Resolved Inputs
+    // panel. Logging it to Vercel request logs duplicates data that was
+    // never needed outside the response itself.
 
     // Format: explicit ?format= wins, POST defaults to json (admin), GET defaults to png (device)
     const format = req.query?.format || (req.method === 'POST' ? 'json' : 'png');
@@ -3543,15 +4549,33 @@ export default async function handler(req, res) {
           };
         })(),
 
-        // Journey summary (admin panel expects this shape)
+        // Journey summary (admin panel expects this shape).
+        // v5.9.1 (U3 / NEW-N19): Add a leading 'no-commute' branch so non-
+        // commute days (Saturdays, public holidays, and any configured
+        // non-commute state) do not return status: 'late' based on a
+        // meaningless arrivalDiff against the 9am target. onTime and
+        // diffMinutes are null in that branch because there is no meaningful
+        // comparison to make. The renderer already reads isCommuteDay
+        // independently for the "NO COMMUTE TODAY" overlay, so no renderer
+        // change is required.
         summary: {
           leaveNow: currentTime + amPm,
           arriveAt: arriveAtJson,
           totalMinutes,
-          onTime: isTomorrowCommute ? null : arrivalDiff <= 5,
-          diffMinutes: isTomorrowCommute ? null : arrivalDiff,
-          status: isTomorrowCommute ? 'tomorrow' : arrivalDiff > 5 ? 'late' : arrivalDiff < -10 ? 'early' : 'on-time',
-          statusContext: isTomorrowCommute ? 'Tomorrow — services shown are live' : null
+          onTime: !isCommuteDay ? null : (isTomorrowCommute ? null : arrivalDiff <= 5),
+          diffMinutes: !isCommuteDay ? null : (isTomorrowCommute ? null : arrivalDiff),
+          status: !isCommuteDay
+            ? 'no-commute'
+            : isTomorrowCommute
+              ? 'tomorrow'
+              : arrivalDiff > 5
+                ? 'late'
+                : arrivalDiff < -10
+                  ? 'early'
+                  : 'on-time',
+          statusContext: !isCommuteDay
+            ? 'No commute today — services shown are live'
+            : (isTomorrowCommute ? 'Tomorrow — services shown are live' : null)
         },
 
         // Weather (admin panel expects this shape)
@@ -3561,6 +4585,24 @@ export default async function handler(req, res) {
           icon: weatherData.icon,
           umbrella: weatherData.umbrella
         } : null,
+
+        // v5.10.2: Use pre-computed route-filtered disruptions with sanitised labels
+        disruptions: routeFilteredDisruptions,
+        disruption_count: disruptions?.length || 0,
+
+        // v5.9.0: Route-filtered transit data consistent with journey legs.
+        // Admin departure cards should read this instead of raw.transit to
+        // avoid showing departures from a different route than the journey uses.
+        _processedTransit: {
+          trains: trains?.filter(t => t.isLive) || [],
+          trams: (() => {
+            const effectiveRoute = effectiveTramRoute || detectedTramRoute;
+            if (!effectiveRoute || !trams?.length) return trams?.filter(t => t.isLive) || [];
+            const matched = trams.filter(t => t.isLive && String(t.routeNumber) === String(effectiveRoute));
+            return matched.length > 0 ? matched : trams.filter(t => t.isLive);
+          })(),
+          buses: buses?.filter(t => t.isLive) || []
+        },
 
         // Raw transit data (admin panel accesses raw.transit.trains etc.)
         raw: {

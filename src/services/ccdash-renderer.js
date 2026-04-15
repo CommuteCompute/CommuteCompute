@@ -67,6 +67,7 @@ import { createCanvas, GlobalFonts, loadImage } from '@napi-rs/canvas';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { formatLegTitle } from './leg-title-formatter.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1175,7 +1176,12 @@ function renderLegZone(ctx, leg, zone, legNumber = 1, isHighlighted = false) {
   ctx.font = `bold ${titleSize}px Inter, sans-serif`;
   ctx.textBaseline = 'top';
   
-  const title = leg.title || getLegTitle(leg);
+  // v5.9.0 (T7 + T11 / B7): Always call the shared formatter directly.
+  // Previously `leg.title || getLegTitle(leg)` short-circuited to the
+  // pre-populated leg.title (always set by buildLegTitle at the API),
+  // making the renderer's own title logic dead code. Now both sites
+  // consume the single shared formatLegTitle in leg-title-formatter.js.
+  const title = getLegTitle(leg);
   ctx.fillText(title, textX, titleY);
   
   // v1.20: Time box dimensions (scaled) - define early for DEPART positioning
@@ -1275,79 +1281,43 @@ function renderLegZone(ctx, leg, zone, legNumber = 1, isHighlighted = false) {
 }
 
 /**
- * Generate leg title from leg data
+ * Generate leg title from leg data.
+ *
+ * v5.9.0 (T11): Delegates to the shared formatLegTitle module. Renderer-
+ * specific overrides (diversion walks, rail replacement bus, ferry, vline,
+ * transit, wait) are handled here before the shared formatter is called.
  */
 function getLegTitle(leg) {
-  // Handle diversion walks (per ref image 8)
-  if (leg.type === 'walk' && leg.isDiversion) {
-    return 'Walk Around Diversion';
+  // Renderer-specific overrides — not covered by the shared formatter
+  if (leg.type === 'walk' && leg.isDiversion) return 'Walk Around Diversion';
+  if (leg.type === 'tram' && leg.status === 'diverted') {
+    return `Route ${leg.routeNumber || ''} Diverted`;
+  }
+  if (leg.type === 'bus' && leg.isReplacement) return 'Rail Replacement Bus';
+
+  if (leg.type === 'ferry') {
+    const ferryDest = leg.destination?.name || leg.arrivalStop || leg.to || 'City';
+    return `Ferry to ${ferryDest}`;
+  }
+  if (leg.type === 'vline') {
+    const vlineDest = leg.destination?.name || leg.arrivalStop || leg.to || 'City';
+    return `V/Line to ${vlineDest}`;
+  }
+  if (leg.type === 'transit') {
+    const transitDest = leg.destination?.name || leg.arrivalStop || leg.to || 'City';
+    return `${leg.mode || 'Transit'} ${leg.routeNumber || ''} to ${transitDest}`;
+  }
+  if (leg.type === 'wait') {
+    return `Wait at ${leg.location || leg.stopName || 'stop'}`;
   }
 
-  // V13.3: Helper to get specific stop/station name
-  const getStopName = () => {
-    return leg.stopName || leg.stationName || leg.platformName ||
-           leg.from?.name || leg.fromStop || leg.departure?.name ||
-           leg.to || 'Stop';
-  };
-
-  const getDestName = () => {
-    return leg.destination?.name || leg.arrivalStop || leg.to ||
-           leg.arrival?.name || leg.toStop || 'City';
-  };
-
-  switch (leg.type) {
-    case 'walk':
-      // V13.3: Be specific about destination
-      if (leg.to === 'home' || leg.toHome || leg.to?.toLowerCase().includes('home')) return 'Walk Home';
-      if (leg.cafeName || leg.to?.toLowerCase().includes('cafe')) {
-        return `Walk to ${leg.cafeName || 'Cafe'}`;
-      }
-      if (leg.to === 'work' || leg.to?.toLowerCase().includes('work') || leg.to === 'office') return 'Walk to Office';
-      // V13.3: Use specific station/stop name
-      const walkDest = leg.toStopName || leg.toStation || leg.to || getStopName();
-      return `Walk to ${walkDest}`;
-    case 'coffee':
-      // V13.3: Show specific cafe name
-      return leg.cafeName || leg.location || leg.name || 'Coffee at Cafe';
-    case 'tram':
-      // V16.0: Show route number in title
-      if (leg.status === 'diverted') {
-        return `Route ${leg.routeNumber || ''} Diverted`;
-      }
-      const tramDest = getDestName();
-      const tramLabel = leg.routeNumber ? `Route ${leg.routeNumber}` : (leg.lineName || 'Tram');
-      return `${tramLabel} to ${tramDest}`;
-    case 'train': {
-      // Format: "<LineName> Line to <Destination>" — strip "Station" suffix from dest
-      // e.g. "Frankston Line to Parliament" not "Train to Parliament Station"
-      const trainDestRaw = getDestName();
-      const trainDest = trainDestRaw.replace(/\s*Station\s*$/i, '');
-      const rawLineName = leg.lineName || leg.routeName || '';
-      const lineTitle = rawLineName
-        ? (rawLineName.toLowerCase().includes('line') ? rawLineName : `${rawLineName} Line`)
-        : 'Train';
-      return `${lineTitle} to ${trainDest}`;
-    }
-    case 'bus':
-      if (leg.isReplacement) {
-        return 'Rail Replacement Bus';
-      }
-      const busDest = getDestName();
-      return `Bus ${leg.routeNumber || ''} to ${busDest}`;
-    case 'ferry':
-      const ferryDest = getDestName();
-      return `Ferry to ${ferryDest}`;
-    case 'vline':
-      const vlineDest = getDestName();
-      return `V/Line to ${vlineDest}`;
-    case 'transit':
-      const transitDest = getDestName();
-      return `${leg.mode || 'Transit'} ${leg.routeNumber || ''} to ${transitDest}`;
-    case 'wait':
-      return `Wait at ${leg.location || leg.stopName || 'stop'}`;
-    default:
-      return leg.title || leg.type || 'Leg';
+  // All other leg types (walk, coffee, train, tram, bus) go through the
+  // canonical shared formatter so the API and renderer stay in sync.
+  if (['walk', 'coffee', 'train', 'tram', 'bus'].includes(leg.type)) {
+    return formatLegTitle(leg);
   }
+
+  return leg.type || 'Leg';
 }
 
 /**
@@ -2327,8 +2297,11 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   const coffeeSkipped = data.isCommuteDay !== false && isWithinArrivalWindow && !!coffeeLegSkipped && !isCafeClosedFromData;
   const showCafeBusynessOnly = !hasCoffee && !coffeeSkipped && !cafeClosed && (coffeeLeg || data.cafe_busyness);
   
-  // v1.40: Calculate arrival time early for coffee header display
-  const earlyTotalMinutes = data.total_minutes || data.totalMinutes || data.journeyDuration || 20;
+  // v1.40: Calculate arrival time early for coffee header display.
+  // v5.9.1 (U2 / NEW-N18): Use nullish coalescing so a genuine 0 is respected.
+  // Previously `||` collapsed `0` → literal 20, producing a phantom "20 min"
+  // displayed alongside "NO COMMUTE TODAY" every Saturday and public holiday.
+  const earlyTotalMinutes = data.total_minutes ?? data.totalMinutes ?? data.journeyDuration ?? 0;
   let earlyNowMins = 0;
   if (data.current_time) {
     const earlyTimeMatch = data.current_time.match(/(\d+):(\d+)/);
@@ -2646,8 +2619,11 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   // STATUS BAR (V10 Spec Section 4) - Real-Time Arrival Amendment 2026-01-31
   // =========================================================================
   
-  // Calculate real-time arrival: current time + total journey duration
-  const totalMinutes = data.total_minutes || data.totalMinutes || data.journeyDuration || 20;
+  // Calculate real-time arrival: current time + total journey duration.
+  // v5.9.1 (U2 / NEW-N18): Nullish coalescing so 0 is respected and never
+  // collapses to the literal 20-minute fallback that produced the phantom
+  // "20 min" glyph on non-commute days.
+  const totalMinutes = data.total_minutes ?? data.totalMinutes ?? data.journeyDuration ?? 0;
   const targetArrival = data.arrive_by || data.arrivalTime || '09:00';
   
   // Parse current time from display data or use now
@@ -2826,13 +2802,20 @@ function _renderFullScreenCanvas(data, prefs = {}, displayWidth = REF_W, display
   const statusBarMidY = statusBarY + statusBarH / 2;
   const statusBarRight = displayWidth - Math.round(16 * sx);
 
-  // 1. Total journey time (always rightmost)
+  // 1. Total journey time (always rightmost).
+  // v5.9.1 (U2 / NEW-N18): Suppress the glyph entirely on non-commute days
+  // (or when totalMinutes is genuinely 0). Previously a hardcoded "20 min"
+  // was drawn alongside "NO COMMUTE TODAY" every Saturday. The renderer now
+  // skips the draw call when there is no meaningful duration to display.
+  const showTotalMinutes = data.isCommuteDay !== false && totalMinutes > 0;
   ctx.textAlign = 'right';
   ctx.font = `bold ${Math.max(11, Math.round(18 * fs))}px Inter, sans-serif`;
-  const statusRight = `${totalMinutes} min`;
-  const totalTimeWidth = ctx.measureText(statusRight).width;
-  ctx.fillText(statusRight, statusBarRight, statusBarMidY);
-  let rightBoundary = statusBarRight - totalTimeWidth - Math.round(10 * sx);
+  const statusRight = showTotalMinutes ? `${totalMinutes} min` : '';
+  const totalTimeWidth = showTotalMinutes ? ctx.measureText(statusRight).width : 0;
+  if (showTotalMinutes) {
+    ctx.fillText(statusRight, statusBarRight, statusBarMidY);
+  }
+  let rightBoundary = statusBarRight - totalTimeWidth - (showTotalMinutes ? Math.round(10 * sx) : 0);
 
   // 2. Disruption badge (if present) — positioned left of total time
   if (disruptionType) {

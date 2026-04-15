@@ -1,6 +1,6 @@
 {
   "name": "commute-compute",
-  "version": "5.8.2",
+  "version": "5.10.2",
   "description": "Commute Compute System - Smart Transit Dashboard for e-ink displays",
   "type": "module",
   "main": "src/server.js",
@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "node --test tests/test-redis-kv.js && node --test tests/test-render-smoke.js && node --test tests/test-screen-smoke.js && node --test tests/test-auth-middleware.js && node --test tests/test-opendata-client-unit.js",
+    "test": "node --test tests/test-redis-kv.js && node --test tests/test-render-smoke.js && node --test tests/test-screen-smoke.js && node --test tests/test-auth-middleware.js && node --test tests/test-opendata-client-unit.js && node --test tests/test-tram-cascade-selection.js",
     "monitor": "node monitor/monitor.mjs",
     "monitor:continuous": "node monitor/monitor.mjs --continuous",
     "monitor:watch": "node monitor/monitor.mjs --watch",

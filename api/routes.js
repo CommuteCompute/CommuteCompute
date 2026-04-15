@@ -121,10 +121,13 @@ export default async function handler(req, res) {
       });
     }
 
-    // GET — return station overrides if requested
+    // GET — return station overrides if requested.
+    // v5.9.0 (T8 / B10): Return both `overrides` and `stationOverrides` aliases
+    // so the admin panel can read from either key without drift. Both values
+    // come from the same cc:station_overrides KV entry so they can never differ.
     if (req.query?.getOverrides === 'true') {
       const overrides = await getStationOverrides() || {};
-      return res.status(200).json({ success: true, overrides });
+      return res.status(200).json({ success: true, overrides, stationOverrides: overrides });
     }
 
     // GET - discover and return all route alternatives

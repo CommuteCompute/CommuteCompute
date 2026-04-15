@@ -69,7 +69,10 @@ export default async function handler(req, res) {
     const detected = detectStopIdsFromAddress(address);
 
     if (detected) {
-      console.log(`[resolve-stops] Detected stops for "${address.substring(0, 40)}": ${detected.stationName || detected.tramStop}`);
+      // v5.9.1 (U9 / Section 1.1): diagnostic console.log removed —
+      // resolved stops are returned in the JSON response, which is the
+      // operator-visible surface; duplicating to the log stream is
+      // unnecessary and leaked home address prefixes.
       return res.json({
         success: true,
         detected: true,
@@ -78,7 +81,7 @@ export default async function handler(req, res) {
     }
 
     // Per Section 23.1.1: No match → null → system uses fallback timetable
-    console.log(`[resolve-stops] No suburb match for "${address.substring(0, 40)}" - fallback mode`);
+    // v5.9.1 (U9 / Section 1.1): diagnostic console.log removed.
     return res.json({
       success: true,
       detected: false,

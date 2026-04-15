@@ -1984,6 +1984,20 @@
                                                 <input type="text" id="edit-home-input" class="form-input" placeholder="Enter home address" style="margin-bottom: 8px;" autocomplete="off">
                                                 <div id="edit-home-suggestions" class="autocomplete-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#1e293b;border:1px solid #334155;border-radius:8px;max-height:200px;overflow-y:auto;z-index:100;"></div>
                                             </div>
+                                            <!-- v5.9.9 (EE2): optional direct-entry lat/lon escape hatch. If the
+                                                 server-side geocoder cannot resolve the address (free-tier providers
+                                                 rate-limit or block the serverless environment, see DEVELOPMENT-RULES.md
+                                                 §23.16), paste coordinates from any mapping service here and the
+                                                 admin preferences endpoint will write them verbatim to KV, bypassing
+                                                 the geocoder entirely. Leave both fields blank to fall through to
+                                                 the normal geocoding flow. -->
+                                            <details style="margin-bottom: 8px;">
+                                                <summary style="font-size: 11px; opacity: 0.7; cursor: pointer;">Optional: paste lat/lon to bypass geocoding</summary>
+                                                <div style="display: flex; gap: 8px; margin-top: 6px;">
+                                                    <input type="text" id="edit-home-lat" class="form-input" placeholder="latitude" style="flex: 1; font-size: 12px;" autocomplete="off">
+                                                    <input type="text" id="edit-home-lon" class="form-input" placeholder="longitude" style="flex: 1; font-size: 12px;" autocomplete="off">
+                                                </div>
+                                            </details>
                                             <div style="display: flex; gap: 8px;">
                                                 <button onclick="saveFieldEdit('home')" class="btn btn-success" style="padding: 6px 12px; font-size: 12px;"><svg class="icon-sm"><use href="#icon-check-circle"/></svg> Save</button>
                                                 <button onclick="cancelFieldEdit('home')" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">[X] Cancel</button>
@@ -2015,6 +2029,14 @@
                                                     <input type="text" id="edit-cafe-input" class="form-input" placeholder="Enter cafe name/address" style="margin-bottom: 8px;" autocomplete="off">
                                                     <div id="edit-cafe-suggestions" class="autocomplete-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#1e293b;border:1px solid #334155;border-radius:8px;max-height:200px;overflow-y:auto;z-index:100;"></div>
                                                 </div>
+                                                <!-- v5.9.9 (EE2): optional direct-entry lat/lon escape hatch -->
+                                                <details style="margin-bottom: 8px;">
+                                                    <summary style="font-size: 11px; opacity: 0.7; cursor: pointer;">Optional: paste lat/lon to bypass geocoding</summary>
+                                                    <div style="display: flex; gap: 8px; margin-top: 6px;">
+                                                        <input type="text" id="edit-cafe-lat" class="form-input" placeholder="latitude" style="flex: 1; font-size: 12px;" autocomplete="off">
+                                                        <input type="text" id="edit-cafe-lon" class="form-input" placeholder="longitude" style="flex: 1; font-size: 12px;" autocomplete="off">
+                                                    </div>
+                                                </details>
                                                 <div style="display: flex; gap: 8px;">
                                                     <button onclick="saveFieldEdit('cafe')" class="btn btn-success" style="padding: 6px 12px; font-size: 12px;"><svg class="icon-sm"><use href="#icon-check-circle"/></svg> Save</button>
                                                     <button onclick="cancelFieldEdit('cafe')" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">[X] Cancel</button>
@@ -2039,6 +2061,14 @@
                                                 <input type="text" id="edit-work-input" class="form-input" placeholder="Enter work address" style="margin-bottom: 8px;" autocomplete="off">
                                                 <div id="edit-work-suggestions" class="autocomplete-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#1e293b;border:1px solid #334155;border-radius:8px;max-height:200px;overflow-y:auto;z-index:100;"></div>
                                             </div>
+                                            <!-- v5.9.9 (EE2): optional direct-entry lat/lon escape hatch -->
+                                            <details style="margin-bottom: 8px;">
+                                                <summary style="font-size: 11px; opacity: 0.7; cursor: pointer;">Optional: paste lat/lon to bypass geocoding</summary>
+                                                <div style="display: flex; gap: 8px; margin-top: 6px;">
+                                                    <input type="text" id="edit-work-lat" class="form-input" placeholder="latitude" style="flex: 1; font-size: 12px;" autocomplete="off">
+                                                    <input type="text" id="edit-work-lon" class="form-input" placeholder="longitude" style="flex: 1; font-size: 12px;" autocomplete="off">
+                                                </div>
+                                            </details>
                                             <div style="display: flex; gap: 8px;">
                                                 <button onclick="saveFieldEdit('work')" class="btn btn-success" style="padding: 6px 12px; font-size: 12px;"><svg class="icon-sm"><use href="#icon-check-circle"/></svg> Save</button>
                                                 <button onclick="cancelFieldEdit('work')" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">[X] Cancel</button>
@@ -2103,6 +2133,35 @@
                         </div>
                     </div>
                     
+                    <!-- v5.9.0 (T8 / B10 + B12): Resolved inputs panel.
+                         Surfaces the stops, routes and lines the CC engine is
+                         actually using so drift between the config above and
+                         the rendered dashboard is visible. Populated from the
+                         most recent /api/commutecompute response (_liveDataDiag).
+                    -->
+                    <div id="resolved-inputs-panel" style="margin-top: 20px; padding: 16px; background: rgba(15, 23, 42, 0.45); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 10px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <svg class="icon-sm"><use href="#icon-info"/></svg>
+                            <strong style="font-size: 13px; color: #f1f5f9;">Resolved inputs (engine will use)</strong>
+                        </div>
+                        <div id="resolved-inputs-content" style="font-size: 12px; color: #cbd5e1; line-height: 1.6;">
+                            <div>Train station: <span id="resolved-train-stop">—</span></div>
+                            <div>Preferred train line: <span id="resolved-train-line">—</span></div>
+                            <div>Tram stop: <span id="resolved-tram-stop">—</span></div>
+                            <div>Preferred tram route: <span id="resolved-tram-route">—</span> <span id="resolved-tram-confidence-badge" style="display: none; margin-left: 6px; font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600;"></span></div>
+                            <div>Bus stop: <span id="resolved-bus-stop">—</span></div>
+                            <div>Detection source: <span id="resolved-detection-source">—</span></div>
+                            <div id="resolved-tram-match-tier-row" style="display: none;">Tram match tier: <span id="resolved-tram-match-tier">—</span></div>
+                            <div id="resolved-tram-feed-ids-row" style="display: none;">Feed stop IDs (15 m identity): <span id="resolved-tram-feed-ids">—</span></div>
+                        </div>
+                        <!-- v5.9.2 (X6): Low-confidence warning strip. Shown ONLY when
+                             tram route identification fell to coord-proximity-only. -->
+                        <div id="resolved-tram-low-confidence-warning" style="display: none; margin-top: 10px; padding: 10px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; font-size: 11px; color: #fca5a5;">
+                            <strong>Low-confidence tram route</strong> — the live feed has no stop-level or 15 m coordinate-identity match for this stop. The selected route was chosen from trams passing within 300 m, which may include routes from parallel streets. Verify against <a href="https://transport.vic.gov.au/departures" target="_blank" rel="noopener" style="color: #fbbf24;">Transport Victoria</a> or <a href="https://www.tramtracker.com.au/" target="_blank" rel="noopener" style="color: #fbbf24;">TramTracker</a>.
+                        </div>
+                        <div id="resolved-candidates" style="margin-top: 10px; font-size: 11px; color: #94a3b8;"></div>
+                    </div>
+
                     <!-- Save All Changes Message -->
                     <div id="inline-edit-message" aria-live="polite" role="status" style="display: none; margin-top: 16px; padding: 12px; border-radius: 8px; font-size: 13px;"></div>
                 </div>
@@ -2790,6 +2849,20 @@
                         </div>
                     </div>
 
+                    <!-- v5.9.0: Disruption Alerts Card -->
+                    <div id="disruption-alerts-card" class="card" style="display: none; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 20px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); display: flex; align-items: center; justify-content: center;">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            </div>
+                            <div>
+                                <h3 style="font-size: 16px; font-weight: 600; color: #ef4444; margin: 0;">Travel Alerts</h3>
+                                <span style="font-size: 12px; color: #cbd5e1;" id="disruption-count">Active disruptions</span>
+                            </div>
+                        </div>
+                        <div id="disruption-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                    </div>
+
                     <!-- Weather Card -->
                     <div class="card" style="background: rgba(30, 41, 59, 0.8); border-radius: 12px; padding: 20px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
@@ -3288,7 +3361,7 @@
                     A fully self-hosted smart transit display system for Australian public transport. Each user deploys their own complete stack with zero external dependencies. Features device pairing via Redis for persistent configuration across serverless invocations.
                 </p>
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    <span id="cc-badge-system-version" style="padding: 6px 14px; background: rgba(79, 178, 142, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #4fb28e;">v5.8.2</span>
+                    <span id="cc-badge-system-version" style="padding: 6px 14px; background: rgba(79, 178, 142, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #4fb28e;">v5.10.2</span>
                     <span id="cc-badge-renderer-version" style="padding: 6px 14px; background: rgba(102, 126, 234, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #667eea;">CCDash&#8482; v3.2</span>
                     <span id="cc-badge-firmware-version" style="padding: 6px 14px; background: rgba(251, 191, 36, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #fbbf24;">CCFirm&#8482; CC-FW-8.1.0</span>
                     <span style="padding: 6px 14px; background: rgba(168, 85, 247, 0.2); border-radius: 20px; font-size: 12px; font-weight: 600; color: #a855f7;">Redis</span>
@@ -3811,7 +3884,7 @@
                     </h3>
                     <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; background: rgba(0,0,0,0.3); padding: 16px; border-radius: 6px; overflow-x: auto;">
                         <pre style="margin: 0; color: #cbd5e1; line-height: 1.5;">
-                               <span style="color: #4fb28e;">COMMUTE COMPUTE SYSTEM ARCHITECTURE v5.8.2</span>
+                               <span style="color: #4fb28e;">COMMUTE COMPUTE SYSTEM ARCHITECTURE v5.10.2</span>
 
     <span style="color: #fbbf24;">USER SETUP</span>                        <span style="color: #a855f7;">PERSISTENT STORAGE</span>                    <span style="color: #667eea;">DEVICE</span>
         |                                      |                                   |
@@ -3965,7 +4038,7 @@
                 </div>
                 <div style="display: grid; gap: 10px; font-size: 13px; color: #cbd5e1; line-height: 1.6;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="padding: 3px 8px; background: rgba(79, 178, 142, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #4fb28e;">v5.8.2</span>
+                        <span style="padding: 3px 8px; background: rgba(79, 178, 142, 0.2); border-radius: 6px; font-size: 11px; font-weight: 600; color: #4fb28e;">v5.10.2</span>
                         <strong>docs/ARCHITECTURE.md</strong> — Complete system architecture (20+ sections)
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -4030,7 +4103,7 @@
                     </div>
                     <div style="padding: 15px; background: rgba(236, 72, 153, 0.15); border-radius: 8px; text-align: center;">
                         <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">System Version</div>
-                        <div id="cc-grid-system-version" style="font-size: 20px; font-weight: 700; color: #ec4899;">v5.8.2</div>
+                        <div id="cc-grid-system-version" style="font-size: 20px; font-weight: 700; color: #ec4899;">v5.10.2</div>
                     </div>
                 </div>
 
@@ -5730,7 +5803,24 @@
                     } else {
                         document.getElementById('weather-display').innerHTML = '<div class="no-data">Weather data unavailable</div>';
                     }
-                    
+
+                    // v5.9.0: Update disruption alerts
+                    const disruptionCard = document.getElementById('disruption-alerts-card');
+                    const disruptionList = document.getElementById('disruption-list');
+                    const disruptionCount = document.getElementById('disruption-count');
+                    if (scData.disruptions && scData.disruptions.length > 0) {
+                        disruptionCard.style.display = 'block';
+                        disruptionCount.textContent = `${scData.disruptions.length} active alert${scData.disruptions.length > 1 ? 's' : ''}`;
+                        disruptionList.innerHTML = scData.disruptions.map(d => `
+                            <div style="padding: 10px; background: rgba(239,68,68,0.08); border-radius: 8px;">
+                                <div style="font-weight: 600; font-size: 13px; color: #f1f5f9;">${sanitize(d.title)}</div>
+                                ${d.description ? `<div style="font-size: 12px; color: #cbd5e1; margin-top: 4px;">${sanitize(d.description.substring(0, 150))}${d.description.length > 150 ? '...' : ''}</div>` : ''}
+                            </div>
+                        `).join('');
+                    } else {
+                        disruptionCard.style.display = 'none';
+                    }
+
                     // Update coffee decision
                     updateCoffeeFromCommuteCompute(scData.coffee, scData.summary);
                     
@@ -5902,8 +5992,13 @@
                             <div style="font-size: 24px; font-weight: 700; color: #667eea;">${sanitize(String(tramLeg.minutes))}<span style="font-size: 12px; font-weight: 400; color: #cbd5e1;"> min</span></div>
                         </div>
                     </div>`;
-            } else if (scData.raw?.transit?.trams?.length > 0) {
-                const nextTram = scData.raw.transit.trams[0];
+            } else if ((scData._processedTransit?.trams?.length > 0) || (scData.raw?.transit?.trams?.length > 0)) {
+                // v5.9.0: Prefer route-filtered _processedTransit over raw feed data.
+                // Raw feed may contain departures from a different route at the same stop.
+                const tramSource = scData._processedTransit?.trams?.length > 0
+                    ? scData._processedTransit.trams
+                    : scData.raw.transit.trams;
+                const nextTram = tramSource[0];
                 tramEl.innerHTML = `
                     <div style="display: flex; flex-direction: column; gap: 12px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
@@ -6766,6 +6861,10 @@
         async function loadJourneySummary() {
             try {
                 const journey = await authFetch(BASE_URL + '/api/routes').then(r => r.json());
+                // v5.9.0 (T8): Cache latest /api/routes response so the Resolved
+                // Inputs panel can show preferredTramRoute / stationOverrides.
+                window.ccLatestRoutes = journey || null;
+                try { updateResolvedInputsPanel(); } catch (e) { /* non-fatal */ }
                 if (journey?.success && journey?.route) {
                     document.getElementById('journey-summary-card').style.display = 'block';
 
@@ -7070,8 +7169,108 @@
             
             // Update CommuteCompute status based on API validation
             updateCommuteComputeStatus(prefs);
+            // v5.9.0 (T8): populate the Resolved Inputs panel from the latest
+            // _liveDataDiag snapshot so drift between the user's config and
+            // the engine's chosen stops/routes is immediately visible.
+            try { updateResolvedInputsPanel(); } catch (e) { /* non-fatal */ }
         }
-        
+
+        /**
+         * v5.9.0 (T8 / B10 + B12): Populate the Resolved Inputs panel from
+         * window.ccLatestDiag (which is set by the /api/commutecompute fetch
+         * at line ~5707). Shows the engine-chosen train/tram/bus stops, the
+         * preferred tram route, preferred train line, and top-3 nearest
+         * candidate stations with distances so the user can see exactly why
+         * the engine picked what it did.
+         */
+        function updateResolvedInputsPanel() {
+            const diag = window.ccLatestDiag;
+            if (!diag) return;
+            const setText = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value || '—';
+            };
+            const trainLabel = diag.trainStopName
+                ? `${sanitize(diag.trainStopName)} (${sanitize(diag.trainStopId || '')})`
+                : (diag.trainStopId ? sanitize(diag.trainStopId) : '—');
+            const tramLabel = diag.tramStopName
+                ? `${sanitize(diag.tramStopName)} (${sanitize(diag.tramStopId || '')})`
+                : (diag.tramStopId ? sanitize(diag.tramStopId) : '—');
+            setText('resolved-train-stop', trainLabel);
+            setText('resolved-train-line', diag.preferredTrainLine || '—');
+            setText('resolved-tram-stop', tramLabel);
+            setText('resolved-tram-route', window.ccLatestRoutes?.preferredTramRoute || '—');
+            setText('resolved-bus-stop', diag.busStopId || '—');
+            setText('resolved-detection-source', diag.stopDetectionSource || '—');
+
+            // v5.9.2 (X6): tram route selection confidence badge + low-confidence warning
+            const confidence = diag.tramRouteSelectionConfidence;
+            const badgeEl = document.getElementById('resolved-tram-confidence-badge');
+            const warningEl = document.getElementById('resolved-tram-low-confidence-warning');
+            if (badgeEl) {
+                if (confidence) {
+                    badgeEl.style.display = 'inline-block';
+                    const confLabels = {
+                        'exact-stop-id':        { label: 'EXACT',    bg: '#065f46', fg: '#d1fae5' },
+                        'lenient-scan':         { label: 'LENIENT',  bg: '#065f46', fg: '#d1fae5' },
+                        'coord-identity':       { label: 'IDENTITY', bg: '#065f46', fg: '#d1fae5' },
+                        'route-level':          { label: 'ROUTE',    bg: '#78350f', fg: '#fde68a' },
+                        'coord-proximity-only': { label: 'PROXIMITY', bg: '#7f1d1d', fg: '#fecaca' }
+                    };
+                    const cfg = confLabels[confidence] || { label: confidence.toUpperCase(), bg: '#334155', fg: '#cbd5e1' };
+                    badgeEl.textContent = cfg.label;
+                    badgeEl.style.background = cfg.bg;
+                    badgeEl.style.color = cfg.fg;
+                } else {
+                    badgeEl.style.display = 'none';
+                }
+            }
+            if (warningEl) {
+                warningEl.style.display = (confidence === 'coord-proximity-only') ? 'block' : 'none';
+            }
+
+            // v5.9.2 (X6): Match tier + feed stop IDs rows
+            const matchTierRow = document.getElementById('resolved-tram-match-tier-row');
+            const matchTierEl = document.getElementById('resolved-tram-match-tier');
+            if (matchTierEl && matchTierRow) {
+                if (diag.tramMatchTier) {
+                    matchTierRow.style.display = 'block';
+                    matchTierEl.textContent = diag.tramMatchTier;
+                } else {
+                    matchTierRow.style.display = 'none';
+                }
+            }
+            const feedIdsRow = document.getElementById('resolved-tram-feed-ids-row');
+            const feedIdsEl = document.getElementById('resolved-tram-feed-ids');
+            if (feedIdsEl && feedIdsRow) {
+                const ids = Array.isArray(diag.tramFeedStopIdsResolved) ? diag.tramFeedStopIdsResolved : [];
+                if (ids.length > 0) {
+                    feedIdsRow.style.display = 'block';
+                    feedIdsEl.textContent = ids.map(id => sanitize(String(id))).join(', ');
+                } else {
+                    feedIdsRow.style.display = 'none';
+                }
+            }
+
+            const candidatesEl = document.getElementById('resolved-candidates');
+            if (candidatesEl) {
+                const lines = [];
+                if (Array.isArray(diag.nearestTrainCandidates) && diag.nearestTrainCandidates.length > 0) {
+                    const list = diag.nearestTrainCandidates
+                        .map(c => `${sanitize(c.name)} (${c.distanceM}&#x202F;m)`)
+                        .join(', ');
+                    lines.push(`<div>Nearest train candidates: ${list}</div>`);
+                }
+                if (Array.isArray(diag.nearestTramCandidates) && diag.nearestTramCandidates.length > 0) {
+                    const list = diag.nearestTramCandidates
+                        .map(c => `${sanitize(c.name)} (${c.distanceM}&#x202F;m)`)
+                        .join(', ');
+                    lines.push(`<div>Nearest tram candidates: ${list}</div>`);
+                }
+                candidatesEl.innerHTML = lines.join('');
+            }
+        }
+
         // Update CommuteCompute status banner
         function updateCommuteComputeStatus(prefs, liveStatus) {
             const banner = document.getElementById('commutecompute-status-banner');
@@ -7625,13 +7824,46 @@
 
             cancelFieldEdit(field);
 
-            // Persist to KV via API (geocodes addresses using pre-configured keys)
+            // v5.9.9 (EE2): optional direct-entry lat/lon escape hatch.
+            // When both lat and lon inputs are populated with parseable
+            // finite numbers, include them in the POST body. The server-
+            // side EE1 handler will skip the geocoder entirely and write
+            // the caller-supplied coord verbatim. If either field is
+            // empty or invalid, fall through to the normal geocoding
+            // flow by omitting lat/lon from the body.
+            var directLat = null;
+            var directLon = null;
+            if (['home', 'work', 'cafe'].includes(field)) {
+                var latEl = document.getElementById('edit-' + field + '-lat');
+                var lonEl = document.getElementById('edit-' + field + '-lon');
+                if (latEl && lonEl) {
+                    var latRaw = (latEl.value || '').trim();
+                    var lonRaw = (lonEl.value || '').trim();
+                    if (latRaw !== '' && lonRaw !== '') {
+                        var latNum = Number(latRaw);
+                        var lonNum = Number(lonRaw);
+                        if (Number.isFinite(latNum) && Number.isFinite(lonNum) &&
+                            Math.abs(latNum) <= 90 && Math.abs(lonNum) <= 180) {
+                            directLat = latNum;
+                            directLon = lonNum;
+                        }
+                    }
+                }
+            }
+
+            // Persist to KV via API (geocodes addresses using pre-configured keys,
+            // or uses caller-supplied direct coord when v5.9.9 EE1 lat/lon provided)
             try {
                 showInlineEditMessage('Saving to server...', 'info');
+                var postBody = { field: field, value: value };
+                if (directLat !== null && directLon !== null) {
+                    postBody.lat = directLat;
+                    postBody.lon = directLon;
+                }
                 var resp = await authFetch(BASE_URL + '/api/admin/preferences', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ field: field, value: value })
+                    body: JSON.stringify(postBody)
                 });
                 var data = await resp.json();
                 if (data.success) {
@@ -10648,7 +10880,7 @@
                     const rendererVersion = v.components?.renderer?.version || 'v3.2';
                     const firmwareVersion = v.components?.firmware?.version || 'CC-FW-8.1.0';
                     const buildDate = v.date || new Date().toISOString().split('T')[0];
-                    const systemVersion = v.system?.version || '5.8.2';
+                    const systemVersion = v.system?.version || '5.10.2';
 
                     // Global footer
                     document.getElementById('cc-footer-commutecompute-version').textContent = scVersion;
@@ -10693,7 +10925,7 @@
                     document.getElementById('cc-footer-commutecompute-version').textContent = 'v4.1';
                     document.getElementById('cc-footer-renderer-version').textContent = 'v3.2';
                     document.getElementById('cc-footer-build-date').textContent = new Date().toISOString().split('T')[0];
-                    document.getElementById('cc-footer-system-version').textContent = 'v5.8.2';
+                    document.getElementById('cc-footer-system-version').textContent = 'v5.10.2';
                 });
         }
 
@@ -10794,7 +11026,7 @@
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">System</span>
-                    <span class="cc-footer-version-value" id="cc-footer-system-version">v5.8.2</span>
+                    <span class="cc-footer-version-value" id="cc-footer-system-version">v5.10.2</span>
                 </div>
                 <div class="cc-footer-version-item">
                     <span class="cc-footer-version-label">Build</span>

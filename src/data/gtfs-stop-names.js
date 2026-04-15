@@ -209,6 +209,86 @@ const STATE_SUBURB_STOPS = {
 };
 
 /**
+ * v5.9.6 (BB1): Resolve a metro station code (e.g. a 3-letter station
+ * identifier from VIC_METRO_STATIONS) to representative latitude/longitude
+ * coordinates. Used when a user applies a station override via
+ * `cc:station_overrides` — the override must be treated as a first-class
+ * engine input so downstream walk-leg computations use the correct target
+ * coordinates, not the stale home-nearest station coordinates.
+ *
+ * Turnkey across every VIC metro station present in the static dataset.
+ * Zero hardcoded station codes, names, or suburb identifiers — the lookup
+ * iterates the dataset by the caller-supplied code. If the code is absent
+ * from VIC_METRO_STATIONS or lacks coordinates (and cannot be resolved via
+ * its first platform ID), the function returns null and callers fall back
+ * to their existing auto-detect path.
+ *
+ * @param {string} stationCode - Station identifier key in VIC_METRO_STATIONS
+ * @returns {{ lat: number, lon: number }|null}
+ */
+export function lookupMetroStationCoords(stationCode) {
+  if (!stationCode) return null;
+  const entry = VIC_METRO_STATIONS[stationCode];
+  if (!entry) return null;
+  if (entry.lat != null && entry.lon != null) {
+    return { lat: entry.lat, lon: entry.lon };
+  }
+  // Fallback: resolve the first platform identifier to a stop in the coord
+  // dataset. Handles legacy entries that lack direct lat/lon fields.
+  const firstPlatform = entry.platforms?.[0];
+  if (firstPlatform) {
+    const stop = VIC_TRAM_STOPS_WITH_COORDS.find(s => s.id === firstPlatform);
+    if (stop?.lat != null && stop?.lon != null) {
+      return { lat: stop.lat, lon: stop.lon };
+    }
+  }
+  return null;
+}
+
+/**
+ * v5.9.6 (BB1): Find the closest tram stop to a target coordinate. Used
+ * when a station override changes the user's alighting point — the engine
+ * must re-select the tram stop nearest to the new target (train station,
+ * in practice) so the walk leg between tram and train is minimised and
+ * the rendered walk duration is accurate.
+ *
+ * Pure geographic search — iterates VIC_TRAM_STOPS_WITH_COORDS and returns
+ * the entry with the smallest haversine distance within `maxRadiusMetres`.
+ * Route membership is deliberately NOT enforced here because the static
+ * dataset does not store per-stop route associations; the engine's
+ * downstream GTFS-RT cascade re-verifies route membership at runtime via
+ * the live feed. This keeps the helper turnkey across the entire tram
+ * network and avoids fragile name-pattern heuristics.
+ *
+ * @param {number} lat - Target latitude (typically a train station)
+ * @param {number} lon - Target longitude
+ * @param {Object} options - { maxRadiusMetres = 500 }
+ * @returns {{ id, name, lat, lon, distance }|null}
+ */
+export function findNearestTramStopNearCoords(lat, lon, options = {}) {
+  if (lat == null || lon == null) return null;
+  const maxRadiusMetres = options.maxRadiusMetres || 500;
+  let nearest = null;
+  let nearestDist = Infinity;
+  for (const stop of VIC_TRAM_STOPS_WITH_COORDS) {
+    if (stop.lat == null || stop.lon == null) continue;
+    const dist = haversine(lat, lon, stop.lat, stop.lon);
+    if (dist > maxRadiusMetres) continue;
+    if (dist < nearestDist) {
+      nearest = {
+        id: stop.id,
+        name: cleanStopName(stop.name),
+        lat: stop.lat,
+        lon: stop.lon,
+        distance: Math.round(dist)
+      };
+      nearestDist = dist;
+    }
+  }
+  return nearest;
+}
+
+/**
  * Find nearest stops by coordinates from GTFS reference data
  * Searches VIC_METRO_STATIONS (with coords), VIC_TRAM_STOPS_WITH_COORDS,
  * and VIC_BUS_STOPS_WITH_COORDS for the closest stop of each mode.
@@ -216,18 +296,35 @@ const STATE_SUBURB_STOPS = {
  * @param {number} lat - Latitude
  * @param {number} lon - Longitude
  * @param {Object} options - { radiusMeters: 1500 }
- * @returns {Object} { train: { id, name, distance, platforms }, tram: { id, name, distance }, bus: { id, name, distance } }
+ * @returns {Object} { train: { id, name, lat, lon, distance, platforms }, tram: { id, name, lat, lon, distance, routeNumber }, bus: { id, name, lat, lon, distance } }
+ *
+ * v5.9.1 (U1 / CR-1): lat/lon fields MUST be included on every returned stop.
+ * The v5.9.0 dynamic route engine (src/engines/dynamic-routes.js) reads
+ * `.lat`/`.lon` off these objects to compute haversine walk legs. Omitting
+ * them causes every route template to abort and the rendered dashboard to
+ * display an empty journey area.
  */
 export function findNearestStops(lat, lon, options = {}) {
   const radius = options.radiusMeters || 1500;
   const result = {};
+  // v5.9.8 (DD3): collect all train candidates within the radius so the
+  // winning margin can be surfaced in diagnostics. Purely observability —
+  // the actual min-distance selection is unchanged and lives in the loop
+  // below. A 27 m margin between two nearby stations is catastrophically
+  // wrong when the input coord itself is drifting; exposing the margin
+  // lets the admin panel and verification swarm spot such flips before
+  // they affect routing decisions.
+  const _trainCandidates = [];
 
   // Train: search VIC_METRO_STATIONS (now with coords)
   for (const [code, station] of Object.entries(VIC_METRO_STATIONS)) {
     if (!station.lat || !station.lon) continue;
     const dist = haversine(lat, lon, station.lat, station.lon);
-    if (dist <= radius && (!result.train || dist < result.train.distance)) {
-      result.train = { id: code, name: cleanStopName(station.name), distance: dist, platforms: station.platforms };
+    if (dist <= radius) {
+      _trainCandidates.push({ id: code, name: cleanStopName(station.name), distance: dist });
+      if (!result.train || dist < result.train.distance) {
+        result.train = { id: code, name: cleanStopName(station.name), lat: station.lat, lon: station.lon, distance: dist, platforms: station.platforms };
+      }
     }
   }
 
@@ -242,7 +339,7 @@ export function findNearestStops(lat, lon, options = {}) {
       const routeMatch = stop.name?.match(/#(\d+)/);
       const routeNum = routeMatch?.[1] || 'unknown';
       if (!tramByRoute[routeNum] || dist < tramByRoute[routeNum].distance) {
-        tramByRoute[routeNum] = { id: stop.id, name: cleanStopName(stop.name), distance: dist, routeNumber: routeNum === 'unknown' ? null : routeNum };
+        tramByRoute[routeNum] = { id: stop.id, name: cleanStopName(stop.name), lat: stop.lat, lon: stop.lon, distance: dist, routeNumber: routeNum === 'unknown' ? null : routeNum };
       }
     }
   }
@@ -258,8 +355,29 @@ export function findNearestStops(lat, lon, options = {}) {
   for (const stop of VIC_BUS_STOPS_WITH_COORDS) {
     const dist = haversine(lat, lon, stop.lat, stop.lon);
     if (dist <= radius && (!result.bus || dist < result.bus.distance)) {
-      result.bus = { id: stop.id, name: cleanStopName(stop.name), distance: dist };
+      result.bus = { id: stop.id, name: cleanStopName(stop.name), lat: stop.lat, lon: stop.lon, distance: dist };
     }
+  }
+
+  // v5.9.8 (DD3): pure-observability debug block — winning margin between
+  // the top train candidate and the second-nearest. A small margin combined
+  // with a large input-coord drift (see DD1/DD2) is the fingerprint of the
+  // v5.9.7-era bug where a corrupt stored home coord flipped the preferred
+  // station. Diagnostic only; no routing decision reads this field.
+  if (_trainCandidates.length > 0) {
+    const sorted = _trainCandidates.slice().sort((a, b) => a.distance - b.distance);
+    const top = sorted[0];
+    const second = sorted[1] || null;
+    result._debug = {
+      train: {
+        winnerId: top.id,
+        winnerDistanceM: Math.round(top.distance),
+        secondId: second?.id || null,
+        secondDistanceM: second ? Math.round(second.distance) : null,
+        marginM: second ? Math.round(second.distance - top.distance) : null,
+        candidateCount: _trainCandidates.length
+      }
+    };
   }
 
   return result;
@@ -273,7 +391,11 @@ export function findNearestStops(lat, lon, options = {}) {
  * @param {number} lat - Latitude
  * @param {number} lon - Longitude
  * @param {Object} options - { radiusMeters: 1500, count: 3 }
- * @returns {Object} { train: [{ id, name, distance, platforms }], tram: [{ id, name, distance }], bus: [{ id, name, distance }] }
+ * @returns {Object} { train: [{ id, name, lat, lon, distance, platforms }], tram: [{ id, name, lat, lon, distance }], bus: [{ id, name, lat, lon, distance }] }
+ *
+ * v5.9.1 (U1 / CR-1): lat/lon fields MUST be included on every entry so the
+ * dynamic route engine (src/engines/dynamic-routes.js) can read them when
+ * resolving location tokens. Same invariant as findNearestStops above.
  */
 export function findNearestStopsMultiple(lat, lon, options = {}) {
   const radius = options.radiusMeters || 1500;
@@ -287,7 +409,7 @@ export function findNearestStopsMultiple(lat, lon, options = {}) {
     if (!station.lat || !station.lon) continue;
     const dist = haversine(lat, lon, station.lat, station.lon);
     if (dist <= radius) {
-      trains.push({ id: code, name: cleanStopName(station.name), distance: Math.round(dist), platforms: station.platforms });
+      trains.push({ id: code, name: cleanStopName(station.name), lat: station.lat, lon: station.lon, distance: Math.round(dist), platforms: station.platforms });
     }
   }
 
@@ -295,7 +417,7 @@ export function findNearestStopsMultiple(lat, lon, options = {}) {
   for (const stop of VIC_TRAM_STOPS_WITH_COORDS) {
     const dist = haversine(lat, lon, stop.lat, stop.lon);
     if (dist <= radius) {
-      trams.push({ id: stop.id, name: cleanStopName(stop.name), distance: Math.round(dist) });
+      trams.push({ id: stop.id, name: cleanStopName(stop.name), lat: stop.lat, lon: stop.lon, distance: Math.round(dist) });
     }
   }
 
@@ -303,7 +425,7 @@ export function findNearestStopsMultiple(lat, lon, options = {}) {
   for (const stop of VIC_BUS_STOPS_WITH_COORDS) {
     const dist = haversine(lat, lon, stop.lat, stop.lon);
     if (dist <= radius) {
-      buses.push({ id: stop.id, name: cleanStopName(stop.name), distance: Math.round(dist) });
+      buses.push({ id: stop.id, name: cleanStopName(stop.name), lat: stop.lat, lon: stop.lon, distance: Math.round(dist) });
     }
   }
 

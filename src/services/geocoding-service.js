@@ -45,6 +45,22 @@ class GeocodingService {
    * @param {object} options - { country: 'AU', bias: { lat, lon }, type: 'address'|'business' }
    * @returns {object} { lat, lon, formattedAddress, source }
    */
+  // v5.9.0: Fetch with timeout to prevent indefinite hangs when a geocoding
+  // service is unresponsive. AbortController-based — no external deps needed.
+  async _fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      if (response.status === 429) {
+        throw new Error('Rate limited (HTTP 429)');
+      }
+      return response;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async geocode(address, options = {}) {
     // Check cache first
     const cacheKey = `${address}:${options.country || 'AU'}:${options.type || 'address'}`;
@@ -106,7 +122,24 @@ class GeocodingService {
           break;
         }
       } catch (error) {
-        attempts.push({ service: service.name, success: false, error: error.message });
+        const isRateLimit = error.message?.includes('429') || error.message?.includes('rate');
+        const isConfigError = error.message?.includes('not configured') || error.message?.includes('API key');
+        attempts.push({ service: service.name, success: false, error: error.message, rateLimited: isRateLimit });
+        // v5.9.0: Retry once with backoff for transient errors (timeouts, 5xx).
+        // Skip retry for config errors (missing keys) and rate limits.
+        if (!isConfigError && !isRateLimit) {
+          try {
+            await new Promise(r => setTimeout(r, 1000));
+            result = await service.fn();
+            if (result && result.lat && result.lon) {
+              result.source = service.name;
+              attempts.push({ service: service.name, success: true, retry: true });
+              break;
+            }
+          } catch (retryErr) {
+            attempts.push({ service: service.name, success: false, error: retryErr.message, retry: true });
+          }
+        }
       }
     }
 
@@ -157,7 +190,7 @@ class GeocodingService {
     //   };
     // }
 
-    const response = await fetch(url, {
+    const response = await this._fetchWithTimeout(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -218,7 +251,7 @@ class GeocodingService {
       url += `&proximity=${bias.lon},${bias.lat}`;
     }
 
-    const response = await fetch(url);
+    const response = await this._fetchWithTimeout(url);
     const data = await response.json();
 
     if (data.features && data.features.length > 0) {
@@ -243,7 +276,7 @@ class GeocodingService {
 
     const url = `https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(query)}&in=countryCode:${country}&apiKey=${this.hereApiKey}`;
 
-    const response = await fetch(url);
+    const response = await this._fetchWithTimeout(url);
     const data = await response.json();
 
     if (data.items && data.items.length > 0) {
@@ -272,7 +305,7 @@ class GeocodingService {
       url += `&ll=${bias.lat},${bias.lon}`;
     }
 
-    const response = await fetch(url, {
+    const response = await this._fetchWithTimeout(url, {
       headers: {
         'Authorization': this.foursquareApiKey,
         'Accept': 'application/json'
@@ -304,7 +337,7 @@ class GeocodingService {
 
     const url = `https://us1.locationiq.com/v1/search.php?key=${this.locationIqKey}&q=${encodeURIComponent(query)}&countrycodes=${country.toLowerCase()}&format=json&limit=1`;
 
-    const response = await fetch(url);
+    const response = await this._fetchWithTimeout(url);
     const data = await response.json();
 
     if (data && data.length > 0) {
@@ -325,7 +358,7 @@ class GeocodingService {
   async geocodeNominatim(query, country) {
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}, ${country}&limit=1&addressdetails=1`;
 
-    const response = await fetch(url, {
+    const response = await this._fetchWithTimeout(url, {
       headers: {
         'User-Agent': 'Commute Compute/1.0 (Educational; Contact: gitlab.com/angusbergman)'
       }
@@ -462,7 +495,7 @@ class GeocodingService {
 
     const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${this.googlePlacesKey}`;
 
-    const response = await fetch(url);
+    const response = await this._fetchWithTimeout(url);
     const data = await response.json();
 
     if (data.status === 'OK' && data.results && data.results.length > 0) {
@@ -484,7 +517,7 @@ class GeocodingService {
 
     const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${this.mapboxToken}`;
 
-    const response = await fetch(url);
+    const response = await this._fetchWithTimeout(url);
     const data = await response.json();
 
     if (data.features && data.features.length > 0) {
@@ -506,7 +539,7 @@ class GeocodingService {
 
     const url = `https://revgeocode.search.hereapi.com/v1/revgeocode?at=${lat},${lon}&apiKey=${this.hereApiKey}`;
 
-    const response = await fetch(url);
+    const response = await this._fetchWithTimeout(url);
     const data = await response.json();
 
     if (data.items && data.items.length > 0) {
@@ -524,7 +557,7 @@ class GeocodingService {
   async reverseGeocodeNominatim(lat, lon) {
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`;
 
-    const response = await fetch(url, {
+    const response = await this._fetchWithTimeout(url, {
       headers: {
         'User-Agent': 'Commute Compute/1.0 (Educational; Contact: gitlab.com/angusbergman)'
       }

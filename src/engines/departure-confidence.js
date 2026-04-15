@@ -106,7 +106,7 @@ class DepartureConfidence {
     const timeBuffer = isTomorrowCommute ? TIME_BUFFER_MAX : this._calcTimeBuffer(bufferMins);
     const serviceFrequency = this._calcServiceFrequency(legs);
     const weatherImpact = this._calcWeatherImpact(weather);
-    const disruptionImpact = this._calcDisruptionImpact(legs);
+    const disruptionImpact = this._calcDisruptionImpact(legs, transitData?.disruptions);
 
     const rawScore = BASE_SCORE + timeBuffer + serviceFrequency + weatherImpact + disruptionImpact;
     const score = this._clamp(rawScore, SCORE_MIN, SCORE_MAX);
@@ -229,7 +229,7 @@ class DepartureConfidence {
    * @param {Array} legs - Journey legs from buildJourneyLegs()
    * @returns {number} Points from -40 to 0
    */
-  _calcDisruptionImpact(legs) {
+  _calcDisruptionImpact(legs, disruptions = []) {
     if (!Array.isArray(legs) || legs.length === 0) {
       return 0;
     }
@@ -259,6 +259,14 @@ class DepartureConfidence {
     // Delayed legs: -15 each, max -30
     const delayPenalty = Math.min(delayCount * 15, 30);
     impact -= delayPenalty;
+
+    // v5.10.2: Network-level disruption penalty. Active service alerts on the
+    // user's route reduce confidence even when individual legs aren't yet
+    // showing delays — disruptions indicate reduced reliability.
+    if (Array.isArray(disruptions) && disruptions.length > 0) {
+      const networkPenalty = Math.min(disruptions.length * 5, 20);
+      impact -= networkPenalty;
+    }
 
     return this._clamp(impact, DISRUPTION_IMPACT_MIN, DISRUPTION_IMPACT_MAX);
   }

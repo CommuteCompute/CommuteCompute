@@ -36,7 +36,53 @@ const KEYS = {
   STATION_OVERRIDES: 'cc:station_overrides',  // User station preference overrides
   PREFERRED_TRAM_ROUTE: 'cc:preferred_tram_route',  // Pinned tram route number for consistency
   PREFERRED_TRAM_STOP: 'cc:preferred_tram_stop',    // Stop ID paired with preferred route (for stale-route detection)
-  PREFERRED_TRAM_ROUTES: 'cc:preferred_tram_routes' // Ordered list of preferred tram route numbers (e.g. ['12', '109'])
+  PREFERRED_TRAM_ROUTES: 'cc:preferred_tram_routes', // Ordered list of preferred tram route numbers (e.g. ['12', '109'])
+  // v5.9.0 (T6 / B8): train-line stability lock — mirrors the tram lock
+  // structure. preferredTrainLine is paired with preferredTrainStation so
+  // a lock from one station does not carry over to another.
+  PREFERRED_TRAIN_LINE: 'cc:preferred_train_line',
+  PREFERRED_TRAIN_STATION: 'cc:preferred_train_station',
+  // v5.9.1 (U4): one-off migration flag. When a v5.9.1+ request reads this
+  // key and finds it unset, it wipes every preferred-route/line/stop KV
+  // entry (to clear stale values that survived v5.9.0's live-gated
+  // invalidation) and then sets this key to true. Subsequent requests skip
+  // the wipe. See plan file for the full rationale.
+  V591_MIGRATION_DONE: 'cc:v591_migration_done',
+  // v5.9.4 (Z3): one-off migration flag. v5.9.3's naive write-once guard
+  // allowed non-stop-level cascade wins to persist to an empty KV on cold
+  // start, poisoning the stored tram route preference with a coord-tier
+  // or route-level heuristic result. The v5.9.4 corrective adds a stop-
+  // level gate to the write guard, but any value already stored by v5.9.3
+  // is suspect and must be cleared once. When a v5.9.4+ request finds this
+  // key unset, it wipes cc:preferred_tram_route + cc:preferred_tram_stop
+  // and sets this key to true. Train preferences are left alone because
+  // the train cascade was not affected.
+  V594_MIGRATION_DONE: 'cc:v594_migration_done',
+  // v5.9.6 (BB4): one-off migration flag. The v5.9.0-through-v5.9.5 train
+  // cascade wrote `cc:preferred_train_line` / `cc:preferred_train_station`
+  // without a stop-level confidence gate — a dominant-line count from the
+  // live feed (which could include broad-fallback or route-level entries)
+  // was sufficient to persist the value. Any previously-stored train
+  // preference is therefore suspect. On first v5.9.6+ request, clear the
+  // two train preference keys and set this flag. The v5.9.6 BB3 gate
+  // prevents recurrence. Symmetric with v5.9.4 Z3 but for train keys.
+  V596_MIGRATION_DONE: 'cc:v596_migration_done',
+  // v5.9.8 (DD4): one-off migration flag for the home coordinate drift
+  // repair. Pre-v5.9.8 code paths persisted `locations.home.lat` and
+  // `locations.home.lon` without validating them against a fresh geocode
+  // of `locations.home.address`. Any drift between the stored coord and
+  // the address the geocoder actually resolves (from Setup Wizard write
+  // vs. later admin panel edit, geocoder vendor drift, manual pin drag,
+  // or geocoder-tier fallback between configuration and read) poisons
+  // every downstream consumer: the nearest-stop finder picks the wrong
+  // boarding station, the tram cascade's coord-identity tier compares
+  // feed stops against the wrong target, and walk-leg distances are
+  // computed from the wrong origin. On first v5.9.8+ request, re-geocode
+  // `locations.home.address` (if present) and overwrite the stored
+  // lat/lon with the fresh values, then set this flag so the wipe runs
+  // exactly once. The v5.9.8 DD1 per-request drift check is a defensive
+  // safety net that catches any future drift after the migration.
+  V598_HOME_COORD_MIGRATION_DONE: 'cc:v598_home_coord_migration_done'
 };
 
 // In-memory fallback for local development (no KV configured)
@@ -298,9 +344,15 @@ async function set(key, value) {
     if (client) {
       // 5 second timeout to prevent hanging
       const result = await withTimeout(client.set(key, value), 5000, false);
-      console.log('[KV]', { operation: 'set', key, result, storage: 'redis', timestamp: new Date().toISOString() });
+      // v5.9.1 (U9 / Section 1.1): Removed console.log of every KV set —
+      // generated ~40 log lines per request on Vercel. If a KV write
+      // diagnostic is needed, read the KV state directly via the admin
+      // panel instead of polluting the log stream.
       return result !== false;
     }
+    // console.warn retained on the memory-fallback branch because it
+    // signals a configuration error (no Redis) that the operator must
+    // address; this happens at most once per cold-start.
     console.warn('[KV]', { operation: 'set', key, storage: 'memory-fallback', warning: 'No Redis client — data will NOT persist', timestamp: new Date().toISOString() });
     memoryStore.set(key, value);
     return false;
@@ -404,7 +456,8 @@ export async function setDeviceStatus(status) {
     const client = await getClient();
     if (client) {
       const result = await withTimeout(client.set(KEYS.DEVICE_STATUS, value, { ex: 86400 }), 5000, false);
-      console.log('[KV]', { operation: 'setDeviceStatus', result, storage: 'redis', timestamp: new Date().toISOString() });
+      // v5.9.1 (U9 / Section 1.1): console.log of every device-status
+      // write removed — same reason as the generic KV set above.
       return true;
     }
     console.warn('[KV]', { operation: 'setDeviceStatus', storage: 'memory-fallback', warning: 'No Redis client — data will NOT persist', timestamp: new Date().toISOString() });
@@ -509,6 +562,128 @@ export async function getPreferredTramRoutes() {
   return await get(KEYS.PREFERRED_TRAM_ROUTES);
 }
 
+// ========================================================================
+// v5.9.0 (T6 / B8): Preferred train line stability lock
+// ========================================================================
+
+/**
+ * Get the pinned train line name (from the last good live detection).
+ * Paired with getPreferredTrainStation — a lock set at one station is
+ * only trusted when the current engine station matches.
+ * @returns {Promise<string|null>} Line name string or null
+ */
+export async function getPreferredTrainLine() {
+  return await get(KEYS.PREFERRED_TRAIN_LINE);
+}
+
+/**
+ * Set (or clear) the pinned train line name.
+ * @param {string|null} lineName - Line name or null to clear
+ */
+export async function setPreferredTrainLine(lineName) {
+  return await set(KEYS.PREFERRED_TRAIN_LINE, lineName);
+}
+
+/**
+ * Get the station ID paired with the preferred train line.
+ * @returns {Promise<string|null>}
+ */
+export async function getPreferredTrainStation() {
+  return await get(KEYS.PREFERRED_TRAIN_STATION);
+}
+
+/**
+ * Set (or clear) the station ID paired with the preferred train line.
+ * @param {string|null} stationId
+ */
+export async function setPreferredTrainStation(stationId) {
+  return await set(KEYS.PREFERRED_TRAIN_STATION, stationId);
+}
+
+// ========================================================================
+// v5.9.1 (U4): one-off migration flag
+// ========================================================================
+
+/**
+ * Check whether the v5.9.1 one-off stale-preference wipe has run.
+ * @returns {Promise<boolean>}
+ */
+export async function getV591MigrationDone() {
+  return (await get(KEYS.V591_MIGRATION_DONE)) === true;
+}
+
+/**
+ * Mark the v5.9.1 one-off stale-preference wipe as done.
+ * @returns {Promise<boolean>}
+ */
+export async function setV591MigrationDone() {
+  return await set(KEYS.V591_MIGRATION_DONE, true);
+}
+
+// ========================================================================
+// v5.9.4 (Z3): one-off migration flag for tram KV poisoning wipe
+// ========================================================================
+
+/**
+ * Check whether the v5.9.4 one-off tram-preference wipe has run.
+ * @returns {Promise<boolean>}
+ */
+export async function getV594MigrationDone() {
+  return (await get(KEYS.V594_MIGRATION_DONE)) === true;
+}
+
+/**
+ * Mark the v5.9.4 one-off tram-preference wipe as done.
+ * @returns {Promise<boolean>}
+ */
+export async function setV594MigrationDone() {
+  return await set(KEYS.V594_MIGRATION_DONE, true);
+}
+
+// ========================================================================
+// v5.9.6 (BB4): one-off migration flag for train KV stop-level gate
+// ========================================================================
+
+/**
+ * Check whether the v5.9.6 one-off train-preference wipe has run. The
+ * wipe clears any `cc:preferred_train_line` / `cc:preferred_train_station`
+ * value persisted by the v5.9.0-through-v5.9.5 train cascade, which had
+ * no stop-level confidence gate. The v5.9.6 BB3 gate prevents recurrence.
+ * @returns {Promise<boolean>}
+ */
+export async function getV596MigrationDone() {
+  return (await get(KEYS.V596_MIGRATION_DONE)) === true;
+}
+
+/**
+ * Mark the v5.9.6 one-off train-preference wipe as done.
+ * @returns {Promise<boolean>}
+ */
+export async function setV596MigrationDone() {
+  return await set(KEYS.V596_MIGRATION_DONE, true);
+}
+
+/**
+ * v5.9.8 (DD4): Check whether the one-off home coordinate migration has
+ * run. The migration re-geocodes `locations.home.address` on first
+ * v5.9.8+ request and overwrites the stored lat/lon with the fresh
+ * geocoder result, repairing any drift that accumulated in pre-v5.9.8
+ * code paths. See KEYS.V598_HOME_COORD_MIGRATION_DONE for the full
+ * rationale.
+ * @returns {Promise<boolean>}
+ */
+export async function getV598HomeCoordMigrationDone() {
+  return (await get(KEYS.V598_HOME_COORD_MIGRATION_DONE)) === true;
+}
+
+/**
+ * v5.9.8 (DD4): Mark the one-off home coordinate migration as done.
+ * @returns {Promise<boolean>}
+ */
+export async function setV598HomeCoordMigrationDone() {
+  return await set(KEYS.V598_HOME_COORD_MIGRATION_DONE, true);
+}
+
 /**
  * Set the ordered list of preferred tram route numbers.
  * @param {string[]|null} routes - ordered route numbers, or null to clear
@@ -541,5 +716,17 @@ export default {
   setPreferredTramStop,
   getPreferredTramRoutes,
   setPreferredTramRoutes,
+  getPreferredTrainLine,
+  setPreferredTrainLine,
+  getPreferredTrainStation,
+  setPreferredTrainStation,
+  getV591MigrationDone,
+  setV591MigrationDone,
+  getV594MigrationDone,
+  setV594MigrationDone,
+  getV596MigrationDone,
+  setV596MigrationDone,
+  getV598HomeCoordMigrationDone,
+  setV598HomeCoordMigrationDone,
   KEYS
 };

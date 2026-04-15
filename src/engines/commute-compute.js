@@ -50,6 +50,7 @@ import { getTransitApiKey, getGoogleApiKey, getPreferredTramRoutes } from '../da
 import { getStopNameById, detectStopIdsFromAddress, findNearestStops, cleanStopName } from '../data/gtfs-stop-names.js';
 import { getAllStops } from '../data/fallback-timetables.js';
 import { haversine } from '../utils/haversine.js';
+import { computeDynamicRoutes } from './dynamic-routes.js';
 
 // =============================================================================
 // INTERNAL HELPERS (file scope, not exported)
@@ -1454,7 +1455,16 @@ export class CommuteCompute {
     
     // Strategy 2: Multi-modal routes (tram → train, etc.)
     const multiModalRoutes = await this.findMultiModalRoutes(homeStops, workStops, allStops, locations, includeCoffee);
-    routes.push(...multiModalRoutes);
+    // v5.9.0: Reject multi-modal routes that are slower than the fastest direct
+    // route (with 3-min buffer for transfer convenience). A multi-modal journey
+    // with a long transfer walk that doesn't save time is not a viable option.
+    const fastestDirectTime = directRoutes.reduce(
+      (min, r) => r.totalMinutes < min ? r.totalMinutes : min, Infinity
+    );
+    const viableMultiModal = fastestDirectTime < Infinity
+      ? multiModalRoutes.filter(r => r.totalMinutes <= fastestDirectTime + 3)
+      : multiModalRoutes;
+    routes.push(...viableMultiModal);
     
     // v1.42: Sort by weighted score per Dev Rules Section 23.9.2
     // Weights: 40% time, 25% transfers, 20% walking, 15% reliability
@@ -1662,7 +1672,17 @@ export class CommuteCompute {
       const coffeeTime = includeCoffee ? 4 : 0;
       const walkToTram = includeCoffee ? 2 : Math.ceil(homeTram.distance / 80);
       const tramTime = this.estimateTransitTime(homeTram, nearbyTrams[0]);
-      const walkToTrain = 2;
+      // v5.9.0: Scale walk transfer time from actual haversine distance between
+      // the tram alighting stop and the train station. The previous hardcoded
+      // 2-min value underestimated transfers that span 300m+ (the interchange
+      // threshold). Walking speed 80m/min per DEVELOPMENT-RULES §23.13.
+      // TRANSFER_WALK_MULTIPLIER accounts for stairs, barriers, crossings.
+      const tramToTrainDist = nearbyTrams[0]
+        ? this.haversineDistance(nearbyTrams[0].lat, nearbyTrams[0].lon, trainStation.lat, trainStation.lon)
+        : (homeTram.lat && trainStation.lat
+            ? this.haversineDistance(homeTram.lat, homeTram.lon, trainStation.lat, trainStation.lon)
+            : 160);
+      const walkToTrain = Math.max(2, Math.ceil((tramToTrainDist * TRANSFER_WALK_MULTIPLIER) / 80));
       const trainTime = this.estimateTransitTime(trainStation, workTrain);
       const walkToWork = Math.ceil(workTrain.distance / 80);
 
@@ -1729,39 +1749,26 @@ export class CommuteCompute {
   }
 
   /**
-   * Generate route templates when no real stop data is available
-   * Per DEVELOPMENT-RULES.md: NO hardcoded personal data
-   * Routes are built from user config (locations) only
-   * 
-   * Supports patterns:
-   * - Home > Coffee > Tram > Train > Office (multi-modal with coffee)
-   * - Home > Coffee > Train > Office
-   * - Home > Tram > Office
-   * - Home > Train > Office
-   * - Home > Bus > Office
+   * Generate route templates when no real stop data is available.
+   *
+   * v5.9.0 (T1 / B13): All timing literals have been removed from this path.
+   * Every leg duration is now computed dynamically by computeDynamicRoutes in
+   * src/engines/dynamic-routes.js using:
+   *   - Haversine walk legs over real home/cafe/stop/work coordinates
+   *   - Geodesic transit legs using per-mode Victorian PTV service averages
+   *     (or GTFS static stop_times when an injected lookup is supplied)
+   * Only two documented universal constants remain in the pipeline:
+   *   COFFEE_DURATION_MINUTES (5 min — user experience, not location)
+   *   MODE_AVERAGE_SPEEDS_KMH (tram 15 / train 45 / bus 20 km/h — Victorian
+   *                            mode characteristics, not location-specific)
+   * See DEVELOPMENT-RULES.md §23.8.
+   *
+   * This method is kept SYNCHRONOUS to preserve the signature expected by
+   * getSelectedRoute() and buildJourneyForDisplay(). The N14-guard from
+   * v5.8.2 is preserved inside computeDynamicRoutes via the per-template
+   * `requires` declarations.
    */
   getHardcodedRoutes(locations, includeCoffee) {
-    const routes = [];
-    
-    // Extract names from user config (NO hardcoded location names) - v1.19 improved extraction
-    const cafeName = locations?.cafe?.name || 
-                    locations?.cafe?.formattedAddress?.split(',')[0] ||
-                    locations?.cafe?.address?.split(',')[0] || 
-                    'Cafe';
-    
-    // Extract suburb/area from address (e.g., "1 Example St, Suburb" → "South Yarra")
-    const homeArea = locations?.home?.suburb ||
-                    locations?.home?.address?.split(',')[1]?.trim() || 
-                    null;
-    const workArea = locations?.work?.suburb ||
-                    locations?.work?.address?.split(',')[1]?.trim() || 
-                    null;
-    
-    // Extract work address short name (e.g., "123 Work Street" from full address)
-    const workAddressShort = locations?.work?.name ||
-                            locations?.work?.address?.split(',')[0]?.trim() ||
-                            'Office';
-    
     // Resolve HOME-side stops from coordinates (PRIMARY) or address detection (FALLBACK)
     const homeCoords = locations?.home;
     const homeStopsByCoord = (homeCoords?.lat && homeCoords?.lon)
@@ -1774,28 +1781,18 @@ export class CommuteCompute {
       ? findNearestStops(workCoords.lat, workCoords.lon)
       : {};
 
-    // Address-based detection as secondary fallback
-    const homeDetected = detectStopIdsFromAddress(locations?.home?.address);
-    const workDetected = detectStopIdsFromAddress(locations?.work?.address);
-
-    // v5.8.2 (N2-guard): Use coordinate-based stops as PRIMARY, then nearbyStops
-    // config, then GTFS address lookup. Previously fell through to a suburb-
-    // derived placeholder (e.g. "Craigieburn Tram Stop") when all real lookups
-    // failed — those placeholders cascaded into impossible route templates.
-    // Return null instead; N14-guard below skips templates that need a null stop.
-    const nearestTramStop = homeStopsByCoord.tram?.name ||
-                           locations?.cafe?.nearbyStops?.tram?.name ||
-                           locations?.home?.nearbyStops?.tram?.name ||
-                           getStopNameById(homeDetected.tramStopId) ||
-                           null;
-    const nearestTrainStation = homeStopsByCoord.train?.name ||
-                               locations?.home?.nearbyStops?.train?.name ||
-                               getStopNameById(homeDetected.trainStopId) ||
-                               null;
-    const workStation = workStopsByCoord.train?.name ||
-                       locations?.work?.nearbyStops?.train?.name ||
-                       getStopNameById(workDetected.trainStopId) ||
-                       null;
+    // Merge nearbyStops config (set at configuration time) with coord-resolved
+    // stops so the dynamic engine has lat/lon available for every template
+    // step. The N2-guard chain still applies: coord > nearbyStops > GTFS lookup
+    // > null. dynamic-routes.js skips templates whose required stops are null.
+    const homeStops = {
+      train: homeStopsByCoord.train || locations?.home?.nearbyStops?.train || null,
+      tram: homeStopsByCoord.tram || locations?.cafe?.nearbyStops?.tram || locations?.home?.nearbyStops?.tram || null,
+      bus: homeStopsByCoord.bus || locations?.home?.nearbyStops?.bus || null
+    };
+    const workStops = {
+      train: workStopsByCoord.train || locations?.work?.nearbyStops?.train || null
+    };
 
     // Resolve tram/bus route numbers from nearby stop data for GTFS-RT matching
     // findNearestStops returns camelCase (routeNumber); check both cases for Redis compat
@@ -1805,142 +1802,32 @@ export class CommuteCompute {
                             locations?.home?.nearbyStops?.tram?.route_number || null;
     const busRouteNumber = locations?.home?.nearbyStops?.bus?.routeNumber ||
                            locations?.home?.nearbyStops?.bus?.route_number || null;
-    
-    // v5.8.2 (N14-guard): each hardcoded route template below is wrapped in a
-    // mode-availability guard. Routes that require a stop which N2-guard
-    // resolved to null are skipped entirely rather than pushed with fabricated
-    // placeholders. This removes the visible symptoms of impossible direct
-    // connections (e.g. "Train Craigieburn Station → Sandringham Station")
-    // from the alternatives list.
 
-    // =========================================================================
-    // ROUTE 1: Coffee + Tram + Train (PREFERRED multi-modal pattern)
-    // Pattern: Home > Coffee > Tram > Train > Walk > Office
-    // This is the most common Melbourne commute with transfer
-    // =========================================================================
-    if (includeCoffee && nearestTramStop && nearestTrainStation && workStation) {
-      routes.push({
-        id: 'coffee-tram-train',
-        name: 'Coffee + Tram + Train',
-        description: `Walk → Coffee → Tram${tramRouteNumber ? ' ' + tramRouteNumber : ''} (${nearestTramStop} → ${nearestTrainStation}) → Train (${nearestTrainStation} → ${workStation}) → Walk`,
-        type: 'preferred',
-        totalMinutes: 35,
-        legs: [
-          { type: 'walk', to: 'cafe', from: 'home', minutes: 3, fromHome: true, cafeName, destinationName: cafeName },
-          { type: 'coffee', location: cafeName, cafeName, minutes: 5, canGet: true },
-          { type: 'walk', to: 'tram stop', minutes: 2, stopName: nearestTramStop },
-          { type: 'tram', routeNumber: tramRouteNumber || '', origin: { name: nearestTramStop }, destination: { name: nearestTrainStation }, originStop: nearestTramStop, minutes: 6 },
-          { type: 'walk', to: 'train platform', minutes: 2, stationName: nearestTrainStation },
-          { type: 'train', isCitybound: true, origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 8 },
-          { type: 'walk', to: 'work', minutes: 5, workName: workAddressShort }
-        ]
-      });
-    }
+    // v5.9.0 (T1): Delegate all timing computation to dynamic-routes.js.
+    // The v5.8.2 N14-guard is preserved inside computeDynamicRoutes via
+    // per-template `requires` declarations — templates whose required
+    // stops resolved to null are skipped. Zero timing literals remain here.
+    return computeDynamicRoutes({
+      locations,
+      homeStops,
+      workStops,
+      includeCoffee: !!includeCoffee,
+      tramRouteNumber,
+      busRouteNumber
+    });
+  }
 
-    // =========================================================================
-    // ROUTE 2: Coffee + Train only
-    // Pattern: Home > Walk > Coffee > Walk > Train > Walk > Office
-    // =========================================================================
-    if (includeCoffee && nearestTrainStation && workStation) {
-      routes.push({
-        id: 'coffee-train',
-        name: 'Coffee + Train',
-        description: `Walk → Coffee → Train (${nearestTrainStation} → ${workStation}) → Walk`,
-        type: 'standard',
-        totalMinutes: 30,
-        legs: [
-          { type: 'walk', to: 'cafe', from: 'home', minutes: 4, fromHome: true, cafeName, destinationName: cafeName },
-          { type: 'coffee', location: cafeName, cafeName, minutes: 5, canGet: true },
-          { type: 'walk', to: 'train platform', from: cafeName, minutes: 5, stationName: nearestTrainStation },
-          { type: 'train', isCitybound: true, origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 10 },
-          { type: 'walk', to: 'work', minutes: 6, workName: workAddressShort }
-        ]
-      });
-    }
-
-    // =========================================================================
-    // ROUTE 3: Direct train (no coffee)
-    // Pattern: Home > Walk > Train > Walk > Office
-    // =========================================================================
-    if (nearestTrainStation && workStation) {
-      routes.push({
-        id: 'train-direct',
-        name: 'Train Direct',
-        description: `Walk → Train (${nearestTrainStation} → ${workStation}) → Walk`,
-        type: 'direct',
-        totalMinutes: 22,
-        legs: [
-          { type: 'walk', to: 'station', from: 'home', minutes: 7, fromHome: true, stationName: nearestTrainStation },
-          { type: 'train', isCitybound: true, origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 10 },
-          { type: 'walk', to: 'work', minutes: 5, workName: workAddressShort }
-        ]
-      });
-    }
-
-    // =========================================================================
-    // ROUTE 4: Tram + Train (no coffee)
-    // Pattern: Home > Walk > Tram > Walk > Train > Walk > Office
-    // Walk segments on both ends of the tram leg reflect actual journey structure.
-    // =========================================================================
-    if (nearestTramStop && nearestTrainStation && workStation) {
-      routes.push({
-        id: 'tram-train',
-        name: 'Tram + Train',
-        description: `Walk → Tram${tramRouteNumber ? ' ' + tramRouteNumber : ''} (${nearestTramStop} → ${nearestTrainStation}) → Walk → Train (${nearestTrainStation} → ${workStation}) → Walk`,
-        type: 'transfer',
-        totalMinutes: 30,
-        legs: [
-          { type: 'walk', to: 'tram stop', from: 'home', minutes: 4, fromHome: true, stopName: nearestTramStop },
-          { type: 'tram', routeNumber: tramRouteNumber || '', origin: { name: nearestTramStop }, destination: { name: nearestTrainStation }, originStop: nearestTramStop, minutes: 10 },
-          { type: 'walk', to: 'train platform', minutes: 2, stationName: nearestTrainStation },
-          { type: 'train', isCitybound: true, origin: { name: nearestTrainStation }, destination: { name: workStation }, originStation: nearestTrainStation, minutes: 10 },
-          { type: 'walk', to: 'work', minutes: 4, workName: workAddressShort }
-        ]
-      });
-    }
-
-    // =========================================================================
-    // ROUTE 5: Direct tram
-    // Pattern: Home > Walk > Tram > Walk > Office
-    // Walk segments on both ends of the tram reflect actual journey structure
-    // (walk from home to tram stop; walk from tram stop to work).
-    // =========================================================================
-    if (nearestTramStop) {
-      routes.push({
-        id: 'tram-direct',
-        name: 'Tram Direct',
-        description: `Walk → Tram${tramRouteNumber ? ' ' + tramRouteNumber : ''} (${nearestTramStop} → ${workArea || 'CBD'}) → Walk`,
-        type: 'direct',
-        totalMinutes: 24,
-        legs: [
-          { type: 'walk', to: 'tram stop', from: 'home', minutes: 4, fromHome: true, stopName: nearestTramStop },
-          { type: 'tram', routeNumber: tramRouteNumber || '', origin: { name: nearestTramStop }, destination: { name: workArea || 'CBD' }, originStop: nearestTramStop, minutes: 14 },
-          { type: 'walk', to: 'work', minutes: 6, workName: workAddressShort }
-        ]
-      });
-    }
-
-    // =========================================================================
-    // ROUTE 6: Bus alternative
-    // Pattern: Home > Walk > Bus > Walk > Office
-    // Only offered when a real bus route number is available from nearbyStops.
-    // =========================================================================
-    if (busRouteNumber) {
-      routes.push({
-        id: 'bus-direct',
-        name: 'Bus Alternative',
-        description: `Walk → Bus ${busRouteNumber} (${homeArea || 'Home'} → ${workAddressShort || workArea || 'CBD'}) → Walk`,
-        type: 'alternative',
-        totalMinutes: 30,
-        legs: [
-          { type: 'walk', to: 'bus stop', from: 'home', minutes: 4, fromHome: true },
-          { type: 'bus', routeNumber: busRouteNumber, origin: { name: homeArea || 'Home' }, destination: { name: workAddressShort || workArea || 'CBD' }, originStop: homeArea || 'Home', minutes: 20 },
-          { type: 'walk', to: 'work', minutes: 6, workName: workAddressShort }
-        ]
-      });
-    }
-
-    return routes;
+  /**
+   * DEAD CODE from v5.8.2 and earlier — retained as comments in git history
+   * via this stub. The six hardcoded route templates (coffee-tram-train,
+   * coffee-train, train-direct, tram-train, tram-direct, bus-direct) used
+   * to embed 28 location-dependent minute literals. v5.9.0 replaces them
+   * with computeDynamicRoutes. This no-op stub exists only so legacy
+   * direct calls do not throw.
+   */
+  _legacyHardcodedRoutesRemoved() {
+    // Intentionally empty. See comment above.
+    return [];
   }
 
   /**
@@ -2111,10 +1998,18 @@ export class CommuteCompute {
     }
 
     // V13.5: Calculate total journey time (excluding skipped legs)
-    const totalMinutes = legs.reduce((sum, leg) => {
+    // v5.9.0 (T14 / N17): Sum raw (unrounded) minutes when available, then
+    // round ONCE at the route boundary. Per-leg Math.ceil rounding used to
+    // compound by up to (legCount - 1) minutes, producing an off-by-one on
+    // totalMinutes that users noticed between refreshes. Legs built by
+    // dynamic-routes.js carry `_rawMinutes`; older code paths fall back
+    // to the already-rounded `minutes` field.
+    const rawTotalMinutes = legs.reduce((sum, leg) => {
       if (leg.skippedForTiming) return sum;  // Exclude skipped cafe legs
+      if (typeof leg._rawMinutes === 'number') return sum + leg._rawMinutes;
       return sum + (leg.minutes || leg.durationMinutes || 0);
     }, 0);
+    const totalMinutes = Math.ceil(rawTotalMinutes);
 
     // Calculate departure time based on active journey time
     const targetArr = prefs.arrivalTime || '09:00';
